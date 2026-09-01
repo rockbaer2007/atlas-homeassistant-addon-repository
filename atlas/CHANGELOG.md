@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.77
+
+- Adjust File Studio image preview sizing to start at `70vw` by `70vh`, with
+  resize limits from `40vw`/`40vh` up to `80vw`/`80vh`.
+- Fit SVG and other image previews into the full preview stage to avoid clipped
+  lower edges.
+- Bump ATLAS File Studio to `0.1.19` for repository update detection.
+
 ## 0.1.76
 
 - Make the File Studio image preview modal resizable with the same diagonal
