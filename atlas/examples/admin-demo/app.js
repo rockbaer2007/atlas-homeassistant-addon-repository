@@ -75,6 +75,7 @@ const adminPluginRepositoryStorageKey = "atlas.administration.pluginRepository";
 const atlasThemeStorageKey = "atlas.themePreference";
 const adminConnectionCookieName = "atlas_admin_connection";
 const adminSecretsCookieName = "atlas_admin_secrets";
+const sharedPluginCatalogCookieName = "atlas_plugin_catalog";
 const adminSecretsKeyStorageKey = "atlas.administration.secretsCookieKey";
 const legacyAdminTranslationApiKeysCookieName = "atlas_admin_translation_api_keys";
 const legacyAdminTranslationApiKeysKeyStorageKey = "atlas.administration.translationApiKeysCookieKey";
@@ -1583,6 +1584,7 @@ function normalizeRepositoryPlugin(plugin, repositoryEntry, index) {
     iconUrl: resolveRepositoryUrl(repositoryEntry.url, plugin.icon),
     logoUrl: resolveRepositoryUrl(repositoryEntry.url, plugin.logo),
     previewUrl: resolveRepositoryUrl(repositoryEntry.url, plugin.preview),
+    entry: typeof plugin.entry === "string" ? plugin.entry.trim() : "",
     manifestUrl: resolveRepositoryUrl(repositoryEntry.url, plugin.manifest),
     packageUrl: resolveRepositoryUrl(repositoryEntry.url, plugin.package),
     capabilities: Array.isArray(plugin.capabilities)
@@ -1936,6 +1938,7 @@ async function installRepositoryPluginPackage(plugin) {
       iconUrl: plugin.iconUrl,
       logoUrl: plugin.logoUrl,
       previewUrl: plugin.previewUrl,
+      entry: plugin.entry,
       compatibility: plugin.compatibility,
       files: installPackage.files,
       installedAt: new Date().toISOString(),
@@ -2141,6 +2144,7 @@ function restoreImportedPlugins() {
 
 function persistImportedPlugins() {
   localStorage.setItem(adminPluginStorageKey, JSON.stringify(importedPluginDescriptors));
+  persistSharedPluginCatalogCookie();
 }
 
 function restorePluginState() {
@@ -2160,6 +2164,7 @@ function persistPluginState() {
   localStorage.setItem(adminPluginStateStorageKey, JSON.stringify({
     activePluginIds: [...activePluginIds],
   }));
+  persistSharedPluginCatalogCookie();
 }
 
 function currentPluginDescriptors() {
@@ -2167,6 +2172,28 @@ function currentPluginDescriptors() {
     ...pluginCatalog.list(),
     ...importedPluginDescriptors,
   ];
+}
+
+function persistSharedPluginCatalogCookie() {
+  const plugins = importedPluginDescriptors
+    .filter(plugin => plugin.source === "repository")
+    .map(plugin => ({
+      id: plugin.id,
+      name: plugin.name,
+      nameI18n: plugin.nameI18n,
+      version: plugin.version,
+      description: plugin.description,
+      descriptionI18n: plugin.descriptionI18n,
+      status: activePluginIds.has(plugin.id) ? "active" : "available",
+      capabilities: plugin.capabilities,
+      iconUrl: resolvePluginDisplayAssetUrl(plugin, "icon"),
+      logoUrl: resolvePluginDisplayAssetUrl(plugin, "logo"),
+      previewUrl: resolvePluginDisplayAssetUrl(plugin, "preview"),
+      entry: plugin.entry,
+    }));
+
+  const encodedCatalog = encodeURIComponent(JSON.stringify({ plugins }));
+  document.cookie = `${sharedPluginCatalogCookieName}=${encodedCatalog}; Max-Age=${longTermCookieMaxAge}; Path=/; SameSite=Lax`;
 }
 
 function resolvePluginDisplayAssetUrl(plugin, kind) {
@@ -2727,6 +2754,7 @@ async function initializeAdministration() {
   await restoreEncryptedAdminSecretsCookie();
   restoreImportedPlugins();
   restorePluginState();
+  persistSharedPluginCatalogCookie();
   if (
     (rememberAdminToken.checked && homeAssistantToken.value.trim())
     || hasAnyTranslationApiKey(readTranslationApiKeys())

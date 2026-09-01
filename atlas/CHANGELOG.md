@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.56
+
+- Bridge repository-installed ATLAS plugins from Administration into the app
+  Plugin Hub catalog.
+- Preserve repository plugin launch entries so external plugins can appear and
+  open from the Hub after Admin synchronization.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.19` for the update
+  package.
+
 ## 0.1.55
 
 - Add ATLAS File Studio as the second independent plugin line.

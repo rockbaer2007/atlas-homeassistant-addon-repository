@@ -15,6 +15,7 @@ const distributionTarget = process.env.ATLAS_DISTRIBUTION_TARGET ?? "standalone-
 const adminUrl = `http://${healthHost}:${adminPort}/`;
 const editorUrl = `http://${healthHost}:${editorPort}/`;
 const pluginRoot = resolve(root, "atlas-plugins");
+const sharedPluginCatalogCookieName = "atlas_plugin_catalog";
 const startedAt = new Date().toISOString();
 const childProcesses = [];
 const mimeTypes = {
@@ -65,17 +66,17 @@ createServer((request, response) => {
   }
 
   if (requestUrl.pathname === "/app") {
-    void writeAppResponse(response, requestUrl);
+    void writeAppResponse(response, requestUrl, request.headers.cookie);
     return;
   }
 
   if (requestUrl.pathname === "/api/plugins") {
-    void writePluginCatalogResponse(response, requestUrl);
+    void writePluginCatalogResponse(response, requestUrl, request.headers.cookie);
     return;
   }
 
   if (requestUrl.pathname === "/") {
-    const activePlugins = readLaunchablePluginCatalog(requestUrl);
+    const activePlugins = readLaunchablePluginCatalog(requestUrl, request.headers.cookie);
     if (activePlugins.length === 1) {
       response.writeHead(302, { location: activePlugins[0].entryUrl });
       response.end();
@@ -191,7 +192,7 @@ async function writeHealthResponse(response) {
   });
 }
 
-async function writeAppResponse(response, requestUrl) {
+async function writeAppResponse(response, requestUrl, cookieHeader) {
   const publicAdminUrl = createPublicSurfaceUrl(requestUrl, adminPort);
   const publicEditorUrl = createPublicSurfaceUrl(requestUrl, editorPort);
   const surfaces = {
@@ -238,14 +239,14 @@ async function writeAppResponse(response, requestUrl) {
       ],
     },
     surfaces,
-    plugins: readPluginCatalog(requestUrl),
+    plugins: readPluginCatalog(requestUrl, cookieHeader),
   });
 }
 
-async function writePluginCatalogResponse(response, requestUrl) {
+async function writePluginCatalogResponse(response, requestUrl, cookieHeader) {
   writeJson(response, 200, {
     kind: "atlas.plugin.catalog",
-    plugins: readPluginCatalog(requestUrl),
+    plugins: readPluginCatalog(requestUrl, cookieHeader),
   });
 }
 
@@ -294,20 +295,36 @@ function createPublicSurfaceUrl(requestUrl, port) {
   return url.toString();
 }
 
-function readPluginCatalog(requestUrl) {
-  if (!existsSync(pluginRoot)) {
-    return [];
+function readPluginCatalog(requestUrl, cookieHeader = "") {
+  const localPlugins = existsSync(pluginRoot)
+    ? readdirSync(pluginRoot, { withFileTypes: true })
+      .filter(entry => entry.isDirectory())
+      .map(entry => readPluginManifest(entry.name, requestUrl))
+      .filter(Boolean)
+    : [];
+  const sharedPlugins = readSharedPluginCatalog(cookieHeader, requestUrl);
+  const pluginsById = new Map(localPlugins.map(plugin => [plugin.id, plugin]));
+
+  for (const plugin of sharedPlugins) {
+    const existing = pluginsById.get(plugin.id);
+    pluginsById.set(plugin.id, existing
+      ? {
+        ...plugin,
+        ...existing,
+        version: plugin.version || existing.version,
+        status: plugin.status || existing.status,
+        description: plugin.description || existing.description,
+        descriptionI18n: plugin.descriptionI18n || existing.descriptionI18n,
+      }
+      : plugin);
   }
 
-  return readdirSync(pluginRoot, { withFileTypes: true })
-    .filter(entry => entry.isDirectory())
-    .map(entry => readPluginManifest(entry.name, requestUrl))
-    .filter(Boolean)
+  return [...pluginsById.values()]
     .sort((left, right) => (left.order ?? 999) - (right.order ?? 999) || left.name.localeCompare(right.name));
 }
 
-function readLaunchablePluginCatalog(requestUrl) {
-  return readPluginCatalog(requestUrl).filter(plugin =>
+function readLaunchablePluginCatalog(requestUrl, cookieHeader = "") {
+  return readPluginCatalog(requestUrl, cookieHeader).filter(plugin =>
     plugin.status === "active" && Boolean(plugin.entryUrl),
   );
 }
@@ -357,6 +374,62 @@ function normalizeLocalizedPluginText(value) {
     .map(([locale, text]) => [locale.trim().toLowerCase(), text.trim()]);
 
   return entries.length ? Object.fromEntries(entries) : undefined;
+}
+
+function readSharedPluginCatalog(cookieHeader, requestUrl) {
+  const encodedCatalog = readCookie(cookieHeader, sharedPluginCatalogCookieName);
+  if (!encodedCatalog) {
+    return [];
+  }
+
+  try {
+    const catalog = JSON.parse(decodeURIComponent(encodedCatalog));
+    return Array.isArray(catalog.plugins)
+      ? catalog.plugins.map(plugin => normalizeSharedPlugin(plugin, requestUrl)).filter(Boolean)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizeSharedPlugin(plugin, requestUrl) {
+  if (!plugin || typeof plugin !== "object" || Array.isArray(plugin)) {
+    return undefined;
+  }
+  const id = typeof plugin.id === "string" && plugin.id.trim() ? plugin.id.trim() : "";
+  if (!id) {
+    return undefined;
+  }
+
+  return {
+    id,
+    name: typeof plugin.name === "string" && plugin.name.trim() ? plugin.name.trim() : id,
+    nameI18n: normalizeLocalizedPluginText(plugin.nameI18n),
+    version: typeof plugin.version === "string" ? plugin.version : "0.0.0",
+    description: typeof plugin.description === "string" ? plugin.description : "",
+    descriptionI18n: normalizeLocalizedPluginText(plugin.descriptionI18n),
+    status: ["active", "available", "disabled"].includes(plugin.status) ? plugin.status : "available",
+    order: Number.isFinite(plugin.order) ? plugin.order : 999,
+    capabilities: Array.isArray(plugin.capabilities)
+      ? plugin.capabilities.filter(capability => typeof capability === "string")
+      : [],
+    iconUrl: typeof plugin.iconUrl === "string" ? plugin.iconUrl : "",
+    logoUrl: typeof plugin.logoUrl === "string" ? plugin.logoUrl : "",
+    previewUrl: typeof plugin.previewUrl === "string" ? plugin.previewUrl : "",
+    entryUrl: createPluginEntryUrl(plugin.entry, requestUrl),
+  };
+}
+
+function readCookie(cookieHeader, name) {
+  if (typeof cookieHeader !== "string" || !cookieHeader.trim()) {
+    return "";
+  }
+  const prefix = `${name}=`;
+  const cookie = cookieHeader
+    .split(";")
+    .map(part => part.trim())
+    .find(part => part.startsWith(prefix));
+  return cookie ? cookie.slice(prefix.length) : "";
 }
 
 function createPluginEntryUrl(entry, requestUrl) {
