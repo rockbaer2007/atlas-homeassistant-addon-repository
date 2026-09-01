@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { createReadStream, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { createServer } from "node:http";
-import { extname, normalize, resolve } from "node:path";
+import { extname, isAbsolute, normalize, relative, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -15,6 +15,7 @@ const distributionTarget = process.env.ATLAS_DISTRIBUTION_TARGET ?? "standalone-
 const adminUrl = `http://${healthHost}:${adminPort}/`;
 const editorUrl = `http://${healthHost}:${editorPort}/`;
 const pluginRoot = resolve(root, "atlas-plugins");
+const fileStudioConfigRoot = resolve(process.env.ATLAS_FILE_STUDIO_CONFIG_ROOT ?? "/config");
 const sharedPluginCatalogCookieName = "atlas_plugin_catalog";
 const startedAt = new Date().toISOString();
 const childProcesses = [];
@@ -73,6 +74,11 @@ createServer((request, response) => {
 
   if (routePath === "/api/plugins") {
     void writePluginCatalogResponse(response, requestUrl, request.headers.cookie);
+    return;
+  }
+
+  if (routePath === "/api/file-studio/tree") {
+    void writeFileStudioTreeResponse(response, requestUrl);
     return;
   }
 
@@ -135,6 +141,7 @@ createServer((request, response) => {
 function createRoutePath(pathname) {
   const knownPrefixes = [
     "/api/plugins",
+    "/api/file-studio/tree",
     "/examples/plugin-hub/",
     "/plugin-assets/",
   ];
@@ -283,6 +290,44 @@ async function writePluginCatalogResponse(response, requestUrl, cookieHeader) {
   });
 }
 
+async function writeFileStudioTreeResponse(response, requestUrl) {
+  const depth = clampNumber(Number(requestUrl.searchParams.get("depth") ?? "3"), 1, 8);
+  const relativePath = requestUrl.searchParams.get("path") ?? "";
+  const targetPath = resolveFileStudioConfigPath(relativePath);
+
+  if (!targetPath) {
+    writeJson(response, 403, {
+      kind: "atlas.file-studio.tree",
+      root: "/config",
+      error: "path outside configured root",
+    });
+    return;
+  }
+
+  if (!existsSync(fileStudioConfigRoot)) {
+    writeJson(response, 200, {
+      kind: "atlas.file-studio.tree",
+      root: "/config",
+      exists: false,
+      message: "Der Home-Assistant-Konfigurationsordner /config ist noch nicht erreichbar.",
+      tree: {
+        name: "config",
+        path: "/config",
+        type: "directory",
+        children: [],
+      },
+    });
+    return;
+  }
+
+  writeJson(response, 200, {
+    kind: "atlas.file-studio.tree",
+    root: "/config",
+    exists: true,
+    tree: readFileStudioTree(targetPath, depth, "/config"),
+  });
+}
+
 async function waitForServer(url, timeoutMs) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
@@ -322,10 +367,91 @@ function writeEmptyResponse(response, statusCode) {
   response.end();
 }
 
+function clampNumber(value, minimum, maximum) {
+  if (!Number.isFinite(value)) {
+    return minimum;
+  }
+  return Math.max(minimum, Math.min(maximum, Math.trunc(value)));
+}
+
 function createPublicSurfaceUrl(requestUrl, port) {
   const url = new URL("/", requestUrl);
   url.port = String(port);
   return url.toString();
+}
+
+function resolveFileStudioConfigPath(relativePath) {
+  const normalizedRelativePath = normalize(String(relativePath ?? "").replace(/^[/\\]+/, ""));
+  const targetPath = resolve(fileStudioConfigRoot, normalizedRelativePath);
+
+  if (isInsideFileStudioConfigRoot(targetPath)) {
+    return targetPath;
+  }
+
+  return undefined;
+}
+
+function isInsideFileStudioConfigRoot(targetPath) {
+  const relativeTargetPath = relative(fileStudioConfigRoot, targetPath);
+  return relativeTargetPath === "" || (!relativeTargetPath.startsWith("..") && !isAbsolute(relativeTargetPath));
+}
+
+function readFileStudioTree(directoryPath, remainingDepth, displayPath) {
+  const name = displayPath === "/config"
+    ? "config"
+    : displayPath.split("/").filter(Boolean).at(-1) ?? "config";
+  const node = {
+    name,
+    path: displayPath,
+    type: "directory",
+    children: [],
+  };
+
+  if (remainingDepth <= 0) {
+    return node;
+  }
+
+  try {
+    node.children = readdirSync(directoryPath, { withFileTypes: true })
+      .filter(entry => !entry.name.startsWith("."))
+      .map(entry => readFileStudioTreeEntry(directoryPath, displayPath, entry, remainingDepth))
+      .filter(Boolean)
+      .sort(sortFileStudioTreeEntries);
+  } catch (error) {
+    node.error = error instanceof Error ? error.message : "directory could not be read";
+  }
+
+  return node;
+}
+
+function readFileStudioTreeEntry(parentDirectory, parentDisplayPath, entry, remainingDepth) {
+  const entryPath = resolve(parentDirectory, entry.name);
+  if (!isInsideFileStudioConfigRoot(entryPath)) {
+    return undefined;
+  }
+  const displayPath = `${parentDisplayPath.replace(/\/$/, "")}/${entry.name}`.replace(/\\/g, "/");
+
+  if (entry.isDirectory()) {
+    return readFileStudioTree(entryPath, remainingDepth - 1, displayPath);
+  }
+
+  if (!entry.isFile()) {
+    return undefined;
+  }
+
+  return {
+    name: entry.name,
+    path: displayPath,
+    type: "file",
+    extension: extname(entry.name).replace(".", "").toLowerCase(),
+  };
+}
+
+function sortFileStudioTreeEntries(left, right) {
+  if (left.type !== right.type) {
+    return left.type === "directory" ? -1 : 1;
+  }
+  return left.name.localeCompare(right.name, "de", { sensitivity: "base" });
 }
 
 function readPluginCatalog(requestUrl, cookieHeader = "") {

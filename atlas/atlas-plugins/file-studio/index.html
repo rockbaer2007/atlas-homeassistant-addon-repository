@@ -23,25 +23,20 @@
             <h2>Dateibaum</h2>
             <span>/config</span>
           </div>
-          <button type="button" class="tree-item active">configuration.yaml</button>
-          <button type="button" class="tree-item">automations.yaml</button>
-          <button type="button" class="tree-item">scripts.yaml</button>
-          <button type="button" class="tree-item locked">/addons erst nach Admin-Freigabe</button>
+          <div id="tree-status" class="tree-status" role="status">/config wird geladen...</div>
+          <div id="directory-tree" class="directory-tree" aria-live="polite"></div>
+          <div class="tree-note locked">/addons erst nach Admin-Freigabe</div>
         </aside>
 
         <section class="editor-panel" aria-label="Editor">
           <div class="panel-heading">
-            <h2>Editorfläche</h2>
-            <span>YAML</span>
+            <h2 id="editor-title">Editorfläche</h2>
+            <span id="editor-kind">Bereit</span>
           </div>
-          <pre><code>homeassistant:
-  name: Zuhause
-
-automation: !include automations.yaml
-script: !include scripts.yaml</code></pre>
+          <pre><code id="editor-preview">Wähle links eine Datei aus dem /config-Baum.</code></pre>
           <div class="status-row">
-            <span class="ok">YAML-Prüfung vorbereitet</span>
-            <span>Upload/Download vorbereitet</span>
+            <span id="tree-root-status" class="ok">/config als Standard</span>
+            <span>Direktes Speichern vorbereitet</span>
             <span>Kein Root-Zugriff</span>
           </div>
         </section>
@@ -79,6 +74,92 @@ script: !include scripts.yaml</code></pre>
         bindHubLinks(preference);
       }
 
+      function extensionLabel(node) {
+        if (node.type === "directory") {
+          return "DIR";
+        }
+        const extension = String(node.extension ?? "").trim().toUpperCase();
+        return extension || "FILE";
+      }
+
+      function createTreeNode(node, level = 0) {
+        if (node.type === "directory") {
+          const details = document.createElement("details");
+          details.className = "tree-folder";
+          details.open = level <= 1;
+
+          const summary = document.createElement("summary");
+          summary.innerHTML = `<span class="tree-chevron" aria-hidden="true"></span><span class="tree-icon" aria-hidden="true">▣</span><span class="tree-name"></span><span class="tree-meta">DIR</span>`;
+          summary.querySelector(".tree-name").textContent = node.path;
+          details.append(summary);
+
+          const children = document.createElement("div");
+          children.className = "tree-children";
+          for (const child of node.children ?? []) {
+            children.append(createTreeNode(child, level + 1));
+          }
+          if (!children.children.length) {
+            const empty = document.createElement("p");
+            empty.className = "tree-empty";
+            empty.textContent = node.error ? `Nicht lesbar: ${node.error}` : "Ordner ist leer.";
+            children.append(empty);
+          }
+          details.append(children);
+          return details;
+        }
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "tree-file";
+        button.dataset.path = node.path;
+        button.innerHTML = `<span class="tree-icon" aria-hidden="true">▤</span><span class="tree-name"></span><span class="tree-meta"></span>`;
+        button.querySelector(".tree-name").textContent = node.name;
+        button.querySelector(".tree-meta").textContent = extensionLabel(node);
+        button.addEventListener("click", () => selectTreeFile(button, node));
+        return button;
+      }
+
+      function selectTreeFile(button, node) {
+        for (const selectedButton of document.querySelectorAll(".tree-file.active")) {
+          selectedButton.classList.remove("active");
+        }
+        button.classList.add("active");
+        document.querySelector("#editor-title").textContent = node.name;
+        document.querySelector("#editor-kind").textContent = extensionLabel(node);
+        document.querySelector("#editor-preview").textContent = [
+          `${node.path}`,
+          "",
+          "Dateiinhalt laden und direkt speichern ist der nächste Schritt.",
+          "Der Dateibaum selbst kommt bereits aus dem freigegebenen /config-Pfad.",
+        ].join("\n");
+      }
+
+      async function loadDirectoryTree() {
+        const status = document.querySelector("#tree-status");
+        const tree = document.querySelector("#directory-tree");
+        const rootStatus = document.querySelector("#tree-root-status");
+
+        try {
+          const response = await fetch(createAppUrl("api/file-studio/tree?depth=4"), { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          const catalog = await response.json();
+          tree.replaceChildren(createTreeNode(catalog.tree));
+          status.textContent = catalog.exists
+            ? "/config geladen"
+            : catalog.message ?? "/config ist noch nicht erreichbar.";
+          status.classList.toggle("warning", !catalog.exists);
+          rootStatus.textContent = catalog.exists ? "/config geladen" : "/config nicht erreichbar";
+          rootStatus.classList.toggle("ok", catalog.exists);
+        } catch (error) {
+          status.textContent = `Dateibaum konnte nicht geladen werden: ${error instanceof Error ? error.message : "unbekannter Fehler"}`;
+          status.classList.add("warning");
+          rootStatus.textContent = "Dateibaum nicht geladen";
+          rootStatus.classList.remove("ok");
+        }
+      }
+
       function createAppUrl(path) {
         try {
           const baseUrl = new URL(window.location.href);
@@ -103,6 +184,7 @@ script: !include scripts.yaml</code></pre>
       }
 
       applyThemePreference();
+      void loadDirectoryTree();
       window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener("change", applyThemePreference);
     </script>
   </body>

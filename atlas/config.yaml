@@ -1,5 +1,5 @@
 name: "ATLAS"
-version: "0.1.60"
+version: "0.1.61"
 slug: "atlas"
 description: "ATLAS Administration and Home Assistant Card Editor preview"
 url: "https://github.com/rockbaer2007/atlas"
@@ -13,6 +13,8 @@ ingress: true
 ingress_port: 4176
 panel_icon: mdi:view-dashboard-edit
 webui: "http://[HOST]:[PORT:4176]/"
+map:
+  - config:rw
 ports:
   4176/tcp: 4176
   4175/tcp: 4175

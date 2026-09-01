@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.61
+
+- Load the ATLAS File Studio sidebar as a real directory tree from the scoped
+  Home Assistant `/config` path.
+- Map the Home Assistant `config` folder into the Add-on so the tree can show
+  the real `/config` directory during testing.
+- Keep the File Studio tree read-only for this increment and show clear
+  availability status when `/config` is not reachable.
+- Bump ATLAS File Studio to `0.1.5` and Atlas Framework package metadata to
+  `0.2.0-alpha.24` for the update package.
+
 ## 0.1.60
 
 - Add the ATLAS overlay badge to the ATLAS File Studio plugin icon.

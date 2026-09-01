@@ -22,7 +22,7 @@ export interface AtlasPlannedIntegrationClosure {
 export interface AtlasFrameworkReadiness {
     readonly framework: {
         readonly name: "Atlas";
-        readonly version: "0.2.0-alpha.23";
+        readonly version: "0.2.0-alpha.24";
         readonly channel: "alpha";
     };
     readonly packages: readonly AtlasWorkspacePackageDescriptor[];
