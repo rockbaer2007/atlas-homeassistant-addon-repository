@@ -297,6 +297,7 @@ const translations = {
     "message.pluginRepositoryLoaded": "{count} repository plugins loaded from {countRepositories} repositories.",
     "message.pluginRepositoryFailed": "Plugin repository could not be loaded.",
     "message.pluginRepositoryInvalid": "Plugin repository response is invalid.",
+    "message.pluginRepositoryWrongType": "This is a Home Assistant add-on repository. Add it in Home Assistant under Settings > Add-ons > Add-on Store > Repositories, not in Atlas Administration.",
     "message.pluginRepositoryNoEntries": "No custom repositories added yet.",
     "message.pluginRepositoryPreviewEmpty": "Enter a repository URL and preview it before adding.",
     "message.pluginRepositoryPreviewLoaded": "{count} plugins found in {name}.",
@@ -472,6 +473,7 @@ const translations = {
     "message.pluginRepositoryLoaded": "{count} Repository-Plugins aus {countRepositories} Repositories geladen.",
     "message.pluginRepositoryFailed": "Plugin-Repository konnte nicht geladen werden.",
     "message.pluginRepositoryInvalid": "Plugin-Repository-Antwort ist ungueltig.",
+    "message.pluginRepositoryWrongType": "Das ist ein Home-Assistant-Add-on-Repository. Fuege es in Home Assistant unter Einstellungen > Add-ons > Add-on Store > Repositories hinzu, nicht in Atlas Administration.",
     "message.pluginRepositoryNoEntries": "Noch keine benutzerdefinierten Repositories hinzugefuegt.",
     "message.pluginRepositoryPreviewEmpty": "Gib eine Repository-URL ein und pruefe sie vor dem Hinzufuegen.",
     "message.pluginRepositoryPreviewLoaded": "{count} Plugins in {name} gefunden.",
@@ -1321,29 +1323,34 @@ function closePluginRepositoryAddDialog() {
 }
 
 function addPluginRepositoryEntry() {
-  const url = pluginRepositoryUrl.value.trim();
+  const url = normalizePluginRepositoryInputUrl(pluginRepositoryUrl.value);
   if (!url) {
     pluginRepositoryPreviewStatus.textContent = t("message.pluginRepositoryEmpty");
     return;
   }
 
-  if (pluginRepositories.some(repository => repository.url.toLowerCase() === url.toLowerCase())) {
+  if (isPluginRepositoryDuplicateInput(url)) {
     pluginRepositoryPreviewStatus.textContent = t("message.pluginRepositoryDuplicate");
     return;
   }
 
   const previewMatchesInput = pendingRepositoryPreview
-    && pendingRepositoryPreview.url.toLowerCase() === url.toLowerCase()
+    && normalizePluginRepositoryInputUrl(pendingRepositoryPreview.inputUrl).toLowerCase() === url.toLowerCase()
     && pendingRepositoryPreview.type === normalizeRepositoryType(pluginRepositoryType.value);
+  if (!previewMatchesInput) {
+    pluginRepositoryPreviewStatus.textContent = t("message.pluginRepositoryPreviewEmpty");
+    return;
+  }
+
   pluginRepositories = [
     ...pluginRepositories,
     normalizeStoredPluginRepository({
-      url,
+      url: pendingRepositoryPreview.url,
       type: normalizeRepositoryType(pluginRepositoryType.value),
-      name: previewMatchesInput ? pendingRepositoryPreview.name : "",
-      pluginCount: previewMatchesInput ? pendingRepositoryPreview.plugins.length : 0,
-      status: previewMatchesInput ? "ready" : "new",
-      lastChecked: previewMatchesInput ? pendingRepositoryPreview.lastChecked : "",
+      name: pendingRepositoryPreview.name,
+      pluginCount: pendingRepositoryPreview.plugins.length,
+      status: "ready",
+      lastChecked: pendingRepositoryPreview.lastChecked,
     }, pluginRepositories.length),
   ].filter(Boolean);
   pluginRepositoryUrl.value = "";
@@ -1357,7 +1364,8 @@ function addPluginRepositoryEntry() {
 }
 
 async function previewPluginRepositoryEntry() {
-  const url = pluginRepositoryUrl.value.trim();
+  const inputUrl = pluginRepositoryUrl.value.trim();
+  const url = normalizePluginRepositoryInputUrl(inputUrl);
   const type = normalizeRepositoryType(pluginRepositoryType.value);
   pendingRepositoryPreview = undefined;
   pluginRepositoryPreviewList.replaceChildren();
@@ -1367,22 +1375,19 @@ async function previewPluginRepositoryEntry() {
     return;
   }
 
-  if (pluginRepositories.some(repository => repository.url.toLowerCase() === url.toLowerCase())) {
+  if (isPluginRepositoryDuplicateInput(url)) {
     pluginRepositoryPreviewStatus.textContent = t("message.pluginRepositoryDuplicate");
     return;
   }
 
   pluginRepositoryPreviewStatus.textContent = t("message.pluginRepositoryLoading");
   try {
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const repository = await response.json();
-    const repositoryEntry = normalizeStoredPluginRepository({ url, type }, pluginRepositories.length);
+    const { repository, repositoryUrl } = await fetchAtlasPluginRepository(inputUrl);
+    const repositoryEntry = normalizeStoredPluginRepository({ url: repositoryUrl, type }, pluginRepositories.length);
     const plugins = normalizePluginRepository(repository, repositoryEntry);
     pendingRepositoryPreview = {
-      url,
+      inputUrl,
+      url: repositoryUrl,
       type,
       name: typeof repository.name === "string" && repository.name.trim() ? repository.name.trim() : url,
       lastChecked: new Date().toLocaleString(currentLanguage === "de" ? "de-DE" : "en-US"),
@@ -1393,8 +1398,10 @@ async function previewPluginRepositoryEntry() {
       count: plugins.length,
       name: pendingRepositoryPreview.name,
     });
-  } catch {
-    pluginRepositoryPreviewStatus.textContent = t("message.pluginRepositoryFailed");
+  } catch (error) {
+    pluginRepositoryPreviewStatus.textContent = t(error?.message === "home-assistant-add-on-repository" || isHomeAssistantAddOnRepositoryUrl(inputUrl)
+      ? "message.pluginRepositoryWrongType"
+      : "message.pluginRepositoryFailed");
   }
 }
 
@@ -1601,6 +1608,149 @@ function formatRepositoryPluginCompatibility(compatibility) {
   ].filter(Boolean);
 
   return values.length ? values : ["-"];
+}
+
+function normalizePluginRepositoryInputUrl(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function isPluginRepositoryDuplicateInput(value) {
+  const candidates = createPluginRepositoryUrlCandidates(value).map(candidate => candidate.toLowerCase());
+  return pluginRepositories.some(repository => candidates.includes(repository.url.toLowerCase()));
+}
+
+async function fetchAtlasPluginRepository(inputUrl) {
+  const candidates = createPluginRepositoryUrlCandidates(inputUrl);
+  for (const repositoryUrl of candidates) {
+    try {
+      const response = await fetch(createNoCacheUrl(repositoryUrl), {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache", "Accept": "application/json" },
+      });
+      if (!response.ok) {
+        continue;
+      }
+      const repository = await response.json();
+      if (repository?.kind === "atlas.plugin.repository" && Array.isArray(repository.plugins)) {
+        return { repository, repositoryUrl };
+      }
+    } catch {
+      // Try the next normalized repository candidate.
+    }
+  }
+
+  if (await hasHomeAssistantAddOnRepositoryMetadata(inputUrl)) {
+    throw new Error("home-assistant-add-on-repository");
+  }
+
+  throw new Error("atlas-plugin-repository-not-found");
+}
+
+function createPluginRepositoryUrlCandidates(inputUrl) {
+  const values = [];
+  const trimmed = normalizePluginRepositoryInputUrl(inputUrl);
+  if (!trimmed) {
+    return values;
+  }
+
+  values.push(trimmed);
+  const githubRepositoryJsonUrl = createGitHubRawRepositoryJsonUrl(trimmed);
+  if (githubRepositoryJsonUrl) {
+    values.push(githubRepositoryJsonUrl);
+  }
+
+  return [...new Set(values)];
+}
+
+function createGitHubRawRepositoryJsonUrl(value) {
+  try {
+    const url = new URL(value);
+    if (url.hostname.toLowerCase() !== "github.com") {
+      return "";
+    }
+
+    const [owner, repository, view, branch, ...pathParts] = url.pathname
+      .split("/")
+      .filter(Boolean);
+    if (!owner || !repository) {
+      return "";
+    }
+
+    const repositoryName = repository.replace(/\.git$/i, "");
+    if (view === "blob" && branch && pathParts.length) {
+      return `https://raw.githubusercontent.com/${owner}/${repositoryName}/${branch}/${pathParts.join("/")}`;
+    }
+    if (view === "tree" && branch) {
+      return `https://raw.githubusercontent.com/${owner}/${repositoryName}/${branch}/repository.json`;
+    }
+    if (!view) {
+      return `https://raw.githubusercontent.com/${owner}/${repositoryName}/main/repository.json`;
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
+async function hasHomeAssistantAddOnRepositoryMetadata(inputUrl) {
+  for (const metadataUrl of createHomeAssistantRepositoryYamlCandidates(inputUrl)) {
+    try {
+      const response = await fetch(createNoCacheUrl(metadataUrl), {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache", "Accept": "text/yaml,text/plain,*/*" },
+      });
+      if (response.ok) {
+        const text = await response.text();
+        if (/^\s*name\s*:/m.test(text) && /^\s*(url|maintainer)\s*:/m.test(text)) {
+          return true;
+        }
+      }
+    } catch {
+      // A missing metadata file just means this is not recognized as a Home Assistant add-on repository.
+    }
+  }
+  return false;
+}
+
+function createHomeAssistantRepositoryYamlCandidates(inputUrl) {
+  const candidates = [];
+  const trimmed = normalizePluginRepositoryInputUrl(inputUrl);
+  if (!trimmed) {
+    return candidates;
+  }
+
+  try {
+    const url = new URL(trimmed);
+    if (url.hostname.toLowerCase() === "github.com") {
+      const [owner, repository, view, branch] = url.pathname.split("/").filter(Boolean);
+      if (owner && repository) {
+        const repositoryName = repository.replace(/\.git$/i, "");
+        candidates.push(`https://raw.githubusercontent.com/${owner}/${repositoryName}/${view === "tree" && branch ? branch : "main"}/repository.yaml`);
+      }
+    } else if (url.hostname.toLowerCase() === "raw.githubusercontent.com") {
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (parts.length >= 3) {
+        candidates.push(`https://raw.githubusercontent.com/${parts[0]}/${parts[1]}/${parts[2]}/repository.yaml`);
+      }
+    } else {
+      candidates.push(new URL("repository.yaml", url).toString());
+    }
+  } catch {
+    return candidates;
+  }
+
+  return [...new Set(candidates)];
+}
+
+function isHomeAssistantAddOnRepositoryUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.hostname.toLowerCase() === "github.com"
+      && url.pathname.replace(/\/+$/u, "").toLowerCase() === "/rockbaer2007/atlas-homeassistant-addon-repository";
+  } catch {
+    return false;
+  }
 }
 
 function resolveRepositoryUrl(repositoryUrl, value) {

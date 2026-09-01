@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.47
+
+- Prevent Atlas Administration from accepting Home Assistant add-on repositories
+  as ATLAS plugin repositories.
+- Resolve valid GitHub ATLAS plugin repository homepages to their
+  `repository.json` before storing them.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.10` for the update
+  package.
+
 ## 0.1.46
 
 - Brighten Card Editor dark-mode status lines for entity loading and translation

@@ -126,7 +126,7 @@ export function createHomeAssistantCardEditorAppReleaseReadiness(): HomeAssistan
     kind: "atlas.homeassistant.card-editor.app-release-readiness",
     appId: "atlas.homeassistant.card-editor",
     name: "ATLAS Home Assistant Card Editor",
-    version: "0.2.0-alpha.9",
+    version: "0.2.0-alpha.10",
     releaseChannel: "local-preview",
     summary,
     entrypoints: [
