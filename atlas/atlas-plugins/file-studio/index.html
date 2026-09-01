@@ -77,6 +77,12 @@
             <button id="font-increase" class="button small-button" type="button" aria-label="Schrift größer" title="Schrift größer">A+</button>
           </div>
           <div id="editor-input" class="editor-input" role="textbox" aria-label="Dateieditor"></div>
+          <div id="image-preview" class="image-preview" hidden>
+            <div class="image-preview-stage">
+              <img id="image-preview-media" alt="">
+            </div>
+            <div id="image-preview-meta" class="image-preview-meta"></div>
+          </div>
           <div class="status-row">
             <span id="tree-root-status" class="ok">/config als Standard</span>
             <span id="editor-dirty-status">Keine Datei geladen</span>
@@ -103,9 +109,12 @@
         originalContent: "",
         pendingCreate: undefined,
         editor: undefined,
+        previewMode: "text",
+        previewObjectUrl: undefined,
         editorFontSize: 14,
         wordWrap: true,
       };
+      const imagePreviewExtensions = new Set(["png", "jpg", "jpeg", "svg", "gif", "webp", "bmp", "ico"]);
 
       function readThemePreferenceFromLocation() {
         try {
@@ -145,6 +154,21 @@
         return extension || "FILE";
       }
 
+      function isImageExtension(extension) {
+        return imagePreviewExtensions.has(String(extension ?? "").trim().toLowerCase());
+      }
+
+      function imageMimeType(extension) {
+        const normalized = String(extension ?? "").trim().toLowerCase();
+        if (normalized === "jpg" || normalized === "jpeg") return "image/jpeg";
+        if (normalized === "svg") return "image/svg+xml";
+        if (normalized === "gif") return "image/gif";
+        if (normalized === "webp") return "image/webp";
+        if (normalized === "bmp") return "image/bmp";
+        if (normalized === "ico") return "image/x-icon";
+        return "image/png";
+      }
+
       function fileTypeIconClass(node) {
         if (node.type === "directory") {
           return "folder-icon";
@@ -156,6 +180,7 @@
         if (["md", "markdown"].includes(extension)) return "file-icon-markdown";
         if (["txt", "log"].includes(extension)) return "file-icon-text";
         if (["zip", "gz", "tar"].includes(extension)) return "file-icon-archive";
+        if (isImageExtension(extension)) return "file-icon-image";
         return "file-icon-generic";
       }
 
@@ -246,14 +271,15 @@
 
       function updateEditorActions() {
         const hasFile = Boolean(state.selectedFilePath);
-        const isDirty = editorValue() !== state.originalContent;
+        const isImage = state.previewMode === "image";
+        const isDirty = !isImage && editorValue() !== state.originalContent;
         document.querySelector("#save-file").disabled = !hasFile || !isDirty;
-        document.querySelector("#save-file-as").disabled = !hasFile;
+        document.querySelector("#save-file-as").disabled = !hasFile || isImage;
         document.querySelector("#discard-file").disabled = !hasFile || !isDirty;
-        document.querySelector("#validate-file").disabled = !hasFile;
+        document.querySelector("#validate-file").disabled = !hasFile || isImage;
         document.querySelector("#download-file").disabled = !hasFile;
         document.querySelector("#editor-dirty-status").textContent = hasFile
-          ? isDirty ? "Geändert, nicht gespeichert" : "Gespeichert"
+          ? isImage ? "Bildvorschau" : isDirty ? "Geändert, nicht gespeichert" : "Gespeichert"
           : "Keine Datei geladen";
       }
 
@@ -316,6 +342,43 @@
 
       function setEditorLanguage(extension) {
         state.editor?.setLanguage?.(extension);
+      }
+
+      function setPreviewMode(mode) {
+        state.previewMode = mode;
+        const editor = document.querySelector("#editor-input");
+        const preview = document.querySelector("#image-preview");
+        editor.hidden = mode === "image";
+        preview.hidden = mode !== "image";
+      }
+
+      function clearImagePreview() {
+        if (state.previewObjectUrl) {
+          URL.revokeObjectURL(state.previewObjectUrl);
+          state.previewObjectUrl = undefined;
+        }
+        const image = document.querySelector("#image-preview-media");
+        image.removeAttribute("src");
+        image.alt = "";
+        document.querySelector("#image-preview-meta").textContent = "";
+      }
+
+      async function showImagePreview(file) {
+        clearImagePreview();
+        setPreviewMode("image");
+        setEditorReadOnly(true);
+        setEditorValue("");
+        const response = await fetch(createImageAssetUrl(file.path), { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const blob = await response.blob();
+        state.previewObjectUrl = URL.createObjectURL(blob);
+        const image = document.querySelector("#image-preview-media");
+        image.src = state.previewObjectUrl;
+        image.alt = file.name;
+        document.querySelector("#image-preview-meta").textContent =
+          `${file.name} · ${imageMimeType(file.extension)} · ${formatFileSize(file.size)}`;
       }
 
       function initializeEditor() {
@@ -492,12 +555,26 @@
         document.querySelector("#editor-kind").textContent = extensionLabel(node);
         document.querySelector("#editor-validation-status").textContent = "Datei wird geladen...";
         setEditorReadOnly(true);
+        clearImagePreview();
         try {
+          if (isImageExtension(node.extension)) {
+            const imageFile = { ...node, readonly: true };
+            state.originalContent = "";
+            await showImagePreview(imageFile);
+            document.querySelector("#editor-title").textContent = imageFile.name;
+            document.querySelector("#editor-kind").textContent = "BILD";
+            document.querySelector("#editor-validation-status").textContent = "Bildvorschau bereit";
+            updateCursorStatus();
+            updateEditorActions();
+            return;
+          }
+
           const file = await apiJson(`api/file-studio/file?path=${encodeURIComponent(node.path)}`);
           state.originalContent = file.content ?? "";
           state.selectedFilePath = file.path;
           state.selectedFileName = file.name;
           state.selectedFileExtension = file.extension;
+          setPreviewMode("text");
           setEditorValue(state.originalContent);
           setEditorReadOnly(file.readonly === true);
           setEditorLanguage(file.extension);
@@ -507,6 +584,8 @@
           updateCursorStatus();
           updateEditorActions();
         } catch (error) {
+          setPreviewMode("text");
+          clearImagePreview();
           setEditorValue("");
           setEditorReadOnly(true);
           state.originalContent = "";
@@ -797,18 +876,31 @@
       }
 
       function discardOpenFileChanges() {
+        if (state.previewMode === "image") {
+          return;
+        }
         setEditorValue(state.originalContent);
         document.querySelector("#editor-validation-status").textContent = "Änderungen verworfen.";
         updateCursorStatus();
         updateEditorActions();
       }
 
-      function downloadOpenFile() {
+      async function downloadOpenFile() {
         if (!state.selectedFilePath) {
           return;
         }
         const link = document.createElement("a");
-        link.href = URL.createObjectURL(new Blob([editorValue()], { type: "text/plain;charset=utf-8" }));
+        if (state.previewMode === "image") {
+          const response = await fetch(createImageAssetUrl(state.selectedFilePath), { cache: "no-store" });
+          if (!response.ok) {
+            document.querySelector("#editor-validation-status").textContent = `Download fehlgeschlagen: HTTP ${response.status}`;
+            return;
+          }
+          const blob = await response.blob();
+          link.href = URL.createObjectURL(blob);
+        } else {
+          link.href = URL.createObjectURL(new Blob([editorValue()], { type: "text/plain;charset=utf-8" }));
+        }
         link.download = state.selectedFileName ?? "atlas-file-studio.txt";
         link.click();
         URL.revokeObjectURL(link.href);
@@ -816,6 +908,10 @@
 
       async function replaceOpenFileFromUpload(file) {
         if (!file || !state.selectedFilePath) {
+          return;
+        }
+        if (state.previewMode === "image") {
+          document.querySelector("#editor-validation-status").textContent = "Bilddateien werden aktuell nur angezeigt und heruntergeladen.";
           return;
         }
         setEditorValue(await file.text());
@@ -829,7 +925,7 @@
         document.querySelector("#save-file-as").addEventListener("click", () => void saveOpenFileAs());
         document.querySelector("#discard-file").addEventListener("click", discardOpenFileChanges);
         document.querySelector("#validate-file").addEventListener("click", () => void validateOpenFile());
-        document.querySelector("#download-file").addEventListener("click", downloadOpenFile);
+        document.querySelector("#download-file").addEventListener("click", () => void downloadOpenFile());
         document.querySelector("#upload-file-trigger").addEventListener("click", () => document.querySelector("#upload-file").click());
         document.querySelector("#upload-file").addEventListener("change", event => {
           void replaceOpenFileFromUpload(event.target.files?.[0]);
@@ -922,6 +1018,12 @@
         } catch {
           return path;
         }
+      }
+
+      function createImageAssetUrl(path) {
+        const url = new URL(createAppUrl("api/file-studio/asset"), window.location.href);
+        url.searchParams.set("path", path);
+        return url.toString();
       }
 
       function bindHubLinks(preference) {

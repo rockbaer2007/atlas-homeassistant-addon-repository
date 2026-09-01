@@ -25,11 +25,27 @@ const childProcesses = [];
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
+  ".ico": "image/x-icon",
   ".js": "text/javascript; charset=utf-8",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
   ".svg": "image/svg+xml; charset=utf-8",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".bmp": "image/bmp",
 };
+const fileStudioImageMimeTypes = new Map([
+  [".png", "image/png"],
+  [".jpg", "image/jpeg"],
+  [".jpeg", "image/jpeg"],
+  [".svg", "image/svg+xml; charset=utf-8"],
+  [".gif", "image/gif"],
+  [".webp", "image/webp"],
+  [".bmp", "image/bmp"],
+  [".ico", "image/x-icon"],
+]);
 
 await startSurface({
   name: "ATLAS Administration",
@@ -88,6 +104,11 @@ createServer((request, response) => {
 
   if (routePath === "/api/file-studio/file") {
     void writeFileStudioFileResponse(response, requestUrl, request.headers.cookie);
+    return;
+  }
+
+  if (routePath === "/api/file-studio/asset") {
+    void writeFileStudioAssetResponse(response, requestUrl, request.headers.cookie);
     return;
   }
 
@@ -172,6 +193,7 @@ function createRoutePath(pathname) {
     "/api/plugins",
     "/api/file-studio/tree",
     "/api/file-studio/file",
+    "/api/file-studio/asset",
     "/api/file-studio/validate",
     "/api/file-studio/write",
     "/api/file-studio/create-file",
@@ -412,6 +434,47 @@ async function writeFileStudioFileResponse(response, requestUrl, cookieHeader) {
     modifiedAt: stats.mtime.toISOString(),
     readonly: false,
   });
+}
+
+async function writeFileStudioAssetResponse(response, requestUrl, cookieHeader) {
+  const relativePath = requestUrl.searchParams.get("path") ?? "";
+  const access = createFileStudioAccessContext(cookieHeader);
+  const targetPath = resolveFileStudioPath(relativePath, access);
+
+  if (!targetPath) {
+    writeJson(response, 403, {
+      kind: "atlas.file-studio.asset",
+      error: "path outside configured root",
+    });
+    return;
+  }
+
+  if (!existsSync(targetPath) || !statSync(targetPath).isFile()) {
+    writeJson(response, 404, {
+      kind: "atlas.file-studio.asset",
+      error: "file not found",
+    });
+    return;
+  }
+
+  const extension = extname(targetPath).toLowerCase();
+  const mimeType = fileStudioImageMimeTypes.get(extension);
+  if (!mimeType) {
+    writeJson(response, 415, {
+      kind: "atlas.file-studio.asset",
+      error: "unsupported asset type",
+    });
+    return;
+  }
+
+  const stats = statSync(targetPath);
+  response.writeHead(200, {
+    "content-type": mimeType,
+    "content-length": stats.size,
+    "cache-control": "no-store",
+    "access-control-allow-origin": "*",
+  });
+  createReadStream(targetPath).pipe(response);
 }
 
 async function writeFileStudioValidationResponse(request, response) {

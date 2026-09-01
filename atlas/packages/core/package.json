@@ -1,6 +1,6 @@
 {
   "name": "@atlas/core",
-  "version": "0.2.0-alpha.31",
+  "version": "0.2.0-alpha.32",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

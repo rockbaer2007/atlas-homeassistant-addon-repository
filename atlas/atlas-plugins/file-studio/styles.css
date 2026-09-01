@@ -21,6 +21,7 @@
   --atlas-file-markdown: #7c3aed;
   --atlas-file-text: #64748b;
   --atlas-file-archive: #9333ea;
+  --atlas-file-image: #16a34a;
   --atlas-on-accent: #ffffff;
   --atlas-danger-soft: #fee2e2;
   --atlas-danger-text: #991b1b;
@@ -63,6 +64,7 @@
   --atlas-file-markdown: #c084fc;
   --atlas-file-text: #cbd5e1;
   --atlas-file-archive: #d8b4fe;
+  --atlas-file-image: #86efac;
   --atlas-on-accent: #06201d;
   --atlas-danger-soft: #4b1717;
   --atlas-danger-text: #fecaca;
@@ -491,6 +493,10 @@ body.is-resizing .splitter {
   color: var(--atlas-file-archive);
 }
 
+.file-icon-image {
+  color: var(--atlas-file-image);
+}
+
 .file-icon::before {
   content: "";
   position: absolute;
@@ -543,6 +549,14 @@ body.is-resizing .splitter {
   height: 9px;
   background:
     linear-gradient(currentColor 0 1px, transparent 1px 2px) 0 0 / 4px 2px repeat-y;
+}
+
+.file-icon-image::after {
+  left: 5px;
+  bottom: 4px;
+  width: 7px;
+  height: 5px;
+  clip-path: polygon(0 100%, 32% 42%, 52% 70%, 70% 34%, 100% 100%);
 }
 
 .folder-icon::before {
@@ -687,6 +701,62 @@ body.is-resizing .splitter {
   background: var(--atlas-panel-soft);
   color: var(--atlas-text);
   font-size: var(--editor-font-size);
+}
+
+.image-preview {
+  display: flex;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: max(360px, calc(var(--studio-height) - 172px));
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: 6px;
+  background:
+    linear-gradient(45deg, color-mix(in srgb, var(--atlas-panel-soft) 88%, #000 12%) 25%, transparent 25%),
+    linear-gradient(-45deg, color-mix(in srgb, var(--atlas-panel-soft) 88%, #000 12%) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, color-mix(in srgb, var(--atlas-panel-soft) 88%, #000 12%) 75%),
+    linear-gradient(-45deg, transparent 75%, color-mix(in srgb, var(--atlas-panel-soft) 88%, #000 12%) 75%),
+    var(--atlas-panel-soft);
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  background-size: 20px 20px;
+}
+
+.image-preview[hidden] {
+  display: none;
+}
+
+.image-preview-stage {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  place-items: center;
+  padding: 18px;
+}
+
+.image-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.image-preview-meta {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  max-width: min(42%, 420px);
+  margin: 12px;
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--atlas-panel) 88%, transparent);
+  color: var(--atlas-muted);
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .editor-input:focus {

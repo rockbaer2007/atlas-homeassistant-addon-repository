@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.74
+
+- Add File Studio image previews for PNG, JPG/JPEG, SVG, GIF, WebP, BMP and ICO
+  files without loading them through the text editor.
+- Serve File Studio image assets through the same scoped `/config` and optional
+  `/addons` access policy as the file tree.
+- Bump ATLAS File Studio to `0.1.16` for repository update detection.
+
 ## 0.1.73
 
 - Add a Home Assistant App/Add-on option to explicitly allow File Studio access
