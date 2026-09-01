@@ -28,6 +28,7 @@
   --folder-width: 360px;
   --studio-height: clamp(820px, calc(100vh - 240px), 1024px);
   --studio-width: min(100%, 1900px);
+  --editor-font-size: 14px;
   background: var(--atlas-bg);
   color: var(--atlas-text);
 }
@@ -196,6 +197,8 @@ p {
 }
 
 .editor-panel {
+  display: flex;
+  flex-direction: column;
   border-radius: 0 6px 6px 0;
 }
 
@@ -231,6 +234,97 @@ body.is-resizing .splitter {
   font-weight: 800;
 }
 
+.tree-heading-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.icon-button {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--atlas-link);
+  cursor: pointer;
+}
+
+.icon-button:hover,
+.icon-button:focus-visible {
+  border-color: var(--atlas-border);
+  background: var(--atlas-panel-soft);
+  outline: 0;
+}
+
+.icon-button::before,
+.icon-button::after {
+  content: "";
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.icon-file-add::before {
+  inset: 6px 10px 6px 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+}
+
+.icon-file-add::after,
+.icon-folder-add::after {
+  right: 5px;
+  bottom: 5px;
+  width: 9px;
+  height: 9px;
+  background:
+    linear-gradient(currentColor 0 0) center / 9px 1.5px no-repeat,
+    linear-gradient(currentColor 0 0) center / 1.5px 9px no-repeat;
+}
+
+.icon-folder-add::before {
+  left: 5px;
+  right: 8px;
+  bottom: 7px;
+  height: 11px;
+  border-radius: 2px;
+  background:
+    linear-gradient(currentColor 0 0) left 2px top 0 / 9px 4px no-repeat,
+    currentColor;
+}
+
+.icon-refresh::before {
+  inset: 7px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+}
+
+.icon-refresh::after {
+  right: 6px;
+  top: 5px;
+  width: 7px;
+  height: 7px;
+  border-top: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+  transform: rotate(18deg);
+}
+
+.icon-collapse::before {
+  inset: 7px 6px;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+}
+
+.icon-collapse::after {
+  left: 10px;
+  right: 10px;
+  top: 13px;
+  height: 1.5px;
+  background: currentColor;
+}
+
 .tree-status,
 .tree-note {
   margin-bottom: 10px;
@@ -247,6 +341,12 @@ body.is-resizing .splitter {
 .tree-note.locked {
   background: var(--atlas-danger-soft);
   color: var(--atlas-danger-text);
+}
+
+.tree-status.ok {
+  border-color: var(--atlas-accent);
+  background: var(--atlas-accent-soft);
+  color: var(--atlas-link);
 }
 
 .directory-tree {
@@ -287,6 +387,32 @@ body.is-resizing .splitter {
   grid-template-columns: 18px minmax(0, 1fr);
   width: 100%;
   text-align: left;
+}
+
+.tree-create-form {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  border: 1px solid var(--atlas-accent);
+  border-radius: 4px;
+  background: var(--atlas-accent-soft);
+  padding: 5px 7px;
+}
+
+.tree-create-form input {
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--atlas-accent);
+  background: transparent;
+  color: var(--atlas-text);
+  font: inherit;
+  outline: 0;
+}
+
+.tree-create-form input::placeholder {
+  color: var(--atlas-placeholder);
 }
 
 .tree-folder summary:hover,
@@ -518,8 +644,37 @@ body.is-resizing .splitter {
   font-size: 0.9rem;
 }
 
-pre {
-  min-height: max(0px, calc(var(--studio-height) - 80px));
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.small-button {
+  min-width: 38px;
+}
+
+.wrap-toggle {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--atlas-border);
+  border-radius: 4px;
+  background: var(--atlas-panel-soft);
+  color: var(--atlas-link);
+  padding: 7px 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.editor-input {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: max(360px, calc(var(--studio-height) - 172px));
+  resize: none;
   margin: 0;
   overflow: auto;
   border: 1px solid var(--atlas-border);
@@ -527,13 +682,24 @@ pre {
   background: var(--atlas-panel-soft);
   color: var(--atlas-text);
   padding: 14px;
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: var(--editor-font-size);
   line-height: 1.55;
+  white-space: pre-wrap;
+  tab-size: 2;
 }
 
-code {
-  color: inherit;
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-  font-size: 0.92rem;
+.editor-input.no-wrap {
+  white-space: pre;
+}
+
+.editor-input:focus {
+  border-color: var(--atlas-accent);
+  outline: 2px solid color-mix(in srgb, var(--atlas-accent) 30%, transparent);
+}
+
+.editor-input[readonly] {
+  color: var(--atlas-muted);
 }
 
 .status-row {
@@ -557,6 +723,12 @@ code {
   border-color: var(--atlas-accent);
   background: var(--atlas-accent-soft);
   color: var(--atlas-link);
+}
+
+.status-row .warning {
+  border-color: var(--atlas-danger-text);
+  background: var(--atlas-danger-soft);
+  color: var(--atlas-danger-text);
 }
 
 @media (max-width: 760px) {

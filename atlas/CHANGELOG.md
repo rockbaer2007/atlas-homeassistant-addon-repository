@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.71
+
+- Add File Studio tree action icon buttons for creating files, creating folders,
+  refreshing the tree and collapsing folders.
+- Add inline file and folder creation with Enter/Escape handling and scoped name
+  validation.
+- Add editable File Studio content loading, saving, save-as, discard, download,
+  upload/replace, word-wrap and font-size controls.
+- Add scoped File Studio API endpoints for reading, writing, creating and basic
+  YAML validation under `/config`.
+- Bump ATLAS File Studio to `0.1.13` for repository update detection.
+
 ## 0.1.70
 
 - Add a File Studio header toggle for limiting the workspace width to 1900px or

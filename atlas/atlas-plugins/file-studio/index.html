@@ -29,7 +29,13 @@
         <aside class="file-tree" aria-label="Dateibaum">
           <div class="panel-heading">
             <h2>Dateibaum</h2>
-            <span>/config</span>
+            <div class="tree-heading-actions">
+              <span>/config</span>
+              <button class="icon-button icon-file-add" type="button" data-tree-action="new-file" aria-label="Neue Datei" title="Neue Datei"></button>
+              <button class="icon-button icon-folder-add" type="button" data-tree-action="new-folder" aria-label="Neuer Ordner" title="Neuer Ordner"></button>
+              <button class="icon-button icon-refresh" type="button" data-tree-action="refresh" aria-label="Neu einlesen" title="Neu einlesen"></button>
+              <button class="icon-button icon-collapse" type="button" data-tree-action="collapse" aria-label="Alle einklappen" title="Alle einklappen"></button>
+            </div>
           </div>
           <div id="tree-status" class="tree-status" role="status">/config wird geladen...</div>
           <div id="directory-tree" class="directory-tree" aria-live="polite"></div>
@@ -58,10 +64,24 @@
             <h2 id="editor-title">Editorfläche</h2>
             <span id="editor-kind">Bereit</span>
           </div>
-          <pre><code id="editor-preview">Wähle links eine Datei aus dem /config-Baum.</code></pre>
+          <div class="editor-toolbar" aria-label="Editor-Aktionen">
+            <button id="save-file" class="button" type="button" disabled>Speichern</button>
+            <button id="save-file-as" class="button" type="button" disabled>Speichern unter</button>
+            <button id="discard-file" class="button" type="button" disabled>Verwerfen</button>
+            <button id="validate-file" class="button" type="button" disabled>YAML prüfen</button>
+            <button id="download-file" class="button" type="button" disabled>Download</button>
+            <button id="upload-file-trigger" class="button" type="button">Upload/Ersetzen</button>
+            <input id="upload-file" type="file" hidden>
+            <label class="wrap-toggle"><input id="word-wrap-toggle" type="checkbox" checked> Umbruch</label>
+            <button id="font-decrease" class="button small-button" type="button" aria-label="Schrift kleiner" title="Schrift kleiner">A-</button>
+            <button id="font-increase" class="button small-button" type="button" aria-label="Schrift größer" title="Schrift größer">A+</button>
+          </div>
+          <textarea id="editor-input" class="editor-input" spellcheck="false" readonly>Wähle links eine Datei aus dem /config-Baum.</textarea>
           <div class="status-row">
             <span id="tree-root-status" class="ok">/config als Standard</span>
-            <span>Direktes Speichern vorbereitet</span>
+            <span id="editor-dirty-status">Keine Datei geladen</span>
+            <span id="editor-cursor-status">Zeile 1, Spalte 1</span>
+            <span id="editor-validation-status">YAML-Prüfung bereit</span>
             <span>Kein Root-Zugriff</span>
           </div>
         </section>
@@ -72,10 +92,17 @@
       const fileStudioLayoutStorageKey = "atlas.fileStudio.layout";
       const fileStudioHeightLimitStorageKey = "atlas.fileStudio.limitHeight";
       const fileStudioWidthLimitStorageKey = "atlas.fileStudio.limitWidth";
+      const fileStudioEditorStorageKey = "atlas.fileStudio.editor";
       const state = {
         tree: undefined,
         selectedFolderPath: "/config",
         selectedFilePath: undefined,
+        selectedFileName: undefined,
+        selectedFileExtension: undefined,
+        originalContent: "",
+        pendingCreate: undefined,
+        editorFontSize: 14,
+        wordWrap: true,
       };
 
       function readThemePreferenceFromLocation() {
@@ -175,6 +202,104 @@
         return undefined;
       }
 
+      function selectedCreateParentPath() {
+        const selectedNode = findNodeByPath(state.tree, state.selectedFilePath);
+        if (selectedNode?.type === "file") {
+          return state.selectedFilePath.split("/").slice(0, -1).join("/") || "/config";
+        }
+        return state.selectedFolderPath || "/config";
+      }
+
+      function setStatus(message, tone = "default") {
+        const status = document.querySelector("#tree-status");
+        status.textContent = message;
+        status.classList.toggle("warning", tone === "warning");
+        status.classList.toggle("ok", tone === "ok");
+      }
+
+      async function apiJson(path, options = {}) {
+        const response = await fetch(createAppUrl(path), {
+          cache: "no-store",
+          headers: {
+            "content-type": "application/json",
+            ...(options.headers ?? {}),
+          },
+          ...options,
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(body.error ?? body.message ?? `HTTP ${response.status}`);
+        }
+        return body;
+      }
+
+      function validateFileStudioName(name) {
+        const value = String(name ?? "").trim();
+        if (!value || value === "." || value === ".." || value.includes("..")) {
+          return false;
+        }
+        return !/[\\/]/.test(value);
+      }
+
+      function updateEditorActions() {
+        const hasFile = Boolean(state.selectedFilePath);
+        const isDirty = document.querySelector("#editor-input").value !== state.originalContent;
+        document.querySelector("#save-file").disabled = !hasFile || !isDirty;
+        document.querySelector("#save-file-as").disabled = !hasFile;
+        document.querySelector("#discard-file").disabled = !hasFile || !isDirty;
+        document.querySelector("#validate-file").disabled = !hasFile;
+        document.querySelector("#download-file").disabled = !hasFile;
+        document.querySelector("#editor-dirty-status").textContent = hasFile
+          ? isDirty ? "Geändert, nicht gespeichert" : "Gespeichert"
+          : "Keine Datei geladen";
+      }
+
+      function updateCursorStatus() {
+        const editor = document.querySelector("#editor-input");
+        const beforeCursor = editor.value.slice(0, editor.selectionStart);
+        const lines = beforeCursor.split("\n");
+        document.querySelector("#editor-cursor-status").textContent =
+          `Zeile ${lines.length}, Spalte ${lines.at(-1).length + 1}`;
+      }
+
+      function applyEditorPreferences() {
+        try {
+          const preferences = JSON.parse(localStorage.getItem(fileStudioEditorStorageKey) ?? "{}");
+          state.wordWrap = preferences.wordWrap !== false;
+          state.editorFontSize = Number.isFinite(preferences.fontSize) ? preferences.fontSize : 14;
+        } catch {
+          state.wordWrap = true;
+          state.editorFontSize = 14;
+        }
+        state.editorFontSize = Math.max(12, Math.min(22, state.editorFontSize));
+        const editor = document.querySelector("#editor-input");
+        editor.classList.toggle("no-wrap", !state.wordWrap);
+        editor.style.setProperty("--editor-font-size", `${state.editorFontSize}px`);
+        document.querySelector("#word-wrap-toggle").checked = state.wordWrap;
+      }
+
+      function saveEditorPreferences() {
+        try {
+          localStorage.setItem(fileStudioEditorStorageKey, JSON.stringify({
+            wordWrap: state.wordWrap,
+            fontSize: state.editorFontSize,
+          }));
+        } catch {
+          return;
+        }
+      }
+
+      function createFileNode(file) {
+        return {
+          name: file.name,
+          path: file.path,
+          type: "file",
+          extension: file.extension,
+          size: file.size,
+          modifiedAt: file.modifiedAt,
+        };
+      }
+
       function createTreeNode(node, level = 0) {
         if (node.type === "directory") {
           const details = document.createElement("details");
@@ -190,6 +315,9 @@
 
           const children = document.createElement("div");
           children.className = "tree-children";
+          if (state.pendingCreate?.parentPath === node.path) {
+            children.append(createInlineCreateNode(state.pendingCreate.kind));
+          }
           for (const child of node.children ?? []) {
             children.append(createTreeNode(child, level + 1));
           }
@@ -213,6 +341,95 @@
         return button;
       }
 
+      function createInlineCreateNode(kind) {
+        const wrapper = document.createElement("form");
+        wrapper.className = "tree-create-form";
+        wrapper.innerHTML = `<span class="tree-icon ${kind === "directory" ? "folder-icon" : "file-icon"}" aria-hidden="true"></span><input type="text" autocomplete="off" spellcheck="false">`;
+        const input = wrapper.querySelector("input");
+        input.placeholder = kind === "directory" ? "Ordnername" : "Dateiname";
+        input.addEventListener("keydown", event => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            cancelInlineCreate();
+          }
+        });
+        wrapper.addEventListener("submit", event => {
+          event.preventDefault();
+          void commitInlineCreate(input.value);
+        });
+        requestAnimationFrame(() => input.focus());
+        return wrapper;
+      }
+
+      function cancelInlineCreate() {
+        state.pendingCreate = undefined;
+        renderDirectoryTree();
+      }
+
+      async function commitInlineCreate(name) {
+        const trimmedName = String(name ?? "").trim();
+        if (!trimmedName) {
+          cancelInlineCreate();
+          return;
+        }
+        if (!validateFileStudioName(trimmedName)) {
+          setStatus("Name ungueltig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
+          return;
+        }
+
+        const pending = state.pendingCreate;
+        if (!pending) {
+          return;
+        }
+        try {
+          const endpoint = pending.kind === "directory"
+            ? "api/file-studio/create-directory"
+            : "api/file-studio/create-file";
+          const created = await apiJson(endpoint, {
+            method: "POST",
+            body: JSON.stringify({
+              parentPath: pending.parentPath,
+              name: trimmedName,
+            }),
+          });
+          state.pendingCreate = undefined;
+          await loadDirectoryTree({ preserveSelection: false });
+          const node = createFileNode(created);
+          if (created.type === "directory") {
+            openTreePath(created.path);
+            selectFolder(created.path);
+          } else {
+            openTreePath(created.path);
+            await openFile(node);
+          }
+          setStatus(`${created.type === "directory" ? "Ordner" : "Datei"} erstellt: ${created.path}`, "ok");
+        } catch (error) {
+          setStatus(`Erstellen fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+        }
+      }
+
+      function renderDirectoryTree() {
+        const tree = document.querySelector("#directory-tree");
+        if (!state.tree) {
+          return;
+        }
+        tree.replaceChildren(createTreeNode(state.tree));
+      }
+
+      function openTreePath(path) {
+        const segments = String(path ?? "").split("/").filter(Boolean);
+        const openPaths = [];
+        for (let index = 1; index < segments.length; index += 1) {
+          openPaths.push(`/${segments.slice(0, index).join("/")}`);
+        }
+        for (const openPath of openPaths) {
+          const detail = document.querySelector(`.tree-folder summary[data-path="${CSS.escape(openPath)}"]`)?.parentElement;
+          if (detail instanceof HTMLDetailsElement) {
+            detail.open = true;
+          }
+        }
+      }
+
       function selectFolder(path) {
         state.selectedFolderPath = path;
         for (const selectedSummary of document.querySelectorAll(".tree-folder summary.active")) {
@@ -224,19 +441,42 @@
       }
 
       function selectTreeFile(button, node) {
+        void openFile(node, button);
+      }
+
+      async function openFile(node, button) {
         for (const selectedButton of document.querySelectorAll(".tree-file.active")) {
           selectedButton.classList.remove("active");
         }
-        button.classList.add("active");
+        button?.classList?.add("active");
         state.selectedFilePath = node.path;
+        state.selectedFileName = node.name;
+        state.selectedFileExtension = node.extension;
+        const editor = document.querySelector("#editor-input");
         document.querySelector("#editor-title").textContent = node.name;
         document.querySelector("#editor-kind").textContent = extensionLabel(node);
-        document.querySelector("#editor-preview").textContent = [
-          `${node.path}`,
-          "",
-          "Dateiinhalt laden und direkt speichern ist der nächste Schritt.",
-          "Der Dateibaum selbst kommt bereits aus dem freigegebenen /config-Pfad.",
-        ].join("\n");
+        document.querySelector("#editor-validation-status").textContent = "Datei wird geladen...";
+        editor.readOnly = true;
+        try {
+          const file = await apiJson(`api/file-studio/file?path=${encodeURIComponent(node.path)}`);
+          state.originalContent = file.content ?? "";
+          state.selectedFilePath = file.path;
+          state.selectedFileName = file.name;
+          state.selectedFileExtension = file.extension;
+          editor.value = state.originalContent;
+          editor.readOnly = file.readonly === true;
+          document.querySelector("#editor-title").textContent = file.name;
+          document.querySelector("#editor-kind").textContent = extensionLabel(createFileNode(file));
+          document.querySelector("#editor-validation-status").textContent = file.readonly ? "Readonly" : "Bereit";
+          updateCursorStatus();
+          updateEditorActions();
+        } catch (error) {
+          editor.value = "";
+          state.originalContent = "";
+          document.querySelector("#editor-validation-status").textContent =
+            `Laden fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`;
+          updateEditorActions();
+        }
       }
 
       function renderFolderList(folderNode) {
@@ -275,25 +515,26 @@
               selectFolder(child.path);
               return;
             }
-            selectFileFromList(child);
+            void selectFileFromList(child);
           });
           return button;
         }));
       }
 
-      function selectFileFromList(node) {
+      async function selectFileFromList(node) {
         const treeButton = document.querySelector(`.tree-file[data-path="${CSS.escape(node.path)}"]`);
         if (treeButton) {
-          selectTreeFile(treeButton, node);
+          await openFile(node, treeButton);
           return;
         }
-        selectTreeFile(document.createElement("button"), node);
+        await openFile(node);
       }
 
-      async function loadDirectoryTree() {
+      async function loadDirectoryTree(options = {}) {
         const status = document.querySelector("#tree-status");
-        const tree = document.querySelector("#directory-tree");
         const rootStatus = document.querySelector("#tree-root-status");
+        const previousFolderPath = state.selectedFolderPath;
+        const previousFilePath = state.selectedFilePath;
 
         try {
           const response = await fetch(createAppUrl("api/file-studio/tree?depth=4"), { cache: "no-store" });
@@ -302,8 +543,19 @@
           }
           const catalog = await response.json();
           state.tree = catalog.tree;
-          tree.replaceChildren(createTreeNode(catalog.tree));
-          selectFolder(catalog.tree.path);
+          renderDirectoryTree();
+          const nextFolderPath = options.preserveSelection === false
+            ? catalog.tree.path
+            : findNodeByPath(catalog.tree, previousFolderPath)?.path ?? catalog.tree.path;
+          openTreePath(previousFilePath ?? nextFolderPath);
+          selectFolder(nextFolderPath);
+          if (options.preserveSelection !== false && previousFilePath) {
+            const previousFile = findNodeByPath(catalog.tree, previousFilePath);
+            if (previousFile?.type === "file") {
+              const treeButton = document.querySelector(`.tree-file[data-path="${CSS.escape(previousFile.path)}"]`);
+              treeButton?.classList.add("active");
+            }
+          }
           status.textContent = catalog.exists
             ? "/config geladen"
             : catalog.message ?? "/config ist noch nicht erreichbar.";
@@ -409,6 +661,181 @@
         });
       }
 
+      async function validateOpenFile() {
+        if (!state.selectedFilePath) {
+          return;
+        }
+        const editor = document.querySelector("#editor-input");
+        const status = document.querySelector("#editor-validation-status");
+        try {
+          const validation = await apiJson("api/file-studio/validate", {
+            method: "POST",
+            body: JSON.stringify({
+              path: state.selectedFilePath,
+              content: editor.value,
+            }),
+          });
+          status.textContent = validation.message ?? "Prüfung abgeschlossen.";
+          status.classList.toggle("ok", validation.ok === true);
+          status.classList.toggle("warning", validation.ok !== true);
+        } catch (error) {
+          status.textContent = `Prüfung fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`;
+          status.classList.remove("ok");
+          status.classList.add("warning");
+        }
+      }
+
+      async function saveOpenFile(path = state.selectedFilePath) {
+        if (!path) {
+          return;
+        }
+        const editor = document.querySelector("#editor-input");
+        const status = document.querySelector("#editor-validation-status");
+        try {
+          const saved = await apiJson("api/file-studio/write", {
+            method: "POST",
+            body: JSON.stringify({
+              path,
+              content: editor.value,
+            }),
+          });
+          state.selectedFilePath = saved.path;
+          state.originalContent = editor.value;
+          status.textContent = saved.validation?.message ?? "Gespeichert.";
+          status.classList.toggle("ok", true);
+          status.classList.remove("warning");
+          await loadDirectoryTree({ preserveSelection: true });
+          updateEditorActions();
+        } catch (error) {
+          status.textContent = `Speichern fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`;
+          status.classList.remove("ok");
+          status.classList.add("warning");
+          updateEditorActions();
+        }
+      }
+
+      async function saveOpenFileAs() {
+        if (!state.selectedFilePath) {
+          return;
+        }
+        const suggestedName = state.selectedFileName ? `kopie-${state.selectedFileName}` : "neue-datei.yaml";
+        const name = window.prompt("Dateiname im aktuellen Ordner", suggestedName);
+        if (!name) {
+          return;
+        }
+        const trimmedName = name.trim();
+        if (!validateFileStudioName(trimmedName)) {
+          setStatus("Name ungültig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
+          return;
+        }
+        const parentPath = selectedCreateParentPath();
+        try {
+          const created = await apiJson("api/file-studio/create-file", {
+            method: "POST",
+            body: JSON.stringify({
+              parentPath,
+              name: trimmedName,
+            }),
+          });
+          state.selectedFilePath = created.path;
+          state.selectedFileName = created.name;
+          state.selectedFileExtension = created.extension;
+          await saveOpenFile(created.path);
+          await openFile(createFileNode(created));
+        } catch (error) {
+          setStatus(`Speichern unter fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+        }
+      }
+
+      function discardOpenFileChanges() {
+        const editor = document.querySelector("#editor-input");
+        editor.value = state.originalContent;
+        document.querySelector("#editor-validation-status").textContent = "Änderungen verworfen.";
+        updateCursorStatus();
+        updateEditorActions();
+      }
+
+      function downloadOpenFile() {
+        if (!state.selectedFilePath) {
+          return;
+        }
+        const editor = document.querySelector("#editor-input");
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([editor.value], { type: "text/plain;charset=utf-8" }));
+        link.download = state.selectedFileName ?? "atlas-file-studio.txt";
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+
+      async function replaceOpenFileFromUpload(file) {
+        if (!file || !state.selectedFilePath) {
+          return;
+        }
+        const editor = document.querySelector("#editor-input");
+        editor.value = await file.text();
+        document.querySelector("#editor-validation-status").textContent = `Upload geladen: ${file.name}`;
+        updateCursorStatus();
+        updateEditorActions();
+      }
+
+      function bindEditorControls() {
+        const editor = document.querySelector("#editor-input");
+        editor.addEventListener("input", () => {
+          updateCursorStatus();
+          updateEditorActions();
+        });
+        editor.addEventListener("click", updateCursorStatus);
+        editor.addEventListener("keyup", updateCursorStatus);
+        document.querySelector("#save-file").addEventListener("click", () => void saveOpenFile());
+        document.querySelector("#save-file-as").addEventListener("click", () => void saveOpenFileAs());
+        document.querySelector("#discard-file").addEventListener("click", discardOpenFileChanges);
+        document.querySelector("#validate-file").addEventListener("click", () => void validateOpenFile());
+        document.querySelector("#download-file").addEventListener("click", downloadOpenFile);
+        document.querySelector("#upload-file-trigger").addEventListener("click", () => document.querySelector("#upload-file").click());
+        document.querySelector("#upload-file").addEventListener("change", event => {
+          void replaceOpenFileFromUpload(event.target.files?.[0]);
+          event.target.value = "";
+        });
+        document.querySelector("#word-wrap-toggle").addEventListener("change", event => {
+          state.wordWrap = event.target.checked;
+          applyEditorPreferences();
+          saveEditorPreferences();
+        });
+        document.querySelector("#font-decrease").addEventListener("click", () => {
+          state.editorFontSize = Math.max(12, state.editorFontSize - 1);
+          applyEditorPreferences();
+          saveEditorPreferences();
+        });
+        document.querySelector("#font-increase").addEventListener("click", () => {
+          state.editorFontSize = Math.min(22, state.editorFontSize + 1);
+          applyEditorPreferences();
+          saveEditorPreferences();
+        });
+      }
+
+      function bindTreeActions() {
+        document.querySelector("[data-tree-action='new-file']").addEventListener("click", () => {
+          state.pendingCreate = { kind: "file", parentPath: selectedCreateParentPath() };
+          renderDirectoryTree();
+          openTreePath(state.pendingCreate.parentPath);
+        });
+        document.querySelector("[data-tree-action='new-folder']").addEventListener("click", () => {
+          state.pendingCreate = { kind: "directory", parentPath: selectedCreateParentPath() };
+          renderDirectoryTree();
+          openTreePath(state.pendingCreate.parentPath);
+        });
+        document.querySelector("[data-tree-action='refresh']").addEventListener("click", () => void loadDirectoryTree());
+        document.querySelector("[data-tree-action='collapse']").addEventListener("click", () => {
+          for (const details of document.querySelectorAll(".tree-folder")) {
+            details.open = false;
+          }
+          const root = document.querySelector(".tree-folder");
+          if (root instanceof HTMLDetailsElement) {
+            root.open = true;
+          }
+        });
+      }
+
       function bindSplitters() {
         for (const splitter of document.querySelectorAll(".splitter")) {
           splitter.addEventListener("pointerdown", event => {
@@ -470,9 +897,14 @@
       applyHeightLimitPreference();
       applyWidthLimitPreference();
       applyThemePreference();
+      applyEditorPreferences();
       bindHeightLimitToggle();
       bindWidthLimitToggle();
+      bindEditorControls();
+      bindTreeActions();
       bindSplitters();
+      updateEditorActions();
+      updateCursorStatus();
       void loadDirectoryTree();
       window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener("change", applyThemePreference);
     </script>

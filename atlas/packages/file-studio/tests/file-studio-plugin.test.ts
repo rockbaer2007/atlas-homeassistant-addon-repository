@@ -24,7 +24,7 @@ describe("File Studio plugin", () => {
     expect(plugin.manifest).toMatchObject({
       id: FileStudioPluginId,
       name: "ATLAS File Studio",
-      version: "0.1.12",
+      version: "0.1.13",
       extensionPoints: [
         FileStudioExtensionPoints.fileTree,
         FileStudioExtensionPoints.editor,

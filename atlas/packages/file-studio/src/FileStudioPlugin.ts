@@ -111,7 +111,7 @@ export function createFileStudioPlugin(
         de: "ATLAS File Studio",
         en: "ATLAS File Studio",
       },
-      version: "0.1.12",
+      version: "0.1.13",
       description: "Scoped file tree and editor plugin for Home Assistant configuration files.",
       descriptionI18n: {
         de: "Abgesichertes Dateibaum- und Editor-Plugin für Home-Assistant-Konfigurationsdateien.",

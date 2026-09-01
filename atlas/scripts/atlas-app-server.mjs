@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { createReadStream, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, isAbsolute, normalize, relative, resolve } from "node:path";
 
@@ -82,6 +82,31 @@ createServer((request, response) => {
     return;
   }
 
+  if (routePath === "/api/file-studio/file") {
+    void writeFileStudioFileResponse(response, requestUrl);
+    return;
+  }
+
+  if (routePath === "/api/file-studio/validate") {
+    void writeFileStudioValidationResponse(request, response);
+    return;
+  }
+
+  if (routePath === "/api/file-studio/write") {
+    void writeFileStudioWriteResponse(request, response);
+    return;
+  }
+
+  if (routePath === "/api/file-studio/create-file") {
+    void writeFileStudioCreateFileResponse(request, response);
+    return;
+  }
+
+  if (routePath === "/api/file-studio/create-directory") {
+    void writeFileStudioCreateDirectoryResponse(request, response);
+    return;
+  }
+
   if (routePath === "/") {
     const activePlugins = readLaunchablePluginCatalog(requestUrl, request.headers.cookie);
     if (activePlugins.length === 1) {
@@ -142,6 +167,11 @@ function createRoutePath(pathname) {
   const knownPrefixes = [
     "/api/plugins",
     "/api/file-studio/tree",
+    "/api/file-studio/file",
+    "/api/file-studio/validate",
+    "/api/file-studio/write",
+    "/api/file-studio/create-file",
+    "/api/file-studio/create-directory",
     "/examples/plugin-hub/",
     "/plugin-assets/",
   ];
@@ -328,6 +358,108 @@ async function writeFileStudioTreeResponse(response, requestUrl) {
   });
 }
 
+async function writeFileStudioFileResponse(response, requestUrl) {
+  const relativePath = requestUrl.searchParams.get("path") ?? "";
+  const targetPath = resolveFileStudioConfigPath(relativePath);
+
+  if (!targetPath) {
+    writeJson(response, 403, {
+      kind: "atlas.file-studio.file",
+      error: "path outside configured root",
+    });
+    return;
+  }
+
+  if (!existsSync(targetPath) || !statSync(targetPath).isFile()) {
+    writeJson(response, 404, {
+      kind: "atlas.file-studio.file",
+      error: "file not found",
+    });
+    return;
+  }
+
+  const stats = statSync(targetPath);
+  writeJson(response, 200, {
+    kind: "atlas.file-studio.file",
+    path: createFileStudioDisplayPath(targetPath),
+    name: targetPath.split(/[\\/]/).at(-1) ?? "",
+    extension: extname(targetPath).replace(".", "").toLowerCase(),
+    content: readFileSync(targetPath, "utf8"),
+    size: stats.size,
+    modifiedAt: stats.mtime.toISOString(),
+    readonly: false,
+  });
+}
+
+async function writeFileStudioValidationResponse(request, response) {
+  const body = await readJsonRequestBody(request);
+  const content = typeof body.content === "string" ? body.content : "";
+  const filename = typeof body.path === "string" ? body.path : "";
+
+  writeJson(response, 200, {
+    kind: "atlas.file-studio.validation",
+    ...validateFileStudioContent(content, filename),
+  });
+}
+
+async function writeFileStudioWriteResponse(request, response) {
+  const body = await readJsonRequestBody(request);
+  const targetPath = resolveFileStudioConfigPath(body.path);
+
+  if (!targetPath) {
+    writeJson(response, 403, {
+      kind: "atlas.file-studio.write",
+      ok: false,
+      error: "path outside configured root",
+    });
+    return;
+  }
+
+  if (!existsSync(targetPath) || !statSync(targetPath).isFile()) {
+    writeJson(response, 404, {
+      kind: "atlas.file-studio.write",
+      ok: false,
+      error: "file not found",
+    });
+    return;
+  }
+
+  const content = typeof body.content === "string" ? body.content : "";
+  const validation = validateFileStudioContent(content, body.path);
+  if (!validation.ok && validation.blocking) {
+    writeJson(response, 422, {
+      kind: "atlas.file-studio.write",
+      ok: false,
+      validation,
+      error: validation.message,
+    });
+    return;
+  }
+
+  writeFileSync(targetPath, content, "utf8");
+  const stats = statSync(targetPath);
+  writeJson(response, 200, {
+    kind: "atlas.file-studio.write",
+    ok: true,
+    path: createFileStudioDisplayPath(targetPath),
+    size: stats.size,
+    modifiedAt: stats.mtime.toISOString(),
+    validation,
+  });
+}
+
+async function writeFileStudioCreateFileResponse(request, response) {
+  const body = await readJsonRequestBody(request);
+  const result = createFileStudioPath(body.parentPath, body.name, "file");
+  writeJson(response, result.status, result.body);
+}
+
+async function writeFileStudioCreateDirectoryResponse(request, response) {
+  const body = await readJsonRequestBody(request);
+  const result = createFileStudioPath(body.parentPath, body.name, "directory");
+  writeJson(response, result.status, result.body);
+}
+
 async function waitForServer(url, timeoutMs) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
@@ -351,7 +483,7 @@ function writeJson(response, statusCode, body) {
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store",
     "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET, OPTIONS",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
     "access-control-allow-headers": "content-type",
   });
   response.end(JSON.stringify(body, null, 2));
@@ -361,7 +493,7 @@ function writeEmptyResponse(response, statusCode) {
   response.writeHead(statusCode, {
     "cache-control": "no-store",
     "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET, OPTIONS",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
     "access-control-allow-headers": "content-type",
   });
   response.end();
@@ -381,7 +513,13 @@ function createPublicSurfaceUrl(requestUrl, port) {
 }
 
 function resolveFileStudioConfigPath(relativePath) {
-  const normalizedRelativePath = normalize(String(relativePath ?? "").replace(/^[/\\]+/, ""));
+  let normalizedInput = String(relativePath ?? "").replace(/\\/g, "/").replace(/^\/+/, "");
+  if (normalizedInput === "config") {
+    normalizedInput = "";
+  } else if (normalizedInput.startsWith("config/")) {
+    normalizedInput = normalizedInput.slice("config/".length);
+  }
+  const normalizedRelativePath = normalize(normalizedInput);
   const targetPath = resolve(fileStudioConfigRoot, normalizedRelativePath);
 
   if (isInsideFileStudioConfigRoot(targetPath)) {
@@ -391,9 +529,149 @@ function resolveFileStudioConfigPath(relativePath) {
   return undefined;
 }
 
+function createFileStudioDisplayPath(targetPath) {
+  const relativeTargetPath = relative(fileStudioConfigRoot, targetPath).replace(/\\/g, "/");
+  if (!relativeTargetPath) {
+    return "/config";
+  }
+  return `/config/${relativeTargetPath}`.replace(/\/$/, "");
+}
+
 function isInsideFileStudioConfigRoot(targetPath) {
   const relativeTargetPath = relative(fileStudioConfigRoot, targetPath);
   return relativeTargetPath === "" || (!relativeTargetPath.startsWith("..") && !isAbsolute(relativeTargetPath));
+}
+
+async function readJsonRequestBody(request) {
+  if (request.method !== "POST") {
+    return {};
+  }
+
+  let body = "";
+  for await (const chunk of request) {
+    body += chunk;
+    if (body.length > 2_000_000) {
+      throw new Error("request body too large");
+    }
+  }
+
+  if (!body.trim()) {
+    return {};
+  }
+
+  return JSON.parse(body);
+}
+
+function createFileStudioPath(parentPath, name, type) {
+  const parentDirectory = resolveFileStudioConfigPath(parentPath);
+  const normalizedName = String(name ?? "").trim();
+  const invalidReason = validateFileStudioName(normalizedName);
+  if (invalidReason) {
+    return {
+      status: 400,
+      body: {
+        kind: `atlas.file-studio.${type}.create`,
+        ok: false,
+        error: invalidReason,
+      },
+    };
+  }
+
+  if (!parentDirectory || !existsSync(parentDirectory) || !statSync(parentDirectory).isDirectory()) {
+    return {
+      status: 404,
+      body: {
+        kind: `atlas.file-studio.${type}.create`,
+        ok: false,
+        error: "parent directory not found",
+      },
+    };
+  }
+
+  const targetPath = resolve(parentDirectory, normalizedName);
+  if (!isInsideFileStudioConfigRoot(targetPath)) {
+    return {
+      status: 403,
+      body: {
+        kind: `atlas.file-studio.${type}.create`,
+        ok: false,
+        error: "path outside configured root",
+      },
+    };
+  }
+
+  if (existsSync(targetPath)) {
+    return {
+      status: 409,
+      body: {
+        kind: `atlas.file-studio.${type}.create`,
+        ok: false,
+        error: "file or directory already exists",
+      },
+    };
+  }
+
+  if (type === "directory") {
+    mkdirSync(targetPath);
+  } else {
+    writeFileSync(targetPath, "", "utf8");
+  }
+
+  const stats = statSync(targetPath);
+  return {
+    status: 200,
+    body: {
+      kind: `atlas.file-studio.${type}.create`,
+      ok: true,
+      path: createFileStudioDisplayPath(targetPath),
+      name: normalizedName,
+      type,
+      extension: type === "file" ? extname(normalizedName).replace(".", "").toLowerCase() : undefined,
+      size: type === "file" ? stats.size : undefined,
+      modifiedAt: stats.mtime.toISOString(),
+    },
+  };
+}
+
+function validateFileStudioName(name) {
+  if (!name) {
+    return "name is required";
+  }
+  if (name === "." || name === ".." || name.includes("..")) {
+    return "relative path segments are not allowed";
+  }
+  if (/[\\/]/.test(name)) {
+    return "path separators are not allowed";
+  }
+  return undefined;
+}
+
+function validateFileStudioContent(content, filename) {
+  const extension = extname(String(filename ?? "")).replace(".", "").toLowerCase();
+  if (!["yaml", "yml"].includes(extension)) {
+    return {
+      ok: true,
+      blocking: false,
+      message: "Keine YAML-Prüfung für diesen Dateityp nötig.",
+    };
+  }
+
+  const lines = content.split(/\r?\n/);
+  const tabLine = lines.findIndex(line => /^\s*\t|\s+\t/.test(line));
+  if (tabLine >= 0) {
+    return {
+      ok: false,
+      blocking: true,
+      line: tabLine + 1,
+      message: `YAML enthält Tabs in Zeile ${tabLine + 1}. Bitte Leerzeichen verwenden.`,
+    };
+  }
+
+  return {
+    ok: true,
+    blocking: false,
+    message: "YAML-Basisprüfung bestanden.",
+  };
 }
 
 function readFileStudioTree(directoryPath, remainingDepth, displayPath) {
