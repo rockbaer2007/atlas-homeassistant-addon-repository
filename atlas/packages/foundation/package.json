@@ -1,6 +1,6 @@
 {
   "name": "@atlas/foundation",
-  "version": "0.2.0-alpha.21",
+  "version": "0.2.0-alpha.22",
   "description": "Atlas Foundation",
   "type": "module",
   "main": "./dist/index.js",

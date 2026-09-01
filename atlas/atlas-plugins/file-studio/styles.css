@@ -52,7 +52,7 @@ body {
 }
 
 .studio-shell {
-  width: min(100%, 1180px);
+  width: min(100%, 1500px);
   margin: 0 auto;
   padding: 24px;
 }
@@ -125,13 +125,13 @@ p {
 
 .studio-grid {
   display: grid;
-  grid-template-columns: minmax(240px, 320px) 1fr;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
   gap: 14px;
 }
 
 .file-tree,
 .editor-panel {
-  min-height: 520px;
+  min-height: min(720px, calc(100vh - 150px));
   padding: 14px;
   border: 1px solid var(--atlas-border);
   border-radius: 6px;
@@ -179,7 +179,7 @@ p {
 }
 
 pre {
-  min-height: 390px;
+  min-height: min(570px, calc(100vh - 300px));
   margin: 0;
   overflow: auto;
   border: 1px solid var(--atlas-border);

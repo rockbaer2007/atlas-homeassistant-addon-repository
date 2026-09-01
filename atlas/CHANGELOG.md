@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.59
+
+- Make the ATLAS File Studio shell wider and give the editor area more vertical
+  room on desktop screens.
+- Normalize Plugin Hub icon, logo and preview URLs for Home Assistant Ingress so
+  local plugin images keep rendering.
+- Bump ATLAS File Studio to `0.1.3` and Atlas Framework package metadata to
+  `0.2.0-alpha.22` for the update package.
+
 ## 0.1.58
 
 - Align ATLAS File Studio with the Card Editor light and dark theme colors.

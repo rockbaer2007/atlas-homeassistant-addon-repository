@@ -186,6 +186,22 @@ function createPluginActionUrl(entryUrl) {
   return createAppUrl(entryUrl);
 }
 
+function createPluginMediaUrl(mediaUrl) {
+  if (typeof mediaUrl !== "string" || !mediaUrl.trim()) {
+    return "";
+  }
+
+  try {
+    const url = new URL(mediaUrl, window.location.href);
+    if (url.origin === window.location.origin) {
+      return createAppUrl(`${url.pathname.replace(/^\/+/, "")}${url.search}${url.hash}`);
+    }
+    return url.toString();
+  } catch {
+    return createAppUrl(mediaUrl);
+  }
+}
+
 async function loadPlugins() {
   try {
     const response = await fetch(createAppUrl("api/plugins"), { cache: "no-store" });
@@ -250,7 +266,7 @@ function createPluginCard(plugin) {
   const titleRow = document.createElement("div");
   titleRow.className = "plugin-title-row";
 
-  const imageUrl = plugin.iconUrl || plugin.logoUrl || plugin.previewUrl;
+  const imageUrl = createPluginMediaUrl(plugin.iconUrl || plugin.logoUrl || plugin.previewUrl);
   const pluginName = localizedPluginText(plugin, "name", plugin.id);
   let icon;
   if (imageUrl) {
