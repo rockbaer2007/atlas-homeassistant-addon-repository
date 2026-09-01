@@ -1,0 +1,16 @@
+{
+  "name": "@atlas/kernel",
+  "version": "0.2.0-alpha.7",
+  "description": "ATLAS kernel contracts, service container and module infrastructure",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@atlas/foundation": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check": "tsc --noEmit",
+    "test": "vitest"
+  }
+}

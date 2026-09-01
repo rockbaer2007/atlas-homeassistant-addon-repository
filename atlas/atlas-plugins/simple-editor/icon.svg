@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="ATLAS File Editor">
+  <rect width="128" height="128" rx="24" fill="#102a26"/>
+  <path d="M34 18h43l21 21v66a9 9 0 0 1-9 9H34a9 9 0 0 1-9-9V27a9 9 0 0 1 9-9Z" fill="#f3fbfd"/>
+  <path d="M77 18v20a7 7 0 0 0 7 7h14L77 18Z" fill="#bdeaf2"/>
+  <rect x="39" y="52" width="34" height="8" rx="4" fill="#2dd4bf"/>
+  <rect x="39" y="69" width="46" height="7" rx="3.5" fill="#7fa9b5"/>
+  <rect x="39" y="85" width="36" height="7" rx="3.5" fill="#7fa9b5"/>
+  <circle cx="91" cy="91" r="22" fill="#08303a" stroke="#f59e0b" stroke-width="4"/>
+  <path d="M80 101 91 78l12 23h-9l-2-5h-4l-2 5h-6Z" fill="#2dd4bf"/>
+</svg>

@@ -1,0 +1,13 @@
+{
+  "name": "@atlas/workspace",
+  "version": "0.2.0-alpha.7",
+  "description": "Atlas workspace readiness contracts",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "check": "tsc --noEmit",
+    "test": "vitest"
+  }
+}

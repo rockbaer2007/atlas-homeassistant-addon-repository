@@ -1,0 +1,23 @@
+{
+  "name": "atlas",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "check": "pnpm -r check",
+    "test": "pnpm -r test",
+    "start:app": "node scripts/atlas-app-server.mjs",
+    "ha:app:prepare": "node scripts/prepare-home-assistant-app.mjs",
+    "docker:build": "docker build -t atlas:local .",
+    "docker:up": "docker compose up --build",
+    "clean": "pnpm -r exec rimraf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

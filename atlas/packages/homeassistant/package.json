@@ -1,0 +1,16 @@
+{
+  "name": "@atlas/homeassistant",
+  "version": "0.2.0-alpha.7",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@atlas/runtime": "workspace:*",
+    "@atlas/theme": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check": "tsc --noEmit",
+    "test": "vitest"
+  }
+}

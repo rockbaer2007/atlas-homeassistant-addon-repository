@@ -1,0 +1,1 @@
+import {describe,it,expect} from "vitest";import {DefaultActivationPipeline} from "../src/modules/activation";describe("pipeline",()=>{it("creates",async()=>{const p=new DefaultActivationPipeline([]);const r=await p.activate({} as any);expect(r.success).toBe(true);});});

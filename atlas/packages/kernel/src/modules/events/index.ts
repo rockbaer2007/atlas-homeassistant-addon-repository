@@ -1,0 +1,1 @@
+export type ModuleActivatingEvent={moduleId:string};export type ModuleActivatedEvent={moduleId:string};export type ModuleFailedEvent={moduleId:string;error:string};

@@ -1,0 +1,1 @@
+export const ModuleHealthStates={Healthy:"healthy",Degraded:"degraded",Failed:"failed"} as const; export type ModuleHealth=typeof ModuleHealthStates[keyof typeof ModuleHealthStates]; export type ModuleHealthReport={moduleId:string;health:ModuleHealth};

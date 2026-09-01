@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Card Editor preview">
+  <rect width="640" height="360" fill="#eef5f8"/>
+  <rect x="34" y="32" width="572" height="296" rx="10" fill="#ffffff" stroke="#c9d8df"/>
+  <rect x="60" y="62" width="160" height="236" rx="8" fill="#143044"/>
+  <rect x="248" y="62" width="312" height="42" rx="6" fill="#d9eef3"/>
+  <rect x="248" y="126" width="140" height="80" rx="8" fill="#2dd4bf"/>
+  <rect x="420" y="126" width="140" height="80" rx="8" fill="#facc15"/>
+  <rect x="248" y="226" width="312" height="48" rx="8" fill="#e5eef2"/>
+  <circle cx="105" cy="108" r="20" fill="#2dd4bf"/>
+  <rect x="136" y="98" width="58" height="12" rx="6" fill="#e8f7ff"/>
+  <rect x="82" y="154" width="112" height="10" rx="5" fill="#9cc7d5"/>
+  <rect x="82" y="184" width="112" height="10" rx="5" fill="#9cc7d5"/>
+  <rect x="82" y="214" width="112" height="10" rx="5" fill="#9cc7d5"/>
+</svg>

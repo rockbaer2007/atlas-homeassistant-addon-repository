@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" role="img" aria-label="ATLAS File Editor logo">
+  <rect width="420" height="120" rx="24" fill="#102a26"/>
+  <path d="M42 20h54l26 26v54a8 8 0 0 1-8 8H42a8 8 0 0 1-8-8V28a8 8 0 0 1 8-8Z" fill="#f3fbfd"/>
+  <path d="M96 20v24a8 8 0 0 0 8 8h18L96 20Z" fill="#bdeaf2"/>
+  <rect x="52" y="60" width="42" height="8" rx="4" fill="#2dd4bf"/>
+  <rect x="52" y="78" width="54" height="7" rx="3.5" fill="#7fa9b5"/>
+  <circle cx="124" cy="86" r="22" fill="#08303a" stroke="#f59e0b" stroke-width="4"/>
+  <path d="M113 96 124 73l12 23h-9l-2-5h-3l-2 5h-7Z" fill="#2dd4bf"/>
+  <text x="164" y="53" fill="#eaf7fb" font-family="Inter, Arial, sans-serif" font-size="25" font-weight="800">ATLAS</text>
+  <text x="164" y="82" fill="#7ee6d6" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">File Editor</text>
+</svg>

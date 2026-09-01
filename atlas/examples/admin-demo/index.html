@@ -1,0 +1,1156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ATLAS Administration</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --atlas-bg: #f5f7fb;
+        --atlas-panel: #ffffff;
+        --atlas-panel-soft: #f8fafc;
+        --atlas-text: #172033;
+        --atlas-muted: #536079;
+        --atlas-border: #d8e0ec;
+        --atlas-border-strong: #cbd5e1;
+        --atlas-accent: #0f766e;
+        --atlas-accent-strong: #0b5f59;
+        --atlas-orange: #f59e0b;
+        --atlas-orange-strong: #d97706;
+        --atlas-on-accent: #ffffff;
+        --atlas-danger-bg: #fee2e2;
+        --atlas-danger-text: #b91c1c;
+        --atlas-shadow: rgb(15 23 42 / 24%);
+        font-family: system-ui, sans-serif;
+        background: var(--atlas-bg);
+        color: var(--atlas-text);
+      }
+
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --atlas-bg: #0f1417;
+        --atlas-panel: #171f23;
+        --atlas-panel-soft: #11191d;
+        --atlas-text: #f7fcfd;
+        --atlas-muted: #c3d3d8;
+        --atlas-border: #2f4046;
+        --atlas-border-strong: #40535b;
+        --atlas-accent: #2dd4bf;
+        --atlas-accent-strong: #14b8a6;
+        --atlas-orange: #f59e0b;
+        --atlas-orange-strong: #f97316;
+        --atlas-on-accent: #06201d;
+        --atlas-danger-bg: #3b1717;
+        --atlas-danger-text: #fecaca;
+        --atlas-shadow: rgb(0 0 0 / 48%);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 24px;
+        box-sizing: border-box;
+      }
+
+      main {
+        width: min(100%, 1180px);
+        margin: 0 auto;
+      }
+
+      .app-header,
+      .panel-header,
+      .plugin-header {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .app-header {
+        margin-bottom: 18px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 6px;
+        font-size: 28px;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        margin-bottom: 6px;
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+
+      h3 {
+        margin-bottom: 6px;
+        font-size: 15px;
+        letter-spacing: 0;
+      }
+
+      p {
+        margin-bottom: 0;
+        color: var(--atlas-muted);
+        line-height: 1.45;
+      }
+
+      a {
+        color: var(--atlas-accent);
+        font-weight: 700;
+      }
+
+      .header-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .language-toggle,
+      .theme-toggle {
+        display: inline-flex;
+        flex: 0 0 auto;
+        gap: 4px;
+        padding: 3px;
+        border: 1px solid var(--atlas-border-strong);
+        border-radius: 6px;
+        background: var(--atlas-panel);
+      }
+
+      .language-toggle button,
+      .theme-toggle button {
+        min-width: 44px;
+        border: 0;
+        border-radius: 4px;
+        background: transparent;
+        color: var(--atlas-muted);
+        padding: 6px 8px;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .language-toggle button[aria-pressed="true"],
+      .theme-toggle button[aria-pressed="true"] {
+        background: var(--atlas-accent);
+        color: var(--atlas-on-accent);
+      }
+
+      .admin-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 0.45fr);
+        gap: 14px;
+      }
+
+      .panel,
+      .plugin-card {
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel);
+        padding: 14px;
+      }
+
+      .panel {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .field-grid {
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) minmax(220px, 0.7fr);
+        gap: 10px 12px;
+      }
+
+      .field-pair {
+        display: grid;
+        gap: 5px;
+      }
+
+      label {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      input,
+      select {
+        width: 100%;
+        min-height: 36px;
+        box-sizing: border-box;
+        border: 1px solid var(--atlas-border-strong);
+        border-radius: 4px;
+        background: var(--atlas-panel);
+        color: var(--atlas-text);
+        padding: 7px 9px;
+        font: inherit;
+        font-size: 15px;
+      }
+
+      input[readonly],
+      input:disabled {
+        border-color: var(--atlas-border);
+        background: var(--atlas-panel-soft);
+        color: var(--atlas-muted);
+        cursor: default;
+      }
+
+      .checkbox-row input:disabled + span {
+        color: var(--atlas-muted);
+      }
+
+      input:focus,
+      select:focus,
+      button:focus-visible {
+        outline: 2px solid var(--atlas-accent);
+        outline-offset: 1px;
+      }
+
+      .field-pair.wide {
+        grid-column: 1 / -1;
+      }
+
+      .field-grid .wide {
+        grid-column: 1 / -1;
+      }
+
+      .settings-accordion {
+        display: grid;
+        gap: 8px;
+      }
+
+      .settings-accordion details {
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+      }
+
+      .settings-accordion details[open] {
+        background: var(--atlas-panel);
+      }
+
+      .settings-accordion summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 38px;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        color: var(--atlas-text);
+        font-size: 14px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .settings-accordion summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .settings-accordion summary::after {
+        content: "+";
+        color: var(--atlas-accent);
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .settings-accordion details[open] summary::after {
+        content: "-";
+      }
+
+      .settings-section-body {
+        display: grid;
+        gap: 10px;
+        padding: 0 10px 10px;
+      }
+
+      .field-hint {
+        color: var(--atlas-muted);
+        font-size: 12px;
+      }
+
+      .field-hint a {
+        color: var(--atlas-accent);
+        font-weight: 700;
+      }
+
+      .provider-list {
+        display: grid;
+        gap: 8px;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        padding: 10px;
+      }
+
+      .provider-row {
+        display: grid;
+        grid-template-columns: minmax(150px, 0.35fr) minmax(220px, 0.65fr);
+        align-items: center;
+        gap: 8px 12px;
+        min-height: 36px;
+      }
+
+      .provider-link-row {
+        display: grid;
+        grid-template-columns: minmax(150px, 0.35fr) minmax(220px, 0.65fr);
+        align-items: center;
+        gap: 8px 12px;
+        min-height: 28px;
+        font-size: 13px;
+      }
+
+      .provider-link-row span {
+        grid-column: 2;
+      }
+
+      .provider-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .provider-option input {
+        width: 16px;
+        min-height: 16px;
+        margin: 0;
+        accent-color: var(--atlas-accent);
+      }
+
+      .provider-key {
+        min-height: 32px;
+        font-size: 14px;
+      }
+
+      .parcel-provider-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .parcel-provider-row {
+        display: grid;
+        grid-template-columns: minmax(170px, 0.32fr) minmax(220px, 0.34fr) minmax(220px, 0.34fr);
+        align-items: center;
+        gap: 8px 12px;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        padding: 9px;
+      }
+
+      .parcel-provider-meta {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+      }
+
+      .parcel-provider-name {
+        color: var(--atlas-text);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .parcel-provider-detail,
+      .parcel-provider-url {
+        color: var(--atlas-muted);
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+
+      .parcel-provider-url {
+        color: var(--atlas-accent);
+        font-weight: 700;
+      }
+
+      .checkbox-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 26px;
+        color: var(--atlas-muted);
+        font-size: 14px;
+      }
+
+      .checkbox-row input {
+        width: 16px;
+        min-height: 16px;
+        margin: 0;
+        accent-color: var(--atlas-accent);
+      }
+
+      .action-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 8px;
+      }
+
+      button {
+        min-height: 36px;
+        border: 1px solid var(--atlas-accent);
+        border-radius: 4px;
+        background: var(--atlas-accent);
+        color: var(--atlas-on-accent);
+        padding: 7px 12px;
+        font: inherit;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        border-color: var(--atlas-border-strong);
+        background: var(--atlas-panel);
+        color: var(--atlas-text);
+      }
+
+      button.accent {
+        border-color: var(--atlas-orange);
+        background: var(--atlas-orange);
+        color: #172033;
+        font-weight: 800;
+      }
+
+      button.accent:hover {
+        border-color: var(--atlas-orange-strong);
+        background: var(--atlas-orange-strong);
+        color: #ffffff;
+      }
+
+      .atlas-repository-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 44px;
+        border: 1px solid #0e7490;
+        border-radius: 999px;
+        background:
+          linear-gradient(90deg, #0b7285, #0f766e),
+          #0b7285;
+        color: #ffffff;
+        padding: 8px 10px 8px 20px;
+        box-shadow: inset 0 -3px 0 #f59e0b, 0 1px 0 rgb(255 255 255 / 12%);
+        font-weight: 900;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .atlas-repository-button:hover {
+        border-color: #0891b2;
+        background:
+          linear-gradient(90deg, #075f70, #0891b2),
+          #075f70;
+        color: #ffffff;
+      }
+
+      .atlas-repository-target {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 28px;
+        border: 1px solid rgb(125 211 252 / 42%);
+        border-radius: 999px;
+        background: #06343a;
+        color: #ecfeff;
+        padding: 4px 10px;
+        white-space: nowrap;
+      }
+
+      .atlas-repository-logo {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        box-shadow: 0 0 0 1px rgb(236 254 255 / 48%);
+        object-fit: contain;
+      }
+
+      :root[data-theme="dark"] .atlas-repository-target {
+        border-color: rgb(45 212 191 / 48%);
+        background: #052e32;
+        color: #ecfeff;
+      }
+
+      button:disabled,
+      button.accent:disabled {
+        border-color: var(--atlas-border-strong);
+        background: color-mix(in srgb, var(--atlas-panel-soft), var(--atlas-border) 45%);
+        color: var(--atlas-muted);
+        cursor: not-allowed;
+      }
+
+      output {
+        color: var(--atlas-accent);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .plugin-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .app-release-grid {
+        display: grid;
+        grid-template-columns: minmax(480px, 1fr) minmax(420px, 0.75fr);
+        gap: 10px;
+      }
+
+      .runtime-actions {
+        display: grid;
+        gap: 6px;
+        justify-items: end;
+        min-width: 190px;
+      }
+
+      .runtime-links {
+        display: grid;
+        gap: 8px;
+      }
+
+      .runtime-link {
+        display: grid;
+        grid-template-columns: minmax(110px, 0.35fr) minmax(0, 1fr);
+        gap: 8px;
+        align-items: center;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+        padding: 9px;
+        font-size: 13px;
+      }
+
+      .runtime-link span {
+        color: var(--atlas-text);
+        font-weight: 800;
+      }
+
+      .runtime-link a {
+        overflow-wrap: anywhere;
+      }
+
+      .readiness-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .readiness-item {
+        display: grid;
+        grid-template-columns: minmax(180px, 0.34fr) minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 8px 12px;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+        padding: 9px;
+      }
+
+      .readiness-title {
+        color: var(--atlas-text);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .readiness-reason {
+        color: var(--atlas-muted);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      #app-release-targets .readiness-item {
+        grid-template-areas:
+          "title status"
+          "reason reason";
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      #app-release-targets .readiness-title {
+        grid-area: title;
+      }
+
+      #app-release-targets .readiness-reason {
+        grid-area: reason;
+        grid-column: 1 / -1;
+        max-width: 72ch;
+      }
+
+      #app-release-targets .readiness-status {
+        grid-area: status;
+      }
+
+      .readiness-status {
+        min-width: 86px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        color: #475569;
+        padding: 4px 8px;
+        font-size: 12px;
+        font-weight: 800;
+        text-align: center;
+      }
+
+      .readiness-status[data-status="ready"] {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .readiness-status[data-status="in-progress"] {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      :root[data-theme="dark"] .readiness-status {
+        background: #233139;
+        color: #c8d7dd;
+      }
+
+      :root[data-theme="dark"] .readiness-status[data-status="ready"],
+      :root[data-theme="dark"] .plugin-status {
+        background: #113c30;
+        color: #7ee6c9;
+      }
+
+      :root[data-theme="dark"] .readiness-status[data-status="in-progress"],
+      :root[data-theme="dark"] .plugin-status[data-status="planned"] {
+        background: #3e300a;
+        color: #facc15;
+      }
+
+      .plugin-tools {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 8px;
+      }
+
+      .plugin-repository-tools {
+        display: grid;
+        gap: 10px;
+        margin: 12px 0;
+      }
+
+      dialog {
+        width: min(720px, calc(100vw - 32px));
+        max-height: min(820px, calc(100vh - 32px));
+        border: 1px solid var(--atlas-accent);
+        border-radius: 8px;
+        background: var(--atlas-panel);
+        color: var(--atlas-text);
+        padding: 0;
+        box-shadow: 0 24px 70px var(--atlas-shadow);
+      }
+
+      dialog::backdrop {
+        background: rgb(15 23 42 / 54%);
+      }
+
+      .dialog-panel {
+        display: grid;
+        gap: 14px;
+        padding: 18px;
+      }
+
+      .dialog-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 8px;
+        align-items: center;
+      }
+
+      .repository-dialog-grid {
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) minmax(130px, 0.35fr);
+        gap: 10px;
+      }
+
+      .repository-preview-list {
+        display: grid;
+        gap: 8px;
+        max-height: 280px;
+        overflow: auto;
+      }
+
+      .repository-preview-card {
+        border: 1px solid var(--atlas-border);
+        border-left: 4px solid var(--atlas-orange);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+        padding: 10px;
+      }
+
+      .repository-preview-media {
+        min-height: 26px;
+      }
+
+      .repository-preview-media img,
+      .plugin-media img {
+        width: 92px;
+        height: 32px;
+        border-radius: 6px;
+        object-fit: contain;
+        background: #0f2733;
+      }
+
+      .repository-actions {
+        display: grid;
+        grid-template-columns: minmax(240px, 1fr) minmax(130px, 0.35fr) minmax(120px, 0.25fr);
+        gap: 8px;
+        align-items: end;
+      }
+
+      .repository-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .repository-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: start;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+        padding: 10px;
+      }
+
+      .repository-card .action-grid {
+        grid-template-columns: minmax(180px, 1fr) auto;
+        align-items: start;
+      }
+
+      .repository-details {
+        min-width: 0;
+      }
+
+      .repository-details p {
+        overflow-wrap: anywhere;
+        font-size: 13px;
+      }
+
+      .plugin-media {
+        width: 96px;
+        min-height: 34px;
+        display: grid;
+        place-items: center;
+      }
+
+      .plugin-preview {
+        width: 100%;
+        max-height: 150px;
+        margin-top: 10px;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        object-fit: cover;
+        background: var(--atlas-panel-soft);
+      }
+
+      .danger-icon-button {
+        min-width: 36px;
+        width: 36px;
+        min-height: 36px;
+        border-color: var(--atlas-danger-bg);
+        background: var(--atlas-danger-bg);
+        color: var(--atlas-danger-text);
+        padding: 0;
+        font-size: 18px;
+        font-weight: 900;
+      }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .plugin-status {
+        min-width: 82px;
+        border-radius: 999px;
+        background: #e6fffb;
+        color: var(--atlas-accent);
+        padding: 4px 8px;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      .plugin-details {
+        display: grid;
+        gap: 8px;
+        margin: 12px 0;
+      }
+
+      .detail-label {
+        color: var(--atlas-muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 4px;
+      }
+
+      .chip-list span {
+        border: 1px solid var(--atlas-border-strong);
+        border-radius: 999px;
+        background: var(--atlas-panel-soft);
+        color: var(--atlas-text);
+        padding: 3px 7px;
+        font-size: 12px;
+      }
+
+      .policy-list {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--atlas-muted);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 980px) {
+        .app-release-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        body {
+          padding: 16px;
+        }
+
+        .app-header,
+        .panel-header,
+        .plugin-header,
+        .header-controls,
+        .admin-grid,
+        .field-grid,
+        .app-release-grid,
+        .runtime-link,
+        .readiness-item,
+        .provider-row,
+        .provider-link-row,
+        .parcel-provider-row {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+
+        .repository-actions {
+          grid-template-columns: 1fr;
+        }
+
+        .atlas-repository-button {
+          justify-content: center;
+          flex-wrap: wrap;
+          padding-left: 14px;
+        }
+
+        .repository-dialog-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .runtime-actions {
+          justify-items: stretch;
+        }
+
+        .provider-link-row span {
+          grid-column: 1;
+        }
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "@atlas/core": "/packages/core/dist/index.js",
+          "@atlas/foundation": "/packages/foundation/dist/index.js",
+          "@atlas/kernel": "/packages/kernel/dist/index.js",
+          "@atlas/renderer": "/packages/renderer/dist/index.js",
+          "@atlas/runtime": "/packages/runtime/dist/index.js",
+          "@atlas/theme": "/packages/theme/dist/index.js",
+          "@atlas/homeassistant": "/packages/homeassistant/dist/index.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main>
+      <header class="app-header">
+        <div>
+          <h1 data-i18n="page.title">ATLAS Administration</h1>
+          <p data-i18n="page.subtitle">Manage plugins, install packages and central Home Assistant access.</p>
+        </div>
+        <div class="header-controls">
+          <div class="theme-toggle" role="group" aria-label="Theme" data-i18n-aria-label="aria.theme">
+            <button type="button" data-theme-mode="auto" aria-pressed="true" data-i18n="theme.auto">Auto</button>
+            <button type="button" data-theme-mode="light" aria-pressed="false" data-i18n="theme.light">Light</button>
+            <button type="button" data-theme-mode="dark" aria-pressed="false" data-i18n="theme.dark">Dark</button>
+          </div>
+          <div class="language-toggle" role="group" aria-label="Language" data-i18n-aria-label="aria.language">
+            <button type="button" data-language="de" aria-pressed="false">DE</button>
+            <button type="button" data-language="en" aria-pressed="true">EN</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="panel" aria-labelledby="admin-access-heading">
+        <div class="panel-header">
+          <div>
+            <h2 id="admin-access-heading" data-i18n="heading.access">Connection settings</h2>
+            <p data-i18n="message.accessHint">Tokens stay in Administration. Plugins receive approved paths and capabilities only.</p>
+          </div>
+          <output id="admin-save-state" aria-live="polite"></output>
+        </div>
+        <div class="settings-accordion">
+          <details open>
+            <summary data-i18n="heading.haConnection">Home Assistant connection</summary>
+            <div class="settings-section-body field-grid">
+              <div class="field-pair">
+                <label for="home-assistant-url" data-i18n="label.haUrl">Home Assistant URL</label>
+                <input id="home-assistant-url" type="url" inputmode="url" value="http://homeassistant.local:8123" autocomplete="url">
+              </div>
+              <div class="field-pair">
+                <label for="home-assistant-token" data-i18n="label.accessToken">Access token</label>
+                <input id="home-assistant-token" type="password" autocomplete="off" spellcheck="false">
+              </div>
+              <div class="field-pair">
+                <label for="editor-start-mode" data-i18n="label.editorStartMode">Editor start mode</label>
+                <select id="editor-start-mode">
+                  <option value="simple" data-i18n="mode.simple">Simple</option>
+                  <option value="expert" data-i18n="mode.expert">Expert</option>
+                </select>
+              </div>
+              <p id="admin-connection-mode-hint" class="field-hint wide" data-i18n="message.connectionStandaloneHint">In Docker and Linux mode these values are managed here.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary data-i18n="heading.translationSettings">Card translation</summary>
+            <div class="settings-section-body">
+              <span id="translation-provider-label" data-i18n="label.translationProvider">Translation module</span>
+              <div class="provider-list" role="radiogroup" aria-labelledby="translation-provider-label">
+              <label class="provider-row">
+                <span class="provider-option">
+                  <input type="radio" name="translation-provider" value="none" checked>
+                  <span data-i18n="provider.none">Default / fallback files</span>
+                </span>
+              </label>
+              <label class="provider-row">
+                <span class="provider-option">
+                  <input type="radio" name="translation-provider" value="chatgpt">
+                  <span data-i18n="provider.chatgpt">ChatGPT / OpenAI</span>
+                </span>
+                <input id="translation-api-key-chatgpt" class="provider-key" type="password" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholder.chatgptApiKey" placeholder="OpenAI API key later">
+              </label>
+              <div class="provider-link-row">
+                <span>
+                  <span data-i18n="message.openAiApiKeyLink">Get OpenAI API key:</span>
+                  <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">platform.openai.com/api-keys</a>
+                </span>
+              </div>
+              <label class="provider-row">
+                <span class="provider-option">
+                  <input type="radio" name="translation-provider" value="gemini">
+                  <span data-i18n="provider.gemini">Gemini</span>
+                </span>
+                <input id="translation-api-key-gemini" class="provider-key" type="password" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholder.geminiApiKey" placeholder="Gemini API key later">
+              </label>
+              <div class="provider-link-row">
+                <span>
+                  <span data-i18n="message.geminiApiKeyLink">Get Gemini API key:</span>
+                  <a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noreferrer">ai.google.dev</a>
+                </span>
+              </div>
+              <label class="provider-row">
+                <span class="provider-option">
+                  <input type="radio" name="translation-provider" value="deepl-free">
+                  <span data-i18n="provider.deeplFree">DeepL API Free</span>
+                </span>
+                <input id="translation-api-key-deepl-free" class="provider-key" type="password" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholder.deeplFreeApiKey" placeholder="Free API key later">
+              </label>
+              <div class="provider-link-row">
+                <span>
+                  <span data-i18n="message.deeplApiKeyLink">Get DeepL API key:</span>
+                  <a href="https://www.deepl.com/de/pro#api" target="_blank" rel="noreferrer">deepl.com/pro#api</a>
+                </span>
+              </div>
+              <label class="provider-row">
+                <span class="provider-option">
+                  <input type="radio" name="translation-provider" value="deepl-pro">
+                  <span data-i18n="provider.deeplPro">DeepL API Pro</span>
+                </span>
+                <input id="translation-api-key-deepl-pro" class="provider-key" type="password" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholder.deeplProApiKey" placeholder="Pro API key later">
+              </label>
+              <label class="provider-row">
+                <span class="provider-option">
+                  <input type="radio" name="translation-provider" value="custom-ai">
+                  <span data-i18n="provider.customAi">Custom AI provider</span>
+                </span>
+                <input id="translation-api-key-custom-ai" class="provider-key" type="password" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholder.customAiApiKey" placeholder="Custom provider API key later">
+              </label>
+              </div>
+            </div>
+          </details>
+
+          <details>
+            <summary data-i18n="heading.parcelSettings">Parcel service providers</summary>
+            <div class="settings-section-body">
+              <p id="parcel-provider-summary"></p>
+              <div id="parcel-provider-list" class="parcel-provider-list"></div>
+            </div>
+          </details>
+        </div>
+        <label class="checkbox-row" for="remember-admin-token">
+          <input id="remember-admin-token" type="checkbox">
+          <span data-i18n="label.rememberToken">Remember token locally for Administration</span>
+        </label>
+        <label class="checkbox-row" for="auto-connect-editor">
+          <input id="auto-connect-editor" type="checkbox">
+          <span data-i18n="label.autoConnectEditor">Auto-connect Card Editor after handoff</span>
+        </label>
+        <div class="action-grid">
+          <button id="save-admin-settings" type="button" data-i18n="button.saveSettings">Save settings</button>
+          <button id="forget-admin-token" class="secondary" type="button" data-i18n="button.forgetToken">Forget token</button>
+          <button id="export-admin-settings" type="button" data-i18n="button.exportSettings">Export settings</button>
+          <button id="open-card-editor" type="button" data-i18n="button.openEditor">Open Plugin Hub</button>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="app-runtime-heading">
+        <div class="panel-header">
+          <div>
+            <h2 id="app-runtime-heading" data-i18n="heading.appRuntime">App runtime status</h2>
+            <p data-i18n="message.appRuntimeHint">Read the combined app server status exposed on port 4176.</p>
+          </div>
+          <div class="runtime-actions">
+            <button id="refresh-app-runtime" type="button" data-i18n="button.refreshRuntime">Refresh status</button>
+            <output id="app-runtime-summary" aria-live="polite"></output>
+          </div>
+        </div>
+        <div class="app-release-grid">
+          <div>
+            <h3 data-i18n="heading.runtimeSurfaces">Surfaces</h3>
+            <div id="app-runtime-surfaces" class="readiness-list"></div>
+          </div>
+          <div>
+            <h3 data-i18n="heading.runtimeLinks">Links</h3>
+            <div id="app-runtime-links" class="runtime-links"></div>
+            <h3 data-i18n="label.distributionOrder">Distribution order</h3>
+            <div id="app-runtime-distribution" class="chip-list"></div>
+          </div>
+        </div>
+        <output id="app-runtime-status" aria-live="polite"></output>
+      </section>
+
+      <section class="panel" aria-labelledby="app-release-heading">
+        <div class="panel-header">
+          <div>
+            <h2 id="app-release-heading" data-i18n="heading.appRelease">App release readiness</h2>
+            <p data-i18n="message.appReleaseHint">Track the local app path before the later Home Assistant/HACS integration.</p>
+          </div>
+          <output id="app-release-summary" aria-live="polite"></output>
+        </div>
+        <div class="app-release-grid">
+          <div>
+            <h3 data-i18n="heading.releaseChecks">Release checks</h3>
+            <div id="app-release-checks" class="readiness-list"></div>
+          </div>
+          <div>
+            <h3 data-i18n="heading.releaseTargets">Distribution targets</h3>
+            <div id="app-release-targets" class="readiness-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="admin-grid">
+        <section class="panel" aria-labelledby="plugins-heading">
+          <div class="panel-header">
+            <div>
+              <h2 id="plugins-heading" data-i18n="heading.plugins">Installed plugins</h2>
+              <p data-i18n="message.pluginsHint">The Home Assistant Card Editor is the first official reference plugin.</p>
+            </div>
+            <output id="plugin-summary" aria-live="polite"></output>
+          </div>
+          <div class="plugin-tools">
+            <button id="import-plugin-package" type="button" data-i18n="button.importPackage">Import package</button>
+            <input id="plugin-package-file" class="visually-hidden" type="file" accept=".json,.atlas-plugin.json,application/json">
+            <button id="open-plugin-repository-dialog" class="atlas-repository-button" type="button">
+              <span data-i18n="button.openRepositoryDialog">Add ATLAS repository</span>
+              <span class="atlas-repository-target" aria-hidden="true">
+                ATLAS
+                <img class="atlas-repository-logo" src="/examples/admin-demo/atlas-icon.png" alt="">
+              </span>
+            </button>
+          </div>
+          <div class="plugin-repository-tools">
+            <div class="panel-header">
+              <div>
+                <h3 data-i18n="label.pluginRepositories">Custom repositories</h3>
+              </div>
+              <button id="refresh-plugin-repositories" type="button" data-i18n="button.refreshRepositories">Refresh repositories</button>
+            </div>
+            <div id="plugin-repository-list" class="repository-list"></div>
+            <output id="plugin-repository-status" aria-live="polite"></output>
+            <div id="plugin-repository-plugin-list" class="plugin-list"></div>
+          </div>
+          <div id="plugin-list" class="plugin-list"></div>
+        </section>
+
+        <aside class="panel" aria-labelledby="policy-heading">
+          <h2 id="policy-heading" data-i18n="heading.policy">Plugin access policy</h2>
+          <p id="policy-summary"></p>
+          <ul class="policy-list">
+            <li data-i18n="policy.token">The Card Editor receives the token only as a browser session handoff.</li>
+            <li data-i18n="policy.paths">Plugins receive approved URLs, WebSocket paths and resource paths.</li>
+            <li data-i18n="policy.capabilities">Capabilities are declared through the Runtime plugin manifest.</li>
+          </ul>
+        </aside>
+      </div>
+    </main>
+    <dialog id="plugin-repository-dialog" aria-labelledby="plugin-repository-dialog-heading">
+      <form class="dialog-panel" method="dialog">
+        <div class="panel-header">
+          <div>
+            <h2 id="plugin-repository-dialog-heading" data-i18n="heading.addPluginRepository">Add ATLAS repository</h2>
+            <p data-i18n="message.pluginRepositoryPreviewEmpty">Enter a repository URL and preview it before adding.</p>
+          </div>
+        </div>
+        <div class="repository-dialog-grid">
+          <div class="field-pair">
+            <label for="plugin-repository-url" data-i18n="label.pluginRepositoryUrl">Repository</label>
+            <input id="plugin-repository-url" type="url" inputmode="url" placeholder="https://example.test/atlas/repository.json" data-i18n-placeholder="placeholder.pluginRepositoryUrl">
+          </div>
+          <div class="field-pair">
+            <label for="plugin-repository-type" data-i18n="label.pluginRepositoryType">Type</label>
+            <select id="plugin-repository-type">
+              <option value="plugin" data-i18n="type.plugin">Plugin</option>
+              <option value="card" data-i18n="type.card">Card</option>
+              <option value="integration" data-i18n="type.integration">Integration</option>
+              <option value="tool" data-i18n="type.tool">Tool</option>
+              <option value="theme" data-i18n="type.theme">Theme</option>
+            </select>
+          </div>
+        </div>
+        <output id="plugin-repository-preview-status" aria-live="polite"></output>
+        <div id="plugin-repository-preview-list" class="repository-preview-list"></div>
+        <div class="dialog-actions">
+          <button id="preview-plugin-repository" type="button" data-i18n="button.previewRepository">Preview repository</button>
+          <button id="add-plugin-repository" class="accent" type="button" data-i18n="button.addRepository">Add</button>
+          <button id="close-plugin-repository-dialog" class="secondary" type="button" data-i18n="button.cancel">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+    <script type="module" src="/examples/admin-demo/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+name: "ATLAS"
+version: "0.1.43"
+slug: "atlas"
+description: "ATLAS Administration and Home Assistant Card Editor preview"
+url: "https://github.com/rockbaer2007/atlas-homeassistant-addon-repository"
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: manual
+init: false
+ingress: true
+ingress_port: 4176
+panel_icon: mdi:view-dashboard-edit
+webui: "http://[HOST]:[PORT:4176]/"
+ports:
+  4176/tcp: 4176
+  4175/tcp: 4175
+  4174/tcp: 4174
+options:
+  atlas_instance_id: "atlas-home-assistant"
+  home_assistant_url: "http://homeassistant.local:8123"
+  home_assistant_token: ""
+  remember_home_assistant_token: false
+  auto_connect_editor: false
+  editor_start_mode: "simple"
+schema:
+  atlas_instance_id: "str"
+  home_assistant_url: "url"
+  home_assistant_token: "str"
+  remember_home_assistant_token: "bool"
+  auto_connect_editor: "bool"
+  editor_start_mode: "list(simple|expert)"

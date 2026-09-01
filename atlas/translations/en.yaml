@@ -1,0 +1,20 @@
+configuration:
+  atlas_instance_id:
+    name: "Atlas instance ID"
+    description: "Stable local identity for encrypted Administration secrets."
+  home_assistant_url:
+    name: "Home Assistant URL"
+    description: "URL of your Home Assistant instance for entity, state and resource requests."
+  home_assistant_token:
+    name: "Home Assistant token"
+    description: "Long-lived access token for ATLAS Administration. Shown as text so Home Assistant does not pass a shortened password placeholder."
+  remember_home_assistant_token:
+    name: "Import token into ATLAS Administration"
+    description: "Passes the token to ATLAS Administration on startup so the editor can receive it only as a session handoff."
+  auto_connect_editor:
+    name: "Auto-connect Card Editor"
+    description: "Connects the editor to Home Assistant automatically after the Administration handoff."
+network:
+  4176/tcp: "ATLAS app runtime"
+  4175/tcp: "ATLAS Administration"
+  4174/tcp: "ATLAS Card Editor"

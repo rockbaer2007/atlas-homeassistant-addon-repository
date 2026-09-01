@@ -1,0 +1,27 @@
+{
+  "id": "atlas.plugin.homeassistant-card-editor",
+  "name": "Home Assistant Card Editor",
+  "nameI18n": {
+    "de": "Home Assistant Karten-Editor",
+    "en": "Home Assistant Card Editor"
+  },
+  "version": "0.2.0-alpha.7",
+  "description": "Visual Simple and Expert card editor with Home Assistant entity selection and HACS-oriented export.",
+  "descriptionI18n": {
+    "de": "Visueller Simple- und Expert-Editor fuer Home-Assistant-Karten mit Entitaetsauswahl und HACS-orientiertem Export.",
+    "en": "Visual Simple and Expert card editor with Home Assistant entity selection and HACS-oriented export."
+  },
+  "status": "active",
+  "order": 10,
+  "entry": "editor",
+  "icon": "icon.svg",
+  "logo": "logo.svg",
+  "preview": "preview.svg",
+  "capabilities": [
+    "homeassistant.simple-editor",
+    "homeassistant.expert-editor",
+    "homeassistant.entity-picker",
+    "homeassistant.card-export",
+    "homeassistant.hacs-package-export"
+  ]
+}

@@ -1,0 +1,2 @@
+export const ActivationStages={Discover:"discover",Validate:"validate",ResolveDependencies:"resolve-dependencies",Sort:"sort",CreateContext:"create-context",RegisterServices:"register-services",Initialize:"initialize",Activate:"activate",Healthy:"healthy"} as const;
+export type ActivationStage=typeof ActivationStages[keyof typeof ActivationStages];

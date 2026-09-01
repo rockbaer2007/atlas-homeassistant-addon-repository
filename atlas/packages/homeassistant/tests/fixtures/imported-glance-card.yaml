@@ -1,0 +1,72 @@
+show_name: true
+show_icon: true
+show_state: true
+type: glance
+entities:
+  - entity: sensor.hyper_2000_eg_1_solar_input_power
+    show_last_changed: false
+    name: Leistung
+    card_mod:
+      style: |
+        :host {
+          --card-mod-icon-color: lightblue;
+           --mdc-icon-size: 48px;
+              }
+  - entity: sensor.hyper_2000_eg_1_output_home_power
+    name: ins Haus
+    icon: mdi:home
+    card_mod:
+      style: |
+        :host {
+          --card-mod-icon-color: yellow;
+           --mdc-icon-size: 48px;
+              }
+  - entity: sensor.hyper_2000_eg_1_pack_input_power
+    name: aus Batterie
+    icon: mdi:battery-arrow-down
+    card_mod:
+      style: |
+        :host {
+          --card-mod-icon-color: red;
+           --mdc-icon-size: 48px;
+              }
+  - entity: sensor.hyper_2000_eg_1_output_pack_power
+    name: zur Batterie
+    icon: mdi:battery-arrow-up
+    card_mod:
+      style: |
+        :host {
+          --card-mod-icon-color: lightgreen;
+           --mdc-icon-size: 48px;
+              }
+  - entity: sensor.ab2000x_16609_soc_level
+    name: Akku 1
+    card_mod:
+      style: |
+        :host {
+           --mdc-icon-size: 48px;
+              }
+  - entity: sensor.ab2000x_20030_soc_level
+    name: Akku 2
+    card_mod:
+      style: |
+        :host {
+           --mdc-icon-size: 48px;
+              }
+  - entity: binary_sensor.hyper_2000_eg_1_hems_state
+    name: HEMS
+  - entity: binary_sensor.hyper_2000_eg_1_heat_state
+    name: Akkuhzg.
+    icon: mdi:heat-wave
+grid_options:
+  rows: auto
+title: hyper 2000 EG 1
+state_color: true
+columns: 8
+card_mod:
+  style: |
+    ha-card {
+      background:  ;
+      border: 0.2px solid var(--primary-color);
+      border-radius: 12px
+    }

@@ -1,0 +1,24 @@
+{
+  "id": "atlas.plugin.simple-editor",
+  "name": "Simple Editor",
+  "nameI18n": {
+    "de": "Simple Editor",
+    "en": "Simple Editor"
+  },
+  "version": "0.1.0-planned",
+  "description": "Small second plugin candidate for testing automatic ATLAS plugin discovery, hub display and activation flows.",
+  "descriptionI18n": {
+    "de": "Kleiner zweiter Plugin-Kandidat zum Testen der automatischen ATLAS-Plugin-Erkennung, Hub-Anzeige und Aktivierungsablaeufe.",
+    "en": "Small second plugin candidate for testing automatic ATLAS plugin discovery, hub display and activation flows."
+  },
+  "status": "planned",
+  "order": 20,
+  "entry": "",
+  "icon": "icon.svg",
+  "logo": "logo.svg",
+  "preview": "preview.svg",
+  "capabilities": [
+    "atlas.simple-editor",
+    "atlas.plugin-test"
+  ]
+}

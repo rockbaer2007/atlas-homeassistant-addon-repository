@@ -1,0 +1,3412 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ATLAS Home Assistant Card Editor</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, sans-serif;
+        --atlas-bg: #f5f7fb;
+        --atlas-panel: #ffffff;
+        --atlas-panel-soft: #f8fafc;
+        --atlas-text: #172033;
+        --atlas-muted: #536079;
+        --atlas-border: #d8e0ec;
+        --atlas-border-soft: #cbd5e1;
+        --atlas-accent: #0f766e;
+        --atlas-accent-strong: #115e59;
+        --atlas-accent-soft: #e6fffb;
+        --atlas-on-accent: #ffffff;
+        background: #f5f7fb;
+        color: #172033;
+      }
+
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --atlas-bg: #0f1417;
+        --atlas-panel: #171f23;
+        --atlas-panel-soft: #11191d;
+        --atlas-text: #f7fcfd;
+        --atlas-muted: #c3d3d8;
+        --atlas-border: #2f4046;
+        --atlas-border-soft: #40535b;
+        --atlas-accent: #2dd4bf;
+        --atlas-accent-strong: #14b8a6;
+        --atlas-accent-soft: #113c30;
+        --atlas-on-accent: #06201d;
+        background: var(--atlas-bg);
+        color: var(--atlas-text);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        box-sizing: border-box;
+        background: var(--atlas-bg);
+        color: var(--atlas-text);
+      }
+
+      main {
+        width: min(100%, 1180px);
+      }
+
+      .app-header {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .app-header p {
+        margin-bottom: 0;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: 0;
+      }
+
+      p {
+        margin: 0 0 20px;
+        color: var(--atlas-muted);
+      }
+
+      .language-toggle,
+      .theme-toggle {
+        display: inline-flex;
+        flex: 0 0 auto;
+        gap: 4px;
+        padding: 3px;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel);
+      }
+
+      .language-toggle button,
+      .theme-toggle button {
+        min-width: 44px;
+        border: 0;
+        border-radius: 4px;
+        background: transparent;
+        color: var(--atlas-muted);
+        padding: 6px 8px;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .theme-toggle button {
+        min-width: 58px;
+      }
+
+      .language-toggle button[aria-pressed="true"],
+      .theme-toggle button[aria-pressed="true"] {
+        background: var(--atlas-accent);
+        color: var(--atlas-on-accent);
+      }
+
+      .language-toggle button:focus-visible,
+      .theme-toggle button:focus-visible {
+        outline: 2px solid var(--atlas-accent);
+        outline-offset: 2px;
+      }
+
+      .header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .problem-report-button {
+        min-height: 34px;
+        border: 1px solid #0f766e;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #115e59;
+        padding: 7px 10px;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .problem-report-button:hover,
+      .problem-report-button:focus-visible {
+        background: #e6fffb;
+        outline: 0;
+      }
+
+      .status-controls {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .status-controls button {
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #172033;
+        padding: 8px 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .status-controls button[aria-pressed="true"] {
+        border-color: #0f766e;
+        background: #e6fffb;
+        color: #115e59;
+      }
+
+      .connection-config {
+        display: grid;
+        gap: 8px;
+        margin: 0 0 16px;
+      }
+
+      .connection-config.compact-panel {
+        padding: 14px;
+        border: 1px solid #d8e0ec;
+        border-radius: 6px;
+        background: #ffffff;
+      }
+
+      .connection-config .field-pair {
+        display: grid;
+        gap: 5px;
+      }
+
+      .connection-config .field-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px 12px;
+        align-items: end;
+      }
+
+      .connection-config .field-grid.three-column {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+
+      .connection-config .field-grid.two-column {
+        grid-template-columns: minmax(260px, 1.2fr) minmax(220px, 0.8fr);
+      }
+
+      .connection-config .field-pair[hidden] {
+        display: none;
+      }
+
+      .connection-config label {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .connection-config input,
+      .connection-config select {
+        width: 100%;
+        min-height: 36px;
+        box-sizing: border-box;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #172033;
+        padding: 7px 9px;
+        font: inherit;
+        font-size: 15px;
+      }
+
+      .connection-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 18px;
+        align-items: center;
+      }
+
+      .connection-config .remember-secret {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 26px;
+        font-weight: 500;
+        color: #536079;
+        font-size: 14px;
+      }
+
+      .connection-config .remember-secret input {
+        width: 16px;
+        min-height: 16px;
+        margin: 0;
+        accent-color: #0f766e;
+      }
+
+      .card-export-language-panel {
+        display: grid;
+        gap: 6px;
+        border: 1px solid #d8e0ec;
+        border-radius: 6px;
+        background: #f8fafc;
+        padding: 10px;
+      }
+
+      .card-export-language-panel legend {
+        padding: 0 4px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .card-export-language-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+        gap: 6px;
+      }
+
+      .card-export-language-grid label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 28px;
+        color: #172033;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .card-export-language-grid input {
+        width: 15px;
+        min-height: 15px;
+        margin: 0;
+        accent-color: #0f766e;
+      }
+
+      .card-export-language-hint {
+        margin: 0;
+        color: #536079;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .card-export-translation-controls {
+        display: grid;
+        gap: 8px;
+        align-items: start;
+      }
+
+      .card-export-translation-controls label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #172033;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .card-export-translation-controls input {
+        width: 15px;
+        min-height: 15px;
+        margin: 0;
+        accent-color: #0f766e;
+      }
+
+      .card-translation-module-status {
+        min-height: 20px;
+        color: #0f766e;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .card-export-translation-progress {
+        width: min(280px, 100%);
+        height: 12px;
+        accent-color: #0f766e;
+      }
+
+      .admin-handoff-options {
+        justify-content: flex-end;
+      }
+
+      .admin-handoff-options a {
+        color: #0f766e;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .connection-status-stack {
+        display: grid;
+        gap: 6px;
+        align-items: start;
+      }
+
+      .connection-status-stack output {
+        min-height: 20px;
+        color: #536079;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .entity-sync-state {
+        color: #0f766e;
+        font-weight: 700;
+      }
+
+      .entity-sync-state[data-sync-state="syncing"] {
+        color: #1e3a8a;
+      }
+
+      .entity-sync-state[data-sync-state="failed"] {
+        color: #b91c1c;
+      }
+
+      .connection-config input:focus,
+      .connection-config select:focus {
+        outline: 2px solid #0f766e;
+        outline-offset: 1px;
+      }
+
+      .entity-domain-shortcuts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-height: 32px;
+      }
+
+      .entity-domain-shortcuts button {
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #172033;
+        padding: 6px 9px;
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .entity-domain-shortcuts button[aria-pressed="true"] {
+        border-color: #0f766e;
+        background: #e6fffb;
+        color: #0f766e;
+        font-weight: 700;
+      }
+
+      .entity-domain-shortcuts button:focus-visible {
+        outline: 2px solid #0f766e;
+        outline-offset: 1px;
+      }
+
+      .entity-search-control {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 34px;
+        gap: 6px;
+        align-items: stretch;
+      }
+
+      .entity-search-control input {
+        min-width: 0;
+      }
+
+      .entity-search-control button {
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #536079;
+        min-height: 34px;
+        padding: 0;
+        font: inherit;
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .entity-search-control button:hover:not(:disabled),
+      .entity-search-control button:focus-visible {
+        border-color: #0f766e;
+        color: #0f766e;
+        outline: 2px solid #0f766e;
+        outline-offset: 1px;
+      }
+
+      .entity-search-control button:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+
+      .entity-picker-status {
+        min-height: 20px;
+        color: #536079;
+        font-size: 13px;
+      }
+
+      .empty-selection-state {
+        display: grid;
+        place-items: center;
+        box-sizing: border-box;
+        min-height: 104px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #536079;
+        font-weight: 700;
+        text-align: center;
+        padding: 20px;
+      }
+
+      .connection-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .connection-actions button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #0f766e;
+        border-radius: 4px;
+        background: #0f766e;
+        color: #ffffff;
+        min-height: 34px;
+        padding: 6px 10px;
+        font: inherit;
+        font-size: 14px;
+        line-height: 1.2;
+        cursor: pointer;
+      }
+
+      .connection-actions button:last-child {
+        border-color: #cbd5e1;
+        background: #ffffff;
+        color: #172033;
+      }
+
+      .connection-actions.uniform-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: flex-start;
+      }
+
+      .connection-actions.action-row + .connection-actions.action-row {
+        margin-top: 6px;
+      }
+
+      .connection-actions.uniform-actions button,
+      .connection-actions.uniform-actions .import-button {
+        box-sizing: border-box;
+        flex: 0 0 184px;
+        width: 184px;
+        min-height: 38px;
+        height: 38px;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .expert-editor-actions {
+        gap: 6px;
+      }
+
+      .expert-editor-actions button {
+        flex: 0 1 auto;
+        min-width: 88px;
+        padding: 6px 9px;
+        font-size: 14px;
+        line-height: 1.2;
+      }
+
+      .connection-actions .import-button {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #0f766e;
+        border-radius: 4px;
+        background: #0f766e;
+        color: #ffffff;
+        min-height: 34px;
+        padding: 6px 10px;
+        font: inherit;
+        font-size: 14px;
+        line-height: 1.2;
+        cursor: pointer;
+      }
+
+      .connection-actions .import-button:focus-visible {
+        outline: 2px solid #0f766e;
+        outline-offset: 1px;
+      }
+
+      .connection-actions button.action-group {
+        border-color: #1e3a8a;
+        background: #1e3a8a;
+        color: #ffffff;
+      }
+
+      .connection-actions button.action-export {
+        border-color: #7f1d1d;
+        background: #7f1d1d;
+        color: #ffffff;
+      }
+
+      .connection-actions button.action-resource {
+        border-color: #F0C302;
+        background: #F0C302;
+        color: #172033;
+      }
+
+      .connection-actions button.action-import,
+      .connection-actions .import-button.action-import {
+        border-color: #0f766e;
+        background: #0f766e;
+        color: #ffffff;
+      }
+
+      .connection-actions button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      .connection-actions button.action-resource:disabled {
+        border-style: dashed;
+        background: #F0C302;
+        color: #172033;
+        opacity: 1;
+      }
+
+      @keyframes atlas-button-confirm-neutral {
+        0%, 100% {
+          box-shadow: none;
+        }
+        45% {
+          border-color: #0f766e;
+          box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.24);
+        }
+      }
+
+      @keyframes atlas-button-confirm-colored {
+        0%, 100% {
+          filter: none;
+          transform: none;
+        }
+        45% {
+          filter: brightness(1.18);
+          transform: translateY(-1px);
+        }
+      }
+
+      @keyframes atlas-button-confirm-danger {
+        0%, 100% {
+          filter: none;
+        }
+        45% {
+          filter: brightness(1.12) saturate(1.08);
+        }
+      }
+
+      button.atlas-click-feedback-neutral,
+      .import-button.atlas-click-feedback-neutral {
+        animation: atlas-button-confirm-neutral 260ms ease-out;
+      }
+
+      button.atlas-click-feedback-colored,
+      .import-button.atlas-click-feedback-colored {
+        animation: atlas-button-confirm-colored 260ms ease-out;
+      }
+
+      button.atlas-click-feedback-danger,
+      .import-button.atlas-click-feedback-danger {
+        animation: atlas-button-confirm-danger 260ms ease-out;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        button.atlas-click-feedback-neutral,
+        .import-button.atlas-click-feedback-neutral {
+          border-color: #0f766e;
+          box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.24);
+        }
+
+        button.atlas-click-feedback-colored,
+        .import-button.atlas-click-feedback-colored,
+        button.atlas-click-feedback-danger,
+        .import-button.atlas-click-feedback-danger {
+          filter: brightness(1.12);
+        }
+      }
+
+      @media (max-width: 480px) {
+        .connection-config .field-grid.two-column {
+          grid-template-columns: 1fr;
+        }
+
+        .connection-actions button,
+        .connection-actions .import-button {
+          flex: 1 1 140px;
+        }
+
+        .connection-actions.uniform-actions button,
+        .connection-actions.uniform-actions .import-button {
+          flex-basis: 100%;
+          width: 100%;
+          max-width: none;
+        }
+      }
+
+      #connection-state[data-state="failed"] {
+        color: #b91c1c;
+      }
+
+      #connection-state[data-state="connected"] {
+        color: #0f766e;
+      }
+
+      .connection-translation-module-state {
+        color: #0f766e;
+        font-weight: 700;
+      }
+
+      #selected-entity {
+        min-height: 20px;
+        color: #536079;
+        font-size: 14px;
+      }
+
+      .entity-summary-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin: 8px 0;
+      }
+
+      .entity-summary-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        max-width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        background: #f8fafc;
+        color: #536079;
+        padding: 5px 10px;
+        font-size: 13px;
+        line-height: 1.2;
+      }
+
+      .entity-summary-chip strong {
+        max-width: min(44vw, 520px);
+        color: #172033;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .entity-summary-chip[data-kind="ready"] {
+        border-color: #99f6e4;
+        background: #ecfdf5;
+        color: #115e59;
+      }
+
+      .entity-summary-chip[data-kind="pending"] {
+        border-color: #fde68a;
+        background: #fffbeb;
+        color: #92400e;
+      }
+
+      .entity-summary-chip[data-kind="blocked"] {
+        border-color: #fecaca;
+        background: #fef2f2;
+        color: #991b1b;
+      }
+
+      .resource-hint-field {
+        display: grid;
+        gap: 6px;
+        margin: 8px 0 0;
+        padding: 10px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #f8fafc;
+      }
+
+      .resource-hint-field strong {
+        color: #172033;
+        font-size: 13px;
+      }
+
+      #ha-card-dependency {
+        min-height: 20px;
+        color: #536079;
+        font-size: 13px;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+      }
+
+      .resource-hint-field:has(#ha-card-dependency[data-required="true"]) {
+        border-color: #F0C302;
+        background: #fffbeb;
+      }
+
+      .resource-hint-field:has(#ha-card-dependency[data-status="installed"]) {
+        border-color: #0f766e;
+        background: #ecfdf5;
+      }
+
+      .resource-hint-field:has(#ha-card-dependency[data-status="missing"]) {
+        border-color: #b91c1c;
+        background: #fff7f7;
+      }
+
+      #ha-card-dependency[data-required="true"] {
+        color: #a16207;
+      }
+
+      #ha-card-dependency[data-status="installed"] {
+        color: #0f766e;
+      }
+
+      #ha-card-dependency[data-status="missing"] {
+        color: #b91c1c;
+      }
+
+      #ha-card-dependency[data-status="unchecked"] {
+        color: #a16207;
+      }
+
+      .temporary-resource-debug {
+        display: grid;
+        gap: 6px;
+        margin: 8px 0 0;
+        padding: 10px 12px;
+        border: 1px dashed #64748b;
+        border-radius: 6px;
+        background: #f8fafc;
+      }
+
+      .temporary-resource-debug-toggle {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        width: fit-content;
+        margin: 8px 0 0;
+        color: #536079;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .temporary-resource-debug-toggle input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: #0f766e;
+      }
+
+      .temporary-resource-debug[hidden] {
+        display: none;
+      }
+
+      .temporary-resource-debug summary {
+        cursor: pointer;
+        color: #172033;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      #temporary-ha-card-resource-list {
+        max-height: 220px;
+        margin: 2px 0 0;
+        overflow: auto;
+        color: #536079;
+        font-size: 12px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      #ha-card-import-review {
+        min-height: 20px;
+        color: #536079;
+        font-size: 14px;
+        white-space: pre-wrap;
+      }
+
+      #ha-card-import-review[data-action="review"] {
+        color: #a16207;
+      }
+
+      #ha-card-import-review[data-action="reject"] {
+        color: #b91c1c;
+      }
+
+      #ha-card-import-review[data-action="import"] {
+        color: #0f766e;
+      }
+
+      .ha-card-preview {
+        display: grid;
+        gap: 6px;
+        margin: 4px 0 0;
+      }
+
+      .preview-heading-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .preview-heading-row label {
+        margin: 0;
+      }
+
+      .preview-reset-button {
+        min-height: 30px;
+        padding: 5px 10px;
+        border: 1px solid #7f1d1d;
+        border-radius: 4px;
+        background: #7f1d1d;
+        color: #ffffff;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.2;
+        cursor: pointer;
+      }
+
+      .ha-card-preview[hidden] {
+        display: none;
+      }
+
+      .ha-card-preview pre {
+        min-height: 148px;
+        max-height: 240px;
+        overflow: auto;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #172033;
+        color: #eef6ff;
+        font: 13px/1.45 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      .ha-card-visual-preview {
+        display: grid;
+        gap: 8px;
+        min-height: 96px;
+        padding: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #f8fafc;
+      }
+
+      .ha-card-visual-card {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid #d7dee8;
+        border-radius: 6px;
+        background: #ffffff;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+      }
+
+      .ha-card-visual-card header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .ha-card-visual-card strong,
+      .ha-card-visual-row strong {
+        color: #172033;
+      }
+
+      .ha-card-visual-type,
+      .ha-card-entity-style-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #e0f2fe;
+        color: #075985;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .card-type-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-self: start;
+        min-height: 20px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: #e0f2fe;
+        color: #075985;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .card-kind-preview {
+        border-left-width: 5px;
+      }
+
+      .card-kind-preview[data-card-kind="core"] {
+        border-left-color: #64748b;
+      }
+
+      .card-kind-preview[data-card-kind="mushroom"] {
+        border-left-color: #0d9488;
+      }
+
+      .card-kind-preview[data-card-kind="tabbed"] {
+        border-left-color: #2563eb;
+      }
+
+      .card-type-badge[data-card-kind="core"] {
+        background: #f1f5f9;
+        color: #334155;
+      }
+
+      .card-type-badge[data-card-kind="mushroom"] {
+        background: #ccfbf1;
+        color: #115e59;
+      }
+
+      .card-type-badge[data-card-kind="tabbed"] {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      .bubble-card-preview[data-bubble-type="state"] {
+        border-left-color: #0284c7;
+      }
+
+      .bubble-card-preview[data-bubble-type="switch"] {
+        border-left-color: #16a34a;
+      }
+
+      .bubble-card-preview[data-bubble-type="slider"] {
+        border-left-color: #d97706;
+      }
+
+      .bubble-card-preview[data-bubble-type="name"] {
+        border-left-color: #7c3aed;
+      }
+
+      .card-type-badge[data-card-kind="bubble"][data-card-variant="switch"] {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .card-type-badge[data-card-kind="bubble"][data-card-variant="slider"] {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .card-type-badge[data-card-kind="bubble"][data-card-variant="name"] {
+        background: #ede9fe;
+        color: #5b21b6;
+      }
+
+      .ha-card-visual-entities {
+        display: grid;
+        gap: 6px;
+      }
+
+      .ha-card-visual-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: start;
+        padding: 8px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        background: #f8fafc;
+      }
+
+      .ha-card-visual-row small {
+        display: block;
+        margin-top: 2px;
+        color: #64748b;
+      }
+
+      .ha-card-entity-style {
+        grid-column: 1 / -1;
+      }
+
+      .ha-card-entity-style summary {
+        cursor: pointer;
+        color: #0f766e;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .ha-card-entity-style pre {
+        min-height: 0;
+        max-height: 160px;
+        margin-top: 6px;
+        background: #0f172a;
+        font-size: 12px;
+      }
+
+      .expert-editor-controls {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(96px, 1fr));
+        gap: 8px;
+      }
+
+      .editor-mode-toggle {
+        display: inline-flex;
+        gap: 6px;
+        margin: 12px 0;
+      }
+
+      .editor-mode-toggle button {
+        min-width: 92px;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #172033;
+        padding: 8px 10px;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .editor-mode-toggle button[aria-pressed="true"] {
+        border-color: #0f766e;
+        background: #e6fffb;
+        color: #0f766e;
+        font-weight: 700;
+      }
+
+      .expert-editor-workbench {
+        display: grid;
+        grid-template-columns: minmax(220px, 280px) minmax(640px, 1fr);
+        gap: 12px;
+        align-items: start;
+      }
+
+      .expert-editor-canvas-row {
+        display: block;
+        min-width: 100%;
+        overflow-x: auto;
+        padding-bottom: 10px;
+      }
+
+      .expert-editor-controls .wide {
+        grid-column: 1 / -1;
+      }
+
+      .expert-editor-controls .span-2 {
+        grid-column: span 2;
+      }
+
+      .expert-editor-controls .field-pair {
+        display: grid;
+        gap: 6px;
+        align-content: start;
+      }
+
+      .expert-editor-controls .field-pair[hidden] {
+        display: none;
+      }
+
+      .expert-number-controls {
+        display: grid;
+        grid-template-columns: repeat(4, 58px);
+        gap: 8px;
+        align-items: end;
+      }
+
+      .expert-number-controls .field-pair {
+        gap: 4px;
+      }
+
+      .expert-number-controls label {
+        overflow: hidden;
+        font-size: 12px;
+        line-height: 1.1;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .expert-number-controls input {
+        width: 58px;
+        min-height: 34px;
+        padding: 6px 4px;
+        text-align: center;
+      }
+
+      .expert-title-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 8px;
+      }
+
+      .expert-title-row input {
+        min-width: 0;
+      }
+
+      .expert-title-row button {
+        border: 1px solid #0f766e;
+        border-radius: 4px;
+        background: #0f766e;
+        color: #ffffff;
+        padding: 8px 10px;
+        font: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 720px) {
+        .expert-editor-controls {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .expert-editor-controls .span-2 {
+          grid-column: 1 / -1;
+        }
+
+        .expert-number-controls {
+          grid-template-columns: repeat(4, minmax(52px, 1fr));
+        }
+
+        .expert-number-controls input {
+          width: 100%;
+        }
+
+        .expert-title-row {
+          grid-template-columns: 1fr;
+        }
+
+        .expert-title-row button {
+          width: 100%;
+        }
+      }
+
+      .expert-template-palette {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 8px;
+      }
+
+      .expert-editor-sidebar .expert-template-palette {
+        grid-template-columns: 1fr;
+        max-height: min(860px, calc(100vh - 300px));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+        padding-right: 8px;
+      }
+
+      .expert-palette-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0 0 8px;
+      }
+
+      .expert-palette-toolbar button {
+        box-sizing: border-box;
+        flex: 0 0 156px;
+        width: 156px;
+        min-height: 36px;
+        height: 36px;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #172033;
+        padding: 4px 8px;
+        font: inherit;
+        font-size: 12.5px;
+        line-height: 1.1;
+        text-align: center;
+        cursor: pointer;
+      }
+
+      .expert-palette-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+      }
+
+      .expert-palette-search {
+        margin: 0 0 8px;
+      }
+
+      .expert-palette-search input {
+        width: 100%;
+        min-height: 34px;
+        box-sizing: border-box;
+      }
+
+      .expert-template-card {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        align-items: start;
+        gap: 8px;
+        max-width: 100%;
+        min-height: 44px;
+        box-sizing: border-box;
+        padding: 7px 8px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .expert-template-main,
+      .expert-template-meta {
+        display: grid;
+        gap: 3px;
+        min-width: 0;
+      }
+
+      .expert-template-meta {
+        justify-items: stretch;
+      }
+
+      .expert-template-sizing {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+      }
+
+      .expert-template-sizing select {
+        min-height: 26px;
+        padding: 3px 5px;
+        font-size: 12px;
+      }
+
+      .expert-template-card:hover,
+      .expert-template-card:focus-visible {
+        border-color: #0f766e;
+        outline: none;
+      }
+
+      .expert-template-card.disabled {
+        cursor: not-allowed;
+        opacity: 0.72;
+      }
+
+      .expert-template-card.disabled:hover,
+      .expert-template-card.disabled:focus-visible {
+        border-color: #cbd5e1;
+      }
+
+      .expert-template-card.selected {
+        border-color: #0f766e;
+        box-shadow: inset 0 0 0 1px #0f766e;
+      }
+
+      .expert-template-card.dragging {
+        opacity: 0.6;
+      }
+
+      .expert-template-card strong {
+        overflow-wrap: anywhere;
+      }
+
+      .expert-template-card .favorite-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 18px;
+        color: #536079;
+        font-size: 12px;
+      }
+
+      .expert-template-card .favorite-toggle input {
+        width: 14px;
+        height: 14px;
+        margin: 0;
+        accent-color: #0f766e;
+      }
+
+      .expert-template-card .palette-category {
+        color: #0f766e;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .expert-template-card strong {
+        font-size: 14px;
+        line-height: 1.15;
+      }
+
+      .expert-template-card small,
+      .expert-template-card span {
+        max-width: 100%;
+        color: #536079;
+        font-size: 12px;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .expert-editor-surface {
+        display: grid;
+        gap: 10px;
+      }
+
+      .expert-editor-dropzone {
+        --expert-editor-base-width: 640px;
+        --expert-editor-extra-width: 0px;
+        --expert-editor-extra-height: 0px;
+        position: relative;
+        width: calc(var(--expert-editor-base-width) + var(--expert-editor-extra-width));
+        max-width: none;
+        padding: 14px;
+        border: 1px dashed #0f766e;
+        border-radius: 6px;
+        background: #f8fffd;
+        color: #115e59;
+        box-sizing: border-box;
+        min-height: calc(448px + var(--expert-editor-extra-height));
+        text-align: center;
+      }
+
+      .expert-surface-grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        grid-template-rows: repeat(12, minmax(32px, 1fr));
+        gap: 4px;
+        min-height: calc(420px + var(--expert-editor-extra-height));
+        background:
+          linear-gradient(to right, rgba(15, 118, 110, 0.16) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(15, 118, 110, 0.16) 1px, transparent 1px);
+        background-size: calc(100% / 12) 100%, 100% calc(100% / 12);
+      }
+
+      .expert-editor-surface-resize-handle {
+        position: absolute;
+        right: -8px;
+        bottom: -8px;
+        z-index: 4;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: 2px solid #f0645c;
+        border-radius: 6px;
+        background:
+          linear-gradient(135deg, transparent 0 46%, #f0645c 47% 53%, transparent 54%),
+          linear-gradient(135deg, transparent 0 64%, #f0645c 65% 71%, transparent 72%),
+          #ffffff;
+        box-shadow: 0 6px 14px rgba(23, 32, 51, 0.16);
+        cursor: nwse-resize;
+        touch-action: none;
+      }
+
+      .expert-editor-surface-resize-handle:focus-visible {
+        outline: 3px solid rgba(15, 118, 110, 0.35);
+        outline-offset: 3px;
+      }
+
+      .expert-surface-grid p {
+        grid-column: 1 / -1;
+        place-self: center;
+        margin: 0;
+      }
+
+      .expert-surface-field {
+        display: grid;
+        place-items: center;
+        position: relative;
+        min-height: 54px;
+        padding: 8px;
+        border: 1px solid #0f766e;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #172033;
+        text-align: center;
+        cursor: grab;
+      }
+
+      .expert-surface-field.selected {
+        border-color: #64748b;
+        box-shadow: inset 0 0 0 1px #64748b;
+      }
+
+      .expert-surface-field:focus-visible {
+        outline: 3px solid rgba(15, 118, 110, 0.35);
+        outline-offset: 2px;
+      }
+
+      .expert-surface-field.editing {
+        border-width: 2px;
+        border-color: #8b93a3;
+        box-shadow: 0 10px 22px rgba(23, 32, 51, 0.08);
+      }
+
+      .expert-surface-field.conflict {
+        border-color: #dc2626;
+        background: #fff7f7;
+        box-shadow: inset 0 0 0 1px #dc2626;
+      }
+
+      .expert-surface-field.tabbed-container {
+        border-style: solid;
+        border-color: #2563eb;
+        background: #f8fbff;
+        cursor: default;
+        place-items: stretch;
+        align-content: start;
+        gap: 6px;
+        text-align: left;
+      }
+
+      .expert-surface-field.stack-container {
+        border-color: #0f766e;
+        background: #f8fffd;
+        cursor: default;
+        min-height: 96px;
+        place-items: stretch;
+        align-content: start;
+        gap: 6px;
+        text-align: left;
+      }
+
+      .expert-surface-field-title {
+        min-width: 0;
+        color: #172033;
+        font-size: 14px;
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+      }
+
+      .expert-surface-field.tabbed-container.drag-over,
+      .expert-surface-field.stack-container.drag-over {
+        background: #dbeafe;
+        box-shadow: inset 0 0 0 2px #2563eb;
+      }
+
+      .expert-surface-field.tabbed-container.conflict {
+        border-color: #2563eb;
+        background: #f8fbff;
+        box-shadow: inset 0 0 0 1px #2563eb;
+      }
+
+      .expert-surface-field.conflict::after {
+        content: "Overlap";
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: #dc2626;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .expert-surface-field.tabbed-container.conflict::after {
+        content: "Tabs";
+        background: #2563eb;
+      }
+
+      .expert-tab-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 2px;
+      }
+
+      .expert-tab-inline {
+        display: grid;
+        gap: 5px;
+        min-width: 0;
+        align-self: stretch;
+      }
+
+      .expert-container-settings {
+        flex: 0 0 auto;
+        min-height: 24px;
+        padding: 2px 8px;
+        border: 1px solid #bfdbfe;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #1e40af;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .expert-selected-card-details {
+        display: grid;
+        gap: 10px;
+        align-content: start;
+        min-width: 0;
+        margin-bottom: 10px;
+        padding: 12px;
+        border: 1px solid #2563eb;
+        border-radius: 6px;
+        background: #f8fbff;
+        color: #172033;
+      }
+
+      .expert-selected-card-details h3 {
+        margin: 0;
+        color: #172033;
+        font-size: 15px;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+
+      .expert-selected-card-details dl {
+        display: grid;
+        grid-template-columns: minmax(78px, auto) minmax(0, 1fr);
+        gap: 6px 10px;
+        margin: 0;
+      }
+
+      .expert-selected-card-details dt {
+        color: #334155;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .expert-selected-card-details dd {
+        margin: 0;
+        min-width: 0;
+        color: #172033;
+        font-size: 12px;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .expert-selected-card-details .detail-card-type {
+        color: #9a3412;
+        font-weight: 800;
+      }
+
+      .expert-selected-card-details .detail-style-state {
+        color: #0f766e;
+        font-weight: 800;
+      }
+
+      .expert-detail-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-end;
+      }
+
+      .expert-detail-actions button {
+        min-height: 26px;
+        padding: 4px 9px;
+      }
+
+      .expert-detail-delete {
+        border-color: #fecaca;
+        background: #dc2626;
+        color: #ffffff;
+      }
+
+      .expert-detail-card-list {
+        display: grid;
+        gap: 4px;
+      }
+
+      .expert-detail-card-list ul {
+        display: grid;
+        gap: 2px;
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .expert-detail-card-item {
+        color: #172033;
+        font: inherit;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+
+      .expert-detail-style-code {
+        max-height: 220px;
+        margin: 0;
+        overflow: auto;
+        border-radius: 6px;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-size: 11px;
+        line-height: 1.35;
+        white-space: pre-wrap;
+      }
+
+      .expert-tab-chip {
+        min-height: 24px;
+        border: 1px solid #bfdbfe;
+        max-width: 100%;
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: #dbeafe;
+        color: #1e40af;
+        font-size: 11px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+        cursor: pointer;
+      }
+
+      .expert-tab-chip.active {
+        border-color: #2563eb;
+        background: #2563eb;
+        color: #ffffff;
+      }
+
+      .expert-tab-preview {
+        display: grid;
+        gap: 5px;
+        min-height: 34px;
+        align-content: start;
+        margin-top: 4px;
+        padding: 6px;
+        border: 1px dashed #93c5fd;
+        border-radius: 6px;
+        background: #ffffff;
+      }
+
+      .expert-tab-preview.horizontal {
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+      }
+
+      .expert-tab-preview.drag-over {
+        border-color: #2563eb;
+        background: #eff6ff;
+      }
+
+      .expert-tab-preview-card {
+        display: grid;
+        gap: 4px;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        min-height: 0;
+        padding: 5px 6px;
+        border: 1px solid #dbeafe;
+        border-radius: 5px;
+        background: #f8fbff;
+        color: #172033;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .expert-tab-preview-card.selected {
+        border-color: #2563eb;
+        box-shadow: inset 0 0 0 1px #2563eb;
+      }
+
+      .expert-tab-preview-card-actions {
+        display: inline-flex;
+        justify-content: flex-end;
+        gap: 4px;
+      }
+
+      .expert-tab-preview-card-actions button {
+        display: inline-grid;
+        place-items: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border: 0;
+        border-radius: 999px;
+        color: #ffffff;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .expert-tab-preview-card-out {
+        background: #64748b;
+      }
+
+      .expert-tab-preview-card-remove {
+        width: 18px;
+        background: #dc2626;
+      }
+
+      .expert-tab-preview-card strong {
+        min-width: 0;
+        font-size: 12px;
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+      }
+
+      .expert-tab-preview-card small {
+        min-width: 0;
+        color: #536079;
+        font-size: 11px;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+        background: rgba(15, 23, 42, 0.45);
+      }
+
+      .modal-backdrop[hidden] {
+        display: none;
+      }
+
+      .tabbed-card-dialog {
+        width: min(860px, 100%);
+        max-height: min(1120px, calc(100vh - 36px));
+        overflow: auto;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #ffffff;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+      }
+
+      .tabbed-card-dialog header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .tabbed-card-dialog h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .tabbed-card-dialog-body {
+        display: grid;
+        grid-template-columns: minmax(220px, 0.75fr) minmax(280px, 1fr);
+        gap: 14px;
+        padding: 16px;
+      }
+
+      .tabbed-card-dialog-body.single-column {
+        grid-template-columns: 1fr;
+      }
+
+      .dialog-hint {
+        margin: 0;
+        color: #536079;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .ha-card-paste-import-text {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 280px;
+        resize: vertical;
+        font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+        font-size: 12.5px;
+        line-height: 1.45;
+      }
+
+      .problem-report-preview {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 340px;
+        resize: vertical;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #f8fafc;
+        color: #172033;
+        padding: 10px;
+        font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+        line-height: 1.45;
+        white-space: pre;
+      }
+
+      .ha-card-style-review {
+        max-height: 260px;
+        overflow: auto;
+        margin: 0;
+        padding: 10px;
+        border: 1px solid #bfdbfe;
+        border-radius: 6px;
+        background: #f8fbff;
+        color: #172033;
+        font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+      }
+
+      .tabbed-card-tab-list,
+      .tabbed-card-tab-editor {
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+
+      .tabbed-card-tab-list-items {
+        display: grid;
+        gap: 6px;
+      }
+
+      .tabbed-card-tab-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 38px;
+        padding: 8px 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+      }
+
+      .tabbed-card-tab-row.selected {
+        border-color: #2563eb;
+        box-shadow: inset 0 0 0 1px #2563eb;
+      }
+
+      .tabbed-card-tab-row button {
+        flex: 1;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+      }
+
+      .tabbed-card-tab-editor .connection-actions {
+        margin-top: 0;
+      }
+
+      .tabbed-card-dialog-body .span-2 {
+        grid-column: 1 / -1;
+      }
+
+      .tabbed-card-dialog .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 34px;
+        color: #536079;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .tabbed-card-dialog .checkbox-row input {
+        width: 15px;
+        height: 15px;
+        accent-color: #2563eb;
+      }
+
+      .overview-entity-editor-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .overview-entity-editor-row {
+        display: grid;
+        grid-template-columns: minmax(120px, 1fr) minmax(180px, 1.2fr) minmax(110px, 0.8fr) auto auto;
+        gap: 8px;
+        align-items: end;
+        padding: 8px;
+        border: 1px solid #dbeafe;
+        border-radius: 6px;
+        background: #f8fbff;
+      }
+
+      .overview-entity-editor-row .checkbox-row {
+        min-height: 38px;
+      }
+
+      .overview-entity-editor-row .field-pair {
+        min-width: 0;
+      }
+
+      .overview-entity-editor-style {
+        grid-column: 1 / -1;
+        display: grid;
+        gap: 4px;
+        margin-top: 2px;
+      }
+
+      .overview-entity-editor-style summary {
+        cursor: pointer;
+        color: #0f766e;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .overview-entity-editor-style pre {
+        max-height: 140px;
+        overflow: auto;
+        margin: 0;
+        padding: 8px;
+        border: 1px solid #bfdbfe;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #172033;
+        font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+      }
+
+      .overview-entity-actions {
+        display: flex;
+        gap: 4px;
+        justify-content: flex-end;
+      }
+
+      .overview-entity-actions button {
+        min-width: 32px;
+        min-height: 32px;
+        padding: 4px 8px;
+      }
+
+      .overview-entity-picker {
+        display: grid;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+      }
+
+      .overview-entity-picker[hidden] {
+        display: none;
+      }
+
+      .overview-entity-domain-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .overview-entity-domain-filters label {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 8px;
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        background: #f8fafc;
+        color: #172033;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .overview-entity-picker-results {
+        display: grid;
+        gap: 5px;
+        min-height: 260px;
+        max-height: min(560px, 55vh);
+        overflow: auto;
+      }
+
+      .overview-entity-picker-results button {
+        display: grid;
+        gap: 2px;
+        width: 100%;
+        padding: 7px 9px;
+        border: 1px solid #dbeafe;
+        border-radius: 6px;
+        background: #f8fbff;
+        color: #172033;
+        text-align: left;
+      }
+
+      .overview-entity-picker-results small {
+        color: #536079;
+      }
+
+      .range-row {
+        display: grid;
+        grid-template-columns: minmax(140px, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .range-row input[type="range"] {
+        width: 100%;
+        accent-color: #0f766e;
+      }
+
+      .range-row output {
+        min-width: 74px;
+        color: #536079;
+        font-size: 12px;
+        font-weight: 800;
+        text-align: right;
+      }
+
+      @media (max-width: 760px) {
+        .tabbed-card-dialog-body {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .expert-resize-handle {
+        position: absolute;
+        z-index: 2;
+        width: 14px;
+        height: 14px;
+        border: 3px solid #f0645c;
+        border-radius: 999px;
+        background: #ffffff;
+        box-sizing: border-box;
+      }
+
+      .expert-resize-handle[data-corner="se"] {
+        right: 0;
+        bottom: 0;
+        cursor: nwse-resize;
+        transform: translate(50%, 50%);
+      }
+
+      .expert-surface-field.dragging {
+        opacity: 0.65;
+      }
+
+      .expert-surface-field strong,
+      .expert-surface-field small {
+        overflow-wrap: anywhere;
+      }
+
+      .expert-surface-field span {
+        color: #0f766e;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .expert-entity-style-button {
+        max-width: 100%;
+        min-height: 20px;
+        padding: 2px 7px;
+        border: 1px solid #99f6e4;
+        border-radius: 999px;
+        background: #f0fdfa;
+        color: #0f766e;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+        cursor: pointer;
+      }
+
+      .imported-style-dialog {
+        width: min(760px, 100%);
+      }
+
+      .imported-style-entity {
+        margin: 0;
+        color: #536079;
+        font-size: 13px;
+      }
+
+      .imported-style-code {
+        max-height: min(520px, calc(100vh - 190px));
+        overflow: auto;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #0f172a;
+        color: #eef6ff;
+        font: 12.5px/1.45 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      .imported-style-detection {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        min-height: 26px;
+      }
+
+      .imported-style-detection-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: 4px 9px;
+        border-radius: 999px;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .imported-style-detection-badge.card-mod {
+        background: #c2410c;
+      }
+
+      .imported-style-detection-badge.uix-style {
+        background: #15803d;
+      }
+
+      .imported-style-detection-badge.unknown {
+        background: #475569;
+      }
+
+      .ha-card-export-style-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .ha-card-export-style-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 116px;
+        min-height: 34px;
+        box-sizing: border-box;
+        padding: 7px 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #172033;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .ha-card-export-style-option input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: #0f766e;
+      }
+
+      .expert-editor-dropzone.drag-over {
+        background: #dcfce7;
+        box-shadow: inset 0 0 0 1px #0f766e;
+      }
+
+      .expert-field-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .expert-field-list p {
+        margin: 0;
+        color: #536079;
+      }
+
+      .expert-field-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 36px;
+        padding: 8px 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+      }
+
+      .expert-field-row.selected {
+        border-color: #64748b;
+        box-shadow: inset 0 0 0 1px #64748b;
+      }
+
+      .expert-field-row span {
+        overflow-wrap: anywhere;
+      }
+
+      .expert-field-row .icon-button {
+        width: 30px;
+        min-width: 30px;
+        min-height: 30px;
+        display: inline-grid;
+        place-items: center;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #b91c1c;
+      }
+
+      #atlas-entity-list {
+        max-height: 486px;
+        margin: 16px 0;
+        overflow: auto;
+        scrollbar-gutter: stable;
+      }
+
+      .atlas-entity-table {
+        width: 100%;
+        min-width: 680px;
+        border-collapse: collapse;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+        overflow: hidden;
+      }
+
+      .atlas-card-entity-overview-table {
+        min-width: 520px;
+      }
+
+      .atlas-entity-table th,
+      .atlas-entity-table td {
+        border-bottom: 1px solid #d8e0ec;
+        padding: 9px 10px;
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      .atlas-entity-table th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #f8fafc;
+        color: #536079;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .atlas-entity-sort-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 28px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        padding: 0;
+        font: inherit;
+        font-weight: 800;
+        text-align: left;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+
+      .atlas-entity-sort-button::after {
+        content: "↕";
+        color: #94a3b8;
+        font-size: 11px;
+      }
+
+      .atlas-entity-sort-button[data-active-sort="true"]::after {
+        content: attr(data-sort-indicator);
+        color: #0f766e;
+      }
+
+      .atlas-entity-table tbody tr {
+        cursor: pointer;
+      }
+
+      .atlas-entity-table tbody tr:hover,
+      .atlas-entity-table tbody tr:focus-visible {
+        background: #f0fdfa;
+        outline: none;
+      }
+
+      .atlas-entity-table tbody tr[data-primary="true"] {
+        background: #ecfdf5;
+      }
+
+      .atlas-entity-table tbody tr[data-stack-selected="true"] {
+        box-shadow: inset 4px 0 0 #0f766e;
+      }
+
+      .atlas-entity-name-cell,
+      .atlas-entity-detail-cell {
+        display: grid;
+        gap: 3px;
+      }
+
+      .atlas-entity-actions-cell {
+        width: 1%;
+        white-space: nowrap;
+      }
+
+      .atlas-entity-table button {
+        border: 1px solid #0f766e;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #115e59;
+        padding: 6px 8px;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .atlas-entity-table .icon-button {
+        width: 30px;
+        min-width: 30px;
+        min-height: 30px;
+        display: inline-grid;
+        place-items: center;
+        border-color: #cbd5e1;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .atlas-entity-table .icon-button:last-child {
+        color: #b91c1c;
+      }
+
+      .atlas-entity-table .stack-checkbox {
+        width: 30px;
+        min-width: 30px;
+        min-height: 30px;
+        margin: 0;
+        accent-color: #0f766e;
+      }
+
+      .atlas-entity-table tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .atlas-entity-status {
+        color: #0f766e;
+        font-weight: 700;
+      }
+
+      .atlas-entity-id {
+        color: #536079;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+
+      .atlas-entity-type {
+        color: #536079;
+        font-size: 13px;
+        overflow-wrap: anywhere;
+      }
+
+      .card-entity-overview {
+        margin-top: 12px;
+        overflow-x: auto;
+      }
+
+      .atlas-entity-card {
+        display: grid;
+        gap: 4px;
+        min-height: 76px;
+        box-sizing: border-box;
+        padding: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+        cursor: pointer;
+      }
+
+      .atlas-entity-card:focus-visible {
+        outline: 2px solid #0f766e;
+        outline-offset: 2px;
+      }
+
+      .atlas-entity-card[data-primary="true"] {
+        border-color: #0f766e;
+        background: #ecfdf5;
+      }
+
+      .atlas-entity-card[data-stack-selected="true"] {
+        box-shadow: inset 0 0 0 1px #0f766e;
+      }
+
+      .entity-section-title {
+        margin: 18px 0 4px;
+        font-size: 16px;
+        letter-spacing: 0;
+      }
+
+      .entity-picker-panel,
+      .selected-entities-panel {
+        margin-top: 18px;
+      }
+
+      .entity-picker-panel summary,
+      .selected-entities-panel summary {
+        cursor: pointer;
+        color: #0f766e;
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 10px;
+      }
+
+      .entity-picker-panel summary:focus-visible,
+      .selected-entities-panel summary:focus-visible {
+        outline: 2px solid #0f766e;
+        outline-offset: 2px;
+      }
+
+      #stack-selection-summary {
+        min-height: 20px;
+        color: #536079;
+        font-size: 14px;
+      }
+
+      .atlas-entity-card strong {
+        overflow-wrap: anywhere;
+      }
+
+      .atlas-entity-card span {
+        color: #0f766e;
+        font-weight: 700;
+      }
+
+      .atlas-entity-card small {
+        color: #536079;
+      }
+
+      .atlas-entity-card[data-category="temperature"] { border-left: 4px solid #dc2626; }
+      .atlas-entity-card[data-category="power"] { border-left: 4px solid #d97706; }
+      .atlas-entity-card[data-category="battery"] { border-left: 4px solid #65a30d; }
+      .atlas-entity-card[data-category="light"] { border-left: 4px solid #ca8a04; }
+      .atlas-entity-card[data-category="switch"] { border-left: 4px solid #0f766e; }
+      .atlas-entity-card[data-battery-level="low"] { border-color: #dc2626; background: #fff7f7; }
+      .atlas-entity-card[data-battery-level="medium"] { border-color: #d97706; background: #fffaf0; }
+
+      .atlas-entity-card button {
+        justify-self: start;
+        border: 1px solid #0f766e;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #115e59;
+        padding: 6px 8px;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .atlas-entity-card-actions {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .atlas-entity-card .icon-button {
+        width: 30px;
+        min-width: 30px;
+        min-height: 30px;
+        display: inline-grid;
+        place-items: center;
+        border-color: #cbd5e1;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .atlas-entity-card .icon-button:last-child {
+        color: #b91c1c;
+      }
+
+      .atlas-entity-card .stack-checkbox {
+        width: 30px;
+        min-width: 30px;
+        min-height: 30px;
+        margin: 0;
+        accent-color: #0f766e;
+      }
+
+      #atlas-status-root {
+        min-height: 104px;
+      }
+
+      .diagnostics-panel {
+        margin: 18px 0 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+      }
+
+      .diagnostics-panel summary {
+        min-height: 44px;
+        box-sizing: border-box;
+        padding: 12px 16px;
+        color: #172033;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .diagnostics-panel summary:focus-visible {
+        outline: 2px solid #0f766e;
+        outline-offset: 2px;
+      }
+
+      .diagnostics-content {
+        border-top: 1px solid #e2e8f0;
+        padding: 0 16px 16px;
+      }
+
+      .atlas-status {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        box-sizing: border-box;
+        min-height: 104px;
+        padding: var(--atlas-spacing);
+        border: 1px solid color-mix(in srgb, var(--atlas-color-accent) 45%, #cbd5e1);
+        border-radius: 6px;
+        background: var(--atlas-color-surface);
+        color: var(--atlas-color-text);
+        font-family: var(--atlas-font-family);
+      }
+
+      .atlas-status strong {
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+
+      .atlas-status span {
+        color: var(--atlas-color-accent);
+        font-weight: 700;
+      }
+
+      .atlas-status[data-status="blocked"] {
+        border-color: #dc2626;
+      }
+
+      .atlas-status[data-status="blocked"] span {
+        color: #b91c1c;
+      }
+
+      .atlas-status[data-status="pending"] span {
+        color: #a16207;
+      }
+
+      #status-message {
+        min-height: 24px;
+        margin-top: 12px;
+        color: var(--atlas-muted);
+      }
+
+      :root[data-theme="dark"] .connection-config.compact-panel,
+      :root[data-theme="dark"] .card-export-language-panel,
+      :root[data-theme="dark"] .diagnostics-panel,
+      :root[data-theme="dark"] .selected-entities-panel,
+      :root[data-theme="dark"] .entity-picker-panel,
+      :root[data-theme="dark"] .tabbed-card-dialog,
+      :root[data-theme="dark"] .atlas-entity-card {
+        border-color: var(--atlas-border-soft);
+        background: var(--atlas-panel);
+        color: var(--atlas-text);
+      }
+
+      :root[data-theme="dark"] .connection-config input,
+      :root[data-theme="dark"] .connection-config select,
+      :root[data-theme="dark"] .entity-domain-shortcuts button,
+      :root[data-theme="dark"] .entity-search-control button,
+      :root[data-theme="dark"] .editor-mode-toggle button,
+      :root[data-theme="dark"] .expert-palette-toolbar button,
+      :root[data-theme="dark"] .expert-template-sizing select,
+      :root[data-theme="dark"] .expert-title-row button,
+      :root[data-theme="dark"] textarea,
+      :root[data-theme="dark"] pre,
+      :root[data-theme="dark"] .diagnostics-panel summary {
+        border-color: var(--atlas-border);
+        background: var(--atlas-panel-soft);
+        color: var(--atlas-text);
+      }
+
+      :root[data-theme="dark"] .connection-config .remember-secret,
+      :root[data-theme="dark"] .atlas-entity-card small,
+      :root[data-theme="dark"] .ha-card-visual-row small,
+      :root[data-theme="dark"] .expert-template-card small,
+      :root[data-theme="dark"] .expert-template-card span,
+      :root[data-theme="dark"] .expert-template-card .favorite-toggle,
+      :root[data-theme="dark"] #stack-selection-summary,
+      :root[data-theme="dark"] #selected-entity,
+      :root[data-theme="dark"] #ha-card-import-review,
+      :root[data-theme="dark"] #ha-card-dependency,
+      :root[data-theme="dark"] #temporary-ha-card-resource-list,
+      :root[data-theme="dark"] .entity-picker-status,
+      :root[data-theme="dark"] .card-export-language-hint,
+      :root[data-theme="dark"] .dialog-hint {
+        color: var(--atlas-muted);
+      }
+
+      :root[data-theme="dark"] .entity-summary-chip {
+        border-color: #40535b;
+        background: #172126;
+        color: var(--atlas-muted);
+      }
+
+      :root[data-theme="dark"] .entity-summary-chip strong {
+        color: var(--atlas-text);
+      }
+
+      :root[data-theme="dark"] .entity-summary-chip[data-kind="ready"] {
+        border-color: #0f766e;
+        background: #12342f;
+        color: #7ee6c9;
+      }
+
+      :root[data-theme="dark"] .entity-summary-chip[data-kind="pending"] {
+        border-color: #92400e;
+        background: #332614;
+        color: #fbbf24;
+      }
+
+      :root[data-theme="dark"] .entity-summary-chip[data-kind="blocked"] {
+        border-color: #991b1b;
+        background: #351b1d;
+        color: #fca5a5;
+      }
+
+      :root[data-theme="dark"] .problem-report-button,
+      :root[data-theme="dark"] .status-controls button,
+      :root[data-theme="dark"] .connection-actions button,
+      :root[data-theme="dark"] .atlas-entity-card button {
+        border-color: var(--atlas-border);
+        background: var(--atlas-panel-soft);
+        color: var(--atlas-accent);
+      }
+
+      :root[data-theme="dark"] .problem-report-button:hover,
+      :root[data-theme="dark"] .problem-report-button:focus-visible,
+      :root[data-theme="dark"] .status-controls button[aria-pressed="true"] {
+        border-color: var(--atlas-accent);
+        background: var(--atlas-accent-soft);
+        color: var(--atlas-accent);
+      }
+
+      :root[data-theme="dark"] .entity-domain-shortcuts button[aria-pressed="true"],
+      :root[data-theme="dark"] .editor-mode-toggle button[aria-pressed="true"] {
+        border-color: var(--atlas-accent);
+        background: var(--atlas-accent-soft);
+        color: var(--atlas-accent);
+      }
+
+      :root[data-theme="dark"] .resource-hint-field,
+      :root[data-theme="dark"] .temporary-resource-debug,
+      :root[data-theme="dark"] .ha-card-visual-preview,
+      :root[data-theme="dark"] .ha-card-visual-card,
+      :root[data-theme="dark"] .ha-card-visual-row,
+      :root[data-theme="dark"] .expert-template-card,
+      :root[data-theme="dark"] .expert-editor-dropzone,
+      :root[data-theme="dark"] .expert-surface-field,
+      :root[data-theme="dark"] .overview-entity-picker,
+      :root[data-theme="dark"] .overview-entity-editor-row,
+      :root[data-theme="dark"] .overview-entity-domain-filters label,
+      :root[data-theme="dark"] .overview-entity-picker-results button,
+      :root[data-theme="dark"] .tabbed-card-tab-row,
+      :root[data-theme="dark"] .expert-selected-card-details {
+        border-color: var(--atlas-border-soft);
+        background: var(--atlas-panel-soft);
+        color: var(--atlas-text);
+      }
+
+      :root[data-theme="dark"] .ha-card-visual-card strong,
+      :root[data-theme="dark"] .ha-card-visual-row strong,
+      :root[data-theme="dark"] .resource-hint-field strong,
+      :root[data-theme="dark"] .temporary-resource-debug summary,
+      :root[data-theme="dark"] .expert-surface-field-title,
+      :root[data-theme="dark"] .expert-selected-card-details h3,
+      :root[data-theme="dark"] .expert-selected-card-details dt,
+      :root[data-theme="dark"] .expert-selected-card-details dd {
+        color: var(--atlas-text);
+      }
+
+      :root[data-theme="dark"] .resource-hint-field:has(#ha-card-dependency[data-required="true"]),
+      :root[data-theme="dark"] .resource-hint-field:has(#ha-card-dependency[data-status="installed"]),
+      :root[data-theme="dark"] .resource-hint-field:has(#ha-card-dependency[data-status="missing"]) {
+        background: var(--atlas-panel-soft);
+      }
+
+      :root[data-theme="dark"] .expert-template-card,
+      :root[data-theme="dark"] .expert-editor-dropzone,
+      :root[data-theme="dark"] .expert-selected-card-details,
+      :root[data-theme="dark"] .atlas-entity-card,
+      :root[data-theme="dark"] .atlas-entity-table,
+      :root[data-theme="dark"] .atlas-card-entity-overview-table {
+        border-color: var(--atlas-border-soft);
+        background: var(--atlas-panel);
+        color: var(--atlas-text);
+      }
+
+      :root[data-theme="dark"] .atlas-entity-table th {
+        border-color: var(--atlas-border-soft);
+        background: var(--atlas-panel-soft);
+        color: var(--atlas-muted);
+      }
+
+      :root[data-theme="dark"] .atlas-entity-sort-button[data-active-sort="true"]::after {
+        color: var(--atlas-accent);
+      }
+
+      :root[data-theme="dark"] .atlas-entity-table td {
+        border-color: var(--atlas-border);
+      }
+
+      :root[data-theme="dark"] .atlas-entity-table tbody tr:hover,
+      :root[data-theme="dark"] .atlas-entity-table tbody tr:focus-visible,
+      :root[data-theme="dark"] .atlas-entity-table tbody tr[data-primary="true"] {
+        background: var(--atlas-accent-soft);
+      }
+
+      :root[data-theme="dark"] .expert-editor-dropzone {
+        border-color: var(--atlas-accent);
+        background: var(--atlas-panel);
+        color: var(--atlas-muted);
+      }
+
+      :root[data-theme="dark"] .expert-surface-grid {
+        background:
+          linear-gradient(to right, rgba(45, 212, 191, 0.18) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(45, 212, 191, 0.18) 1px, transparent 1px);
+        background-size: calc(100% / 12) 100%, 100% calc(100% / 12);
+      }
+
+      :root[data-theme="dark"] .expert-template-card:hover,
+      :root[data-theme="dark"] .expert-template-card:focus-visible,
+      :root[data-theme="dark"] .expert-template-card.selected {
+        border-color: var(--atlas-accent);
+        background: var(--atlas-accent-soft);
+        box-shadow: inset 4px 0 0 var(--atlas-accent);
+      }
+
+      :root[data-theme="dark"] .expert-template-card strong,
+      :root[data-theme="dark"] .expert-template-card small,
+      :root[data-theme="dark"] .expert-template-card span,
+      :root[data-theme="dark"] .expert-template-card .favorite-toggle,
+      :root[data-theme="dark"] .atlas-entity-card small,
+      :root[data-theme="dark"] .atlas-entity-id,
+      :root[data-theme="dark"] .atlas-entity-type,
+      :root[data-theme="dark"] .expert-selected-card-details h3,
+      :root[data-theme="dark"] .expert-selected-card-details dt,
+      :root[data-theme="dark"] .expert-selected-card-details dd {
+        color: var(--atlas-text);
+      }
+
+      :root[data-theme="dark"] .atlas-entity-status {
+        color: var(--atlas-accent);
+      }
+
+      :root[data-theme="dark"] .expert-template-card .palette-category {
+        color: var(--atlas-accent);
+      }
+
+      :root[data-theme="dark"] .expert-template-card .favorite-toggle input {
+        border: 1px solid #4f8f87;
+        background-color: #123c37;
+        accent-color: #7ee6c9;
+      }
+
+      :root[data-theme="dark"] .expert-template-sizing select,
+      :root[data-theme="dark"] .expert-editor-controls select,
+      :root[data-theme="dark"] .expert-editor-controls input {
+        border-color: #4f8f87;
+        background: #123c37;
+        color: #edf7f8;
+      }
+
+      :root[data-theme="dark"] .expert-template-sizing select:focus,
+      :root[data-theme="dark"] .expert-editor-controls select:focus,
+      :root[data-theme="dark"] .expert-editor-controls input:focus {
+        outline: 2px solid var(--atlas-accent);
+        outline-offset: 1px;
+      }
+
+      :root[data-theme="dark"] .expert-palette-toolbar button,
+      :root[data-theme="dark"] .expert-editor-actions button,
+      :root[data-theme="dark"] .expert-title-row button {
+        border-color: #4f8f87;
+        background: #17272a;
+        color: #7ee6c9;
+      }
+
+      :root[data-theme="dark"] .expert-palette-toolbar button:hover,
+      :root[data-theme="dark"] .expert-palette-toolbar button:focus-visible,
+      :root[data-theme="dark"] .expert-editor-actions button:hover,
+      :root[data-theme="dark"] .expert-editor-actions button:focus-visible,
+      :root[data-theme="dark"] .expert-title-row button:hover,
+      :root[data-theme="dark"] .expert-title-row button:focus-visible {
+        border-color: var(--atlas-accent);
+        background: var(--atlas-accent-soft);
+        color: var(--atlas-accent);
+      }
+
+      :root[data-theme="dark"] #scan-expert-palette-cards {
+        border-color: var(--atlas-accent);
+        background: var(--atlas-accent);
+        color: var(--atlas-on-accent);
+      }
+
+      :root[data-theme="dark"] .language-toggle,
+      :root[data-theme="dark"] .theme-toggle {
+        border-color: var(--atlas-border-soft);
+        background: var(--atlas-panel);
+      }
+
+      :root[data-theme="dark"] .language-toggle button,
+      :root[data-theme="dark"] .theme-toggle button {
+        color: var(--atlas-text);
+      }
+
+      :root[data-theme="dark"] .language-toggle button[aria-pressed="true"],
+      :root[data-theme="dark"] .theme-toggle button[aria-pressed="true"] {
+        background: var(--atlas-accent);
+        color: var(--atlas-on-accent);
+      }
+
+      :root[data-theme="dark"] #reset-expert-template-sizing,
+      :root[data-theme="dark"] #reset-expert-palette-favorites,
+      :root[data-theme="dark"] #clear-expert-fields,
+      :root[data-theme="dark"] #reset-expert-surface-size {
+        border-color: #52656c;
+        background: #243238;
+        color: #d8e5e8;
+      }
+
+      :root[data-theme="dark"] .card-type-badge,
+      :root[data-theme="dark"] .ha-card-visual-type,
+      :root[data-theme="dark"] .ha-card-entity-style-badge {
+        background: #123f4e;
+        color: #7dd3fc;
+      }
+
+      :root[data-theme="dark"] .card-type-badge[data-card-kind="core"] {
+        background: #26313b;
+        color: #cbd5e1;
+      }
+
+      :root[data-theme="dark"] .card-type-badge[data-card-kind="mushroom"] {
+        background: #113c30;
+        color: #7ee6c9;
+      }
+
+      :root[data-theme="dark"] .card-type-badge[data-card-kind="tabbed"] {
+        background: #172554;
+        color: #bfdbfe;
+      }
+
+      :root[data-theme="dark"] .card-type-badge[data-card-kind="bubble"][data-card-variant="switch"] {
+        background: #123d24;
+        color: #bbf7d0;
+      }
+
+      :root[data-theme="dark"] .card-type-badge[data-card-kind="bubble"][data-card-variant="slider"] {
+        background: #3e300a;
+        color: #fde68a;
+      }
+
+      :root[data-theme="dark"] .card-type-badge[data-card-kind="bubble"][data-card-variant="name"] {
+        background: #2e1f58;
+        color: #ddd6fe;
+      }
+
+      :root[data-theme="dark"] .atlas-status {
+        border-color: color-mix(in srgb, var(--atlas-accent) 45%, var(--atlas-border));
+        background: var(--atlas-panel);
+        color: var(--atlas-text);
+      }
+
+      :root[data-theme="dark"] .atlas-status span {
+        color: var(--atlas-accent);
+      }
+
+      @media (max-width: 720px) {
+        .app-header {
+          display: grid;
+        }
+
+        .header-actions {
+          justify-content: flex-start;
+        }
+
+        .theme-toggle {
+          width: 100%;
+        }
+
+        .theme-toggle button {
+          flex: 1 1 0;
+        }
+
+        .expert-editor-workbench {
+          grid-template-columns: 1fr;
+        }
+
+        .expert-editor-canvas-row {
+          overflow-x: auto;
+        }
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "@atlas/core": "/packages/core/dist/index.js",
+          "@atlas/foundation": "/packages/foundation/dist/index.js",
+          "@atlas/kernel": "/packages/kernel/dist/index.js",
+          "@atlas/renderer": "/packages/renderer/dist/index.js",
+          "@atlas/runtime": "/packages/runtime/dist/index.js",
+          "@atlas/theme": "/packages/theme/dist/index.js",
+          "@atlas/homeassistant": "/packages/homeassistant/dist/index.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main>
+      <div class="app-header">
+        <div>
+          <h1 data-i18n="page.title">ATLAS Home Assistant Card Editor</h1>
+          <p data-i18n="page.subtitle">Build Simple or Expert Home Assistant cards from live or local entities.</p>
+        </div>
+        <div class="header-actions">
+          <button id="open-problem-report" class="problem-report-button" type="button" data-i18n="button.reportProblem">Report problem</button>
+          <div class="theme-toggle" role="group" aria-label="Theme" data-i18n-aria-label="aria.theme">
+            <button type="button" data-theme-mode="auto" aria-pressed="true" data-i18n="theme.auto">Auto</button>
+            <button type="button" data-theme-mode="light" aria-pressed="false" data-i18n="theme.light">Light</button>
+            <button type="button" data-theme-mode="dark" aria-pressed="false" data-i18n="theme.dark">Dark</button>
+          </div>
+          <div class="language-toggle" role="group" aria-label="Language" data-i18n-aria-label="aria.language">
+            <button type="button" data-language="de" aria-pressed="false">DE</button>
+            <button type="button" data-language="en" aria-pressed="true">EN</button>
+          </div>
+        </div>
+      </div>
+      <div class="connection-config compact-panel">
+        <div class="field-grid two-column">
+          <div class="field-pair">
+            <label for="home-assistant-url" data-i18n="label.haUrl">Home Assistant URL</label>
+            <input id="home-assistant-url" type="url" inputmode="url" value="http://homeassistant.local:8123" autocomplete="url">
+          </div>
+        </div>
+        <div class="connection-status-stack">
+          <output id="admin-handoff-state" aria-live="polite"></output>
+          <output id="connection-readiness" aria-live="polite"></output>
+          <output id="connection-state" data-state="closed" aria-live="polite">Connection: closed</output>
+          <output id="entity-sync-state" class="entity-sync-state" data-sync-state="idle" aria-live="polite"></output>
+          <output id="admin-translation-module-state" class="connection-translation-module-state" aria-live="polite"></output>
+        </div>
+        <div class="connection-options admin-handoff-options">
+          <a href="admin" data-open-admin data-i18n="link.openAdmin">Open Atlas Administration</a>
+        </div>
+        <div class="connection-actions">
+          <button id="connect-home-assistant" type="button" data-i18n="button.connect">Connect</button>
+          <button id="disconnect-home-assistant" type="button" disabled data-i18n="button.disconnect">Disconnect</button>
+        </div>
+      </div>
+      <div class="connection-config">
+        <div class="field-grid three-column">
+          <div id="panel-group-control" class="field-pair">
+            <label for="home-assistant-group" data-i18n="label.panelGroup">Panel group</label>
+            <select id="home-assistant-group">
+              <option value="overview" data-i18n="group.overview">Overview</option>
+              <option value="energy" data-i18n="group.energy">Energy</option>
+              <option value="safety" data-i18n="group.safety">Safety</option>
+              <option value="custom" data-i18n="group.custom">Custom</option>
+            </select>
+          </div>
+          <div id="group-name-control" class="field-pair">
+            <label for="home-assistant-group-name" data-i18n="label.groupName">Group name</label>
+            <input id="home-assistant-group-name" type="text" autocomplete="off">
+          </div>
+          <div id="card-target-control" class="field-pair">
+            <label for="ha-card-target" data-i18n="label.cardTarget">Card target</label>
+            <select id="ha-card-target"></select>
+          </div>
+          <div id="card-layout-control" class="field-pair">
+            <label for="ha-card-layout" data-i18n="label.cardLayout">Card layout</label>
+            <select id="ha-card-layout">
+              <option value="single" data-i18n="layout.single">Simple</option>
+              <option value="horizontal-stack" data-i18n="layout.horizontal">Horizontal stack</option>
+              <option value="vertical-stack" data-i18n="layout.vertical">Vertical stack</option>
+            </select>
+          </div>
+          <div class="field-pair">
+            <label for="ha-card-format" data-i18n="label.cardFormat">Card format</label>
+            <select id="ha-card-format">
+              <option value="json">JSON</option>
+              <option value="yaml" selected>YAML</option>
+            </select>
+          </div>
+          <div id="card-style-export-control" class="field-pair" hidden>
+            <label for="ha-card-style-export" data-i18n="label.cardStyleExport">Style export</label>
+            <select id="ha-card-style-export">
+              <option value="card-mod">card-mod</option>
+              <option value="uix-style">uix:</option>
+            </select>
+          </div>
+          <div class="field-pair">
+            <label for="ha-card-script-filename" data-i18n="label.scriptFilename">HACS script filename</label>
+            <input id="ha-card-script-filename" type="text" autocomplete="off" spellcheck="false" placeholder="energy-kitchen.js" data-i18n-placeholder="placeholder.scriptFilename">
+          </div>
+        </div>
+        <fieldset class="card-export-language-panel">
+          <legend data-i18n="label.cardExportLanguages">Card export languages</legend>
+          <div class="card-export-language-grid">
+            <label><input type="checkbox" data-card-export-language="en" checked disabled> EN English</label>
+            <label><input type="checkbox" data-card-export-language="de" checked> DE Deutsch</label>
+            <label><input type="checkbox" data-card-export-language="fr"> FR Français</label>
+            <label><input type="checkbox" data-card-export-language="es"> ES Español</label>
+            <label><input type="checkbox" data-card-export-language="it"> IT Italiano</label>
+            <label><input type="checkbox" data-card-export-language="nl"> NL Nederlands</label>
+            <label><input type="checkbox" data-card-export-language="sv"> SV Svenska</label>
+            <label><input type="checkbox" data-card-export-language="no"> NO Norsk</label>
+            <label><input type="checkbox" data-card-export-language="da"> DA Dansk</label>
+            <label><input type="checkbox" data-card-export-language="cs"> CS Česky</label>
+            <label><input type="checkbox" data-card-export-language="ru"> RU русский</label>
+            <label><input type="checkbox" data-card-export-language="pl"> PL Polski</label>
+            <label><input type="checkbox" data-card-export-language="pt"> PT Português</label>
+            <label><input type="checkbox" data-card-export-language="fi"> FI Suomi</label>
+          </div>
+          <div class="card-export-translation-controls">
+            <output id="card-translation-status" class="card-translation-module-status" aria-live="polite"></output>
+            <label for="card-auto-translate">
+              <input id="card-auto-translate" type="checkbox">
+              <span data-i18n="label.autoTranslateCardLanguages">Run automatic translation on export</span>
+            </label>
+            <progress id="card-translation-progress" class="card-export-translation-progress" max="100" value="0" hidden></progress>
+          </div>
+          <p class="card-export-language-hint" data-i18n="message.cardExportLanguageHint">EN is the required fallback. Additional languages are exported as English fallback files for now. Please review and translate the corresponding language files before publishing. Automatic translation later requires an internet connection.</p>
+        </fieldset>
+        <div class="connection-actions uniform-actions action-row">
+          <button id="save-home-assistant-group" class="action-group" type="button" data-i18n="button.saveGroup">Save group</button>
+          <button id="delete-home-assistant-group" class="action-group" type="button" data-i18n="button.deleteGroup">Delete group</button>
+          <button id="duplicate-home-assistant-group" class="action-group" type="button" data-i18n="button.duplicateGroup">Duplicate group</button>
+        </div>
+        <div class="connection-actions uniform-actions action-row">
+          <button id="export-home-assistant-config" class="action-export" type="button" data-i18n="button.export">Export</button>
+          <button id="export-ha-card-config" class="action-export" type="button" data-i18n="button.exportHaCard">Export HA card</button>
+          <button id="export-ha-card-package" class="action-export" type="button" data-i18n="button.exportCardPackage">Export card package</button>
+          <button id="export-ha-card-script" class="action-export" type="button" data-i18n="button.exportCardScript">Export card script</button>
+          <button id="export-ha-card-bundle" class="action-export" type="button" data-i18n="button.exportCardBundle">Export HACS bundle</button>
+          <button id="copy-ha-card-config" class="action-export" type="button" data-i18n="button.copyHaCard">Copy HA card</button>
+        </div>
+        <div class="connection-actions uniform-actions action-row">
+          <button id="copy-ha-card-resources" class="action-resource" type="button" disabled data-i18n="button.copyResources">Copy resources</button>
+          <button id="check-ha-card-resources" class="action-resource" type="button" disabled data-i18n="button.checkResources">Check resources</button>
+        </div>
+        <div class="resource-hint-field">
+          <strong data-i18n="heading.resourceHint">Resource hint</strong>
+          <output id="ha-card-dependency" aria-live="polite"></output>
+        </div>
+        <label class="temporary-resource-debug-toggle">
+          <input id="toggle-temporary-resource-debug" type="checkbox">
+          <span data-i18n="label.showTemporaryResourceDebug">Show resource debug</span>
+        </label>
+        <details id="temporary-resource-debug" class="temporary-resource-debug" hidden>
+          <summary data-i18n="heading.temporaryResourceDebug">Temporary HA card resource check</summary>
+          <output id="temporary-ha-card-resource-list" aria-live="polite"></output>
+        </details>
+        <div class="connection-actions uniform-actions action-row">
+          <label class="import-button action-import" for="import-home-assistant-config" data-i18n="button.import">Import</label>
+          <input id="import-home-assistant-config" type="file" accept="application/json" hidden>
+          <label class="import-button action-import" for="import-ha-card-config" data-i18n="button.importHaCard">Import HA card</label>
+          <input id="import-ha-card-config" type="file" accept="application/json,application/zip,.json,.yaml,.yml,.zip" hidden>
+          <button id="open-ha-card-paste-import" class="action-import" type="button" data-i18n="button.pasteHaCard">Paste YAML</button>
+        </div>
+        <output id="ha-card-import-review" aria-live="polite"></output>
+        <pre id="ha-card-style-review" class="ha-card-style-review" hidden></pre>
+        <details id="simple-entity-controls" class="entity-picker-panel" open>
+          <summary data-i18n="heading.entitySelection">Entities for the card</summary>
+          <div class="field-grid two-column">
+            <div class="field-pair">
+              <label for="home-assistant-entity" data-i18n="label.entityIds">Entity IDs</label>
+              <input id="home-assistant-entity" type="text" value="binary_sensor.atlas_status, sensor.atlas_temperature" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="field-pair">
+              <label for="home-assistant-entity-domain" data-i18n="label.entityType">Entity type</label>
+              <select id="home-assistant-entity-domain"></select>
+            </div>
+          </div>
+          <div id="home-assistant-entity-domain-shortcuts" class="entity-domain-shortcuts" aria-label="Entity type shortcuts" data-i18n-aria-label="aria.entityTypeShortcuts"></div>
+          <div class="field-grid two-column">
+            <div class="field-pair">
+              <label for="home-assistant-entity-search" data-i18n="label.entitySearch">Entity search</label>
+              <div class="entity-search-control">
+                <input id="home-assistant-entity-search" type="search" autocomplete="off" spellcheck="false" placeholder="Filter by name or entity ID" data-i18n-placeholder="placeholder.entitySearch">
+                <button id="clear-home-assistant-entity-search" type="button" aria-label="Clear entity search" title="Clear entity search" data-i18n-aria-label="aria.clearEntitySearch" data-i18n-title="aria.clearEntitySearch" disabled>&times;</button>
+              </div>
+            </div>
+            <div class="field-pair">
+              <label for="home-assistant-entity-picker" data-i18n="label.entityPicker">Entity picker</label>
+              <select id="home-assistant-entity-picker"></select>
+            </div>
+          </div>
+          <output id="home-assistant-entity-picker-status" class="entity-picker-status" aria-live="polite"></output>
+          <div class="connection-actions uniform-actions">
+            <button id="add-home-assistant-entity" type="button" data-i18n="button.addEntity">Add entity</button>
+            <button id="refresh-home-assistant-entities" type="button" data-i18n="button.refreshEntities">Refresh entities</button>
+          </div>
+          <output id="selected-entity" aria-live="polite"></output>
+          <div id="card-entity-overview" class="card-entity-overview" aria-live="polite"></div>
+        </details>
+        <div class="editor-mode-toggle" role="group" aria-label="Card editor mode" data-i18n-aria-label="aria.cardEditorMode">
+          <button type="button" data-editor-mode="simple" aria-pressed="true" data-i18n="button.simpleMode">Simple</button>
+          <button type="button" data-editor-mode="expert" aria-pressed="false" data-i18n="button.expertMode">Expert</button>
+        </div>
+        <div id="simple-card-section" class="ha-card-preview">
+          <div class="preview-heading-row">
+            <label for="ha-card-visual-preview" data-i18n="label.haCardPreview">HA card preview</label>
+            <button id="reset-simple-preview" class="preview-reset-button" type="button" data-i18n="button.resetPreview">Reset preview</button>
+          </div>
+          <div id="ha-card-visual-preview" class="ha-card-visual-preview" aria-live="polite"></div>
+          <label for="ha-card-preview" data-i18n="label.haCardCode">HA card code</label>
+          <pre id="ha-card-preview" aria-live="polite"></pre>
+        </div>
+        <div id="expert-editor-section" hidden>
+          <h2 class="entity-section-title" data-i18n="heading.expertEditor">Expert editor preview</h2>
+          <div class="expert-editor-workbench">
+          <aside class="expert-editor-sidebar" aria-label="Available Home Assistant cards" data-i18n-aria-label="aria.availableCards">
+            <div class="expert-palette-toolbar">
+              <strong data-i18n="heading.cardList">Card list</strong>
+              <div class="expert-palette-actions">
+                <button id="save-expert-palette-favorites" type="button" data-i18n="button.saveFavorites">Save favorites</button>
+                <button id="show-all-expert-palette-cards" type="button" data-i18n="button.showAllCards">Show all cards</button>
+                <button id="scan-expert-palette-cards" type="button" data-i18n="button.scanHaCards">Scan HA cards</button>
+                <button id="reset-expert-template-sizing" type="button" data-i18n="button.resetSizes">Reset sizes</button>
+                <button id="reset-expert-palette-favorites" type="button" data-i18n="button.resetFavorites">Reset favorites</button>
+              </div>
+            </div>
+            <div class="expert-palette-search">
+              <input id="expert-palette-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search cards" data-i18n-placeholder="placeholder.cardSearch">
+            </div>
+            <div id="expert-template-palette" class="expert-template-palette" aria-label="Expert editor templates" data-i18n-aria-label="aria.expertTemplates"></div>
+          </aside>
+          <section class="expert-editor-surface" aria-label="Expert editor surface" data-i18n-aria-label="aria.expertSurface">
+            <aside id="expert-selected-card-details" class="expert-selected-card-details" aria-live="polite"></aside>
+            <div class="expert-editor-canvas-row">
+              <div id="expert-editor-dropzone" class="expert-editor-dropzone"></div>
+            </div>
+            <div class="expert-editor-controls">
+              <div class="field-pair span-2">
+                <label for="expert-card-name" data-i18n="label.expertCardName">Expert card name</label>
+                <input id="expert-card-name" type="text" autocomplete="off" spellcheck="false" placeholder="ATLAS Expert card" data-i18n-placeholder="placeholder.expertCardName">
+              </div>
+              <div class="field-pair">
+                <label for="expert-template" data-i18n="label.template">Template</label>
+                <select id="expert-template"></select>
+              </div>
+              <div class="field-pair">
+                <label for="expert-target" data-i18n="label.cardFamily">Card family</label>
+                <select id="expert-target"></select>
+              </div>
+              <div id="expert-bubble-type-control" class="field-pair span-2" hidden>
+                <label for="expert-bubble-button-type" data-i18n="label.bubbleButtonType">Bubble button type</label>
+                <select id="expert-bubble-button-type"></select>
+              </div>
+              <label class="wide" for="expert-title" data-i18n="label.title">Title</label>
+              <div class="expert-title-row wide">
+                <input id="expert-title" type="text" autocomplete="off" spellcheck="false" placeholder="Use template title when empty" data-i18n-placeholder="placeholder.expertTitle">
+                <button id="apply-expert-title" type="button" data-i18n="button.applyTitle">Apply title</button>
+                <button id="use-entity-name-as-title" type="button" data-i18n="button.useEntityName">Use entity name</button>
+              </div>
+              <div class="field-pair span-2">
+                <label for="expert-entity" data-i18n="label.entity">Entity</label>
+                <input id="expert-entity" type="text" autocomplete="off" spellcheck="false" placeholder="Use current entity when empty" data-i18n-placeholder="placeholder.expertEntity">
+              </div>
+              <div class="expert-number-controls span-2">
+                <div class="field-pair">
+                  <label for="expert-column" data-i18n="label.column">Column</label>
+                  <input id="expert-column" type="number" min="0" max="99" value="0">
+                </div>
+                <div class="field-pair">
+                  <label for="expert-row" data-i18n="label.row">Row</label>
+                  <input id="expert-row" type="number" min="0" max="99" value="0">
+                </div>
+                <div class="field-pair">
+                  <label for="expert-width" data-i18n="label.width">Width</label>
+                  <input id="expert-width" type="number" min="1" max="99" value="3">
+                </div>
+                <div class="field-pair">
+                  <label for="expert-height" data-i18n="label.height">Height</label>
+                  <input id="expert-height" type="number" min="1" max="99" value="2">
+                </div>
+              </div>
+            </div>
+            <div class="connection-actions expert-editor-actions">
+              <button id="add-expert-field" type="button" data-i18n="button.addTemplate">Add template</button>
+              <button id="edit-expert-field" type="button" data-i18n="button.editSelected">Edit selected</button>
+              <button id="arrange-expert-fields" type="button" data-i18n="button.autoArrange">Auto arrange</button>
+              <button id="reset-expert-surface-size" type="button" data-i18n="button.resetSize">Reset size</button>
+              <button id="clear-expert-fields" type="button" data-i18n="button.clearPreview">Clear preview</button>
+            </div>
+            <output id="expert-editor-summary" aria-live="polite"></output>
+            <div id="expert-field-list" class="expert-field-list" aria-live="polite"></div>
+            <div class="ha-card-preview">
+              <div class="preview-heading-row">
+                <label for="expert-editor-preview" data-i18n="label.expertHaCardCode">Expert HA card code</label>
+                <button id="reset-expert-preview" class="preview-reset-button" type="button" data-i18n="button.resetPreview">Reset preview</button>
+              </div>
+              <pre id="expert-editor-preview" aria-live="polite"></pre>
+            </div>
+          </section>
+          </div>
+        </div>
+        <div id="tabbed-card-settings-backdrop" class="modal-backdrop" hidden>
+          <section class="tabbed-card-dialog" role="dialog" aria-modal="true" aria-labelledby="tabbed-card-settings-title">
+            <header>
+              <h2 id="tabbed-card-settings-title" data-i18n="heading.tabbedCardSettings">Tabbed Card V2 settings</h2>
+              <button id="close-tabbed-card-settings" type="button" class="icon-button" data-i18n-aria-label="aria.closeTabbedCardSettings" data-i18n-title="aria.closeTabbedCardSettings" aria-label="Close Tabbed Card V2 settings" title="Close Tabbed Card V2 settings">&times;</button>
+            </header>
+            <div class="tabbed-card-dialog-body">
+              <div class="tabbed-card-tab-list">
+                <strong data-i18n="heading.tabs">Tabs</strong>
+                <div id="tabbed-card-tab-list" class="tabbed-card-tab-list-items"></div>
+                <div class="connection-actions uniform-actions">
+                  <button id="add-tabbed-card-tab" type="button" data-i18n="button.addTab">Add tab</button>
+                  <button id="move-tabbed-card-tab-up" type="button" data-i18n="button.moveTabUp">Up</button>
+                  <button id="move-tabbed-card-tab-down" type="button" data-i18n="button.moveTabDown">Down</button>
+                  <button id="remove-tabbed-card-tab" type="button" data-i18n="button.removeTab">Remove</button>
+                </div>
+              </div>
+              <div class="tabbed-card-tab-editor">
+                <div class="field-grid two-column">
+                  <div class="field-pair">
+                    <label for="tabbed-card-tab-label" data-i18n="label.tabLabel">Tab label</label>
+                    <input id="tabbed-card-tab-label" type="text" autocomplete="off" spellcheck="false">
+                  </div>
+                  <div class="field-pair">
+                    <label for="tabbed-card-tab-icon" data-i18n="label.tabIcon">Tab icon</label>
+                    <input id="tabbed-card-tab-icon" type="text" autocomplete="off" spellcheck="false" placeholder="mdi:tab">
+                  </div>
+                  <label class="checkbox-row">
+                    <input id="tabbed-card-full-width" type="checkbox">
+                    <span data-i18n="label.tabbedCardFullWidth">Full width</span>
+                  </label>
+                  <label class="checkbox-row">
+                    <input id="tabbed-card-auto-height" type="checkbox">
+                    <span data-i18n="label.tabbedCardAutoHeight">Automatic height</span>
+                  </label>
+                </div>
+                <div class="connection-actions">
+                  <button id="apply-tabbed-card-tab" type="button" data-i18n="button.applyTab">Apply tab</button>
+                </div>
+                <output id="tabbed-card-settings-status" aria-live="polite"></output>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div id="stack-card-settings-backdrop" class="modal-backdrop" hidden>
+          <section class="tabbed-card-dialog" role="dialog" aria-modal="true" aria-labelledby="stack-card-settings-title">
+            <header>
+              <h2 id="stack-card-settings-title" data-i18n="heading.stackCardSettings">Stack settings</h2>
+              <button id="close-stack-card-settings" type="button" class="icon-button" data-i18n-aria-label="aria.closeStackCardSettings" data-i18n-title="aria.closeStackCardSettings" aria-label="Close stack settings" title="Close stack settings">&times;</button>
+            </header>
+            <div class="tabbed-card-dialog-body single-column">
+              <div class="field-grid two-column">
+                <label class="checkbox-row">
+                  <input id="stack-card-full-width" type="checkbox">
+                  <span data-i18n="label.tabbedCardFullWidth">Full width</span>
+                </label>
+                <label class="checkbox-row">
+                  <input id="stack-card-auto-height" type="checkbox">
+                  <span data-i18n="label.tabbedCardAutoHeight">Automatic height</span>
+                </label>
+                <div class="field-pair span-2">
+                  <label for="stack-card-columns" data-i18n="label.stackCardColumns">Card width</label>
+                  <div class="range-row">
+                    <input id="stack-card-columns" type="range" min="4" max="10" step="1" value="4">
+                    <output id="stack-card-columns-output">4 columns</output>
+                  </div>
+                </div>
+              </div>
+              <div class="connection-actions">
+                <button id="apply-stack-card-settings" type="button" data-i18n="button.applyStackSettings">Apply settings</button>
+              </div>
+              <output id="stack-card-settings-status" aria-live="polite"></output>
+            </div>
+          </section>
+        </div>
+        <div id="ha-card-export-backdrop" class="modal-backdrop" hidden>
+          <section class="tabbed-card-dialog" role="dialog" aria-modal="true" aria-labelledby="ha-card-export-title">
+            <header>
+              <h2 id="ha-card-export-title" data-i18n="heading.exportHaCard">Export HA card</h2>
+              <button id="close-ha-card-export" type="button" class="icon-button" data-i18n-aria-label="aria.closeHaCardExport" data-i18n-title="aria.closeHaCardExport" aria-label="Close HA card export" title="Close HA card export">&times;</button>
+            </header>
+            <div class="tabbed-card-dialog-body single-column">
+              <div id="ha-card-export-style-control" class="field-pair">
+                <span class="field-label" data-i18n="label.cardStyleExport">Style export</span>
+                <div class="ha-card-export-style-options" role="radiogroup" aria-labelledby="ha-card-export-title">
+                  <label class="ha-card-export-style-option">
+                    <input type="radio" name="ha-card-export-style" value="card-mod" checked>
+                    <span>card-mod</span>
+                  </label>
+                  <label class="ha-card-export-style-option">
+                    <input type="radio" name="ha-card-export-style" value="uix-style">
+                    <span>uix:</span>
+                  </label>
+                </div>
+              </div>
+              <p id="ha-card-export-path-hint" class="dialog-hint" data-i18n="message.exportPathHint">Choose a save location if your browser supports it, or use the normal download fallback.</p>
+              <div class="connection-actions">
+                <button id="save-ha-card-export-as" type="button" data-i18n="button.saveAs">Choose save location</button>
+                <button id="download-ha-card-export" type="button" data-i18n="button.download">Download</button>
+              </div>
+              <output id="ha-card-export-status" aria-live="polite"></output>
+            </div>
+          </section>
+        </div>
+        <div id="ha-card-paste-import-backdrop" class="modal-backdrop" hidden>
+          <section class="tabbed-card-dialog" role="dialog" aria-modal="true" aria-labelledby="ha-card-paste-import-title">
+            <header>
+              <h2 id="ha-card-paste-import-title" data-i18n="heading.pasteHaCard">Paste HA card YAML</h2>
+              <button id="close-ha-card-paste-import" type="button" class="icon-button" data-i18n-aria-label="aria.closeHaCardPasteImport" data-i18n-title="aria.closeHaCardPasteImport" aria-label="Close HA card YAML import" title="Close HA card YAML import">&times;</button>
+            </header>
+            <div class="tabbed-card-dialog-body single-column">
+              <textarea id="ha-card-paste-import-text" class="ha-card-paste-import-text" autocomplete="off" spellcheck="false" placeholder="Paste YAML or JSON card configuration here" data-i18n-placeholder="placeholder.haCardYamlPaste"></textarea>
+              <pre id="ha-card-paste-style-review" class="ha-card-style-review" hidden></pre>
+              <div class="connection-actions">
+                <button id="paste-ha-card-from-clipboard" type="button" data-i18n="button.pasteClipboard">Paste from clipboard</button>
+                <button id="clear-ha-card-paste-import" type="button" data-i18n="button.clearPasteImport">Clear</button>
+                <button id="open-ha-card-file-import" type="button" data-i18n="button.openYamlFile">Open YAML file</button>
+                <input id="ha-card-file-import" type="file" accept=".yaml,.yml,.txt,text/yaml,text/plain,application/x-yaml" hidden>
+                <button id="apply-ha-card-paste-import" type="button" data-i18n="button.applyImport">Import into editor</button>
+              </div>
+              <output id="ha-card-paste-import-status" aria-live="polite"></output>
+            </div>
+          </section>
+        </div>
+        <div id="problem-report-backdrop" class="modal-backdrop" hidden>
+          <section class="tabbed-card-dialog" role="dialog" aria-modal="true" aria-labelledby="problem-report-title">
+            <header>
+              <h2 id="problem-report-title" data-i18n="heading.problemReport">Report problem</h2>
+              <button id="close-problem-report" type="button" class="icon-button" data-i18n-aria-label="aria.closeProblemReport" data-i18n-title="aria.closeProblemReport" aria-label="Close problem report" title="Close problem report">&times;</button>
+            </header>
+            <div class="tabbed-card-dialog-body single-column">
+              <p class="dialog-hint" data-i18n="message.problemReportHint">Review the debug data before copying or opening GitHub. Home Assistant tokens and provider API keys are never included.</p>
+              <textarea id="problem-report-preview" class="problem-report-preview" readonly spellcheck="false"></textarea>
+              <div class="connection-actions">
+                <button id="copy-problem-report" type="button" data-i18n="button.copyProblemReport">Copy report</button>
+                <button id="open-problem-issue" type="button" data-i18n="button.openProblemIssue">Open GitHub issue</button>
+              </div>
+              <output id="problem-report-status" aria-live="polite"></output>
+            </div>
+          </section>
+        </div>
+      </div>
+      <details id="diagnostics-panel" class="diagnostics-panel">
+        <summary data-i18n="heading.diagnostics">Diagnostics</summary>
+        <div class="diagnostics-content">
+          <div class="status-controls" role="group" aria-label="Entity state" data-i18n-aria-label="aria.entityState">
+            <button type="button" data-entity-state="off" aria-pressed="false" data-i18n="button.off">Off</button>
+            <button type="button" data-entity-state="on" aria-pressed="true" data-i18n="button.on">On</button>
+            <button type="button" data-entity-state="unavailable" aria-pressed="false" data-i18n="button.unavailable">Unavailable</button>
+          </div>
+          <h2 class="entity-section-title" data-i18n="heading.statusPreview">ATLAS Status Preview</h2>
+          <div id="atlas-status-root" aria-live="polite"></div>
+        </div>
+      </details>
+      <details id="selected-entities-panel" class="selected-entities-panel">
+        <summary data-i18n="heading.selectedEntities">Entities detected in HA</summary>
+        <output id="stack-selection-summary" aria-live="polite"></output>
+        <output id="group-summary" aria-live="polite"></output>
+        <output id="group-issues" aria-live="polite"></output>
+        <div id="atlas-entity-list" aria-live="polite"></div>
+      </details>
+      <div id="status-message" role="status"></div>
+    </main>
+    <script type="module" src="/examples/status-demo/app.js"></script>
+  </body>
+</html>
