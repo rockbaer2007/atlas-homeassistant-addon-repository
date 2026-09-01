@@ -15,7 +15,7 @@ const plugin: RuntimePluginDescriptor = {
     de: "ATLAS Home Assistant Karten-Editor",
     en: "ATLAS Home Assistant Card Editor",
   },
-  version: "0.2.0-alpha.12",
+  version: "0.2.0-alpha.13",
   description: "Reference plugin",
   descriptionI18n: {
     de: "Referenz-Plugin",
@@ -38,7 +38,7 @@ describe("RuntimePluginInstallPackage", () => {
         de: "ATLAS Home Assistant Karten-Editor",
         en: "ATLAS Home Assistant Card Editor",
       },
-      version: "0.2.0-alpha.12",
+      version: "0.2.0-alpha.13",
       description: "Reference plugin",
       descriptionI18n: {
         de: "Referenz-Plugin",
@@ -104,7 +104,7 @@ describe("RuntimePluginInstallPackage", () => {
         de: "ATLAS Home Assistant Karten-Editor",
         en: "ATLAS Home Assistant Card Editor",
       },
-      version: "0.2.0-alpha.12",
+      version: "0.2.0-alpha.13",
       descriptionI18n: {
         de: "Referenz-Plugin",
         en: "Reference plugin",

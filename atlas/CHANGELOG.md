@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.50
+
+- Normalize saved GitHub plugin repository URLs during Administration refresh,
+  so existing entries reload from `repository.json`.
+- Use a trash icon for repository removal instead of a plain `x`.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.13` for the update
+  package.
+
 ## 0.1.49
 
 - Add a direct Plugin Hub link below the Atlas Administration link in the Card

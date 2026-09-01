@@ -1477,7 +1477,7 @@ function renderPluginRepositories() {
     ].filter(Boolean).join(" · ");
     removeButton.type = "button";
     removeButton.className = "danger-icon-button";
-    removeButton.textContent = "x";
+    removeButton.textContent = "🗑";
     removeButton.title = t("button.removeRepository");
     removeButton.setAttribute("aria-label", t("button.removeRepository"));
     removeButton.addEventListener("click", () => removePluginRepositoryEntry(repository.id));
@@ -1503,31 +1503,30 @@ async function loadPluginRepositoriesPreview() {
   const nextRepositories = [];
   for (const repositoryEntry of pluginRepositories) {
     try {
-      const response = await fetch(createNoCacheUrl(repositoryEntry.url), {
-        cache: "no-store",
-        headers: { "Cache-Control": "no-cache" },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const repository = await response.json();
-      const plugins = normalizePluginRepository(repository, repositoryEntry);
+      const { repository, repositoryUrl } = await fetchAtlasPluginRepository(repositoryEntry.url);
+      const normalizedRepositoryEntry = {
+        ...repositoryEntry,
+        url: repositoryUrl,
+      };
+      const plugins = normalizePluginRepository(repository, normalizedRepositoryEntry);
       repositoryPluginDescriptors.push(...plugins);
       nextRepositories.push({
-        ...repositoryEntry,
+        ...normalizedRepositoryEntry,
         name: typeof repository.name === "string" && repository.name.trim() ? repository.name.trim() : repositoryEntry.name,
         status: "ready",
         lastChecked: new Date().toLocaleString(currentLanguage === "de" ? "de-DE" : "en-US"),
         pluginCount: plugins.length,
         error: "",
       });
-    } catch {
+    } catch (error) {
       nextRepositories.push({
         ...repositoryEntry,
         status: "failed",
         lastChecked: new Date().toLocaleString(currentLanguage === "de" ? "de-DE" : "en-US"),
         pluginCount: 0,
-        error: t("message.pluginRepositoryFailed"),
+        error: t(error?.message === "home-assistant-add-on-repository" || isHomeAssistantAddOnRepositoryUrl(repositoryEntry.url)
+          ? "message.pluginRepositoryWrongType"
+          : "message.pluginRepositoryFailed"),
       });
     }
   }
