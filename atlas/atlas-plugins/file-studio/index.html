@@ -119,7 +119,6 @@
       const fileStudioHeightLimitStorageKey = "atlas.fileStudio.limitHeight";
       const fileStudioWidthLimitStorageKey = "atlas.fileStudio.limitWidth";
       const fileStudioEditorStorageKey = "atlas.fileStudio.editor";
-      const fileStudioImagePreviewStorageKey = "atlas.fileStudio.imagePreview";
       const imagePreviewDefaultSize = { widthVw: 70, heightVh: 70 };
       const imagePreviewMinimumSize = { widthVw: 40, heightVh: 40 };
       const imagePreviewMaximumSize = { widthVw: 80, heightVh: 80 };
@@ -376,41 +375,21 @@
         state.previewMode = mode;
       }
 
-      function readImagePreviewSizePreference() {
-        try {
-          const saved = JSON.parse(localStorage.getItem(fileStudioImagePreviewStorageKey) ?? "{}");
-          if (Number.isFinite(saved.widthVw) && Number.isFinite(saved.heightVh)) {
-            return {
-              widthVw: clampValue(saved.widthVw, imagePreviewMinimumSize.widthVw, imagePreviewMaximumSize.widthVw),
-              heightVh: clampValue(saved.heightVh, imagePreviewMinimumSize.heightVh, imagePreviewMaximumSize.heightVh),
-            };
-          }
-        } catch {
-          return { ...imagePreviewDefaultSize };
-        }
-        return { ...imagePreviewDefaultSize };
-      }
-
       function applyImagePreviewSize(size = state.previewSize) {
         state.previewSize = {
           widthVw: clampValue(size.widthVw, imagePreviewMinimumSize.widthVw, imagePreviewMaximumSize.widthVw),
           heightVh: clampValue(size.heightVh, imagePreviewMinimumSize.heightVh, imagePreviewMaximumSize.heightVh),
         };
+        document.querySelector("#image-preview")?.classList.add("is-manual-size");
         document.documentElement.style.setProperty("--image-preview-width", `${state.previewSize.widthVw}vw`);
         document.documentElement.style.setProperty("--image-preview-height", `${state.previewSize.heightVh}vh`);
       }
 
-      function saveImagePreviewSizePreference() {
-        try {
-          localStorage.setItem(fileStudioImagePreviewStorageKey, JSON.stringify(state.previewSize));
-        } catch {
-          return;
-        }
-      }
-
       function resetImagePreviewSize() {
-        applyImagePreviewSize(imagePreviewDefaultSize);
-        saveImagePreviewSizePreference();
+        state.previewSize = { ...imagePreviewDefaultSize };
+        document.querySelector("#image-preview")?.classList.remove("is-manual-size");
+        document.documentElement.style.setProperty("--image-preview-width", `${state.previewSize.widthVw}vw`);
+        document.documentElement.style.setProperty("--image-preview-height", `${state.previewSize.heightVh}vh`);
       }
 
       function clearImagePreview() {
@@ -442,7 +421,9 @@
         document.querySelector("#image-preview-title").textContent = file.name;
         document.querySelector("#image-preview-meta").textContent =
           `${file.name} · ${imageMimeType(file.extension)} · ${formatFileSize(file.size)}`;
-        document.querySelector("#image-preview").hidden = false;
+        const preview = document.querySelector("#image-preview");
+        preview.classList.remove("is-manual-size");
+        preview.hidden = false;
         document.querySelector("#image-preview-close").focus();
       }
 
@@ -472,7 +453,6 @@
           window.removeEventListener("pointerup", finishResize);
           window.removeEventListener("pointercancel", finishResize);
           document.body.style.cursor = "";
-          saveImagePreviewSizePreference();
         };
 
         window.addEventListener("pointermove", applyResize);
@@ -1152,7 +1132,7 @@
       }
 
       applySavedLayout();
-      applyImagePreviewSize(readImagePreviewSizePreference());
+      resetImagePreviewSize();
       applyHeightLimitPreference();
       applyWidthLimitPreference();
       applyThemePreference();

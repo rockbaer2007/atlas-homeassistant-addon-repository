@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.78
+
+- Let File Studio image previews auto-size to the opened image while keeping
+  the modal inside the `40vw`/`40vh` to `80vw`/`80vh` resize bounds.
+- Keep small images at their natural size and shrink oversized images
+  proportionally instead of stretching them into the preview area.
+- Bump ATLAS File Studio to `0.1.20` for repository update detection.
+
 ## 0.1.77
 
 - Adjust File Studio image preview sizing to start at `70vw` by `70vh`, with
