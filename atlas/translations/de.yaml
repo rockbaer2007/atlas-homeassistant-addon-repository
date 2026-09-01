@@ -7,7 +7,7 @@ configuration:
     description: "URL deiner Home-Assistant-Instanz fuer Entity-, Status- und Ressourcenabfragen."
   home_assistant_token:
     name: "Home-Assistant-Token"
-    description: "Long-Lived Access Token fuer ATLAS Administration. Wird als Textfeld angezeigt, damit Home Assistant keinen gekuerzten Passwort-Platzhalter uebergibt."
+    description: "Long-Lived Access Token fuer ATLAS Administration. Home Assistant zeigt den Token maskiert an; ueber das Auge kann er bei Bedarf sichtbar gemacht werden."
   remember_home_assistant_token:
     name: "Token in ATLAS Administration uebernehmen"
     description: "Uebergibt den Token beim Start an ATLAS Administration, damit der Editor ihn nur als Session-Handoff erhalten kann."

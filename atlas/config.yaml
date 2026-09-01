@@ -1,5 +1,5 @@
 name: "ATLAS"
-version: "0.1.80"
+version: "0.1.81"
 slug: "atlas"
 description: "ATLAS Administration and Home Assistant Plugins preview"
 url: "https://github.com/rockbaer2007/atlas"
@@ -31,7 +31,7 @@ options:
 schema:
   atlas_instance_id: "str"
   home_assistant_url: "url"
-  home_assistant_token: "str"
+  home_assistant_token: "password"
   remember_home_assistant_token: "bool"
   auto_connect_editor: "bool"
   editor_start_mode: "list(simple|expert)"

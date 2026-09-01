@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.81
+
+- Show the Home Assistant token option as a masked password field in the native
+  Home Assistant Add-on configuration UI.
+
 ## 0.1.80
 
 - Fix File Studio A-/A+ editor font-size controls so they apply immediately and

@@ -7,7 +7,7 @@ configuration:
     description: "URL of your Home Assistant instance for entity, state and resource requests."
   home_assistant_token:
     name: "Home Assistant token"
-    description: "Long-lived access token for ATLAS Administration. Shown as text so Home Assistant does not pass a shortened password placeholder."
+    description: "Long-lived access token for ATLAS Administration. Home Assistant shows the token masked; use the eye button to reveal it when needed."
   remember_home_assistant_token:
     name: "Import token into ATLAS Administration"
     description: "Passes the token to ATLAS Administration on startup so the editor can receive it only as a session handoff."
