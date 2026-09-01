@@ -249,7 +249,7 @@ body.is-resizing .splitter {
 }
 
 .tree-file {
-  grid-template-columns: 14px minmax(0, 1fr) auto;
+  grid-template-columns: 18px minmax(0, 1fr);
   width: 100%;
   text-align: left;
 }
@@ -288,6 +288,7 @@ body.is-resizing .splitter {
 }
 
 .tree-icon {
+  display: inline-block;
   position: relative;
   width: 16px;
   height: 16px;
@@ -346,12 +347,6 @@ body.is-resizing .splitter {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.tree-meta {
-  color: var(--atlas-muted);
-  font-size: 0.68rem;
-  font-weight: 900;
 }
 
 .tree-children {

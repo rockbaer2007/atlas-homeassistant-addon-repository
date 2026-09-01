@@ -99,7 +99,7 @@
 
       function extensionLabel(node) {
         if (node.type === "directory") {
-          return "";
+          return "DIR";
         }
         const extension = String(node.extension ?? "").trim().toUpperCase();
         return extension || "FILE";
@@ -183,9 +183,8 @@
         button.type = "button";
         button.className = "tree-file";
         button.dataset.path = node.path;
-        button.innerHTML = `<span class="tree-icon file-icon" aria-hidden="true"></span><span class="tree-name"></span><span class="tree-meta"></span>`;
+        button.innerHTML = `<span class="tree-icon file-icon" aria-hidden="true"></span><span class="tree-name"></span>`;
         button.querySelector(".tree-name").textContent = node.name;
-        button.querySelector(".tree-meta").textContent = extensionLabel(node);
         button.addEventListener("click", () => selectTreeFile(button, node));
         return button;
       }

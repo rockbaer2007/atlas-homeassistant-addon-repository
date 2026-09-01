@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.65
+
+- Remove remaining file type labels from the ATLAS File Studio left directory
+  tree so the pane only shows compact icons and names.
+- Fix the CSS folder and file icons so they render reliably in the Home
+  Assistant webview.
+- Bump ATLAS File Studio to `0.1.8` and Atlas Framework package metadata to
+  `0.2.0-alpha.28` for the update package.
+
 ## 0.1.64
 
 - Make the ATLAS File Studio tree more compact by replacing directory/type text
