@@ -99,7 +99,7 @@
 
       function extensionLabel(node) {
         if (node.type === "directory") {
-          return "DIR";
+          return "";
         }
         const extension = String(node.extension ?? "").trim().toUpperCase();
         return extension || "FILE";
@@ -158,7 +158,7 @@
           details.open = level <= 1;
 
           const summary = document.createElement("summary");
-          summary.innerHTML = `<span class="tree-chevron" aria-hidden="true"></span><span class="tree-icon" aria-hidden="true">▣</span><span class="tree-name"></span><span class="tree-meta">DIR</span>`;
+          summary.innerHTML = `<span class="tree-chevron" aria-hidden="true"></span><span class="tree-icon folder-icon" aria-hidden="true"></span><span class="tree-name"></span>`;
           summary.dataset.path = node.path;
           summary.querySelector(".tree-name").textContent = level === 0 ? "/config" : node.name;
           summary.addEventListener("click", () => selectFolder(node.path));
@@ -183,7 +183,7 @@
         button.type = "button";
         button.className = "tree-file";
         button.dataset.path = node.path;
-        button.innerHTML = `<span class="tree-icon" aria-hidden="true">▤</span><span class="tree-name"></span><span class="tree-meta"></span>`;
+        button.innerHTML = `<span class="tree-icon file-icon" aria-hidden="true"></span><span class="tree-name"></span><span class="tree-meta"></span>`;
         button.querySelector(".tree-name").textContent = node.name;
         button.querySelector(".tree-meta").textContent = extensionLabel(node);
         button.addEventListener("click", () => selectTreeFile(button, node));
@@ -239,7 +239,7 @@
           button.className = `folder-row ${child.type}`;
           button.dataset.path = child.path;
           button.innerHTML = `<span class="folder-name"><span class="tree-icon" aria-hidden="true"></span><span></span></span><span></span><span></span>`;
-          button.querySelector(".tree-icon").textContent = child.type === "directory" ? "▣" : "▤";
+          button.querySelector(".tree-icon").classList.add(child.type === "directory" ? "folder-icon" : "file-icon");
           button.querySelector(".folder-name span:last-child").textContent = child.name;
           button.children[1].textContent = child.type === "directory" ? "-" : formatFileSize(child.size);
           button.children[2].textContent = formatModifiedAt(child.modifiedAt);

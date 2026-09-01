@@ -102,7 +102,7 @@ export function createAtlasFrameworkReadiness() {
     return {
         framework: {
             name: "Atlas",
-            version: "0.2.0-alpha.26",
+            version: "0.2.0-alpha.27",
             channel: "alpha",
         },
         packages: ATLAS_WORKSPACE_PACKAGE_INVENTORY.map((workspacePackage) => ({

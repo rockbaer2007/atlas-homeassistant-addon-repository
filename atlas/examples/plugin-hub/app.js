@@ -221,11 +221,12 @@ async function loadPlugins() {
 }
 
 function renderPlugins(plugins) {
-  lastPlugins = plugins;
-  const activePlugins = plugins.filter(plugin => plugin.status === "active" && plugin.entryUrl);
-  pluginSummary.textContent = createPluginSummaryText(plugins, activePlugins);
+  const visiblePlugins = plugins.filter(plugin => plugin.status !== "planned" && plugin.entryUrl);
+  lastPlugins = visiblePlugins;
+  const activePlugins = visiblePlugins.filter(plugin => plugin.status === "active" && plugin.entryUrl);
+  pluginSummary.textContent = createPluginSummaryText(visiblePlugins, activePlugins);
   pluginGrid.innerHTML = "";
-  if (!plugins.length) {
+  if (!visiblePlugins.length) {
     const empty = document.createElement("article");
     empty.className = "plugin-card";
     const body = document.createElement("div");
@@ -245,7 +246,7 @@ function renderPlugins(plugins) {
     pluginGrid.append(empty);
     return;
   }
-  for (const plugin of plugins) {
+  for (const plugin of visiblePlugins) {
     pluginGrid.append(createPluginCard(plugin));
   }
 }

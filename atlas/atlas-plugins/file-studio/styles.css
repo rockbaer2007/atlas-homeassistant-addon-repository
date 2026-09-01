@@ -13,6 +13,8 @@
   --atlas-accent-strong: #115e59;
   --atlas-accent-soft: #e6fffb;
   --atlas-link: #0f766e;
+  --atlas-folder: #d97706;
+  --atlas-file: #0891b2;
   --atlas-on-accent: #ffffff;
   --atlas-danger-soft: #fee2e2;
   --atlas-danger-text: #991b1b;
@@ -36,6 +38,8 @@
   --atlas-accent-strong: #14b8a6;
   --atlas-accent-soft: #113c30;
   --atlas-link: #7ee6c9;
+  --atlas-folder: #fbbf24;
+  --atlas-file: #67e8f9;
   --atlas-on-accent: #06201d;
   --atlas-danger-soft: #4b1717;
   --atlas-danger-text: #fecaca;
@@ -228,7 +232,7 @@ body.is-resizing .splitter {
 .tree-folder summary,
 .tree-file {
   display: grid;
-  grid-template-columns: 14px 18px minmax(0, 1fr) auto;
+  grid-template-columns: 14px 18px minmax(0, 1fr);
   align-items: center;
   gap: 6px;
   min-height: 32px;
@@ -245,6 +249,7 @@ body.is-resizing .splitter {
 }
 
 .tree-file {
+  grid-template-columns: 14px minmax(0, 1fr) auto;
   width: 100%;
   text-align: left;
 }
@@ -283,8 +288,58 @@ body.is-resizing .splitter {
 }
 
 .tree-icon {
-  color: var(--atlas-link);
-  font-size: 0.86rem;
+  position: relative;
+  width: 16px;
+  height: 16px;
+  color: var(--atlas-file);
+  flex: 0 0 auto;
+}
+
+.folder-icon {
+  color: var(--atlas-folder);
+}
+
+.file-icon::before {
+  content: "";
+  position: absolute;
+  inset: 1px 3px 1px 3px;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  background: transparent;
+}
+
+.file-icon::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  width: 5px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 4px 0 currentColor;
+}
+
+.folder-icon::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 3px;
+  height: 9px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.folder-icon::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 2px;
+  width: 7px;
+  height: 4px;
+  border-radius: 2px 2px 0 0;
+  background: currentColor;
 }
 
 .tree-name {
@@ -354,10 +409,6 @@ body.is-resizing .splitter {
   background: var(--atlas-panel-soft);
   color: var(--atlas-text);
   outline: 1px solid var(--atlas-border);
-}
-
-.folder-row.directory .folder-name {
-  font-weight: 800;
 }
 
 .folder-name {

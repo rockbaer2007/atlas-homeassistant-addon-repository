@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.64
+
+- Make the ATLAS File Studio tree more compact by replacing directory/type text
+  with color-coded folder and file icons.
+- Widen the Home Assistant Card Editor surface to match the File Studio
+  workspace width.
+- Hide planned non-launchable placeholder plugins from the Plugin Hub.
+- Bump ATLAS File Studio to `0.1.7` and Atlas Framework package metadata to
+  `0.2.0-alpha.27` for the update package.
+
 ## 0.1.63
 
 - Deduplicate bundled plugins in ATLAS Administration so the Card Editor and
