@@ -159,6 +159,11 @@ p {
   outline: 0;
 }
 
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .toggle-button.is-active {
   border-color: var(--atlas-accent);
   background: var(--atlas-accent);
@@ -674,23 +679,13 @@ body.is-resizing .splitter {
   flex: 1 1 auto;
   width: 100%;
   min-height: max(360px, calc(var(--studio-height) - 172px));
-  resize: none;
   margin: 0;
   overflow: auto;
   border: 1px solid var(--atlas-border);
   border-radius: 6px;
   background: var(--atlas-panel-soft);
   color: var(--atlas-text);
-  padding: 14px;
-  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: var(--editor-font-size);
-  line-height: 1.55;
-  white-space: pre-wrap;
-  tab-size: 2;
-}
-
-.editor-input.no-wrap {
-  white-space: pre;
 }
 
 .editor-input:focus {
@@ -698,8 +693,22 @@ body.is-resizing .splitter {
   outline: 2px solid color-mix(in srgb, var(--atlas-accent) 30%, transparent);
 }
 
-.editor-input[readonly] {
-  color: var(--atlas-muted);
+.editor-input .cm-editor {
+  height: 100%;
+  min-height: max(360px, calc(var(--studio-height) - 172px));
+  border-radius: 6px;
+}
+
+.editor-input .cm-scroller {
+  overflow: auto;
+}
+
+.editor-input .cm-content {
+  padding: 14px 0;
+}
+
+.editor-input .cm-line {
+  padding: 0 14px;
 }
 
 .status-row {

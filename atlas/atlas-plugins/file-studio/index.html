@@ -76,7 +76,7 @@
             <button id="font-decrease" class="button small-button" type="button" aria-label="Schrift kleiner" title="Schrift kleiner">A-</button>
             <button id="font-increase" class="button small-button" type="button" aria-label="Schrift größer" title="Schrift größer">A+</button>
           </div>
-          <textarea id="editor-input" class="editor-input" spellcheck="false" readonly>Wähle links eine Datei aus dem /config-Baum.</textarea>
+          <div id="editor-input" class="editor-input" role="textbox" aria-label="Dateieditor"></div>
           <div class="status-row">
             <span id="tree-root-status" class="ok">/config als Standard</span>
             <span id="editor-dirty-status">Keine Datei geladen</span>
@@ -87,6 +87,7 @@
         </section>
       </section>
     </main>
+    <script src="editor.bundle.js"></script>
     <script>
       const atlasThemeStorageKey = "atlas.themePreference";
       const fileStudioLayoutStorageKey = "atlas.fileStudio.layout";
@@ -101,6 +102,7 @@
         selectedFileExtension: undefined,
         originalContent: "",
         pendingCreate: undefined,
+        editor: undefined,
         editorFontSize: 14,
         wordWrap: true,
       };
@@ -131,6 +133,7 @@
             : "light";
         document.documentElement.dataset.theme = resolvedTheme;
         document.documentElement.dataset.themePreference = preference;
+        state.editor?.refreshTheme?.();
         bindHubLinks(preference);
       }
 
@@ -243,7 +246,7 @@
 
       function updateEditorActions() {
         const hasFile = Boolean(state.selectedFilePath);
-        const isDirty = document.querySelector("#editor-input").value !== state.originalContent;
+        const isDirty = editorValue() !== state.originalContent;
         document.querySelector("#save-file").disabled = !hasFile || !isDirty;
         document.querySelector("#save-file-as").disabled = !hasFile;
         document.querySelector("#discard-file").disabled = !hasFile || !isDirty;
@@ -255,11 +258,9 @@
       }
 
       function updateCursorStatus() {
-        const editor = document.querySelector("#editor-input");
-        const beforeCursor = editor.value.slice(0, editor.selectionStart);
-        const lines = beforeCursor.split("\n");
+        const position = state.editor?.cursorPosition?.() ?? { line: 1, column: 1 };
         document.querySelector("#editor-cursor-status").textContent =
-          `Zeile ${lines.length}, Spalte ${lines.at(-1).length + 1}`;
+          `Zeile ${position.line}, Spalte ${position.column}`;
       }
 
       function applyEditorPreferences() {
@@ -273,8 +274,9 @@
         }
         state.editorFontSize = Math.max(12, Math.min(22, state.editorFontSize));
         const editor = document.querySelector("#editor-input");
-        editor.classList.toggle("no-wrap", !state.wordWrap);
         editor.style.setProperty("--editor-font-size", `${state.editorFontSize}px`);
+        state.editor?.setWordWrap?.(state.wordWrap);
+        state.editor?.setFontSize?.(state.editorFontSize);
         document.querySelector("#word-wrap-toggle").checked = state.wordWrap;
       }
 
@@ -298,6 +300,40 @@
           size: file.size,
           modifiedAt: file.modifiedAt,
         };
+      }
+
+      function editorValue() {
+        return state.editor?.getValue?.() ?? "";
+      }
+
+      function setEditorValue(value) {
+        state.editor?.setValue?.(value ?? "");
+      }
+
+      function setEditorReadOnly(readonly) {
+        state.editor?.setReadOnly?.(readonly === true);
+      }
+
+      function setEditorLanguage(extension) {
+        state.editor?.setLanguage?.(extension);
+      }
+
+      function initializeEditor() {
+        const host = document.querySelector("#editor-input");
+        state.editor = window.AtlasFileStudioEditor.create(host, {
+          content: "Wähle links eine Datei aus dem /config-Baum.",
+          readonly: true,
+          wordWrap: state.wordWrap,
+          fontSize: state.editorFontSize,
+          onChange: () => {
+            updateCursorStatus();
+            updateEditorActions();
+          },
+          onCursor: position => {
+            document.querySelector("#editor-cursor-status").textContent =
+              `Zeile ${position.line}, Spalte ${position.column}`;
+          },
+        });
       }
 
       function createTreeNode(node, level = 0) {
@@ -452,26 +488,27 @@
         state.selectedFilePath = node.path;
         state.selectedFileName = node.name;
         state.selectedFileExtension = node.extension;
-        const editor = document.querySelector("#editor-input");
         document.querySelector("#editor-title").textContent = node.name;
         document.querySelector("#editor-kind").textContent = extensionLabel(node);
         document.querySelector("#editor-validation-status").textContent = "Datei wird geladen...";
-        editor.readOnly = true;
+        setEditorReadOnly(true);
         try {
           const file = await apiJson(`api/file-studio/file?path=${encodeURIComponent(node.path)}`);
           state.originalContent = file.content ?? "";
           state.selectedFilePath = file.path;
           state.selectedFileName = file.name;
           state.selectedFileExtension = file.extension;
-          editor.value = state.originalContent;
-          editor.readOnly = file.readonly === true;
+          setEditorValue(state.originalContent);
+          setEditorReadOnly(file.readonly === true);
+          setEditorLanguage(file.extension);
           document.querySelector("#editor-title").textContent = file.name;
           document.querySelector("#editor-kind").textContent = extensionLabel(createFileNode(file));
           document.querySelector("#editor-validation-status").textContent = file.readonly ? "Readonly" : "Bereit";
           updateCursorStatus();
           updateEditorActions();
         } catch (error) {
-          editor.value = "";
+          setEditorValue("");
+          setEditorReadOnly(true);
           state.originalContent = "";
           document.querySelector("#editor-validation-status").textContent =
             `Laden fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`;
@@ -665,14 +702,13 @@
         if (!state.selectedFilePath) {
           return;
         }
-        const editor = document.querySelector("#editor-input");
         const status = document.querySelector("#editor-validation-status");
         try {
           const validation = await apiJson("api/file-studio/validate", {
             method: "POST",
             body: JSON.stringify({
               path: state.selectedFilePath,
-              content: editor.value,
+              content: editorValue(),
             }),
           });
           status.textContent = validation.message ?? "Prüfung abgeschlossen.";
@@ -689,18 +725,17 @@
         if (!path) {
           return;
         }
-        const editor = document.querySelector("#editor-input");
         const status = document.querySelector("#editor-validation-status");
         try {
           const saved = await apiJson("api/file-studio/write", {
             method: "POST",
             body: JSON.stringify({
               path,
-              content: editor.value,
+              content: editorValue(),
             }),
           });
           state.selectedFilePath = saved.path;
-          state.originalContent = editor.value;
+          state.originalContent = editorValue();
           status.textContent = saved.validation?.message ?? "Gespeichert.";
           status.classList.toggle("ok", true);
           status.classList.remove("warning");
@@ -748,8 +783,7 @@
       }
 
       function discardOpenFileChanges() {
-        const editor = document.querySelector("#editor-input");
-        editor.value = state.originalContent;
+        setEditorValue(state.originalContent);
         document.querySelector("#editor-validation-status").textContent = "Änderungen verworfen.";
         updateCursorStatus();
         updateEditorActions();
@@ -759,9 +793,8 @@
         if (!state.selectedFilePath) {
           return;
         }
-        const editor = document.querySelector("#editor-input");
         const link = document.createElement("a");
-        link.href = URL.createObjectURL(new Blob([editor.value], { type: "text/plain;charset=utf-8" }));
+        link.href = URL.createObjectURL(new Blob([editorValue()], { type: "text/plain;charset=utf-8" }));
         link.download = state.selectedFileName ?? "atlas-file-studio.txt";
         link.click();
         URL.revokeObjectURL(link.href);
@@ -771,21 +804,13 @@
         if (!file || !state.selectedFilePath) {
           return;
         }
-        const editor = document.querySelector("#editor-input");
-        editor.value = await file.text();
+        setEditorValue(await file.text());
         document.querySelector("#editor-validation-status").textContent = `Upload geladen: ${file.name}`;
         updateCursorStatus();
         updateEditorActions();
       }
 
       function bindEditorControls() {
-        const editor = document.querySelector("#editor-input");
-        editor.addEventListener("input", () => {
-          updateCursorStatus();
-          updateEditorActions();
-        });
-        editor.addEventListener("click", updateCursorStatus);
-        editor.addEventListener("keyup", updateCursorStatus);
         document.querySelector("#save-file").addEventListener("click", () => void saveOpenFile());
         document.querySelector("#save-file-as").addEventListener("click", () => void saveOpenFileAs());
         document.querySelector("#discard-file").addEventListener("click", discardOpenFileChanges);
@@ -897,6 +922,8 @@
       applyHeightLimitPreference();
       applyWidthLimitPreference();
       applyThemePreference();
+      applyEditorPreferences();
+      initializeEditor();
       applyEditorPreferences();
       bindHeightLimitToggle();
       bindWidthLimitToggle();

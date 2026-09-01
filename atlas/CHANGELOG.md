@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.72
+
+- Add a bundled CodeMirror 6 editor for ATLAS File Studio with line numbers,
+  active-line highlighting, search keybindings and syntax highlighting for YAML,
+  JSON, JavaScript/TypeScript and Markdown.
+- Keep the editor bundle local to the ATLAS package instead of loading editor
+  code from a CDN.
+- Bump ATLAS File Studio to `0.1.14` for repository update detection.
+
 ## 0.1.71
 
 - Add File Studio tree action icon buttons for creating files, creating folders,
