@@ -1,28 +1,42 @@
 :root {
-  color-scheme: light dark;
-  --bg: #eef4f6;
-  --panel: #ffffff;
-  --panel-soft: #f7fafb;
-  --text: #102330;
-  --muted: #526a78;
-  --border: #c7d7df;
-  --accent: #0f8f83;
-  --accent-soft: #d9f6f1;
-  --danger-soft: #ffe2e0;
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+  --atlas-bg: #f5f7fb;
+  --atlas-panel: #ffffff;
+  --atlas-panel-soft: #f8fafc;
+  --atlas-text: #172033;
+  --atlas-muted: #536079;
+  --atlas-placeholder: #6d7d91;
+  --atlas-border: #d8e0ec;
+  --atlas-border-soft: #cbd5e1;
+  --atlas-accent: #0f766e;
+  --atlas-accent-strong: #115e59;
+  --atlas-accent-soft: #e6fffb;
+  --atlas-link: #0f766e;
+  --atlas-on-accent: #ffffff;
+  --atlas-danger-soft: #fee2e2;
+  --atlas-danger-text: #991b1b;
+  background: var(--atlas-bg);
+  color: var(--atlas-text);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0d1417;
-    --panel: #141d21;
-    --panel-soft: #0f181c;
-    --text: #f4f8fa;
-    --muted: #b4c5ce;
-    --border: #34484f;
-    --accent: #2dd4bf;
-    --accent-soft: #103d39;
-    --danger-soft: #4b1717;
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --atlas-bg: #0f1417;
+  --atlas-panel: #171f23;
+  --atlas-panel-soft: #11191d;
+  --atlas-text: #f7fcfd;
+  --atlas-muted: #c3d3d8;
+  --atlas-placeholder: #d7e5ea;
+  --atlas-border: #2f4046;
+  --atlas-border-soft: #40535b;
+  --atlas-accent: #2dd4bf;
+  --atlas-accent-strong: #14b8a6;
+  --atlas-accent-soft: #113c30;
+  --atlas-link: #7ee6c9;
+  --atlas-on-accent: #06201d;
+  --atlas-danger-soft: #4b1717;
+  --atlas-danger-text: #fecaca;
 }
 
 * {
@@ -32,31 +46,23 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--atlas-bg);
+  color: var(--atlas-text);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .studio-shell {
-  width: min(1320px, calc(100vw - 32px));
+  width: min(100%, 1180px);
   margin: 0 auto;
-  padding: 28px 0;
-}
-
-.studio-header,
-.file-tree,
-.editor-panel {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--panel);
+  padding: 24px;
 }
 
 .studio-header {
   display: flex;
-  align-items: flex-start;
+  align-items: start;
   justify-content: space-between;
   gap: 16px;
-  padding: 22px;
+  margin-bottom: 20px;
 }
 
 .eyebrow,
@@ -67,21 +73,29 @@ p {
 }
 
 .eyebrow {
-  color: var(--accent);
+  margin-bottom: 6px;
+  color: var(--atlas-accent);
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 800;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
 h1 {
-  margin-top: 4px;
-  font-size: clamp(2rem, 5vw, 3rem);
-  line-height: 1;
+  margin-bottom: 8px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+h2 {
+  font-size: 1rem;
+  line-height: 1.2;
 }
 
 p {
-  margin-top: 10px;
-  color: var(--muted);
+  color: var(--atlas-muted);
   line-height: 1.5;
 }
 
@@ -89,37 +103,53 @@ p {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
-  border: 1px solid var(--accent);
-  border-radius: 6px;
-  color: var(--accent);
-  padding: 8px 14px;
-  font-weight: 800;
+  min-height: 34px;
+  border: 1px solid var(--atlas-border);
+  border-radius: 4px;
+  background: var(--atlas-panel-soft);
+  color: var(--atlas-link);
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
   text-decoration: none;
+}
+
+.button:hover,
+.button:focus-visible {
+  border-color: var(--atlas-accent);
+  background: var(--atlas-accent-soft);
+  color: var(--atlas-link);
+  outline: 0;
 }
 
 .studio-grid {
   display: grid;
   grid-template-columns: minmax(240px, 320px) 1fr;
   gap: 14px;
-  margin-top: 14px;
 }
 
 .file-tree,
 .editor-panel {
   min-height: 520px;
-  padding: 16px;
+  padding: 14px;
+  border: 1px solid var(--atlas-border);
+  border-radius: 6px;
+  background: var(--atlas-panel);
+  color: var(--atlas-text);
 }
 
 .panel-heading {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
 }
 
 .panel-heading span {
-  color: var(--accent);
+  color: var(--atlas-link);
+  font-size: 0.9rem;
   font-weight: 800;
 }
 
@@ -128,34 +158,42 @@ p {
   width: 100%;
   min-height: 38px;
   margin-top: 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--panel-soft);
-  color: var(--text);
+  border: 1px solid var(--atlas-border);
+  border-radius: 4px;
+  background: var(--atlas-panel-soft);
+  color: var(--atlas-text);
   padding: 8px 10px;
+  font: inherit;
   text-align: left;
 }
 
 .tree-item.active {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: var(--atlas-accent);
+  background: var(--atlas-accent-soft);
+  box-shadow: inset 4px 0 0 var(--atlas-accent);
 }
 
 .tree-item.locked {
-  background: var(--danger-soft);
-  color: var(--muted);
+  background: var(--atlas-danger-soft);
+  color: var(--atlas-danger-text);
 }
 
 pre {
   min-height: 390px;
   margin: 0;
   overflow: auto;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--panel-soft);
-  padding: 16px;
-  color: var(--text);
+  border: 1px solid var(--atlas-border);
+  border-radius: 6px;
+  background: var(--atlas-panel-soft);
+  color: var(--atlas-text);
+  padding: 14px;
   line-height: 1.55;
+}
+
+code {
+  color: inherit;
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.92rem;
 }
 
 .status-row {
@@ -166,20 +204,26 @@ pre {
 }
 
 .status-row span {
-  border: 1px solid var(--border);
+  border: 1px solid var(--atlas-border);
   border-radius: 999px;
-  color: var(--muted);
+  background: var(--atlas-panel-soft);
+  color: var(--atlas-muted);
   padding: 6px 10px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 800;
 }
 
 .status-row .ok {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--atlas-accent);
+  background: var(--atlas-accent-soft);
+  color: var(--atlas-link);
 }
 
 @media (max-width: 760px) {
+  .studio-shell {
+    padding: 18px 10px 28px;
+  }
+
   .studio-header,
   .studio-grid {
     display: grid;

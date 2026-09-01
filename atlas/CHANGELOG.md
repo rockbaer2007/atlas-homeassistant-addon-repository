@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.58
+
+- Align ATLAS File Studio with the Card Editor light and dark theme colors.
+- Load File Studio assets and Hub navigation through relative paths for Home
+  Assistant Ingress compatibility.
+- Bump ATLAS File Studio to `0.1.2` and Atlas Framework package metadata to
+  `0.2.0-alpha.21` for the update package.
+
 ## 0.1.57
 
 - Make Plugin Hub asset, API and navigation links work from Home Assistant

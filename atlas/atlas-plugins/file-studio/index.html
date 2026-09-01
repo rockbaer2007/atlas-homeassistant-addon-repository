@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ATLAS File Studio</title>
-    <link rel="stylesheet" href="/plugin-assets/file-studio/styles.css">
+    <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <main class="studio-shell">
@@ -14,7 +14,7 @@
           <h1>ATLAS File Studio</h1>
           <p>Dateibaum, Editor, YAML-Prüfung und Transfer für freigegebene Home-Assistant-Pfade.</p>
         </div>
-        <a class="button" href="/hub">Plugin Hub</a>
+        <a class="button" href="hub" data-open-hub>Plugin Hub</a>
       </header>
 
       <section class="studio-grid">
@@ -47,5 +47,63 @@ script: !include scripts.yaml</code></pre>
         </section>
       </section>
     </main>
+    <script>
+      const atlasThemeStorageKey = "atlas.themePreference";
+
+      function readThemePreferenceFromLocation() {
+        try {
+          const preference = new URL(window.location.href).searchParams.get("theme");
+          return ["auto", "light", "dark"].includes(preference) ? preference : undefined;
+        } catch {
+          return undefined;
+        }
+      }
+
+      function applyThemePreference() {
+        let preference = readThemePreferenceFromLocation() ?? "auto";
+        try {
+          preference = readThemePreferenceFromLocation() ?? localStorage.getItem(atlasThemeStorageKey) ?? "auto";
+        } catch {
+          preference = readThemePreferenceFromLocation() ?? "auto";
+        }
+        if (!["auto", "light", "dark"].includes(preference)) {
+          preference = "auto";
+        }
+        const resolvedTheme = preference === "auto" && window.matchMedia?.("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : preference === "dark"
+            ? "dark"
+            : "light";
+        document.documentElement.dataset.theme = resolvedTheme;
+        document.documentElement.dataset.themePreference = preference;
+        bindHubLinks(preference);
+      }
+
+      function createAppUrl(path) {
+        try {
+          const baseUrl = new URL(window.location.href);
+          baseUrl.search = "";
+          baseUrl.hash = "";
+          baseUrl.pathname = baseUrl.pathname.replace(/\/plugin-assets\/file-studio\/.*$/, "/");
+          if (!baseUrl.pathname.endsWith("/")) {
+            baseUrl.pathname = `${baseUrl.pathname}/`;
+          }
+          return new URL(String(path ?? "").replace(/^\/+/, ""), baseUrl).toString();
+        } catch {
+          return path;
+        }
+      }
+
+      function bindHubLinks(preference) {
+        for (const link of document.querySelectorAll("[data-open-hub]")) {
+          const url = new URL(createAppUrl("hub"), window.location.href);
+          url.searchParams.set("theme", preference);
+          link.href = url.toString();
+        }
+      }
+
+      applyThemePreference();
+      window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener("change", applyThemePreference);
+    </script>
   </body>
 </html>
