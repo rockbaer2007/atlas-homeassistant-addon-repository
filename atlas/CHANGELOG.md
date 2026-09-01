@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.82
+
+- Replace the Add-on repository README with a German installation-focused
+  description and keep local smoke-test details in the ATLAS source repository.
+
 ## 0.1.81
 
 - Show the Home Assistant token option as a masked password field in the native
