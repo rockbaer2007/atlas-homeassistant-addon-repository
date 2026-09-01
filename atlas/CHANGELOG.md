@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.83
+
+- Move Add-on connection details to the top of the README, remove the
+  installation/local-test/sidebar blocks and keep the matching English
+  reference text below a separator.
+
 ## 0.1.82
 
 - Replace the Add-on repository README with a German installation-focused

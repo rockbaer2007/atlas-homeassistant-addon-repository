@@ -12,40 +12,6 @@ Home Assistant Ingress ist für den ATLAS-App-Port aktiviert. ATLAS öffnet ein
 einzelnes aktives Plugin direkt oder zeigt den Plugin-Hub, wenn mehrere Plugins
 aktiv sind.
 
-## Installation aus GitHub
-
-Füge das öffentliche ATLAS Add-on-Repository in Home Assistant hinzu:
-
-```text
-https://github.com/rockbaer2007/atlas-homeassistant-addon-repository
-```
-
-Öffne **Einstellungen -> Add-ons -> Add-on Store -> Repositories**, füge die
-URL ein, aktualisiere den Store und installiere **ATLAS**.
-
-Für die My-Home-Assistant-Hilfsseite kannst du diesen Link nutzen:
-
-```text
-https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Frockbaer2007%2Fatlas-homeassistant-addon-repository
-```
-
-## Lokaler Test
-
-Die lokale Docker- und Smoke-Test-Anleitung liegt im ATLAS-Quellrepository:
-
-```text
-https://github.com/rockbaer2007/atlas
-```
-
-Dieses Repository hier ist für die installierbare Home-Assistant-App gedacht.
-
-## Home Assistant Seitenleiste
-
-Der bevorzugte Weg ist **Einstellungen -> Add-ons -> ATLAS -> In Seitenleiste
-anzeigen**. Dadurch öffnet Home Assistant ATLAS über Ingress. ATLAS öffnet
-ein einzelnes aktives Plugin direkt oder zeigt den Plugin-Hub, wenn mehrere
-Plugins aktiv sind.
-
 ## Add-on-Verbindungsoptionen
 
 Die Add-on-Konfiguration kann die Home-Assistant-URL, einen Long-Lived Access
@@ -59,3 +25,32 @@ bearbeiten möchtest.
 
 Der Token wird als Passwortfeld angezeigt und von Home Assistant maskiert. Der
 Card Editor speichert den Token nicht dauerhaft.
+
+---
+
+# ATLAS Home Assistant App
+
+This is the first Home Assistant App/Add-on packaging scaffold for ATLAS. It
+wraps the same runtime used by the standalone Docker preview:
+
+- ATLAS app runtime and health endpoint on port `4176`
+- ATLAS Administration on port `4175`
+- Home Assistant Card Editor reference plugin on port `4174`
+- ATLAS File Studio as the second independent plugin line
+
+Home Assistant Ingress is enabled for the ATLAS app port. ATLAS opens the only
+active plugin directly or shows the Plugin Hub when multiple plugins are active.
+
+## Add-on connection options
+
+The Add-on configuration can provide the Home Assistant URL, a long-lived access
+token, whether ATLAS Administration should import that token on startup and
+whether the Card Editor should auto-connect after the handoff.
+
+It also controls whether ATLAS File Studio may access `/addons`. Keep this
+disabled for normal editor usage. Enable it only when you intentionally want to
+inspect or edit local Home Assistant add-on folders.
+
+The token is shown as text because Home Assistant can mask local password fields
+on reload and pass only a shortened placeholder to the Add-on. The token is not
+stored permanently by the Card Editor.
