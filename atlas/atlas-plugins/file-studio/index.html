@@ -77,12 +77,6 @@
             <button id="font-increase" class="button small-button" type="button" aria-label="Schrift größer" title="Schrift größer">A+</button>
           </div>
           <div id="editor-input" class="editor-input" role="textbox" aria-label="Dateieditor"></div>
-          <div id="image-preview" class="image-preview" hidden>
-            <div class="image-preview-stage">
-              <img id="image-preview-media" alt="">
-            </div>
-            <div id="image-preview-meta" class="image-preview-meta"></div>
-          </div>
           <div class="status-row">
             <span id="tree-root-status" class="ok">/config als Standard</span>
             <span id="editor-dirty-status">Keine Datei geladen</span>
@@ -93,6 +87,24 @@
         </section>
       </section>
     </main>
+    <div id="image-preview" class="image-preview-modal" role="dialog" aria-modal="true" aria-labelledby="image-preview-title" hidden>
+      <div class="image-preview-backdrop" data-preview-close></div>
+      <section class="image-preview-dialog">
+        <header class="image-preview-header">
+          <div>
+            <h2 id="image-preview-title">Bildvorschau</h2>
+            <p id="image-preview-meta"></p>
+          </div>
+          <div class="image-preview-actions">
+            <button id="image-preview-download" class="button" type="button">Download</button>
+            <button id="image-preview-close" class="icon-button icon-close" type="button" aria-label="Bildvorschau schließen" title="Schließen"></button>
+          </div>
+        </header>
+        <div class="image-preview-stage">
+          <img id="image-preview-media" alt="">
+        </div>
+      </section>
+    </div>
     <script src="editor.bundle.js"></script>
     <script>
       const atlasThemeStorageKey = "atlas.themePreference";
@@ -346,10 +358,6 @@
 
       function setPreviewMode(mode) {
         state.previewMode = mode;
-        const editor = document.querySelector("#editor-input");
-        const preview = document.querySelector("#image-preview");
-        editor.hidden = mode === "image";
-        preview.hidden = mode !== "image";
       }
 
       function clearImagePreview() {
@@ -357,7 +365,9 @@
           URL.revokeObjectURL(state.previewObjectUrl);
           state.previewObjectUrl = undefined;
         }
+        const preview = document.querySelector("#image-preview");
         const image = document.querySelector("#image-preview-media");
+        preview.hidden = true;
         image.removeAttribute("src");
         image.alt = "";
         document.querySelector("#image-preview-meta").textContent = "";
@@ -367,7 +377,6 @@
         clearImagePreview();
         setPreviewMode("image");
         setEditorReadOnly(true);
-        setEditorValue("");
         const response = await fetch(createImageAssetUrl(file.path), { cache: "no-store" });
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
@@ -377,8 +386,15 @@
         const image = document.querySelector("#image-preview-media");
         image.src = state.previewObjectUrl;
         image.alt = file.name;
+        document.querySelector("#image-preview-title").textContent = file.name;
         document.querySelector("#image-preview-meta").textContent =
           `${file.name} · ${imageMimeType(file.extension)} · ${formatFileSize(file.size)}`;
+        document.querySelector("#image-preview").hidden = false;
+        document.querySelector("#image-preview-close").focus();
+      }
+
+      function closeImagePreview() {
+        clearImagePreview();
       }
 
       function initializeEditor() {
@@ -945,6 +961,18 @@
           state.editorFontSize = Math.min(22, state.editorFontSize + 1);
           applyEditorPreferences();
           saveEditorPreferences();
+        });
+        document.querySelector("#image-preview-close").addEventListener("click", closeImagePreview);
+        document.querySelector("#image-preview-download").addEventListener("click", () => void downloadOpenFile());
+        document.querySelector("#image-preview").addEventListener("click", event => {
+          if (event.target instanceof HTMLElement && event.target.hasAttribute("data-preview-close")) {
+            closeImagePreview();
+          }
+        });
+        window.addEventListener("keydown", event => {
+          if (event.key === "Escape" && !document.querySelector("#image-preview").hidden) {
+            closeImagePreview();
+          }
         });
       }
 

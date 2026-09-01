@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.75
+
+- Move File Studio image previews into a modal overlay so selecting images no
+  longer changes the editor layout height.
+- Keep image download available from the preview modal and the editor toolbar.
+- Bump ATLAS File Studio to `0.1.17` for repository update detection.
+
 ## 0.1.74
 
 - Add File Studio image previews for PNG, JPG/JPEG, SVG, GIF, WebP, BMP and ICO

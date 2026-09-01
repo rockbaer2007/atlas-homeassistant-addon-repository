@@ -332,6 +332,24 @@ body.is-resizing .splitter {
   background: currentColor;
 }
 
+.icon-close::before,
+.icon-close::after {
+  left: 7px;
+  top: 13px;
+  width: 12px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.icon-close::before {
+  transform: rotate(45deg);
+}
+
+.icon-close::after {
+  transform: rotate(-45deg);
+}
+
 .tree-status,
 .tree-note {
   margin-bottom: 10px;
@@ -703,14 +721,71 @@ body.is-resizing .splitter {
   font-size: var(--editor-font-size);
 }
 
-.image-preview {
-  display: flex;
+.image-preview-modal[hidden] {
+  display: none;
+}
+
+.image-preview-modal {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.image-preview-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.image-preview-dialog {
   position: relative;
-  flex: 1 1 auto;
-  min-height: max(360px, calc(var(--studio-height) - 172px));
+  display: flex;
+  flex-direction: column;
+  width: min(90vw, 1280px);
+  max-height: 85vh;
   overflow: hidden;
   border: 1px solid var(--atlas-border);
-  border-radius: 6px;
+  border-radius: 8px;
+  background: var(--atlas-panel);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.36);
+}
+
+.image-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--atlas-border);
+}
+
+.image-preview-header h2 {
+  margin-bottom: 2px;
+}
+
+.image-preview-header p {
+  color: var(--atlas-muted);
+  font-size: 0.86rem;
+}
+
+.image-preview-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.image-preview-stage {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 260px;
+  max-height: calc(85vh - 72px);
+  overflow: hidden;
+  place-items: center;
+  padding: 18px;
   background:
     linear-gradient(45deg, color-mix(in srgb, var(--atlas-panel-soft) 88%, #000 12%) 25%, transparent 25%),
     linear-gradient(-45deg, color-mix(in srgb, var(--atlas-panel-soft) 88%, #000 12%) 25%, transparent 25%),
@@ -721,42 +796,11 @@ body.is-resizing .splitter {
   background-size: 20px 20px;
 }
 
-.image-preview[hidden] {
-  display: none;
-}
-
-.image-preview-stage {
-  display: grid;
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-  place-items: center;
-  padding: 18px;
-}
-
-.image-preview img {
+.image-preview-stage img {
   display: block;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-}
-
-.image-preview-meta {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  max-width: min(42%, 420px);
-  margin: 12px;
-  overflow: hidden;
-  border: 1px solid var(--atlas-border);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--atlas-panel) 88%, transparent);
-  color: var(--atlas-muted);
-  padding: 6px 10px;
-  font-size: 0.82rem;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .editor-input:focus {
