@@ -112,6 +112,16 @@ createServer((request, response) => {
     return;
   }
 
+  if (routePath === "/api/file-studio/download") {
+    void writeFileStudioDownloadResponse(response, requestUrl, request.headers.cookie);
+    return;
+  }
+
+  if (routePath === "/api/file-studio/archive") {
+    void writeFileStudioArchiveResponse(response, requestUrl, request.headers.cookie);
+    return;
+  }
+
   if (routePath === "/api/file-studio/validate") {
     void writeFileStudioValidationResponse(request, response);
     return;
@@ -194,6 +204,8 @@ function createRoutePath(pathname) {
     "/api/file-studio/tree",
     "/api/file-studio/file",
     "/api/file-studio/asset",
+    "/api/file-studio/download",
+    "/api/file-studio/archive",
     "/api/file-studio/validate",
     "/api/file-studio/write",
     "/api/file-studio/create-file",
@@ -477,6 +489,89 @@ async function writeFileStudioAssetResponse(response, requestUrl, cookieHeader) 
   createReadStream(targetPath).pipe(response);
 }
 
+async function writeFileStudioDownloadResponse(response, requestUrl, cookieHeader) {
+  const relativePath = requestUrl.searchParams.get("path") ?? "";
+  const access = createFileStudioAccessContext(cookieHeader);
+  const targetPath = resolveFileStudioPath(relativePath, access);
+
+  if (!targetPath) {
+    writeJson(response, 403, {
+      kind: "atlas.file-studio.download",
+      error: "path outside configured root",
+    });
+    return;
+  }
+
+  if (!existsSync(targetPath) || !statSync(targetPath).isFile()) {
+    writeJson(response, 404, {
+      kind: "atlas.file-studio.download",
+      error: "file not found",
+    });
+    return;
+  }
+
+  const stats = statSync(targetPath);
+  const filename = encodeURIComponent(targetPath.split(/[\\/]/).at(-1) ?? "atlas-file-studio-download");
+  response.writeHead(200, {
+    "content-type": fileStudioImageMimeTypes.get(extname(targetPath).toLowerCase()) ?? "application/octet-stream",
+    "content-length": stats.size,
+    "cache-control": "no-store",
+    "content-disposition": `attachment; filename*=UTF-8''${filename}`,
+    "access-control-allow-origin": "*",
+  });
+  createReadStream(targetPath).pipe(response);
+}
+
+async function writeFileStudioArchiveResponse(response, requestUrl, cookieHeader) {
+  const relativePath = requestUrl.searchParams.get("path") ?? "";
+  const access = createFileStudioAccessContext(cookieHeader);
+  const targetPath = resolveFileStudioPath(relativePath, access);
+
+  if (!targetPath) {
+    writeJson(response, 403, {
+      kind: "atlas.file-studio.archive",
+      error: "path outside configured root",
+    });
+    return;
+  }
+
+  if (!existsSync(targetPath) || !statSync(targetPath).isFile()) {
+    writeJson(response, 404, {
+      kind: "atlas.file-studio.archive",
+      error: "file not found",
+    });
+    return;
+  }
+
+  if (extname(targetPath).toLowerCase() !== ".zip") {
+    writeJson(response, 415, {
+      kind: "atlas.file-studio.archive",
+      error: "unsupported archive type",
+    });
+    return;
+  }
+
+  try {
+    const stats = statSync(targetPath);
+    const archive = inspectZipArchive(targetPath);
+    writeJson(response, 200, {
+      kind: "atlas.file-studio.archive",
+      path: createFileStudioDisplayPath(targetPath, access),
+      name: targetPath.split(/[\\/]/).at(-1) ?? "",
+      size: stats.size,
+      modifiedAt: stats.mtime.toISOString(),
+      entries: archive.entries,
+      entryCount: archive.entries.length,
+      truncated: archive.truncated,
+    });
+  } catch (error) {
+    writeJson(response, 422, {
+      kind: "atlas.file-studio.archive",
+      error: error instanceof Error ? error.message : "archive could not be inspected",
+    });
+  }
+}
+
 async function writeFileStudioValidationResponse(request, response) {
   const body = await readJsonRequestBody(request);
   const content = typeof body.content === "string" ? body.content : "";
@@ -486,6 +581,66 @@ async function writeFileStudioValidationResponse(request, response) {
     kind: "atlas.file-studio.validation",
     ...validateFileStudioContent(content, filename),
   });
+}
+
+function inspectZipArchive(targetPath) {
+  const buffer = readFileSync(targetPath);
+  const eocdOffset = findZipEndOfCentralDirectory(buffer);
+  if (eocdOffset < 0) {
+    throw new Error("ZIP-Zentralverzeichnis nicht gefunden.");
+  }
+
+  const totalEntries = buffer.readUInt16LE(eocdOffset + 10);
+  const centralDirectorySize = buffer.readUInt32LE(eocdOffset + 12);
+  const centralDirectoryOffset = buffer.readUInt32LE(eocdOffset + 16);
+  const centralDirectoryEnd = centralDirectoryOffset + centralDirectorySize;
+  if (centralDirectoryEnd > buffer.length) {
+    throw new Error("ZIP-Zentralverzeichnis ist unvollstaendig.");
+  }
+
+  const entries = [];
+  let offset = centralDirectoryOffset;
+  while (offset + 46 <= centralDirectoryEnd && entries.length < Math.min(totalEntries, 500)) {
+    if (buffer.readUInt32LE(offset) !== 0x02014b50) {
+      throw new Error("ZIP-Zentralverzeichnis enthaelt einen ungueltigen Eintrag.");
+    }
+    const compressionMethod = buffer.readUInt16LE(offset + 10);
+    const compressedSize = buffer.readUInt32LE(offset + 20);
+    const uncompressedSize = buffer.readUInt32LE(offset + 24);
+    const nameLength = buffer.readUInt16LE(offset + 28);
+    const extraLength = buffer.readUInt16LE(offset + 30);
+    const commentLength = buffer.readUInt16LE(offset + 32);
+    const nameStart = offset + 46;
+    const nameEnd = nameStart + nameLength;
+    if (nameEnd > centralDirectoryEnd) {
+      throw new Error("ZIP-Eintragsname ist unvollstaendig.");
+    }
+    const path = buffer.toString("utf8", nameStart, nameEnd);
+    entries.push({
+      path,
+      name: path.split("/").filter(Boolean).at(-1) ?? path,
+      type: path.endsWith("/") ? "directory" : "file",
+      size: uncompressedSize,
+      compressedSize,
+      compressionMethod,
+    });
+    offset = nameEnd + extraLength + commentLength;
+  }
+
+  return {
+    entries,
+    truncated: totalEntries > entries.length,
+  };
+}
+
+function findZipEndOfCentralDirectory(buffer) {
+  const minimumOffset = Math.max(0, buffer.length - 65_557);
+  for (let offset = buffer.length - 22; offset >= minimumOffset; offset -= 1) {
+    if (buffer.readUInt32LE(offset) === 0x06054b50) {
+      return offset;
+    }
+  }
+  return -1;
 }
 
 async function writeFileStudioWriteResponse(request, response, cookieHeader) {

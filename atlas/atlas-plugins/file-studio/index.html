@@ -96,6 +96,9 @@
             <p id="image-preview-meta"></p>
           </div>
           <div class="image-preview-actions">
+            <button id="image-preview-zoom-out" class="icon-button icon-zoom-out" type="button" aria-label="Bild verkleinern" title="Zoom -"></button>
+            <button id="image-preview-zoom-reset" class="icon-button icon-zoom-reset" type="button" aria-label="Bild in Originalgröße anzeigen" title="100%"></button>
+            <button id="image-preview-zoom-in" class="icon-button icon-zoom-in" type="button" aria-label="Bild vergrößern" title="Zoom +"></button>
             <button id="image-preview-download" class="button" type="button">Download</button>
             <button id="image-preview-close" class="icon-button icon-close" type="button" aria-label="Bildvorschau schließen" title="Schließen"></button>
           </div>
@@ -110,6 +113,29 @@
           aria-label="Bildvorschau-Größe ändern"
           title="Bildvorschau-Größe ändern"
         ></button>
+      </section>
+    </div>
+    <div id="archive-preview" class="archive-preview-modal" role="dialog" aria-modal="true" aria-labelledby="archive-preview-title" hidden>
+      <div class="archive-preview-backdrop" data-archive-close></div>
+      <section class="archive-preview-dialog">
+        <header class="archive-preview-header">
+          <div>
+            <h2 id="archive-preview-title">ZIP-Inhalt</h2>
+            <p id="archive-preview-meta"></p>
+          </div>
+          <div class="archive-preview-actions">
+            <button id="archive-preview-download" class="button" type="button">Download</button>
+            <button id="archive-preview-close" class="icon-button icon-close" type="button" aria-label="ZIP-Inhalt schließen" title="Schließen"></button>
+          </div>
+        </header>
+        <div class="archive-preview-table">
+          <div class="archive-preview-table-header">
+            <span>Name</span>
+            <span>Größe</span>
+            <span>Typ</span>
+          </div>
+          <div id="archive-preview-list" class="archive-preview-list"></div>
+        </div>
       </section>
     </div>
     <script src="editor.bundle.js"></script>
@@ -134,10 +160,13 @@
         previewMode: "text",
         previewObjectUrl: undefined,
         previewSize: { ...imagePreviewDefaultSize },
+        imageZoom: 1,
+        imageNaturalWidth: undefined,
         editorFontSize: 14,
         wordWrap: true,
       };
       const imagePreviewExtensions = new Set(["png", "jpg", "jpeg", "svg", "gif", "webp", "bmp", "ico"]);
+      const archivePreviewExtensions = new Set(["zip"]);
 
       function readThemePreferenceFromLocation() {
         try {
@@ -179,6 +208,10 @@
 
       function isImageExtension(extension) {
         return imagePreviewExtensions.has(String(extension ?? "").trim().toLowerCase());
+      }
+
+      function isArchiveExtension(extension) {
+        return archivePreviewExtensions.has(String(extension ?? "").trim().toLowerCase());
       }
 
       function imageMimeType(extension) {
@@ -294,15 +327,15 @@
 
       function updateEditorActions() {
         const hasFile = Boolean(state.selectedFilePath);
-        const isImage = state.previewMode === "image";
-        const isDirty = !isImage && editorValue() !== state.originalContent;
+        const isPreview = state.previewMode !== "text";
+        const isDirty = !isPreview && editorValue() !== state.originalContent;
         document.querySelector("#save-file").disabled = !hasFile || !isDirty;
-        document.querySelector("#save-file-as").disabled = !hasFile || isImage;
+        document.querySelector("#save-file-as").disabled = !hasFile || isPreview;
         document.querySelector("#discard-file").disabled = !hasFile || !isDirty;
-        document.querySelector("#validate-file").disabled = !hasFile || isImage;
+        document.querySelector("#validate-file").disabled = !hasFile || isPreview;
         document.querySelector("#download-file").disabled = !hasFile;
         document.querySelector("#editor-dirty-status").textContent = hasFile
-          ? isImage ? "Bildvorschau" : isDirty ? "Geändert, nicht gespeichert" : "Gespeichert"
+          ? isPreview ? "Vorschau" : isDirty ? "Geändert, nicht gespeichert" : "Gespeichert"
           : "Keine Datei geladen";
       }
 
@@ -392,6 +425,19 @@
         document.documentElement.style.setProperty("--image-preview-height", `${state.previewSize.heightVh}vh`);
       }
 
+      function applyImageZoom(zoom) {
+        state.imageZoom = clampValue(zoom, 0.25, 4);
+        const image = document.querySelector("#image-preview-media");
+        const naturalWidth = state.imageNaturalWidth ?? image.naturalWidth;
+        if (Number.isFinite(naturalWidth) && naturalWidth > 0) {
+          image.style.setProperty("--image-zoom-width", `${Math.round(naturalWidth * state.imageZoom)}px`);
+        }
+        document.documentElement.style.setProperty("--image-preview-zoom", String(state.imageZoom));
+        document.querySelector("#image-preview")?.classList.toggle("is-zoomed", state.imageZoom !== 1);
+        const zoomLabel = `${Math.round(state.imageZoom * 100)}%`;
+        document.querySelector("#image-preview-zoom-reset").title = `100% (${zoomLabel})`;
+      }
+
       function clearImagePreview() {
         if (state.previewObjectUrl) {
           URL.revokeObjectURL(state.previewObjectUrl);
@@ -400,8 +446,13 @@
         const preview = document.querySelector("#image-preview");
         const image = document.querySelector("#image-preview-media");
         preview.hidden = true;
+        preview.classList.remove("is-zoomed");
         image.removeAttribute("src");
         image.alt = "";
+        image.style.removeProperty("--image-natural-width");
+        image.style.removeProperty("--image-zoom-width");
+        state.imageNaturalWidth = undefined;
+        applyImageZoom(1);
         document.querySelector("#image-preview-meta").textContent = "";
       }
 
@@ -418,6 +469,15 @@
         const image = document.querySelector("#image-preview-media");
         image.src = state.previewObjectUrl;
         image.alt = file.name;
+        image.onload = () => {
+          const naturalWidth = image.naturalWidth || 0;
+          if (naturalWidth > 0) {
+            state.imageNaturalWidth = naturalWidth;
+            image.style.setProperty("--image-natural-width", `${naturalWidth}px`);
+            applyImageZoom(state.imageZoom);
+          }
+        };
+        applyImageZoom(1);
         document.querySelector("#image-preview-title").textContent = file.name;
         document.querySelector("#image-preview-meta").textContent =
           `${file.name} · ${imageMimeType(file.extension)} · ${formatFileSize(file.size)}`;
@@ -429,6 +489,49 @@
 
       function closeImagePreview() {
         clearImagePreview();
+      }
+
+      function clearArchivePreview() {
+        document.querySelector("#archive-preview").hidden = true;
+        document.querySelector("#archive-preview-list").replaceChildren();
+        document.querySelector("#archive-preview-meta").textContent = "";
+      }
+
+      async function showArchivePreview(file) {
+        clearArchivePreview();
+        setPreviewMode("archive");
+        setEditorReadOnly(true);
+        const archive = await apiJson(`api/file-studio/archive?path=${encodeURIComponent(file.path)}`);
+        document.querySelector("#archive-preview-title").textContent = archive.name ?? file.name;
+        document.querySelector("#archive-preview-meta").textContent =
+          `${archive.entryCount ?? 0} Einträge · ${formatFileSize(archive.size)}${archive.truncated ? " · gekürzt" : ""}`;
+        renderArchivePreviewEntries(archive.entries ?? []);
+        document.querySelector("#archive-preview").hidden = false;
+        document.querySelector("#archive-preview-close").focus();
+      }
+
+      function renderArchivePreviewEntries(entries) {
+        const list = document.querySelector("#archive-preview-list");
+        if (!entries.length) {
+          const empty = document.createElement("p");
+          empty.className = "archive-preview-empty";
+          empty.textContent = "ZIP ist leer oder enthält keine lesbaren Einträge.";
+          list.replaceChildren(empty);
+          return;
+        }
+        list.replaceChildren(...entries.map(entry => {
+          const row = document.createElement("div");
+          row.className = `archive-preview-row ${entry.type === "directory" ? "directory" : "file"}`;
+          row.innerHTML = `<span></span><span></span><span></span>`;
+          row.children[0].textContent = entry.path;
+          row.children[1].textContent = entry.type === "directory" ? "-" : formatFileSize(entry.size);
+          row.children[2].textContent = entry.type === "directory" ? "Ordner" : "Datei";
+          return row;
+        }));
+      }
+
+      function closeArchivePreview() {
+        clearArchivePreview();
       }
 
       function startImagePreviewResize(event) {
@@ -635,6 +738,7 @@
         document.querySelector("#editor-validation-status").textContent = "Datei wird geladen...";
         setEditorReadOnly(true);
         clearImagePreview();
+        clearArchivePreview();
         try {
           if (isImageExtension(node.extension)) {
             const imageFile = { ...node, readonly: true };
@@ -643,6 +747,18 @@
             document.querySelector("#editor-title").textContent = imageFile.name;
             document.querySelector("#editor-kind").textContent = "BILD";
             document.querySelector("#editor-validation-status").textContent = "Bildvorschau bereit";
+            updateCursorStatus();
+            updateEditorActions();
+            return;
+          }
+
+          if (isArchiveExtension(node.extension)) {
+            const archiveFile = { ...node, readonly: true };
+            state.originalContent = "";
+            await showArchivePreview(archiveFile);
+            document.querySelector("#editor-title").textContent = archiveFile.name;
+            document.querySelector("#editor-kind").textContent = "ZIP";
+            document.querySelector("#editor-validation-status").textContent = "ZIP-Inhalt bereit";
             updateCursorStatus();
             updateEditorActions();
             return;
@@ -665,6 +781,7 @@
         } catch (error) {
           setPreviewMode("text");
           clearImagePreview();
+          clearArchivePreview();
           setEditorValue("");
           setEditorReadOnly(true);
           state.originalContent = "";
@@ -969,8 +1086,8 @@
           return;
         }
         const link = document.createElement("a");
-        if (state.previewMode === "image") {
-          const response = await fetch(createImageAssetUrl(state.selectedFilePath), { cache: "no-store" });
+        if (state.previewMode !== "text") {
+          const response = await fetch(createDownloadUrl(state.selectedFilePath), { cache: "no-store" });
           if (!response.ok) {
             document.querySelector("#editor-validation-status").textContent = `Download fehlgeschlagen: HTTP ${response.status}`;
             return;
@@ -989,8 +1106,8 @@
         if (!file || !state.selectedFilePath) {
           return;
         }
-        if (state.previewMode === "image") {
-          document.querySelector("#editor-validation-status").textContent = "Bilddateien werden aktuell nur angezeigt und heruntergeladen.";
+        if (state.previewMode !== "text") {
+          document.querySelector("#editor-validation-status").textContent = "Vorschaudateien werden aktuell nur angezeigt und heruntergeladen.";
           return;
         }
         setEditorValue(await file.text());
@@ -1027,6 +1144,9 @@
         });
         document.querySelector("#image-preview-close").addEventListener("click", closeImagePreview);
         document.querySelector("#image-preview-download").addEventListener("click", () => void downloadOpenFile());
+        document.querySelector("#image-preview-zoom-out").addEventListener("click", () => applyImageZoom(state.imageZoom - 0.25));
+        document.querySelector("#image-preview-zoom-reset").addEventListener("click", () => applyImageZoom(1));
+        document.querySelector("#image-preview-zoom-in").addEventListener("click", () => applyImageZoom(state.imageZoom + 0.25));
         document.querySelector("#image-preview-resize").addEventListener("pointerdown", startImagePreviewResize);
         document.querySelector("#image-preview-resize").addEventListener("dblclick", event => {
           event.preventDefault();
@@ -1041,6 +1161,16 @@
         window.addEventListener("keydown", event => {
           if (event.key === "Escape" && !document.querySelector("#image-preview").hidden) {
             closeImagePreview();
+          }
+          if (event.key === "Escape" && !document.querySelector("#archive-preview").hidden) {
+            closeArchivePreview();
+          }
+        });
+        document.querySelector("#archive-preview-close").addEventListener("click", closeArchivePreview);
+        document.querySelector("#archive-preview-download").addEventListener("click", () => void downloadOpenFile());
+        document.querySelector("#archive-preview").addEventListener("click", event => {
+          if (event.target instanceof HTMLElement && event.target.hasAttribute("data-archive-close")) {
+            closeArchivePreview();
           }
         });
       }
@@ -1119,6 +1249,12 @@
 
       function createImageAssetUrl(path) {
         const url = new URL(createAppUrl("api/file-studio/asset"), window.location.href);
+        url.searchParams.set("path", path);
+        return url.toString();
+      }
+
+      function createDownloadUrl(path) {
+        const url = new URL(createAppUrl("api/file-studio/download"), window.location.href);
         url.searchParams.set("path", path);
         return url.toString();
       }

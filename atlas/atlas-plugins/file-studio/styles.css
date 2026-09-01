@@ -352,6 +352,46 @@ body.is-resizing .splitter {
   transform: rotate(-45deg);
 }
 
+.icon-zoom-in::before,
+.icon-zoom-out::before {
+  inset: 6px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+}
+
+.icon-zoom-in::after,
+.icon-zoom-out::after {
+  left: 11px;
+  top: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background:
+    linear-gradient(currentColor 0 0) center / 8px 2px no-repeat,
+    transparent;
+}
+
+.icon-zoom-in::after {
+  background:
+    linear-gradient(currentColor 0 0) center / 8px 2px no-repeat,
+    linear-gradient(currentColor 0 0) center / 2px 8px no-repeat;
+}
+
+.icon-zoom-reset::before {
+  inset: 7px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+}
+
+.icon-zoom-reset::after {
+  left: 10px;
+  right: 10px;
+  top: 13px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
 .tree-status,
 .tree-note {
   margin-bottom: 10px;
@@ -723,11 +763,13 @@ body.is-resizing .splitter {
   font-size: var(--editor-font-size);
 }
 
-.image-preview-modal[hidden] {
+.image-preview-modal[hidden],
+.archive-preview-modal[hidden] {
   display: none;
 }
 
-.image-preview-modal {
+.image-preview-modal,
+.archive-preview-modal {
   position: fixed;
   z-index: 100;
   inset: 0;
@@ -736,13 +778,15 @@ body.is-resizing .splitter {
   padding: 24px;
 }
 
-.image-preview-backdrop {
+.image-preview-backdrop,
+.archive-preview-backdrop {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.62);
 }
 
-.image-preview-dialog {
+.image-preview-dialog,
+.archive-preview-dialog {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -757,6 +801,11 @@ body.is-resizing .splitter {
   box-shadow: 0 24px 90px rgba(0, 0, 0, 0.36);
 }
 
+.archive-preview-dialog {
+  width: min(760px, 86vw);
+  max-height: 78vh;
+}
+
 .image-preview-modal.is-manual-size .image-preview-dialog {
   width: var(--image-preview-width);
   height: var(--image-preview-height);
@@ -764,7 +813,8 @@ body.is-resizing .splitter {
   min-height: 40vh;
 }
 
-.image-preview-header {
+.image-preview-header,
+.archive-preview-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -773,16 +823,19 @@ body.is-resizing .splitter {
   border-bottom: 1px solid var(--atlas-border);
 }
 
-.image-preview-header h2 {
+.image-preview-header h2,
+.archive-preview-header h2 {
   margin-bottom: 2px;
 }
 
-.image-preview-header p {
+.image-preview-header p,
+.archive-preview-header p {
   color: var(--atlas-muted);
   font-size: 0.86rem;
 }
 
-.image-preview-actions {
+.image-preview-actions,
+.archive-preview-actions {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -819,16 +872,87 @@ body.is-resizing .splitter {
   object-fit: contain;
 }
 
+.image-preview-modal.is-zoomed .image-preview-stage {
+  overflow: auto;
+  align-items: start;
+  justify-items: start;
+}
+
+.image-preview-modal.is-zoomed .image-preview-stage img {
+  width: var(--image-zoom-width, auto);
+  max-width: none;
+  max-height: none;
+}
+
 .image-preview-modal.is-manual-size .image-preview-stage {
   max-width: none;
   max-height: none;
 }
 
 .image-preview-modal.is-manual-size .image-preview-stage img {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
   max-width: 100%;
   max-height: 100%;
+}
+
+.image-preview-modal.is-manual-size.is-zoomed .image-preview-stage img {
+  width: var(--image-zoom-width, auto);
+  max-width: none;
+  max-height: none;
+}
+
+.archive-preview-table {
+  min-height: 220px;
+  overflow: auto;
+}
+
+.archive-preview-table-header,
+.archive-preview-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 110px 84px;
+  gap: 12px;
+  align-items: center;
+}
+
+.archive-preview-table-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border-bottom: 1px solid var(--atlas-border);
+  background: var(--atlas-panel-soft);
+  color: var(--atlas-muted);
+  padding: 9px 14px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.archive-preview-list {
+  display: grid;
+}
+
+.archive-preview-row {
+  border-bottom: 1px solid var(--atlas-border);
+  padding: 9px 14px;
+  color: var(--atlas-text);
+  font-size: 0.9rem;
+}
+
+.archive-preview-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archive-preview-row.directory {
+  color: var(--atlas-folder);
+  font-weight: 800;
+}
+
+.archive-preview-empty {
+  padding: 18px 14px;
+  color: var(--atlas-muted);
 }
 
 .image-preview-resize-handle {

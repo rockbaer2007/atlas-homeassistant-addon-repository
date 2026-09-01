@@ -8,7 +8,7 @@ export declare const FileStudioExtensionPoints: {
     readonly accessPolicy: "atlas.file-studio.access-policy";
 };
 export type FileStudioExtensionPoint = typeof FileStudioExtensionPoints[keyof typeof FileStudioExtensionPoints];
-export declare const FileStudioPluginCapabilities: readonly ["atlas.file-tree", "atlas.file-editor", "atlas.image-preview", "atlas.syntax-highlighting", "atlas.yaml-validation", "atlas.file-upload", "atlas.file-download", "atlas.scoped-filesystem"];
+export declare const FileStudioPluginCapabilities: readonly ["atlas.file-tree", "atlas.file-editor", "atlas.image-preview", "atlas.archive-preview", "atlas.syntax-highlighting", "atlas.yaml-validation", "atlas.file-upload", "atlas.file-download", "atlas.scoped-filesystem"];
 export type FileStudioPluginCapability = typeof FileStudioPluginCapabilities[number];
 export type FileStudioAccessMode = "read" | "read-write";
 export type FileStudioRootScope = Readonly<{

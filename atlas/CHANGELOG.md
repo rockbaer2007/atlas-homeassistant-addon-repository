@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.79
+
+- Add File Studio image zoom controls for zooming out, returning to 100% and
+  zooming in while keeping image proportions intact.
+- Add a File Studio ZIP preview modal that lists archive contents without
+  extracting files.
+- Add a binary File Studio download route so previewed images and ZIP archives
+  download without passing through the text editor.
+- Bump ATLAS File Studio to `0.1.21` for repository update detection.
+
 ## 0.1.78
 
 - Let File Studio image previews auto-size to the opened image while keeping
