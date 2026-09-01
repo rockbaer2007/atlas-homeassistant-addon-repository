@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.57
+
+- Make Plugin Hub asset, API and navigation links work from Home Assistant
+  Ingress paths instead of only from the app server root.
+- Add route fallbacks for prefixed Ingress paths so Hub styling and Admin
+  navigation do not resolve against the Home Assistant frontend.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.20` for the update
+  package.
+
 ## 0.1.56
 
 - Bridge repository-installed ATLAS plugins from Administration into the app

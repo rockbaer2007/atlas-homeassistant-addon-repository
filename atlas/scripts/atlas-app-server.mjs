@@ -54,28 +54,29 @@ await startSurface({
 
 createServer((request, response) => {
   const requestUrl = new URL(request.url ?? "/", `http://${request.headers.host ?? `${host}:${appPort}`}`);
+  const routePath = createRoutePath(requestUrl.pathname);
 
   if (request.method === "OPTIONS") {
     writeEmptyResponse(response, 204);
     return;
   }
 
-  if (requestUrl.pathname === "/health") {
+  if (routePath === "/health") {
     void writeHealthResponse(response);
     return;
   }
 
-  if (requestUrl.pathname === "/app") {
+  if (routePath === "/app") {
     void writeAppResponse(response, requestUrl, request.headers.cookie);
     return;
   }
 
-  if (requestUrl.pathname === "/api/plugins") {
+  if (routePath === "/api/plugins") {
     void writePluginCatalogResponse(response, requestUrl, request.headers.cookie);
     return;
   }
 
-  if (requestUrl.pathname === "/") {
+  if (routePath === "/") {
     const activePlugins = readLaunchablePluginCatalog(requestUrl, request.headers.cookie);
     if (activePlugins.length === 1) {
       response.writeHead(302, { location: activePlugins[0].entryUrl });
@@ -87,28 +88,28 @@ createServer((request, response) => {
     return;
   }
 
-  if (requestUrl.pathname === "/hub" || requestUrl.pathname === "/hub/") {
+  if (routePath === "/hub" || routePath === "/hub/") {
     serveStaticFile(response, resolve(root, "examples/plugin-hub/index.html"));
     return;
   }
 
-  if (requestUrl.pathname.startsWith("/examples/plugin-hub/")) {
-    serveStaticPath(response, requestUrl.pathname, resolve(root, "examples/plugin-hub"));
+  if (routePath.startsWith("/examples/plugin-hub/")) {
+    serveStaticPath(response, routePath, resolve(root, "examples/plugin-hub"));
     return;
   }
 
-  if (requestUrl.pathname.startsWith("/plugin-assets/")) {
-    servePluginAsset(response, requestUrl.pathname);
+  if (routePath.startsWith("/plugin-assets/")) {
+    servePluginAsset(response, routePath);
     return;
   }
 
-  if (requestUrl.pathname === "/admin" || requestUrl.pathname === "/admin/") {
+  if (routePath === "/admin" || routePath === "/admin/") {
     response.writeHead(302, { location: createPublicSurfaceUrl(requestUrl, adminPort) });
     response.end();
     return;
   }
 
-  if (requestUrl.pathname === "/editor" || requestUrl.pathname === "/editor/") {
+  if (routePath === "/editor" || routePath === "/editor/") {
     response.writeHead(302, { location: createPublicSurfaceUrl(requestUrl, editorPort) });
     response.end();
     return;
@@ -130,6 +131,38 @@ createServer((request, response) => {
   console.log(`ATLAS administration: ${adminUrl}`);
   console.log(`ATLAS card editor: ${editorUrl}`);
 });
+
+function createRoutePath(pathname) {
+  const knownPrefixes = [
+    "/api/plugins",
+    "/examples/plugin-hub/",
+    "/plugin-assets/",
+  ];
+  for (const prefix of knownPrefixes) {
+    const index = pathname.indexOf(prefix);
+    if (index >= 0) {
+      return pathname.slice(index);
+    }
+  }
+
+  const knownSuffixes = [
+    "/health",
+    "/app",
+    "/hub",
+    "/hub/",
+    "/admin",
+    "/admin/",
+    "/editor",
+    "/editor/",
+  ];
+  for (const suffix of knownSuffixes) {
+    if (pathname === suffix || pathname.endsWith(suffix)) {
+      return suffix;
+    }
+  }
+
+  return pathname.endsWith("/") ? "/" : pathname;
+}
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, () => {

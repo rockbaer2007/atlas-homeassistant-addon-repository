@@ -63,7 +63,7 @@ export interface AtlasPlannedIntegrationClosure {
 export interface AtlasFrameworkReadiness {
   readonly framework: {
     readonly name: "Atlas";
-    readonly version: "0.2.0-alpha.19";
+    readonly version: "0.2.0-alpha.20";
     readonly channel: "alpha";
   };
   readonly packages: readonly AtlasWorkspacePackageDescriptor[];
@@ -189,7 +189,7 @@ export function createAtlasFrameworkReadiness(): AtlasFrameworkReadiness {
   return {
     framework: {
       name: "Atlas",
-      version: "0.2.0-alpha.19",
+      version: "0.2.0-alpha.20",
       channel: "alpha",
     },
     packages: ATLAS_WORKSPACE_PACKAGE_INVENTORY.map((workspacePackage) => ({

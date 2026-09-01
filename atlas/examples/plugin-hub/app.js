@@ -142,7 +142,7 @@ function applyThemePreference() {
 function bindSurfaceLinks(preference) {
   for (const link of surfaceLinks) {
     try {
-      const url = new URL(link.getAttribute("href"), window.location.href);
+      const url = new URL(createAppUrl(link.getAttribute("href")), window.location.href);
       url.searchParams.set("theme", preference);
       link.href = url.toString();
     } catch {
@@ -151,9 +151,44 @@ function bindSurfaceLinks(preference) {
   }
 }
 
+function createAppUrl(path) {
+  try {
+    const baseUrl = new URL(window.location.href);
+    baseUrl.search = "";
+    baseUrl.hash = "";
+    if (baseUrl.pathname.endsWith("/hub/")) {
+      baseUrl.pathname = baseUrl.pathname.slice(0, -4);
+    } else if (baseUrl.pathname.endsWith("/hub")) {
+      baseUrl.pathname = baseUrl.pathname.slice(0, -3);
+    }
+    if (!baseUrl.pathname.endsWith("/")) {
+      baseUrl.pathname = `${baseUrl.pathname}/`;
+    }
+    return new URL(String(path ?? "").replace(/^\/+/, ""), baseUrl).toString();
+  } catch {
+    return path;
+  }
+}
+
+function createPluginActionUrl(entryUrl) {
+  if (typeof entryUrl !== "string" || !entryUrl.trim()) {
+    return "";
+  }
+
+  try {
+    const url = new URL(entryUrl, window.location.href);
+    if (url.origin === window.location.origin) {
+      return createAppUrl(`${url.pathname.replace(/^\/+/, "")}${url.search}${url.hash}`);
+    }
+  } catch {
+    // Relative URLs are normalized against the current ATLAS app path below.
+  }
+  return createAppUrl(entryUrl);
+}
+
 async function loadPlugins() {
   try {
-    const response = await fetch("/api/plugins", { cache: "no-store" });
+    const response = await fetch(createAppUrl("api/plugins"), { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`Plugin catalog returned HTTP ${response.status}.`);
     }
@@ -187,7 +222,7 @@ function renderPlugins(plugins) {
     description.textContent = t("message.noPluginsHint");
     const action = document.createElement("a");
     action.className = "plugin-action";
-    action.href = "/admin";
+    action.href = createAppUrl("admin");
     action.textContent = t("link.admin");
     body.append(title, description, action);
     empty.append(body);
@@ -262,7 +297,7 @@ function createPluginCard(plugin) {
   action.className = "plugin-action";
   action.textContent = plugin.entryUrl ? t("button.open") : t("button.planned");
   if (plugin.entryUrl) {
-    action.href = plugin.entryUrl;
+    action.href = createPluginActionUrl(plugin.entryUrl);
   } else {
     action.href = "#";
     action.setAttribute("aria-disabled", "true");
