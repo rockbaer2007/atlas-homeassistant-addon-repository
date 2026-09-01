@@ -152,6 +152,36 @@
         outline: 0;
       }
 
+      .editor-navigation-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+        margin: -8px 0 14px;
+      }
+
+      .editor-nav-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        border: 1px solid #0f766e;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #115e59;
+        padding: 7px 10px;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .editor-nav-button:hover,
+      .editor-nav-button:focus-visible {
+        background: #e6fffb;
+        outline: 0;
+      }
+
       .status-controls {
         display: flex;
         gap: 8px;
@@ -185,6 +215,59 @@
         border: 1px solid #d8e0ec;
         border-radius: 6px;
         background: #ffffff;
+      }
+
+      .connection-config.compact-panel summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        cursor: pointer;
+        color: var(--atlas-text);
+        font-size: 14px;
+        font-weight: 800;
+        list-style: none;
+      }
+
+      .connection-config.compact-panel summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .connection-config.compact-panel summary::after {
+        content: "▾";
+        color: var(--atlas-link);
+        font-size: 14px;
+        transition: transform 160ms ease;
+      }
+
+      .connection-config.compact-panel[data-connection-state="connected"] summary {
+        color: var(--atlas-link);
+      }
+
+      .connection-config.compact-panel[data-connection-state="failed"] summary,
+      .connection-config.compact-panel[data-connection-state="closed"] summary {
+        color: #b91c1c;
+      }
+
+      .connection-config.compact-panel:not([open]) summary::after {
+        transform: rotate(-90deg);
+      }
+
+      .connection-details-body {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .connection-warning {
+        border: 1px solid #dc2626;
+        border-radius: 6px;
+        background: #fef2f2;
+        color: #991b1b;
+        padding: 9px 10px;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.35;
       }
 
       .connection-config .field-pair {
@@ -332,18 +415,6 @@
         width: min(280px, 100%);
         height: 12px;
         accent-color: #0f766e;
-      }
-
-      .admin-handoff-options {
-        display: grid;
-        justify-items: end;
-        gap: 4px;
-      }
-
-      .admin-handoff-options a {
-        color: var(--atlas-link);
-        font-size: 14px;
-        font-weight: 700;
       }
 
       .connection-status-stack {
@@ -2647,10 +2718,20 @@
       }
 
       :root[data-theme="dark"] .connection-status-stack output strong,
-      :root[data-theme="dark"] .admin-handoff-options a,
       :root[data-theme="dark"] .card-translation-module-status,
       :root[data-theme="dark"] .connection-translation-module-state {
         color: var(--atlas-link);
+      }
+
+      :root[data-theme="dark"] .connection-warning {
+        border-color: #ef4444;
+        background: #3a151a;
+        color: #fecaca;
+      }
+
+      :root[data-theme="dark"] .connection-config.compact-panel[data-connection-state="failed"] summary,
+      :root[data-theme="dark"] .connection-config.compact-panel[data-connection-state="closed"] summary {
+        color: #fca5a5;
       }
 
       :root[data-theme="dark"] .entity-summary-chip {
@@ -2682,6 +2763,7 @@
       }
 
       :root[data-theme="dark"] .problem-report-button,
+      :root[data-theme="dark"] .editor-nav-button,
       :root[data-theme="dark"] .status-controls button,
       :root[data-theme="dark"] .connection-actions button,
       :root[data-theme="dark"] .atlas-entity-card button {
@@ -2692,6 +2774,8 @@
 
       :root[data-theme="dark"] .problem-report-button:hover,
       :root[data-theme="dark"] .problem-report-button:focus-visible,
+      :root[data-theme="dark"] .editor-nav-button:hover,
+      :root[data-theme="dark"] .editor-nav-button:focus-visible,
       :root[data-theme="dark"] .status-controls button[aria-pressed="true"] {
         border-color: var(--atlas-accent);
         background: var(--atlas-accent-soft);
@@ -2942,6 +3026,10 @@
           justify-content: flex-start;
         }
 
+        .editor-navigation-actions {
+          justify-content: flex-start;
+        }
+
         .theme-toggle {
           width: 100%;
         }
@@ -2993,29 +3081,32 @@
           </div>
         </div>
       </div>
-      <div class="connection-config compact-panel">
-        <div class="field-grid two-column">
-          <div class="field-pair">
-            <label for="home-assistant-url" data-i18n="label.haUrl">Home Assistant URL</label>
-            <input id="home-assistant-url" type="url" inputmode="url" value="http://homeassistant.local:8123" autocomplete="url">
+      <div class="editor-navigation-actions" aria-label="ATLAS navigation" data-i18n-aria-label="aria.atlasNavigation">
+        <a class="editor-nav-button" href="admin" data-open-admin data-i18n="link.openAdmin">Open Atlas Administration</a>
+        <a class="editor-nav-button" href="/hub" data-open-hub data-i18n="link.openHub">Open Plugin Hub</a>
+      </div>
+      <details id="home-assistant-connection-details" class="connection-config compact-panel" open>
+        <summary>
+          <span id="home-assistant-connection-summary" data-i18n="message.connectionSummaryClosed">Home Assistant: not connected</span>
+          <span data-i18n="message.connectionDetailsToggleHint">Details</span>
+        </summary>
+        <div class="connection-details-body">
+          <output id="connection-warning" class="connection-warning" aria-live="polite" hidden></output>
+          <div class="field-grid two-column">
+            <div class="field-pair">
+              <label for="home-assistant-url" data-i18n="label.haUrl">Home Assistant URL</label>
+              <input id="home-assistant-url" type="url" inputmode="url" value="http://homeassistant.local:8123" autocomplete="url" readonly>
+            </div>
+          </div>
+          <div class="connection-status-stack">
+            <output id="admin-handoff-state" aria-live="polite"></output>
+            <output id="connection-readiness" aria-live="polite"></output>
+            <output id="connection-state" data-state="closed" aria-live="polite">Connection: closed</output>
+            <output id="entity-sync-state" class="entity-sync-state" data-sync-state="idle" aria-live="polite"></output>
+            <output id="admin-translation-module-state" class="connection-translation-module-state" aria-live="polite"></output>
           </div>
         </div>
-        <div class="connection-status-stack">
-          <output id="admin-handoff-state" aria-live="polite"></output>
-          <output id="connection-readiness" aria-live="polite"></output>
-          <output id="connection-state" data-state="closed" aria-live="polite">Connection: closed</output>
-          <output id="entity-sync-state" class="entity-sync-state" data-sync-state="idle" aria-live="polite"></output>
-          <output id="admin-translation-module-state" class="connection-translation-module-state" aria-live="polite"></output>
-        </div>
-        <div class="connection-options admin-handoff-options">
-          <a href="admin" data-open-admin data-i18n="link.openAdmin">Open Atlas Administration</a>
-          <a href="/hub" data-open-hub data-i18n="link.openHub">Open Plugin Hub</a>
-        </div>
-        <div class="connection-actions">
-          <button id="connect-home-assistant" type="button" data-i18n="button.connect">Connect</button>
-          <button id="disconnect-home-assistant" type="button" disabled data-i18n="button.disconnect">Disconnect</button>
-        </div>
-      </div>
+      </details>
       <div class="connection-config">
         <div class="field-grid three-column">
           <div id="panel-group-control" class="field-pair">

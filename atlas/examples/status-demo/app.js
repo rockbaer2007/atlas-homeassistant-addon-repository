@@ -70,6 +70,9 @@ const copyProblemReport = document.querySelector("#copy-problem-report");
 const openProblemIssue = document.querySelector("#open-problem-issue");
 const problemReportStatus = document.querySelector("#problem-report-status");
 const homeAssistantUrl = document.querySelector("#home-assistant-url");
+const homeAssistantConnectionDetails = document.querySelector("#home-assistant-connection-details");
+const homeAssistantConnectionSummary = document.querySelector("#home-assistant-connection-summary");
+const connectionWarning = document.querySelector("#connection-warning");
 const connectionReadiness = document.querySelector("#connection-readiness");
 const connectionState = document.querySelector("#connection-state");
 const entitySyncState = document.querySelector("#entity-sync-state");
@@ -330,6 +333,13 @@ const translations = {
     "button.turnOff": "Turn off",
     "link.openAdmin": "Open Atlas Administration",
     "link.openHub": "Open Plugin Hub",
+    "message.connectionDetailsToggleHint": "Details",
+    "message.connectionSummaryClosed": "Home Assistant: not connected",
+    "message.connectionSummaryFailed": "Home Assistant: not connected",
+    "message.connectionSummaryConnecting": "Home Assistant: connecting",
+    "message.connectionSummaryConnected": "Home Assistant: connected · {count} entities",
+    "message.connectionProblemAddon": "Not connected. Check the ATLAS Add-on configuration for the Home Assistant URL and a valid saved access token, then restart ATLAS.",
+    "message.connectionProblemStandalone": "Not connected. Open Atlas Administration and check the Home Assistant URL and access token, then reconnect or restart ATLAS.",
     "theme.auto": "Auto",
     "theme.light": "Light",
     "theme.dark": "Dark",
@@ -369,6 +379,7 @@ const translations = {
     "aria.clearEntitySearch": "Clear entity search",
     "aria.language": "Language",
     "aria.theme": "Theme",
+    "aria.atlasNavigation": "ATLAS navigation",
     "aria.cardEditorMode": "Card editor mode",
     "aria.availableCards": "Available Home Assistant cards",
     "aria.expertTemplates": "Expert editor templates",
@@ -782,6 +793,13 @@ const translations = {
     "button.turnOff": "Ausschalten",
     "link.openAdmin": "Atlas Administration öffnen",
     "link.openHub": "Plugin-Hub öffnen",
+    "message.connectionDetailsToggleHint": "Details",
+    "message.connectionSummaryClosed": "Home Assistant: nicht verbunden",
+    "message.connectionSummaryFailed": "Home Assistant: nicht verbunden",
+    "message.connectionSummaryConnecting": "Home Assistant: verbindet",
+    "message.connectionSummaryConnected": "Home Assistant: verbunden · {count} Entitäten",
+    "message.connectionProblemAddon": "Nicht verbunden. Bitte prüfe in der ATLAS Add-on-Konfiguration, ob die Home-Assistant-URL stimmt und ein gültiger Access Token gespeichert ist. Danach ATLAS neu starten.",
+    "message.connectionProblemStandalone": "Nicht verbunden. Bitte öffne ATLAS Administration und prüfe dort Home-Assistant-URL und Access Token. Danach Verbindung erneut starten oder ATLAS neu starten.",
     "theme.auto": "Auto",
     "theme.light": "Hell",
     "theme.dark": "Dunkel",
@@ -821,6 +839,7 @@ const translations = {
     "aria.clearEntitySearch": "Entitätssuche löschen",
     "aria.language": "Sprache",
     "aria.theme": "Darstellung",
+    "aria.atlasNavigation": "ATLAS Navigation",
     "aria.cardEditorMode": "Card-Editor-Modus",
     "aria.availableCards": "Verfügbare Home Assistant Cards",
     "aria.expertTemplates": "Expert-Editor-Templates",
@@ -1164,6 +1183,7 @@ function applyTranslations() {
     button.setAttribute("aria-pressed", String(button.dataset.themeMode === currentThemePreference));
   }
   renderEntityCatalogSyncStatus();
+  renderConnectionPanelState();
 }
 
 function setLanguage(language) {
@@ -1692,6 +1712,7 @@ function renderConnectionReadiness() {
   connectionReadiness.textContent = readiness.ready
     ? t("message.connectionUrlReady", { url: deriveHomeAssistantWebSocketUrl(configuration) })
     : readiness.reason;
+  renderConnectionPanelState();
 }
 
 function renderAdminHandoffState() {
@@ -1707,6 +1728,40 @@ function renderCardTranslationModuleStatus() {
     : t("message.translationProviderReady", { provider });
   cardTranslationStatus.textContent = text;
   adminTranslationModuleState.textContent = text;
+  renderConnectionPanelState();
+}
+
+function renderConnectionPanelState() {
+  if (!homeAssistantConnectionSummary || !homeAssistantConnectionDetails) {
+    return;
+  }
+
+  const disconnected = connectionLifecycleState === "closed" || connectionLifecycleState === "failed";
+  const missingToken = !adminConnectionToken;
+  const problem = disconnected || missingToken;
+  const count = entityCatalogSyncStatus.count ?? cachedHomeAssistantEntityIds.size ?? 0;
+  homeAssistantConnectionDetails.dataset.connectionState = problem
+    ? (connectionLifecycleState === "failed" ? "failed" : "closed")
+    : connectionLifecycleState;
+
+  if (connectionLifecycleState === "connected") {
+    homeAssistantConnectionSummary.textContent = t("message.connectionSummaryConnected", { count });
+  } else if (connectionLifecycleState === "connecting" || connectionLifecycleState === "authenticating") {
+    homeAssistantConnectionSummary.textContent = t("message.connectionSummaryConnecting");
+  } else if (connectionLifecycleState === "failed") {
+    homeAssistantConnectionSummary.textContent = t("message.connectionSummaryFailed");
+  } else {
+    homeAssistantConnectionSummary.textContent = t("message.connectionSummaryClosed");
+  }
+
+  if (connectionWarning) {
+    connectionWarning.hidden = !problem;
+    connectionWarning.textContent = problem
+      ? t(isHomeAssistantAppSurface() ? "message.connectionProblemAddon" : "message.connectionProblemStandalone")
+      : "";
+  }
+
+  homeAssistantConnectionDetails.open = problem;
 }
 
 function normalizeTranslationProvider(value) {
@@ -1923,6 +1978,17 @@ function createCurrentSurfaceUrl(path) {
   }
 }
 
+function isHomeAssistantAppSurface() {
+  try {
+    const url = new URL(window.location.href);
+    return url.port === "4176"
+      || url.pathname.includes("/api/hassio_ingress/")
+      || url.pathname.includes("/ingress/");
+  } catch {
+    return false;
+  }
+}
+
 function createPortOrigin(port) {
   try {
     const url = new URL(window.location.href);
@@ -1974,8 +2040,12 @@ function renderConnectionLifecycle(lifecycle) {
     : lifecycle.subscription
       ? t("message.connectionStateWithSubscription", { state: lifecycle.state, subscription: lifecycle.subscription })
       : t("message.connectionState", { state: lifecycle.state });
-  connectButton.disabled = lifecycle.state === "connecting" || lifecycle.state === "authenticating" || lifecycle.state === "connected";
-  disconnectButton.disabled = lifecycle.state === "closed" || lifecycle.state === "failed";
+  if (connectButton) {
+    connectButton.disabled = true;
+  }
+  if (disconnectButton) {
+    disconnectButton.disabled = true;
+  }
   checkHaCardResources.disabled = lifecycle.state !== "connected";
 
   if (lifecycle.state === "connected") {
@@ -1992,6 +2062,7 @@ function renderConnectionLifecycle(lifecycle) {
     }
   }
   refreshHomeAssistantEntities.disabled = lifecycle.state !== "connected";
+  renderConnectionPanelState();
 }
 
 function createConnectionSignature(configuration, token) {
@@ -2331,6 +2402,7 @@ function renderEntitySummaryChips(target, entries) {
     chip.append(label, value);
     target.append(chip);
   }
+  renderConnectionPanelState();
 }
 
 function renderEntitySummaryText(target, text) {
@@ -8118,8 +8190,8 @@ function applyHomeAssistantCardImportSummary(summary) {
     entities: entityIds.length,
   });
 }
-connectButton.addEventListener("click", connectHomeAssistant);
-disconnectButton.addEventListener("click", disconnectHomeAssistant);
+connectButton?.addEventListener("click", connectHomeAssistant);
+disconnectButton?.addEventListener("click", disconnectHomeAssistant);
 
 void renderEntityState("on");
 renderCardTargetOptions(initialCardTarget);

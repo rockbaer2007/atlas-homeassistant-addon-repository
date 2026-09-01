@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.53
+
+- Make the Card Editor Home Assistant connection details collapsible.
+- Keep Administration and Plugin Hub navigation visible as buttons outside the
+  connection details block.
+- Open the connection details automatically when the editor is not connected,
+  the token is missing or the connection fails.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.16` for the update
+  package.
+
 ## 0.1.52
 
 - Describe the GitHub repository install path first in the Add-on README.
