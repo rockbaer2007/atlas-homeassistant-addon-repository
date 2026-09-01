@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.46
+
+- Brighten Card Editor dark-mode status lines for entity loading and translation
+  module state when installed through the Home Assistant add-on.
+- Use the same brighter link accent for transparent dark-mode buttons so
+  secondary actions remain readable on dark backgrounds.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.9` for the update
+  package.
+
 ## 0.1.45
 
 - Improve Card Editor dark-mode contrast for the header subtitle, Card export

@@ -18,6 +18,7 @@
         --atlas-accent: #0f766e;
         --atlas-accent-strong: #115e59;
         --atlas-accent-soft: #e6fffb;
+        --atlas-link: #0f766e;
         --atlas-on-accent: #ffffff;
         background: #f5f7fb;
         color: #172033;
@@ -35,6 +36,7 @@
         --atlas-accent: #2dd4bf;
         --atlas-accent-strong: #14b8a6;
         --atlas-accent-soft: #113c30;
+        --atlas-link: #7ee6c9;
         --atlas-on-accent: #06201d;
         background: var(--atlas-bg);
         color: var(--atlas-text);
@@ -321,7 +323,7 @@
 
       .card-translation-module-status {
         min-height: 20px;
-        color: #0f766e;
+        color: var(--atlas-link);
         font-size: 13px;
         font-weight: 700;
       }
@@ -337,7 +339,7 @@
       }
 
       .admin-handoff-options a {
-        color: #0f766e;
+        color: var(--atlas-link);
         font-size: 14px;
         font-weight: 700;
       }
@@ -356,7 +358,7 @@
       }
 
       .entity-sync-state {
-        color: #0f766e;
+        color: var(--atlas-link);
         font-weight: 700;
       }
 
@@ -664,11 +666,11 @@
       }
 
       #connection-state[data-state="connected"] {
-        color: #0f766e;
+        color: var(--atlas-link);
       }
 
       .connection-translation-module-state {
-        color: #0f766e;
+        color: var(--atlas-link);
         font-weight: 700;
       }
 
@@ -2638,6 +2640,17 @@
         color: var(--atlas-muted);
       }
 
+      :root[data-theme="dark"] .connection-status-stack output {
+        color: #d8eef0;
+      }
+
+      :root[data-theme="dark"] .connection-status-stack output strong,
+      :root[data-theme="dark"] .admin-handoff-options a,
+      :root[data-theme="dark"] .card-translation-module-status,
+      :root[data-theme="dark"] .connection-translation-module-state {
+        color: var(--atlas-link);
+      }
+
       :root[data-theme="dark"] .entity-summary-chip {
         border-color: #40535b;
         background: #172126;
@@ -2672,7 +2685,7 @@
       :root[data-theme="dark"] .atlas-entity-card button {
         border-color: var(--atlas-border);
         background: var(--atlas-panel-soft);
-        color: var(--atlas-accent);
+        color: var(--atlas-link);
       }
 
       :root[data-theme="dark"] .problem-report-button:hover,
@@ -2680,14 +2693,14 @@
       :root[data-theme="dark"] .status-controls button[aria-pressed="true"] {
         border-color: var(--atlas-accent);
         background: var(--atlas-accent-soft);
-        color: var(--atlas-accent);
+        color: var(--atlas-link);
       }
 
       :root[data-theme="dark"] .entity-domain-shortcuts button[aria-pressed="true"],
       :root[data-theme="dark"] .editor-mode-toggle button[aria-pressed="true"] {
         border-color: var(--atlas-accent);
         background: var(--atlas-accent-soft);
-        color: var(--atlas-accent);
+        color: var(--atlas-link);
       }
 
       :root[data-theme="dark"] .resource-hint-field,
@@ -2744,7 +2757,7 @@
       }
 
       :root[data-theme="dark"] .atlas-entity-sort-button[data-active-sort="true"]::after {
-        color: var(--atlas-accent);
+        color: var(--atlas-link);
       }
 
       :root[data-theme="dark"] .atlas-entity-table td {
@@ -2825,7 +2838,7 @@
       :root[data-theme="dark"] .expert-title-row button {
         border-color: #4f8f87;
         background: #17272a;
-        color: #7ee6c9;
+        color: var(--atlas-link);
       }
 
       :root[data-theme="dark"] .expert-palette-toolbar button:hover,
@@ -2836,7 +2849,7 @@
       :root[data-theme="dark"] .expert-title-row button:focus-visible {
         border-color: var(--atlas-accent);
         background: var(--atlas-accent-soft);
-        color: var(--atlas-accent);
+        color: var(--atlas-link);
       }
 
       :root[data-theme="dark"] #scan-expert-palette-cards {
