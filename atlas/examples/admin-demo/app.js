@@ -57,6 +57,8 @@ const adminSaveState = document.querySelector("#admin-save-state");
 const pluginSummary = document.querySelector("#plugin-summary");
 const pluginList = document.querySelector("#plugin-list");
 const policySummary = document.querySelector("#policy-summary");
+const allowAddonsPath = document.querySelector("#allow-addons-path");
+const fileStudioAccessHint = document.querySelector("#file-studio-access-hint");
 const refreshAppRuntime = document.querySelector("#refresh-app-runtime");
 const appRuntimeSummary = document.querySelector("#app-runtime-summary");
 const appRuntimeStatus = document.querySelector("#app-runtime-status");
@@ -225,6 +227,7 @@ const translations = {
     "label.pluginRepositoryUrl": "Repository",
     "label.pluginRepositoryType": "Type",
     "label.parcelEnabled": "Enabled",
+    "label.allowAddonsPath": "Allow File Studio access to /addons",
     "theme.auto": "Auto",
     "theme.light": "Light",
     "theme.dark": "Dark",
@@ -266,6 +269,8 @@ const translations = {
     "message.accessHint": "Tokens stay in Administration. Plugins receive approved paths and capabilities only.",
     "message.connectionHaAppHint": "These Home Assistant connection values come from the Home Assistant App/Add-on options.",
     "message.connectionStandaloneHint": "In Docker and Linux mode these values are managed here.",
+    "message.fileStudioAccessHaAppHint": "In Home Assistant App/Add-on mode this approval comes from the App/Add-on configuration.",
+    "message.fileStudioAccessStandaloneHint": "In Docker and Linux mode this approval is managed here.",
     "message.openAiApiKeyLink": "Get OpenAI API key:",
     "message.geminiApiKeyLink": "Get Gemini API key:",
     "message.deeplApiKeyLink": "Get DeepL API key:",
@@ -403,6 +408,7 @@ const translations = {
     "label.pluginRepositoryUrl": "Repository",
     "label.pluginRepositoryType": "Typ",
     "label.parcelEnabled": "Aktiv",
+    "label.allowAddonsPath": "File-Studio-Zugriff auf /addons erlauben",
     "theme.auto": "Auto",
     "theme.light": "Hell",
     "theme.dark": "Dunkel",
@@ -444,6 +450,8 @@ const translations = {
     "message.accessHint": "Tokens bleiben in der Administration. Plugins erhalten nur freigegebene Pfade und Fähigkeiten.",
     "message.connectionHaAppHint": "Diese Home-Assistant-Verbindungswerte kommen aus den Home-Assistant-App/Add-on-Optionen.",
     "message.connectionStandaloneHint": "Im Docker- und Linux-Modus werden diese Werte hier verwaltet.",
+    "message.fileStudioAccessHaAppHint": "Im Home-Assistant-App/Add-on-Modus kommt diese Freigabe aus der App/Add-on-Konfiguration.",
+    "message.fileStudioAccessStandaloneHint": "Im Docker- und Linux-Modus wird diese Freigabe hier verwaltet.",
     "message.openAiApiKeyLink": "OpenAI API-Key erhalten:",
     "message.geminiApiKeyLink": "Gemini API-Key erhalten:",
     "message.deeplApiKeyLink": "DeepL API-Key erhalten:",
@@ -668,6 +676,10 @@ function applyHomeAssistantConnectionEditMode() {
   adminConnectionModeHint.textContent = readonly
     ? t("message.connectionHaAppHint")
     : t("message.connectionStandaloneHint");
+  allowAddonsPath.disabled = readonly;
+  fileStudioAccessHint.textContent = readonly
+    ? t("message.fileStudioAccessHaAppHint")
+    : t("message.fileStudioAccessStandaloneHint");
 }
 
 function currentWebSocketPath() {
@@ -841,6 +853,24 @@ function renderParcelProviders() {
   renderParcelProviderSummary();
 }
 
+function normalizeFileStudioAccessSettings(settings = {}) {
+  return {
+    allowAddonsPath: settings?.allowAddonsPath === true,
+  };
+}
+
+function readFileStudioAccessSettings() {
+  return normalizeFileStudioAccessSettings({
+    allowAddonsPath: allowAddonsPath.checked,
+  });
+}
+
+function applyFileStudioAccessSettings(settings) {
+  const normalized = normalizeFileStudioAccessSettings(settings);
+  allowAddonsPath.checked = normalized.allowAddonsPath;
+  applyHomeAssistantConnectionEditMode();
+}
+
 function readTranslationApiKeys() {
   return Object.fromEntries(
     Object.entries(translationApiKeyInputs).map(([provider, input]) => [provider, input?.value.trim() ?? ""]),
@@ -953,6 +983,7 @@ function persistConfiguration() {
     translationApiKeyConfigured: hasTranslationApiKey(currentTranslationProvider(), translationApiKeys),
     translationApiKeyConfiguredByProvider: createTranslationApiKeyConfiguredByProvider(translationApiKeys),
     parcelProviders: readParcelProviderSettings(),
+    fileStudioAccess: readFileStudioAccessSettings(),
     pluginRepositories,
     editorStartMode: normalizeEditorStartMode(editorStartMode.value),
     rememberToken: rememberAdminToken.checked,
@@ -983,6 +1014,7 @@ async function persistServerConnectionSettings(configuration) {
       translationApiEndpoint: configuration.translationApiEndpoint,
       translationApiKeys: configuration.translationApiKeys,
       parcelProviders: configuration.parcelProviders,
+      fileStudioAccess: configuration.fileStudioAccess,
     }),
   });
 }
@@ -1003,6 +1035,7 @@ function persistSharedConnectionCookie(configuration) {
       translationApiKeyConfigured: configuration.translationApiKeyConfigured,
       translationApiKeyConfiguredByProvider: configuration.translationApiKeyConfiguredByProvider,
       parcelProviders: configuration.parcelProviders,
+      fileStudioAccess: configuration.fileStudioAccess,
       tokenConfigured: configuration.tokenConfigured,
       updatedAt: new Date().toISOString(),
     }))}`,
@@ -1211,6 +1244,7 @@ function restoreConfiguration() {
       setTranslationProvider(saved.translationProvider);
     }
     applyParcelProviderSettings(saved?.parcelProviders);
+    applyFileStudioAccessSettings(saved?.fileStudioAccess);
     if (Array.isArray(saved?.pluginRepositories)) {
       pluginRepositories = normalizeStoredPluginRepositories(saved.pluginRepositories);
     } else if (typeof saved?.pluginRepositoryUrl === "string" && saved.pluginRepositoryUrl.trim()) {
@@ -2141,6 +2175,7 @@ async function restoreServerConnectionSettings() {
     }
     applyTranslationApiKeys(saved.translationApiKeys);
     applyParcelProviderSettings(saved.parcelProviders);
+    applyFileStudioAccessSettings(saved.fileStudioAccess);
     if (typeof saved.token === "string" && saved.token && !homeAssistantToken.value.trim()) {
       homeAssistantToken.value = saved.token;
       rememberAdminToken.checked = true;
@@ -2509,6 +2544,7 @@ async function createAdminSettingsExport() {
       translationProvider: currentTranslationProvider(),
       translationApiEndpoint: defaultTranslationApiEndpoint,
       parcelProviders: readParcelProviderSettings(),
+      fileStudioAccess: readFileStudioAccessSettings(),
       rememberToken: rememberAdminToken.checked,
       autoConnectEditor: autoConnectEditor.checked,
     },
@@ -2862,6 +2898,7 @@ homeAssistantToken.addEventListener("input", () => {
 });
 
 editorStartMode.addEventListener("change", persistConfiguration);
+allowAddonsPath.addEventListener("change", persistConfiguration);
 
 rememberAdminToken.addEventListener("change", () => {
   if (!rememberAdminToken.checked) {

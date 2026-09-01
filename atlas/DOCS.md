@@ -16,6 +16,11 @@ The Add-on options can provide the Home Assistant URL, a long-lived access
 token, whether ATLAS Administration should import that token on startup and
 whether the Card Editor should auto-connect after the handoff.
 
+The File Studio `/addons` approval is also an Add-on option. In Home Assistant
+App/Add-on mode, Administration shows this approval as read-only because the
+effective permission comes from the Add-on configuration. In standalone Docker
+or Linux mode, the same approval can be managed in Atlas Administration.
+
 ATLAS keeps a stable app identity through the `atlas_instance_id` option. Use a
 deliberate value when encrypted Administration secrets should survive app
 rebuilds or container recreation on the same Home Assistant installation.

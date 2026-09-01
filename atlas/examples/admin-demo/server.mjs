@@ -619,6 +619,7 @@ function normalizeAdminConnectionSettings(settings, previousSettings) {
     translationApiKeys,
     translationApiKeyConfigured: hasTranslationApiKey(translationProvider, translationApiKeys),
     parcelProviders: normalizeParcelProviderSettings(settings.parcelProviders),
+    fileStudioAccess: normalizeFileStudioAccessSettings(settings.fileStudioAccess),
     updatedAt: new Date().toISOString(),
   };
 }
@@ -704,7 +705,16 @@ function createInitialAdminConnectionSettingsFromEnv() {
     autoConnectEditor,
     editorStartMode,
     translationProvider: "none",
+    fileStudioAccess: {
+      allowAddonsPath: process.env.ATLAS_FILE_STUDIO_ALLOW_ADDONS === "1",
+    },
   });
+}
+
+function normalizeFileStudioAccessSettings(settings = {}) {
+  return {
+    allowAddonsPath: settings?.allowAddonsPath === true,
+  };
 }
 
 function normalizeEditorStartMode(value) {
@@ -740,6 +750,7 @@ function sanitizeAdminConnectionSettings(settings, { includeSecrets = false } = 
         .map(provider => [provider, hasTranslationApiKey(provider, settings.translationApiKeys)]),
     ),
     parcelProviders: normalizeParcelProviderSettings(settings.parcelProviders),
+    fileStudioAccess: normalizeFileStudioAccessSettings(settings.fileStudioAccess),
     ...(includeSecrets ? { translationApiKeys: settings.translationApiKeys } : {}),
     updatedAt: settings.updatedAt,
   };

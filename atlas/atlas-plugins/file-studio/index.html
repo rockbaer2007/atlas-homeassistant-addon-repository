@@ -39,7 +39,7 @@
           </div>
           <div id="tree-status" class="tree-status" role="status">/config wird geladen...</div>
           <div id="directory-tree" class="directory-tree" aria-live="polite"></div>
-          <div class="tree-note locked">/addons erst nach Admin-Freigabe</div>
+          <div id="addons-access-note" class="tree-note locked">/addons erst nach Admin-Freigabe</div>
         </aside>
 
         <div class="splitter" data-resize-pane="tree" role="separator" aria-label="Dateibaum-Breite ändern" tabindex="0"></div>
@@ -210,7 +210,7 @@
         if (selectedNode?.type === "file") {
           return state.selectedFilePath.split("/").slice(0, -1).join("/") || "/config";
         }
-        return state.selectedFolderPath || "/config";
+        return state.selectedFolderPath && state.selectedFolderPath !== "/" ? state.selectedFolderPath : "/config";
       }
 
       function setStatus(message, tone = "default") {
@@ -345,7 +345,7 @@
           const summary = document.createElement("summary");
           summary.innerHTML = `<span class="tree-chevron" aria-hidden="true"></span><span class="tree-icon folder-icon" aria-hidden="true"></span><span class="tree-name"></span>`;
           summary.dataset.path = node.path;
-          summary.querySelector(".tree-name").textContent = level === 0 ? "/config" : node.name;
+          summary.querySelector(".tree-name").textContent = level === 0 ? node.path : node.name;
           summary.addEventListener("click", () => selectFolder(node.path));
           details.append(summary);
 
@@ -580,6 +580,7 @@
           }
           const catalog = await response.json();
           state.tree = catalog.tree;
+          renderRootAccessNote(catalog);
           renderDirectoryTree();
           const nextFolderPath = options.preserveSelection === false
             ? catalog.tree.path
@@ -594,10 +595,12 @@
             }
           }
           status.textContent = catalog.exists
-            ? "/config geladen"
+            ? catalog.root === "/" ? "Freigegebene Pfade geladen" : `${catalog.root ?? "/config"} geladen`
             : catalog.message ?? "/config ist noch nicht erreichbar.";
           status.classList.toggle("warning", !catalog.exists);
-          rootStatus.textContent = catalog.exists ? "/config geladen" : "/config nicht erreichbar";
+          rootStatus.textContent = catalog.exists
+            ? catalog.root === "/" ? "/config und /addons sichtbar" : `${catalog.root ?? "/config"} geladen`
+            : "/config nicht erreichbar";
           rootStatus.classList.toggle("ok", catalog.exists);
         } catch (error) {
           status.textContent = `Dateibaum konnte nicht geladen werden: ${error instanceof Error ? error.message : "unbekannter Fehler"}`;
@@ -605,6 +608,17 @@
           rootStatus.textContent = "Dateibaum nicht geladen";
           rootStatus.classList.remove("ok");
         }
+      }
+
+      function renderRootAccessNote(catalog) {
+        const note = document.querySelector("#addons-access-note");
+        const addonsRoot = (catalog.roots ?? []).find(root => root.path === "/addons");
+        const enabled = addonsRoot?.enabled === true;
+        note.textContent = enabled
+          ? "/addons ist freigegeben"
+          : "/addons erst nach Admin-Freigabe";
+        note.classList.toggle("locked", !enabled);
+        note.classList.toggle("ok", enabled);
       }
 
       function applySavedLayout() {

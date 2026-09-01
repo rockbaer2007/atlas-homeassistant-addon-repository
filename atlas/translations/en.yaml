@@ -14,6 +14,9 @@ configuration:
   auto_connect_editor:
     name: "Auto-connect Card Editor"
     description: "Connects the editor to Home Assistant automatically after the Administration handoff."
+  allow_addons_path:
+    name: "File Studio: allow /addons"
+    description: "Allows ATLAS File Studio to access local Home Assistant add-on folders under /addons. Disabled by default for safety."
 network:
   4176/tcp: "ATLAS app runtime"
   4175/tcp: "ATLAS Administration"

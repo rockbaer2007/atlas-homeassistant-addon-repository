@@ -1,5 +1,5 @@
 name: "ATLAS"
-version: "0.1.72"
+version: "0.1.73"
 slug: "atlas"
 description: "ATLAS Administration and Home Assistant Plugins preview"
 url: "https://github.com/rockbaer2007/atlas"
@@ -15,6 +15,7 @@ panel_icon: mdi:view-dashboard-edit
 webui: "http://[HOST]:[PORT:4176]/"
 map:
   - config:rw
+  - addons:rw
 ports:
   4176/tcp: 4176
   4175/tcp: 4175
@@ -26,6 +27,7 @@ options:
   remember_home_assistant_token: false
   auto_connect_editor: false
   editor_start_mode: "simple"
+  allow_addons_path: false
 schema:
   atlas_instance_id: "str"
   home_assistant_url: "url"
@@ -33,3 +35,4 @@ schema:
   remember_home_assistant_token: "bool"
   auto_connect_editor: "bool"
   editor_start_mode: "list(simple|expert)"
+  allow_addons_path: "bool"

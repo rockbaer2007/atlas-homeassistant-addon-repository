@@ -16,6 +16,9 @@ const adminUrl = `http://${healthHost}:${adminPort}/`;
 const editorUrl = `http://${healthHost}:${editorPort}/`;
 const pluginRoot = resolve(root, "atlas-plugins");
 const fileStudioConfigRoot = resolve(process.env.ATLAS_FILE_STUDIO_CONFIG_ROOT ?? "/config");
+const fileStudioAddonsRoot = resolve(process.env.ATLAS_FILE_STUDIO_ADDONS_ROOT ?? "/addons");
+const fileStudioAllowAddons = process.env.ATLAS_FILE_STUDIO_ALLOW_ADDONS === "1";
+const adminConnectionCookieName = "atlas_admin_connection";
 const sharedPluginCatalogCookieName = "atlas_plugin_catalog";
 const startedAt = new Date().toISOString();
 const childProcesses = [];
@@ -32,12 +35,13 @@ await startSurface({
   name: "ATLAS Administration",
   url: adminUrl,
   script: "examples/admin-demo/server.mjs",
-  env: {
-    ATLAS_ADMIN_HOST: surfaceHost,
-    ATLAS_ADMIN_PORT: String(adminPort),
-    ATLAS_SUPPRESS_SURFACE_URL_LOGS: "1",
-  },
-});
+    env: {
+      ATLAS_ADMIN_HOST: surfaceHost,
+      ATLAS_ADMIN_PORT: String(adminPort),
+      ATLAS_SUPPRESS_SURFACE_URL_LOGS: "1",
+      ATLAS_FILE_STUDIO_ALLOW_ADDONS: fileStudioAllowAddons ? "1" : "0",
+    },
+  });
 
 await startSurface({
   name: "ATLAS Home Assistant Card Editor",
@@ -78,12 +82,12 @@ createServer((request, response) => {
   }
 
   if (routePath === "/api/file-studio/tree") {
-    void writeFileStudioTreeResponse(response, requestUrl);
+    void writeFileStudioTreeResponse(response, requestUrl, request.headers.cookie);
     return;
   }
 
   if (routePath === "/api/file-studio/file") {
-    void writeFileStudioFileResponse(response, requestUrl);
+    void writeFileStudioFileResponse(response, requestUrl, request.headers.cookie);
     return;
   }
 
@@ -93,17 +97,17 @@ createServer((request, response) => {
   }
 
   if (routePath === "/api/file-studio/write") {
-    void writeFileStudioWriteResponse(request, response);
+    void writeFileStudioWriteResponse(request, response, request.headers.cookie);
     return;
   }
 
   if (routePath === "/api/file-studio/create-file") {
-    void writeFileStudioCreateFileResponse(request, response);
+    void writeFileStudioCreateFileResponse(request, response, request.headers.cookie);
     return;
   }
 
   if (routePath === "/api/file-studio/create-directory") {
-    void writeFileStudioCreateDirectoryResponse(request, response);
+    void writeFileStudioCreateDirectoryResponse(request, response, request.headers.cookie);
     return;
   }
 
@@ -320,29 +324,44 @@ async function writePluginCatalogResponse(response, requestUrl, cookieHeader) {
   });
 }
 
-async function writeFileStudioTreeResponse(response, requestUrl) {
+async function writeFileStudioTreeResponse(response, requestUrl, cookieHeader) {
   const depth = clampNumber(Number(requestUrl.searchParams.get("depth") ?? "3"), 1, 8);
   const relativePath = requestUrl.searchParams.get("path") ?? "";
-  const targetPath = resolveFileStudioConfigPath(relativePath);
+  const access = createFileStudioAccessContext(cookieHeader);
+  const rootScope = resolveFileStudioRootScope(relativePath, access);
+  const targetPath = resolveFileStudioPath(relativePath, access);
 
   if (!targetPath) {
     writeJson(response, 403, {
       kind: "atlas.file-studio.tree",
-      root: "/config",
+      root: access.allowAddons ? "/" : "/config",
+      roots: createFileStudioRootSummaries(access),
       error: "path outside configured root",
     });
     return;
   }
 
-  if (!existsSync(fileStudioConfigRoot)) {
+  if (access.allowAddons && (!relativePath || relativePath === "/" || relativePath === ".")) {
     writeJson(response, 200, {
       kind: "atlas.file-studio.tree",
-      root: "/config",
+      root: "/",
+      roots: createFileStudioRootSummaries(access),
+      exists: true,
+      tree: createFileStudioVirtualRoot(depth, access),
+    });
+    return;
+  }
+
+  if (!existsSync(targetPath)) {
+    writeJson(response, 200, {
+      kind: "atlas.file-studio.tree",
+      root: rootScope.displayPath,
+      roots: createFileStudioRootSummaries(access),
       exists: false,
-      message: "Der Home-Assistant-Konfigurationsordner /config ist noch nicht erreichbar.",
+      message: `${rootScope.displayPath} ist noch nicht erreichbar.`,
       tree: {
-        name: "config",
-        path: "/config",
+        name: rootScope.displayPath.split("/").filter(Boolean).at(-1) ?? "config",
+        path: rootScope.displayPath,
         type: "directory",
         children: [],
       },
@@ -352,15 +371,19 @@ async function writeFileStudioTreeResponse(response, requestUrl) {
 
   writeJson(response, 200, {
     kind: "atlas.file-studio.tree",
-    root: "/config",
+    root: access.allowAddons ? "/" : rootScope.displayPath,
+    roots: createFileStudioRootSummaries(access),
     exists: true,
-    tree: readFileStudioTree(targetPath, depth, "/config"),
+    tree: access.allowAddons && (!relativePath || relativePath === "/" || relativePath === ".")
+      ? createFileStudioVirtualRoot(depth, access)
+      : readFileStudioTree(targetPath, depth, rootScope.displayPath, access),
   });
 }
 
-async function writeFileStudioFileResponse(response, requestUrl) {
+async function writeFileStudioFileResponse(response, requestUrl, cookieHeader) {
   const relativePath = requestUrl.searchParams.get("path") ?? "";
-  const targetPath = resolveFileStudioConfigPath(relativePath);
+  const access = createFileStudioAccessContext(cookieHeader);
+  const targetPath = resolveFileStudioPath(relativePath, access);
 
   if (!targetPath) {
     writeJson(response, 403, {
@@ -381,7 +404,7 @@ async function writeFileStudioFileResponse(response, requestUrl) {
   const stats = statSync(targetPath);
   writeJson(response, 200, {
     kind: "atlas.file-studio.file",
-    path: createFileStudioDisplayPath(targetPath),
+    path: createFileStudioDisplayPath(targetPath, access),
     name: targetPath.split(/[\\/]/).at(-1) ?? "",
     extension: extname(targetPath).replace(".", "").toLowerCase(),
     content: readFileSync(targetPath, "utf8"),
@@ -402,9 +425,10 @@ async function writeFileStudioValidationResponse(request, response) {
   });
 }
 
-async function writeFileStudioWriteResponse(request, response) {
+async function writeFileStudioWriteResponse(request, response, cookieHeader) {
   const body = await readJsonRequestBody(request);
-  const targetPath = resolveFileStudioConfigPath(body.path);
+  const access = createFileStudioAccessContext(cookieHeader);
+  const targetPath = resolveFileStudioPath(body.path, access);
 
   if (!targetPath) {
     writeJson(response, 403, {
@@ -441,22 +465,22 @@ async function writeFileStudioWriteResponse(request, response) {
   writeJson(response, 200, {
     kind: "atlas.file-studio.write",
     ok: true,
-    path: createFileStudioDisplayPath(targetPath),
+    path: createFileStudioDisplayPath(targetPath, access),
     size: stats.size,
     modifiedAt: stats.mtime.toISOString(),
     validation,
   });
 }
 
-async function writeFileStudioCreateFileResponse(request, response) {
+async function writeFileStudioCreateFileResponse(request, response, cookieHeader) {
   const body = await readJsonRequestBody(request);
-  const result = createFileStudioPath(body.parentPath, body.name, "file");
+  const result = createFileStudioPath(body.parentPath, body.name, "file", createFileStudioAccessContext(cookieHeader));
   writeJson(response, result.status, result.body);
 }
 
-async function writeFileStudioCreateDirectoryResponse(request, response) {
+async function writeFileStudioCreateDirectoryResponse(request, response, cookieHeader) {
   const body = await readJsonRequestBody(request);
-  const result = createFileStudioPath(body.parentPath, body.name, "directory");
+  const result = createFileStudioPath(body.parentPath, body.name, "directory", createFileStudioAccessContext(cookieHeader));
   writeJson(response, result.status, result.body);
 }
 
@@ -512,33 +536,118 @@ function createPublicSurfaceUrl(requestUrl, port) {
   return url.toString();
 }
 
-function resolveFileStudioConfigPath(relativePath) {
-  let normalizedInput = String(relativePath ?? "").replace(/\\/g, "/").replace(/^\/+/, "");
-  if (normalizedInput === "config") {
-    normalizedInput = "";
-  } else if (normalizedInput.startsWith("config/")) {
-    normalizedInput = normalizedInput.slice("config/".length);
-  }
-  const normalizedRelativePath = normalize(normalizedInput);
-  const targetPath = resolve(fileStudioConfigRoot, normalizedRelativePath);
-
-  if (isInsideFileStudioConfigRoot(targetPath)) {
-    return targetPath;
-  }
-
-  return undefined;
+function createFileStudioAccessContext(cookieHeader = "") {
+  return {
+    allowAddons: isHomeAssistantAppDistribution()
+      ? fileStudioAllowAddons
+      : fileStudioAllowAddons || readFileStudioAccessFromCookie(cookieHeader).allowAddonsPath,
+  };
 }
 
-function createFileStudioDisplayPath(targetPath) {
-  const relativeTargetPath = relative(fileStudioConfigRoot, targetPath).replace(/\\/g, "/");
+function readFileStudioAccessFromCookie(cookieHeader) {
+  const encodedSettings = readCookie(cookieHeader, adminConnectionCookieName);
+  if (!encodedSettings) {
+    return { allowAddonsPath: false };
+  }
+  try {
+    const settings = JSON.parse(decodeURIComponent(encodedSettings));
+    return {
+      allowAddonsPath: settings?.fileStudioAccess?.allowAddonsPath === true,
+    };
+  } catch {
+    return { allowAddonsPath: false };
+  }
+}
+
+function isHomeAssistantAppDistribution() {
+  return distributionTarget.startsWith("home-assistant-app");
+}
+
+function createFileStudioRootScopes(access = createFileStudioAccessContext()) {
+  return [
+    {
+      id: "homeassistant-config",
+      label: "Home Assistant /config",
+      displayPath: "/config",
+      physicalPath: fileStudioConfigRoot,
+      enabled: true,
+      readonly: false,
+      source: "default",
+    },
+    {
+      id: "homeassistant-addons",
+      label: "Home Assistant /addons",
+      displayPath: "/addons",
+      physicalPath: fileStudioAddonsRoot,
+      enabled: access.allowAddons,
+      readonly: false,
+      source: "approval",
+    },
+  ];
+}
+
+function createFileStudioRootSummaries(access) {
+  return createFileStudioRootScopes(access).map(scope => ({
+    id: scope.id,
+    label: scope.label,
+    path: scope.displayPath,
+    enabled: scope.enabled,
+    readonly: scope.readonly,
+    source: scope.source,
+  }));
+}
+
+function enabledFileStudioRootScopes(access) {
+  return createFileStudioRootScopes(access).filter(scope => scope.enabled);
+}
+
+function normalizeFileStudioDisplayInput(value) {
+  const normalized = String(value ?? "").replace(/\\/g, "/").trim();
+  if (!normalized || normalized === "." || normalized === "/") {
+    return "";
+  }
+  return `/${normalized.replace(/^\/+/, "")}`.replace(/\/+$/, "");
+}
+
+function resolveFileStudioRootScope(value, access) {
+  const displayPath = normalizeFileStudioDisplayInput(value);
+  if (!displayPath) {
+    return enabledFileStudioRootScopes(access)[0];
+  }
+  return enabledFileStudioRootScopes(access)
+    .find(scope => displayPath === scope.displayPath || displayPath.startsWith(`${scope.displayPath}/`));
+}
+
+function resolveFileStudioPath(value, access) {
+  const scope = resolveFileStudioRootScope(value, access);
+  if (!scope) {
+    return undefined;
+  }
+
+  const displayPath = normalizeFileStudioDisplayInput(value);
+  const relativeInput = displayPath === scope.displayPath
+    ? ""
+    : displayPath.slice(scope.displayPath.length).replace(/^\/+/, "");
+  const targetPath = resolve(scope.physicalPath, normalize(relativeInput));
+
+  return isInsideFileStudioRootScope(scope, targetPath) ? targetPath : undefined;
+}
+
+function createFileStudioDisplayPath(targetPath, access) {
+  const scope = enabledFileStudioRootScopes(access)
+    .find(candidate => isInsideFileStudioRootScope(candidate, targetPath));
+  if (!scope) {
+    return "";
+  }
+  const relativeTargetPath = relative(scope.physicalPath, targetPath).replace(/\\/g, "/");
   if (!relativeTargetPath) {
-    return "/config";
+    return scope.displayPath;
   }
-  return `/config/${relativeTargetPath}`.replace(/\/$/, "");
+  return `${scope.displayPath}/${relativeTargetPath}`.replace(/\/$/, "");
 }
 
-function isInsideFileStudioConfigRoot(targetPath) {
-  const relativeTargetPath = relative(fileStudioConfigRoot, targetPath);
+function isInsideFileStudioRootScope(scope, targetPath) {
+  const relativeTargetPath = relative(scope.physicalPath, targetPath);
   return relativeTargetPath === "" || (!relativeTargetPath.startsWith("..") && !isAbsolute(relativeTargetPath));
 }
 
@@ -562,8 +671,9 @@ async function readJsonRequestBody(request) {
   return JSON.parse(body);
 }
 
-function createFileStudioPath(parentPath, name, type) {
-  const parentDirectory = resolveFileStudioConfigPath(parentPath);
+function createFileStudioPath(parentPath, name, type, access) {
+  const parentDirectory = resolveFileStudioPath(parentPath, access);
+  const parentScope = resolveFileStudioRootScope(parentPath, access);
   const normalizedName = String(name ?? "").trim();
   const invalidReason = validateFileStudioName(normalizedName);
   if (invalidReason) {
@@ -577,7 +687,7 @@ function createFileStudioPath(parentPath, name, type) {
     };
   }
 
-  if (!parentDirectory || !existsSync(parentDirectory) || !statSync(parentDirectory).isDirectory()) {
+  if (!parentDirectory || !parentScope || !existsSync(parentDirectory) || !statSync(parentDirectory).isDirectory()) {
     return {
       status: 404,
       body: {
@@ -589,7 +699,7 @@ function createFileStudioPath(parentPath, name, type) {
   }
 
   const targetPath = resolve(parentDirectory, normalizedName);
-  if (!isInsideFileStudioConfigRoot(targetPath)) {
+  if (!isInsideFileStudioRootScope(parentScope, targetPath)) {
     return {
       status: 403,
       body: {
@@ -623,7 +733,7 @@ function createFileStudioPath(parentPath, name, type) {
     body: {
       kind: `atlas.file-studio.${type}.create`,
       ok: true,
-      path: createFileStudioDisplayPath(targetPath),
+      path: createFileStudioDisplayPath(targetPath, access),
       name: normalizedName,
       type,
       extension: type === "file" ? extname(normalizedName).replace(".", "").toLowerCase() : undefined,
@@ -674,10 +784,12 @@ function validateFileStudioContent(content, filename) {
   };
 }
 
-function readFileStudioTree(directoryPath, remainingDepth, displayPath) {
+function readFileStudioTree(directoryPath, remainingDepth, displayPath, access) {
   const directoryStats = statSync(directoryPath);
   const name = displayPath === "/config"
     ? "config"
+    : displayPath === "/addons"
+      ? "addons"
     : displayPath.split("/").filter(Boolean).at(-1) ?? "config";
   const node = {
     name,
@@ -694,7 +806,7 @@ function readFileStudioTree(directoryPath, remainingDepth, displayPath) {
   try {
     node.children = readdirSync(directoryPath, { withFileTypes: true })
       .filter(entry => !entry.name.startsWith("."))
-      .map(entry => readFileStudioTreeEntry(directoryPath, displayPath, entry, remainingDepth))
+      .map(entry => readFileStudioTreeEntry(directoryPath, displayPath, entry, remainingDepth, access))
       .filter(Boolean)
       .sort(sortFileStudioTreeEntries);
   } catch (error) {
@@ -704,16 +816,17 @@ function readFileStudioTree(directoryPath, remainingDepth, displayPath) {
   return node;
 }
 
-function readFileStudioTreeEntry(parentDirectory, parentDisplayPath, entry, remainingDepth) {
+function readFileStudioTreeEntry(parentDirectory, parentDisplayPath, entry, remainingDepth, access) {
   const entryPath = resolve(parentDirectory, entry.name);
-  if (!isInsideFileStudioConfigRoot(entryPath)) {
+  const scope = resolveFileStudioRootScope(parentDisplayPath, access);
+  if (!scope || !isInsideFileStudioRootScope(scope, entryPath)) {
     return undefined;
   }
   const displayPath = `${parentDisplayPath.replace(/\/$/, "")}/${entry.name}`.replace(/\\/g, "/");
   const entryStats = statSync(entryPath);
 
   if (entry.isDirectory()) {
-    return readFileStudioTree(entryPath, remainingDepth - 1, displayPath);
+    return readFileStudioTree(entryPath, remainingDepth - 1, displayPath, access);
   }
 
   if (!entry.isFile()) {
@@ -727,6 +840,26 @@ function readFileStudioTreeEntry(parentDirectory, parentDisplayPath, entry, rema
     extension: extname(entry.name).replace(".", "").toLowerCase(),
     size: entryStats.size,
     modifiedAt: entryStats.mtime.toISOString(),
+  };
+}
+
+function createFileStudioVirtualRoot(depth, access) {
+  return {
+    name: "ATLAS",
+    path: "/",
+    type: "directory",
+    children: enabledFileStudioRootScopes(access).map(scope => {
+      if (!existsSync(scope.physicalPath)) {
+        return {
+          name: scope.displayPath.replace("/", ""),
+          path: scope.displayPath,
+          type: "directory",
+          children: [],
+          error: `${scope.displayPath} ist noch nicht erreichbar.`,
+        };
+      }
+      return readFileStudioTree(scope.physicalPath, Math.max(1, depth) - 1, scope.displayPath, access);
+    }),
   };
 }
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.73
+
+- Add a Home Assistant App/Add-on option to explicitly allow File Studio access
+  to `/addons`.
+- Keep the `/addons` approval read-only in Administration when ATLAS runs as a
+  Home Assistant App/Add-on, while standalone/Docker mode can manage it in
+  Administration.
+- Let File Studio show `/addons` next to `/config` only when the effective
+  approval is active.
+- Bump ATLAS File Studio to `0.1.15` for repository update detection.
+
 ## 0.1.72
 
 - Add a bundled CodeMirror 6 editor for ATLAS File Studio with line numbers,

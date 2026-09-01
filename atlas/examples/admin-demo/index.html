@@ -1119,6 +1119,11 @@
         <aside class="panel" aria-labelledby="policy-heading">
           <h2 id="policy-heading" data-i18n="heading.policy">Plugin access policy</h2>
           <p id="policy-summary"></p>
+          <label class="checkbox-row" for="allow-addons-path">
+            <input id="allow-addons-path" type="checkbox">
+            <span data-i18n="label.allowAddonsPath">Allow File Studio access to /addons</span>
+          </label>
+          <p id="file-studio-access-hint" class="field-hint" data-i18n="message.fileStudioAccessStandaloneHint">In Docker and Linux mode this approval is managed here.</p>
           <ul class="policy-list">
             <li data-i18n="policy.token">The Card Editor receives the token only as a browser session handoff.</li>
             <li data-i18n="policy.paths">Plugins receive approved URLs, WebSocket paths and resource paths.</li>

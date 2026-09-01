@@ -348,7 +348,8 @@ body.is-resizing .splitter {
   color: var(--atlas-danger-text);
 }
 
-.tree-status.ok {
+.tree-status.ok,
+.tree-note.ok {
   border-color: var(--atlas-accent);
   background: var(--atlas-accent-soft);
   color: var(--atlas-link);
