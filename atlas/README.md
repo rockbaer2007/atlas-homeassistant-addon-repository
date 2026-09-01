@@ -10,20 +10,31 @@ wraps the same runtime used by the standalone Docker preview:
 Home Assistant Ingress is enabled for the ATLAS app port. ATLAS opens the only
 active plugin directly or shows the Plugin Hub when multiple plugins are active.
 
-Prepare a local test copy from the repository root:
+## Install from GitHub
+
+Add the public ATLAS Add-on repository in Home Assistant:
+
+```text
+https://github.com/rockbaer2007/atlas-homeassistant-addon-repository
+```
+
+Open **Settings -> Add-ons -> Add-on Store -> Repositories**, paste the URL,
+then refresh the store and install **ATLAS**.
+
+For the My Home Assistant helper page use:
+
+```text
+https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Frockbaer2007%2Fatlas-homeassistant-addon-repository
+```
+
+## Local development
+
+The package Dockerfile mirrors the verified standalone container path. For a
+local smoke test from the ATLAS source repository, prepare the package and
+check the runtime health endpoint:
 
 ```sh
 pnpm ha:app:prepare
-```
-
-Copy `output/home-assistant-app/atlas` into the Home Assistant `/addons`
-directory for local app testing, then refresh the App/Add-on store.
-
-The package Dockerfile mirrors the verified standalone container path. For a
-local smoke test, build the prepared app folder and check the runtime health
-endpoint:
-
-```sh
 docker build -t atlas-home-assistant-app:local output/home-assistant-app/atlas
 docker run --rm -p 4176:4176 -p 4175:4175 -p 4174:4174 atlas-home-assistant-app:local
 ```

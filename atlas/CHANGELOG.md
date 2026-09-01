@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.52
+
+- Describe the GitHub repository install path first in the Add-on README.
+- Keep local package preparation under development notes instead of presenting
+  it as the normal install path.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.15` for the update
+  package.
+
 ## 0.1.51
 
 - Load external plugin repositories and plugin packages without custom request
