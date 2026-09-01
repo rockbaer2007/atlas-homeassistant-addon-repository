@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.68
+
+- Extend the ATLAS File Studio workspace vertically so the editor and file panes
+  use more of the available screen height.
+- Bump ATLAS File Studio to `0.1.10` for repository update detection.
+
 ## 0.1.67
 
 - Rename the Add-on description to ATLAS Administration and Home Assistant

@@ -156,7 +156,7 @@ p {
 .file-tree,
 .folder-panel,
 .editor-panel {
-  min-height: min(720px, calc(100vh - 150px));
+  min-height: min(820px, calc(100vh - 110px));
   padding: 14px;
   border: 1px solid var(--atlas-border);
   border-radius: 6px;
@@ -177,7 +177,7 @@ p {
 }
 
 .splitter {
-  min-height: min(720px, calc(100vh - 150px));
+  min-height: min(820px, calc(100vh - 110px));
   border-top: 1px solid var(--atlas-border);
   border-bottom: 1px solid var(--atlas-border);
   background:
@@ -230,7 +230,7 @@ body.is-resizing .splitter {
   display: grid;
   gap: 3px;
   overflow: auto;
-  max-height: min(570px, calc(100vh - 310px));
+  max-height: min(670px, calc(100vh - 270px));
   padding-right: 2px;
 }
 
@@ -451,7 +451,7 @@ body.is-resizing .splitter {
 .folder-list {
   display: grid;
   overflow: auto;
-  max-height: min(628px, calc(100vh - 244px));
+  max-height: min(728px, calc(100vh - 204px));
 }
 
 .folder-row {
@@ -496,7 +496,7 @@ body.is-resizing .splitter {
 }
 
 pre {
-  min-height: min(620px, calc(100vh - 250px));
+  min-height: min(740px, calc(100vh - 190px));
   margin: 0;
   overflow: auto;
   border: 1px solid var(--atlas-border);
