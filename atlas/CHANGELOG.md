@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.67
+
+- Rename the Add-on description to ATLAS Administration and Home Assistant
+  Plugins preview.
+- Add compact type-aware ATLAS File Studio icons for YAML, JSON, code,
+  Markdown, text and archive files without extra labels in the left tree.
+- Bump ATLAS File Studio to `0.1.9` and Atlas Framework package metadata to
+  `0.2.0-alpha.30` for the update package.
+
 ## 0.1.66
 
 - Deduplicate repository preview plugins in ATLAS Administration by plugin ID

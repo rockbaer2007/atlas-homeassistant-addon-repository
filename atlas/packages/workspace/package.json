@@ -1,6 +1,6 @@
 {
   "name": "@atlas/workspace",
-  "version": "0.2.0-alpha.29",
+  "version": "0.2.0-alpha.30",
   "description": "Atlas workspace readiness contracts",
   "type": "module",
   "main": "./dist/index.js",

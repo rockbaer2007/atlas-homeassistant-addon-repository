@@ -105,6 +105,20 @@
         return extension || "FILE";
       }
 
+      function fileTypeIconClass(node) {
+        if (node.type === "directory") {
+          return "folder-icon";
+        }
+        const extension = String(node.extension ?? "").trim().toLowerCase();
+        if (["yaml", "yml"].includes(extension)) return "file-icon-yaml";
+        if (extension === "json") return "file-icon-json";
+        if (["js", "mjs", "ts"].includes(extension)) return "file-icon-code";
+        if (["md", "markdown"].includes(extension)) return "file-icon-markdown";
+        if (["txt", "log"].includes(extension)) return "file-icon-text";
+        if (["zip", "gz", "tar"].includes(extension)) return "file-icon-archive";
+        return "file-icon-generic";
+      }
+
       function formatFileSize(bytes) {
         if (!Number.isFinite(bytes)) {
           return "-";
@@ -183,7 +197,7 @@
         button.type = "button";
         button.className = "tree-file";
         button.dataset.path = node.path;
-        button.innerHTML = `<span class="tree-icon file-icon" aria-hidden="true"></span><span class="tree-name"></span>`;
+        button.innerHTML = `<span class="tree-icon file-icon ${fileTypeIconClass(node)}" aria-hidden="true"></span><span class="tree-name"></span>`;
         button.querySelector(".tree-name").textContent = node.name;
         button.addEventListener("click", () => selectTreeFile(button, node));
         return button;
@@ -238,7 +252,7 @@
           button.className = `folder-row ${child.type}`;
           button.dataset.path = child.path;
           button.innerHTML = `<span class="folder-name"><span class="tree-icon" aria-hidden="true"></span><span></span></span><span></span><span></span>`;
-          button.querySelector(".tree-icon").classList.add(child.type === "directory" ? "folder-icon" : "file-icon");
+          button.querySelector(".tree-icon").classList.add(child.type === "directory" ? "folder-icon" : "file-icon", fileTypeIconClass(child));
           button.querySelector(".folder-name span:last-child").textContent = child.name;
           button.children[1].textContent = child.type === "directory" ? "-" : formatFileSize(child.size);
           button.children[2].textContent = formatModifiedAt(child.modifiedAt);

@@ -15,6 +15,12 @@
   --atlas-link: #0f766e;
   --atlas-folder: #d97706;
   --atlas-file: #0891b2;
+  --atlas-file-yaml: #e11d48;
+  --atlas-file-json: #ca8a04;
+  --atlas-file-code: #2563eb;
+  --atlas-file-markdown: #7c3aed;
+  --atlas-file-text: #64748b;
+  --atlas-file-archive: #9333ea;
   --atlas-on-accent: #ffffff;
   --atlas-danger-soft: #fee2e2;
   --atlas-danger-text: #991b1b;
@@ -40,6 +46,12 @@
   --atlas-link: #7ee6c9;
   --atlas-folder: #fbbf24;
   --atlas-file: #67e8f9;
+  --atlas-file-yaml: #fb7185;
+  --atlas-file-json: #facc15;
+  --atlas-file-code: #60a5fa;
+  --atlas-file-markdown: #c084fc;
+  --atlas-file-text: #cbd5e1;
+  --atlas-file-archive: #d8b4fe;
   --atlas-on-accent: #06201d;
   --atlas-danger-soft: #4b1717;
   --atlas-danger-text: #fecaca;
@@ -300,6 +312,30 @@ body.is-resizing .splitter {
   color: var(--atlas-folder);
 }
 
+.file-icon-yaml {
+  color: var(--atlas-file-yaml);
+}
+
+.file-icon-json {
+  color: var(--atlas-file-json);
+}
+
+.file-icon-code {
+  color: var(--atlas-file-code);
+}
+
+.file-icon-markdown {
+  color: var(--atlas-file-markdown);
+}
+
+.file-icon-text {
+  color: var(--atlas-file-text);
+}
+
+.file-icon-archive {
+  color: var(--atlas-file-archive);
+}
+
 .file-icon::before {
   content: "";
   position: absolute;
@@ -312,13 +348,46 @@ body.is-resizing .splitter {
 .file-icon::after {
   content: "";
   position: absolute;
+  left: 5px;
+  bottom: 3px;
+  width: 6px;
+  height: 5px;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.file-icon-yaml::after {
+  clip-path: polygon(0 0, 45% 0, 50% 42%, 55% 0, 100% 0, 72% 100%, 28% 100%);
+}
+
+.file-icon-json::after {
+  clip-path: polygon(38% 0, 100% 0, 72% 50%, 100% 100%, 38% 100%, 66% 50%);
+}
+
+.file-icon-code::after {
+  clip-path: polygon(0 50%, 40% 8%, 52% 22%, 26% 50%, 52% 78%, 40% 92%);
+}
+
+.file-icon-markdown::after {
+  clip-path: polygon(0 100%, 0 0, 28% 0, 50% 48%, 72% 0, 100% 0, 100% 100%, 72% 100%, 72% 46%, 50% 90%, 28% 46%, 28% 100%);
+}
+
+.file-icon-text::after {
   top: 4px;
   left: 6px;
   width: 5px;
   height: 1.5px;
   border-radius: 999px;
-  background: currentColor;
   box-shadow: 0 4px 0 currentColor;
+}
+
+.file-icon-archive::after {
+  left: 6px;
+  top: 3px;
+  width: 4px;
+  height: 9px;
+  background:
+    linear-gradient(currentColor 0 1px, transparent 1px 2px) 0 0 / 4px 2px repeat-y;
 }
 
 .folder-icon::before {

@@ -1,7 +1,7 @@
 name: "ATLAS"
-version: "0.1.66"
+version: "0.1.67"
 slug: "atlas"
-description: "ATLAS Administration and Home Assistant Card Editor preview"
+description: "ATLAS Administration and Home Assistant Plugins preview"
 url: "https://github.com/rockbaer2007/atlas"
 arch:
   - aarch64
