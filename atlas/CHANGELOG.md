@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.70
+
+- Add a File Studio header toggle for limiting the workspace width to 1900px or
+  using the full browser width for large files.
+- Bump ATLAS File Studio to `0.1.12` for repository update detection.
+
 ## 0.1.69
 
 - Add a File Studio header toggle for limiting the workspace height to 1024px.

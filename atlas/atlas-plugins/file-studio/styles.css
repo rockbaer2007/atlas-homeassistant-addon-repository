@@ -27,12 +27,17 @@
   --tree-width: 300px;
   --folder-width: 360px;
   --studio-height: clamp(820px, calc(100vh - 240px), 1024px);
+  --studio-width: min(100%, 1900px);
   background: var(--atlas-bg);
   color: var(--atlas-text);
 }
 
 :root[data-height-limit="off"] {
   --studio-height: max(820px, calc(100vh - 240px));
+}
+
+:root[data-width-limit="off"] {
+  --studio-width: 100%;
 }
 
 :root[data-theme="dark"] {
@@ -75,7 +80,7 @@ body {
 }
 
 .studio-shell {
-  width: min(100%, 1900px);
+  width: var(--studio-width);
   margin: 0 auto;
   padding: 24px;
 }
