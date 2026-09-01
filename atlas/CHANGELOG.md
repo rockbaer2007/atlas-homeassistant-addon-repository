@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.51
+
+- Load external plugin repositories and plugin packages without custom request
+  headers so GitHub Raw works in browser CORS mode.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.14` for the update
+  package.
+
 ## 0.1.50
 
 - Normalize saved GitHub plugin repository URLs during Administration refresh,

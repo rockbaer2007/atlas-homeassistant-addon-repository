@@ -1622,7 +1622,6 @@ async function fetchAtlasPluginRepository(inputUrl) {
     try {
       const response = await fetch(createNoCacheUrl(repositoryUrl), {
         cache: "no-store",
-        headers: { "Cache-Control": "no-cache", "Accept": "application/json" },
       });
       if (!response.ok) {
         continue;
@@ -1718,7 +1717,6 @@ async function hasHomeAssistantAddOnRepositoryMetadata(inputUrl) {
     try {
       const response = await fetch(createNoCacheUrl(metadataUrl), {
         cache: "no-store",
-        headers: { "Cache-Control": "no-cache", "Accept": "text/yaml,text/plain,*/*" },
       });
       if (response.ok) {
         const text = await response.text();
@@ -1837,7 +1835,6 @@ async function fetchRepositoryPluginInstallPackage(plugin) {
   if (plugin.packageUrl) {
     const response = await fetch(createNoCacheUrl(plugin.packageUrl), {
       cache: "no-store",
-      headers: { "Cache-Control": "no-cache" },
     });
     if (!response.ok) {
       throw new Error("Repository plugin package could not be loaded.");
@@ -1848,7 +1845,6 @@ async function fetchRepositoryPluginInstallPackage(plugin) {
   if (plugin.manifestUrl) {
     const response = await fetch(createNoCacheUrl(plugin.manifestUrl), {
       cache: "no-store",
-      headers: { "Cache-Control": "no-cache" },
     });
     if (!response.ok) {
       throw new Error("Repository plugin manifest could not be loaded.");
