@@ -1,6 +1,6 @@
 {
   "name": "@atlas/kernel",
-  "version": "0.2.0-alpha.10",
+  "version": "0.2.0-alpha.11",
   "description": "ATLAS kernel contracts, service container and module infrastructure",
   "type": "module",
   "main": "./dist/index.js",

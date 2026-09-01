@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.48
+
+- Require explicit ATLAS plugin repository markers before a custom repository
+  can be previewed or saved in Administration.
+- Require explicit ATLAS plugin markers on repository plugin entries so Home
+  Assistant add-on repositories and unrelated JSON feeds are rejected.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.11` for the update
+  package.
+
 ## 0.1.47
 
 - Prevent Atlas Administration from accepting Home Assistant add-on repositories

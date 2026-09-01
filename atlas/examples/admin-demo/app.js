@@ -296,7 +296,7 @@ const translations = {
     "message.pluginRepositoryLoading": "Loading plugin repositories...",
     "message.pluginRepositoryLoaded": "{count} repository plugins loaded from {countRepositories} repositories.",
     "message.pluginRepositoryFailed": "Plugin repository could not be loaded.",
-    "message.pluginRepositoryInvalid": "Plugin repository response is invalid.",
+    "message.pluginRepositoryInvalid": "Plugin repository response is invalid or is missing the ATLAS plugin repository marker.",
     "message.pluginRepositoryWrongType": "This is a Home Assistant add-on repository. Add it in Home Assistant under Settings > Add-ons > Add-on Store > Repositories, not in Atlas Administration.",
     "message.pluginRepositoryNoEntries": "No custom repositories added yet.",
     "message.pluginRepositoryPreviewEmpty": "Enter a repository URL and preview it before adding.",
@@ -472,7 +472,7 @@ const translations = {
     "message.pluginRepositoryLoading": "Plugin-Repositories werden geladen...",
     "message.pluginRepositoryLoaded": "{count} Repository-Plugins aus {countRepositories} Repositories geladen.",
     "message.pluginRepositoryFailed": "Plugin-Repository konnte nicht geladen werden.",
-    "message.pluginRepositoryInvalid": "Plugin-Repository-Antwort ist ungueltig.",
+    "message.pluginRepositoryInvalid": "Plugin-Repository-Antwort ist ungueltig oder enthaelt keine ATLAS-Plugin-Repository-Kennung.",
     "message.pluginRepositoryWrongType": "Das ist ein Home-Assistant-Add-on-Repository. Fuege es in Home Assistant unter Einstellungen > Add-ons > Add-on Store > Repositories hinzu, nicht in Atlas Administration.",
     "message.pluginRepositoryNoEntries": "Noch keine benutzerdefinierten Repositories hinzugefuegt.",
     "message.pluginRepositoryPreviewEmpty": "Gib eine Repository-URL ein und pruefe sie vor dem Hinzufuegen.",
@@ -1545,9 +1545,7 @@ async function loadPluginRepositoriesPreview() {
 
 function normalizePluginRepository(repository, repositoryEntry) {
   if (
-    !repository
-    || typeof repository !== "object"
-    || repository.kind !== "atlas.plugin.repository"
+    !isAtlasPluginRepositoryDocument(repository)
     || !Array.isArray(repository.plugins)
   ) {
     throw new Error(t("message.pluginRepositoryInvalid"));
@@ -1559,7 +1557,7 @@ function normalizePluginRepository(repository, repositoryEntry) {
 }
 
 function normalizeRepositoryPlugin(plugin, repositoryEntry, index) {
-  if (!plugin || typeof plugin !== "object") {
+  if (!isAtlasPluginRepositoryPlugin(plugin)) {
     return undefined;
   }
   const id = typeof plugin.id === "string" && plugin.id.trim()
@@ -1631,7 +1629,7 @@ async function fetchAtlasPluginRepository(inputUrl) {
         continue;
       }
       const repository = await response.json();
-      if (repository?.kind === "atlas.plugin.repository" && Array.isArray(repository.plugins)) {
+      if (isAtlasPluginRepositoryDocument(repository) && Array.isArray(repository.plugins)) {
         return { repository, repositoryUrl };
       }
     } catch {
@@ -1644,6 +1642,29 @@ async function fetchAtlasPluginRepository(inputUrl) {
   }
 
   throw new Error("atlas-plugin-repository-not-found");
+}
+
+function isAtlasPluginRepositoryDocument(repository) {
+  return Boolean(
+    repository
+    && typeof repository === "object"
+    && repository.kind === "atlas.plugin.repository"
+    && repository.atlas
+    && typeof repository.atlas === "object"
+    && repository.atlas.type === "plugin-repository"
+    && repository.atlas.schemaVersion === 1,
+  );
+}
+
+function isAtlasPluginRepositoryPlugin(plugin) {
+  return Boolean(
+    plugin
+    && typeof plugin === "object"
+    && plugin.atlas
+    && typeof plugin.atlas === "object"
+    && plugin.atlas.type === "plugin"
+    && plugin.atlas.schemaVersion === 1,
+  );
 }
 
 function createPluginRepositoryUrlCandidates(inputUrl) {
