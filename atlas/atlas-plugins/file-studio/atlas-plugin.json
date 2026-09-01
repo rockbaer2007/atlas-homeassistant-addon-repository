@@ -5,7 +5,7 @@
     "de": "ATLAS File Studio",
     "en": "ATLAS File Studio"
   },
-  "version": "0.1.21",
+  "version": "0.1.22",
   "description": "Scoped file tree, editor, image preview and ZIP inspection plugin for Home Assistant configuration files.",
   "descriptionI18n": {
     "de": "Abgesichertes Dateibaum-, Editor-, Bildvorschau- und ZIP-Inspektions-Plugin für Home-Assistant-Konfigurationsdateien.",

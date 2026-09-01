@@ -355,6 +355,10 @@
           state.editorFontSize = 14;
         }
         state.editorFontSize = Math.max(12, Math.min(22, state.editorFontSize));
+        syncEditorPreferences();
+      }
+
+      function syncEditorPreferences() {
         const editor = document.querySelector("#editor-input");
         editor.style.setProperty("--editor-font-size", `${state.editorFontSize}px`);
         state.editor?.setWordWrap?.(state.wordWrap);
@@ -1129,17 +1133,17 @@
         });
         document.querySelector("#word-wrap-toggle").addEventListener("change", event => {
           state.wordWrap = event.target.checked;
-          applyEditorPreferences();
+          syncEditorPreferences();
           saveEditorPreferences();
         });
         document.querySelector("#font-decrease").addEventListener("click", () => {
           state.editorFontSize = Math.max(12, state.editorFontSize - 1);
-          applyEditorPreferences();
+          syncEditorPreferences();
           saveEditorPreferences();
         });
         document.querySelector("#font-increase").addEventListener("click", () => {
           state.editorFontSize = Math.min(22, state.editorFontSize + 1);
-          applyEditorPreferences();
+          syncEditorPreferences();
           saveEditorPreferences();
         });
         document.querySelector("#image-preview-close").addEventListener("click", closeImagePreview);

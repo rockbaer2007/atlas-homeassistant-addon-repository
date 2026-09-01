@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.80
+
+- Fix File Studio A-/A+ editor font-size controls so they apply immediately and
+  persist the selected size correctly.
+- Bump ATLAS File Studio to `0.1.22` for repository update detection.
+
 ## 0.1.79
 
 - Add File Studio image zoom controls for zooming out, returning to 100% and
