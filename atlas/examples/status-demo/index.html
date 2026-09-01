@@ -13,6 +13,7 @@
         --atlas-panel-soft: #f8fafc;
         --atlas-text: #172033;
         --atlas-muted: #536079;
+        --atlas-placeholder: #6d7d91;
         --atlas-border: #d8e0ec;
         --atlas-border-soft: #cbd5e1;
         --atlas-accent: #0f766e;
@@ -31,6 +32,7 @@
         --atlas-panel-soft: #11191d;
         --atlas-text: #f7fcfd;
         --atlas-muted: #c3d3d8;
+        --atlas-placeholder: #d7e5ea;
         --atlas-border: #2f4046;
         --atlas-border-soft: #40535b;
         --atlas-accent: #2dd4bf;
@@ -311,6 +313,12 @@
         padding: 7px 9px;
         font: inherit;
         font-size: 15px;
+      }
+
+      input::placeholder,
+      textarea::placeholder {
+        color: var(--atlas-placeholder);
+        opacity: 1;
       }
 
       .connection-options {

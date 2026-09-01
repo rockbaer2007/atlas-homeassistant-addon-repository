@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.54
+
+- Brighten Editor and Administration placeholder text in dark mode.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.17` for the update
+  package.
+
 ## 0.1.53
 
 - Make the Card Editor Home Assistant connection details collapsible.
