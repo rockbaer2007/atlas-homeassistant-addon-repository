@@ -14,7 +14,12 @@
           <h1>ATLAS File Studio</h1>
           <p>Dateibaum, Editor, YAML-Prüfung und Transfer für freigegebene Home-Assistant-Pfade.</p>
         </div>
-        <a class="button" href="hub" data-open-hub>Plugin Hub</a>
+        <div class="header-actions">
+          <button id="height-limit-toggle" class="button toggle-button" type="button" aria-pressed="true">
+            Max. Höhe begrenzen
+          </button>
+          <a class="button" href="hub" data-open-hub>Plugin Hub</a>
+        </div>
       </header>
 
       <section id="studio-grid" class="studio-grid">
@@ -62,6 +67,7 @@
     <script>
       const atlasThemeStorageKey = "atlas.themePreference";
       const fileStudioLayoutStorageKey = "atlas.fileStudio.layout";
+      const fileStudioHeightLimitStorageKey = "atlas.fileStudio.limitHeight";
       const state = {
         tree: undefined,
         selectedFolderPath: "/config",
@@ -333,6 +339,39 @@
         }
       }
 
+      function readHeightLimitPreference() {
+        try {
+          return localStorage.getItem(fileStudioHeightLimitStorageKey) !== "off";
+        } catch {
+          return true;
+        }
+      }
+
+      function applyHeightLimitPreference(isLimited = readHeightLimitPreference()) {
+        document.documentElement.dataset.heightLimit = isLimited ? "on" : "off";
+        const toggle = document.querySelector("#height-limit-toggle");
+        if (toggle) {
+          toggle.setAttribute("aria-pressed", String(isLimited));
+          toggle.classList.toggle("is-active", isLimited);
+        }
+      }
+
+      function bindHeightLimitToggle() {
+        const toggle = document.querySelector("#height-limit-toggle");
+        if (!toggle) {
+          return;
+        }
+        toggle.addEventListener("click", () => {
+          const isLimited = document.documentElement.dataset.heightLimit !== "on";
+          applyHeightLimitPreference(isLimited);
+          try {
+            localStorage.setItem(fileStudioHeightLimitStorageKey, isLimited ? "on" : "off");
+          } catch {
+            return;
+          }
+        });
+      }
+
       function bindSplitters() {
         for (const splitter of document.querySelectorAll(".splitter")) {
           splitter.addEventListener("pointerdown", event => {
@@ -391,7 +430,9 @@
       }
 
       applySavedLayout();
+      applyHeightLimitPreference();
       applyThemePreference();
+      bindHeightLimitToggle();
       bindSplitters();
       void loadDirectoryTree();
       window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener("change", applyThemePreference);

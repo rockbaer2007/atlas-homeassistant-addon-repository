@@ -26,8 +26,13 @@
   --atlas-danger-text: #991b1b;
   --tree-width: 300px;
   --folder-width: 360px;
+  --studio-height: clamp(820px, calc(100vh - 240px), 1024px);
   background: var(--atlas-bg);
   color: var(--atlas-text);
+}
+
+:root[data-height-limit="off"] {
+  --studio-height: max(820px, calc(100vh - 240px));
 }
 
 :root[data-theme="dark"] {
@@ -81,6 +86,13 @@ body {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .eyebrow,
@@ -141,6 +153,12 @@ p {
   outline: 0;
 }
 
+.toggle-button.is-active {
+  border-color: var(--atlas-accent);
+  background: var(--atlas-accent);
+  color: var(--atlas-on-accent);
+}
+
 .studio-grid {
   display: grid;
   grid-template-columns:
@@ -156,7 +174,7 @@ p {
 .file-tree,
 .folder-panel,
 .editor-panel {
-  min-height: min(820px, calc(100vh - 110px));
+  min-height: var(--studio-height);
   padding: 14px;
   border: 1px solid var(--atlas-border);
   border-radius: 6px;
@@ -177,7 +195,7 @@ p {
 }
 
 .splitter {
-  min-height: min(820px, calc(100vh - 110px));
+  min-height: var(--studio-height);
   border-top: 1px solid var(--atlas-border);
   border-bottom: 1px solid var(--atlas-border);
   background:
@@ -230,7 +248,7 @@ body.is-resizing .splitter {
   display: grid;
   gap: 3px;
   overflow: auto;
-  max-height: min(670px, calc(100vh - 270px));
+  max-height: max(0px, calc(var(--studio-height) - 150px));
   padding-right: 2px;
 }
 
@@ -451,7 +469,7 @@ body.is-resizing .splitter {
 .folder-list {
   display: grid;
   overflow: auto;
-  max-height: min(728px, calc(100vh - 204px));
+  max-height: max(0px, calc(var(--studio-height) - 92px));
 }
 
 .folder-row {
@@ -496,7 +514,7 @@ body.is-resizing .splitter {
 }
 
 pre {
-  min-height: min(740px, calc(100vh - 190px));
+  min-height: max(0px, calc(var(--studio-height) - 80px));
   margin: 0;
   overflow: auto;
   border: 1px solid var(--atlas-border);

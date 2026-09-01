@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.69
+
+- Add a File Studio header toggle for limiting the workspace height to 1024px.
+- Use a shared dynamic workspace height so the file tree, folder list and editor
+  expand together based on the available screen height.
+- Bump ATLAS File Studio to `0.1.11` for repository update detection.
+
 ## 0.1.68
 
 - Extend the ATLAS File Studio workspace vertically so the editor and file panes
