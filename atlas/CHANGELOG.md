@@ -1,10 +1,13 @@
 # Changelog
 
-## 0.1.44
+## 0.1.45
 
-- Ship the ATLAS add-on icon and logo in the installable Home Assistant add-on
-  repository so Home Assistant can show branded artwork in the add-on setup and
-  store views.
+- Improve Card Editor dark-mode contrast for the header subtitle, Card export
+  language labels and translation controls.
+- Use theme-aware checkbox accent colors so selected export languages remain
+  visible when installed through the GitHub add-on repository.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.8` for the update
+  package.
 
 ## 0.1.43
 
