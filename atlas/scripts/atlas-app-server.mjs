@@ -397,6 +397,7 @@ function isInsideFileStudioConfigRoot(targetPath) {
 }
 
 function readFileStudioTree(directoryPath, remainingDepth, displayPath) {
+  const directoryStats = statSync(directoryPath);
   const name = displayPath === "/config"
     ? "config"
     : displayPath.split("/").filter(Boolean).at(-1) ?? "config";
@@ -404,6 +405,7 @@ function readFileStudioTree(directoryPath, remainingDepth, displayPath) {
     name,
     path: displayPath,
     type: "directory",
+    modifiedAt: directoryStats.mtime.toISOString(),
     children: [],
   };
 
@@ -430,6 +432,7 @@ function readFileStudioTreeEntry(parentDirectory, parentDisplayPath, entry, rema
     return undefined;
   }
   const displayPath = `${parentDisplayPath.replace(/\/$/, "")}/${entry.name}`.replace(/\\/g, "/");
+  const entryStats = statSync(entryPath);
 
   if (entry.isDirectory()) {
     return readFileStudioTree(entryPath, remainingDepth - 1, displayPath);
@@ -444,6 +447,8 @@ function readFileStudioTreeEntry(parentDirectory, parentDisplayPath, entry, rema
     path: displayPath,
     type: "file",
     extension: extname(entry.name).replace(".", "").toLowerCase(),
+    size: entryStats.size,
+    modifiedAt: entryStats.mtime.toISOString(),
   };
 }
 

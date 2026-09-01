@@ -1,6 +1,6 @@
 {
   "name": "@atlas/notifyarchive",
-  "version": "0.2.0-alpha.24",
+  "version": "0.2.0-alpha.25",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

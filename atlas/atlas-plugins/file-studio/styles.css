@@ -16,6 +16,8 @@
   --atlas-on-accent: #ffffff;
   --atlas-danger-soft: #fee2e2;
   --atlas-danger-text: #991b1b;
+  --tree-width: 300px;
+  --folder-width: 360px;
   background: var(--atlas-bg);
   color: var(--atlas-text);
 }
@@ -52,7 +54,7 @@ body {
 }
 
 .studio-shell {
-  width: min(100%, 1500px);
+  width: min(100%, 1900px);
   margin: 0 auto;
   padding: 24px;
 }
@@ -125,11 +127,18 @@ p {
 
 .studio-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns:
+    minmax(210px, var(--tree-width))
+    8px
+    minmax(220px, var(--folder-width))
+    8px
+    minmax(420px, 1fr);
+  gap: 0;
+  align-items: stretch;
 }
 
 .file-tree,
+.folder-panel,
 .editor-panel {
   min-height: min(720px, calc(100vh - 150px));
   padding: 14px;
@@ -137,6 +146,36 @@ p {
   border-radius: 6px;
   background: var(--atlas-panel);
   color: var(--atlas-text);
+}
+
+.file-tree {
+  border-radius: 6px 0 0 6px;
+}
+
+.folder-panel {
+  border-radius: 0;
+}
+
+.editor-panel {
+  border-radius: 0 6px 6px 0;
+}
+
+.splitter {
+  min-height: min(720px, calc(100vh - 150px));
+  border-top: 1px solid var(--atlas-border);
+  border-bottom: 1px solid var(--atlas-border);
+  background:
+    linear-gradient(90deg, transparent 0 3px, var(--atlas-border) 3px 5px, transparent 5px 8px);
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.splitter:hover,
+.splitter:focus-visible,
+body.is-resizing .splitter {
+  background:
+    linear-gradient(90deg, transparent 0 2px, var(--atlas-accent) 2px 6px, transparent 6px 8px);
+  outline: 0;
 }
 
 .panel-heading {
@@ -175,7 +214,7 @@ p {
   display: grid;
   gap: 3px;
   overflow: auto;
-  max-height: min(620px, calc(100vh - 260px));
+  max-height: min(570px, calc(100vh - 310px));
   padding-right: 2px;
 }
 
@@ -212,11 +251,17 @@ p {
 
 .tree-folder summary:hover,
 .tree-folder summary:focus-visible,
+.tree-folder summary.active,
 .tree-file:hover,
 .tree-file:focus-visible {
   border-color: var(--atlas-border);
   background: var(--atlas-panel-soft);
   outline: 0;
+}
+
+.tree-folder summary.active {
+  border-color: var(--atlas-accent);
+  background: var(--atlas-accent-soft);
 }
 
 .tree-file.active {
@@ -268,8 +313,75 @@ p {
   font-size: 0.82rem;
 }
 
+.folder-table-header,
+.folder-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 78px 124px;
+  align-items: center;
+  gap: 10px;
+}
+
+.folder-table-header {
+  min-height: 30px;
+  border-bottom: 1px solid var(--atlas-border);
+  color: var(--atlas-muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.folder-list {
+  display: grid;
+  overflow: auto;
+  max-height: min(628px, calc(100vh - 244px));
+}
+
+.folder-row {
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-bottom: 1px solid var(--atlas-border);
+  background: transparent;
+  color: var(--atlas-text);
+  padding: 6px 4px;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.folder-row:hover,
+.folder-row:focus-visible {
+  background: var(--atlas-panel-soft);
+  color: var(--atlas-text);
+  outline: 1px solid var(--atlas-border);
+}
+
+.folder-row.directory .folder-name {
+  font-weight: 800;
+}
+
+.folder-name {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.folder-name span:last-child,
+.folder-row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-empty {
+  padding: 12px 4px;
+  color: var(--atlas-muted);
+  font-size: 0.9rem;
+}
+
 pre {
-  min-height: min(570px, calc(100vh - 300px));
+  min-height: min(620px, calc(100vh - 250px));
   margin: 0;
   overflow: auto;
   border: 1px solid var(--atlas-border);
@@ -321,5 +433,16 @@ code {
 
   .studio-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .file-tree,
+  .folder-panel,
+  .editor-panel {
+    border-radius: 6px;
+  }
+
+  .splitter {
+    display: none;
   }
 }

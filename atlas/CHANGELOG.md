@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.62
+
+- Rework ATLAS File Studio into a flexible split layout with a resizable
+  directory tree, a folder file list and a larger editor pane.
+- Show short tree names while the folder list displays the selected directory
+  contents with size and modified date metadata.
+- Bump ATLAS File Studio to `0.1.6` and Atlas Framework package metadata to
+  `0.2.0-alpha.25` for the update package.
+
 ## 0.1.61
 
 - Load the ATLAS File Studio sidebar as a real directory tree from the scoped

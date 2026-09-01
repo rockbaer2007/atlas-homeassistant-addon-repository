@@ -17,7 +17,7 @@
         <a class="button" href="hub" data-open-hub>Plugin Hub</a>
       </header>
 
-      <section class="studio-grid">
+      <section id="studio-grid" class="studio-grid">
         <aside class="file-tree" aria-label="Dateibaum">
           <div class="panel-heading">
             <h2>Dateibaum</h2>
@@ -27,6 +27,23 @@
           <div id="directory-tree" class="directory-tree" aria-live="polite"></div>
           <div class="tree-note locked">/addons erst nach Admin-Freigabe</div>
         </aside>
+
+        <div class="splitter" data-resize-pane="tree" role="separator" aria-label="Dateibaum-Breite ändern" tabindex="0"></div>
+
+        <section class="folder-panel" aria-label="Ordnerinhalt">
+          <div class="panel-heading">
+            <h2 id="folder-title">Ordnerinhalt</h2>
+            <span id="folder-count">0</span>
+          </div>
+          <div class="folder-table-header">
+            <span>Name</span>
+            <span>Größe</span>
+            <span>Geändert</span>
+          </div>
+          <div id="folder-list" class="folder-list" aria-live="polite"></div>
+        </section>
+
+        <div class="splitter" data-resize-pane="folder" role="separator" aria-label="Dateiliste-Breite ändern" tabindex="0"></div>
 
         <section class="editor-panel" aria-label="Editor">
           <div class="panel-heading">
@@ -44,6 +61,12 @@
     </main>
     <script>
       const atlasThemeStorageKey = "atlas.themePreference";
+      const fileStudioLayoutStorageKey = "atlas.fileStudio.layout";
+      const state = {
+        tree: undefined,
+        selectedFolderPath: "/config",
+        selectedFilePath: undefined,
+      };
 
       function readThemePreferenceFromLocation() {
         try {
@@ -82,6 +105,52 @@
         return extension || "FILE";
       }
 
+      function formatFileSize(bytes) {
+        if (!Number.isFinite(bytes)) {
+          return "-";
+        }
+        if (bytes < 1024) {
+          return `${bytes} B`;
+        }
+        if (bytes < 1024 * 1024) {
+          return `${(bytes / 1024).toFixed(1)} KB`;
+        }
+        return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+      }
+
+      function formatModifiedAt(value) {
+        if (!value) {
+          return "-";
+        }
+        try {
+          return new Intl.DateTimeFormat("de-DE", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }).format(new Date(value));
+        } catch {
+          return "-";
+        }
+      }
+
+      function findNodeByPath(node, path) {
+        if (!node) {
+          return undefined;
+        }
+        if (node.path === path) {
+          return node;
+        }
+        for (const child of node.children ?? []) {
+          const found = findNodeByPath(child, path);
+          if (found) {
+            return found;
+          }
+        }
+        return undefined;
+      }
+
       function createTreeNode(node, level = 0) {
         if (node.type === "directory") {
           const details = document.createElement("details");
@@ -90,7 +159,9 @@
 
           const summary = document.createElement("summary");
           summary.innerHTML = `<span class="tree-chevron" aria-hidden="true"></span><span class="tree-icon" aria-hidden="true">▣</span><span class="tree-name"></span><span class="tree-meta">DIR</span>`;
-          summary.querySelector(".tree-name").textContent = node.path;
+          summary.dataset.path = node.path;
+          summary.querySelector(".tree-name").textContent = level === 0 ? "/config" : node.name;
+          summary.addEventListener("click", () => selectFolder(node.path));
           details.append(summary);
 
           const children = document.createElement("div");
@@ -119,11 +190,22 @@
         return button;
       }
 
+      function selectFolder(path) {
+        state.selectedFolderPath = path;
+        for (const selectedSummary of document.querySelectorAll(".tree-folder summary.active")) {
+          selectedSummary.classList.remove("active");
+        }
+        const summary = document.querySelector(`.tree-folder summary[data-path="${CSS.escape(path)}"]`);
+        summary?.classList.add("active");
+        renderFolderList(findNodeByPath(state.tree, path));
+      }
+
       function selectTreeFile(button, node) {
         for (const selectedButton of document.querySelectorAll(".tree-file.active")) {
           selectedButton.classList.remove("active");
         }
         button.classList.add("active");
+        state.selectedFilePath = node.path;
         document.querySelector("#editor-title").textContent = node.name;
         document.querySelector("#editor-kind").textContent = extensionLabel(node);
         document.querySelector("#editor-preview").textContent = [
@@ -132,6 +214,57 @@
           "Dateiinhalt laden und direkt speichern ist der nächste Schritt.",
           "Der Dateibaum selbst kommt bereits aus dem freigegebenen /config-Pfad.",
         ].join("\n");
+      }
+
+      function renderFolderList(folderNode) {
+        const list = document.querySelector("#folder-list");
+        const title = document.querySelector("#folder-title");
+        const count = document.querySelector("#folder-count");
+        const children = folderNode?.children ?? [];
+
+        title.textContent = folderNode?.path ?? "Ordnerinhalt";
+        count.textContent = String(children.length);
+
+        if (!children.length) {
+          const empty = document.createElement("p");
+          empty.className = "folder-empty";
+          empty.textContent = folderNode?.error ? `Nicht lesbar: ${folderNode.error}` : "Keine Dateien oder Ordner.";
+          list.replaceChildren(empty);
+          return;
+        }
+
+        list.replaceChildren(...children.map(child => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `folder-row ${child.type}`;
+          button.dataset.path = child.path;
+          button.innerHTML = `<span class="folder-name"><span class="tree-icon" aria-hidden="true"></span><span></span></span><span></span><span></span>`;
+          button.querySelector(".tree-icon").textContent = child.type === "directory" ? "▣" : "▤";
+          button.querySelector(".folder-name span:last-child").textContent = child.name;
+          button.children[1].textContent = child.type === "directory" ? "-" : formatFileSize(child.size);
+          button.children[2].textContent = formatModifiedAt(child.modifiedAt);
+          button.addEventListener("click", () => {
+            if (child.type === "directory") {
+              const detail = document.querySelector(`.tree-folder summary[data-path="${CSS.escape(child.path)}"]`)?.parentElement;
+              if (detail instanceof HTMLDetailsElement) {
+                detail.open = true;
+              }
+              selectFolder(child.path);
+              return;
+            }
+            selectFileFromList(child);
+          });
+          return button;
+        }));
+      }
+
+      function selectFileFromList(node) {
+        const treeButton = document.querySelector(`.tree-file[data-path="${CSS.escape(node.path)}"]`);
+        if (treeButton) {
+          selectTreeFile(treeButton, node);
+          return;
+        }
+        selectTreeFile(document.createElement("button"), node);
       }
 
       async function loadDirectoryTree() {
@@ -145,7 +278,9 @@
             throw new Error(`HTTP ${response.status}`);
           }
           const catalog = await response.json();
+          state.tree = catalog.tree;
           tree.replaceChildren(createTreeNode(catalog.tree));
+          selectFolder(catalog.tree.path);
           status.textContent = catalog.exists
             ? "/config geladen"
             : catalog.message ?? "/config ist noch nicht erreichbar.";
@@ -157,6 +292,65 @@
           status.classList.add("warning");
           rootStatus.textContent = "Dateibaum nicht geladen";
           rootStatus.classList.remove("ok");
+        }
+      }
+
+      function applySavedLayout() {
+        try {
+          const layout = JSON.parse(localStorage.getItem(fileStudioLayoutStorageKey) ?? "{}");
+          if (Number.isFinite(layout.treeWidth)) {
+            document.documentElement.style.setProperty("--tree-width", `${layout.treeWidth}px`);
+          }
+          if (Number.isFinite(layout.folderWidth)) {
+            document.documentElement.style.setProperty("--folder-width", `${layout.folderWidth}px`);
+          }
+        } catch {
+          return;
+        }
+      }
+
+      function saveLayout() {
+        const styles = getComputedStyle(document.documentElement);
+        const treeWidth = Number.parseFloat(styles.getPropertyValue("--tree-width"));
+        const folderWidth = Number.parseFloat(styles.getPropertyValue("--folder-width"));
+        try {
+          localStorage.setItem(fileStudioLayoutStorageKey, JSON.stringify({ treeWidth, folderWidth }));
+        } catch {
+          return;
+        }
+      }
+
+      function bindSplitters() {
+        for (const splitter of document.querySelectorAll(".splitter")) {
+          splitter.addEventListener("pointerdown", event => {
+            event.preventDefault();
+            const pane = splitter.dataset.resizePane;
+            const startX = event.clientX;
+            const styles = getComputedStyle(document.documentElement);
+            const property = pane === "folder" ? "--folder-width" : "--tree-width";
+            const startWidth = Number.parseFloat(styles.getPropertyValue(property));
+            const minimum = pane === "folder" ? 220 : 210;
+            const maximum = pane === "folder" ? 620 : 520;
+            splitter.setPointerCapture(event.pointerId);
+            document.body.classList.add("is-resizing");
+
+            const onMove = moveEvent => {
+              const nextWidth = Math.max(minimum, Math.min(maximum, startWidth + moveEvent.clientX - startX));
+              document.documentElement.style.setProperty(property, `${Math.round(nextWidth)}px`);
+            };
+            const onUp = () => {
+              splitter.releasePointerCapture(event.pointerId);
+              splitter.removeEventListener("pointermove", onMove);
+              splitter.removeEventListener("pointerup", onUp);
+              splitter.removeEventListener("pointercancel", onUp);
+              document.body.classList.remove("is-resizing");
+              saveLayout();
+            };
+
+            splitter.addEventListener("pointermove", onMove);
+            splitter.addEventListener("pointerup", onUp);
+            splitter.addEventListener("pointercancel", onUp);
+          });
         }
       }
 
@@ -183,7 +377,9 @@
         }
       }
 
+      applySavedLayout();
       applyThemePreference();
+      bindSplitters();
       void loadDirectoryTree();
       window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener("change", applyThemePreference);
     </script>
