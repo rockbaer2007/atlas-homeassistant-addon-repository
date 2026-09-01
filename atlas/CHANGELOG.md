@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.60
+
+- Add the ATLAS overlay badge to the ATLAS File Studio plugin icon.
+- Bump ATLAS File Studio to `0.1.4` and Atlas Framework package metadata to
+  `0.2.0-alpha.23` for the update package.
+
 ## 0.1.59
 
 - Make the ATLAS File Studio shell wider and give the editor area more vertical
