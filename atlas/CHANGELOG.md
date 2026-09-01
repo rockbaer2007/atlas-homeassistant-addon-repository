@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.44
+
+- Ship the ATLAS add-on icon and logo in the installable Home Assistant add-on
+  repository so Home Assistant can show branded artwork in the add-on setup and
+  store views.
+
 ## 0.1.43
 
 - Add localized plugin metadata fields for names and descriptions.
