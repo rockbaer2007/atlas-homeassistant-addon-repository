@@ -164,6 +164,7 @@ const longTermCookieMaxAge = 31536000;
 const pluginCatalog = new RuntimePluginCatalog();
 pluginCatalog.register(createHomeAssistantCardEditorPlugin());
 pluginCatalog.register(createFileStudioPlugin());
+const bundledPluginIds = new Set(pluginCatalog.list().map(plugin => plugin.id));
 const localPluginAssetDirectories = {
   [HomeAssistantCardEditorPluginId]: "homeassistant-card-editor",
   [FileStudioPluginId]: "file-studio",
@@ -2128,7 +2129,7 @@ async function restoreServerConnectionSettings() {
 function restoreImportedPlugins() {
   try {
     const saved = JSON.parse(localStorage.getItem(adminPluginStorageKey) ?? "[]");
-    importedPluginDescriptors = Array.isArray(saved)
+    const restoredPlugins = Array.isArray(saved)
       ? saved.filter(plugin =>
         plugin
         && typeof plugin.id === "string"
@@ -2136,6 +2137,10 @@ function restoreImportedPlugins() {
         && typeof plugin.version === "string",
       )
       : [];
+    importedPluginDescriptors = removeBundledImportedPlugins(restoredPlugins);
+    if (importedPluginDescriptors.length !== restoredPlugins.length) {
+      persistImportedPlugins();
+    }
   } catch {
     importedPluginDescriptors = [];
     localStorage.removeItem(adminPluginStorageKey);
@@ -2168,10 +2173,27 @@ function persistPluginState() {
 }
 
 function currentPluginDescriptors() {
-  return [
-    ...pluginCatalog.list(),
-    ...importedPluginDescriptors,
-  ];
+  const pluginsById = new Map();
+  for (const plugin of pluginCatalog.list()) {
+    pluginsById.set(plugin.id, plugin);
+  }
+  for (const plugin of importedPluginDescriptors) {
+    if (!pluginsById.has(plugin.id)) {
+      pluginsById.set(plugin.id, plugin);
+    }
+  }
+  return [...pluginsById.values()];
+}
+
+function removeBundledImportedPlugins(plugins) {
+  const seen = new Set();
+  return plugins.filter(plugin => {
+    if (bundledPluginIds.has(plugin.id) || seen.has(plugin.id)) {
+      return false;
+    }
+    seen.add(plugin.id);
+    return true;
+  });
 }
 
 function persistSharedPluginCatalogCookie() {

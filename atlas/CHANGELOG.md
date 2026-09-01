@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.63
+
+- Deduplicate bundled plugins in ATLAS Administration so the Card Editor and
+  other built-in plugins are only listed once even when an older imported copy
+  exists in local browser storage.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.26` for the update
+  package.
+
 ## 0.1.62
 
 - Rework ATLAS File Studio into a flexible split layout with a resizable
