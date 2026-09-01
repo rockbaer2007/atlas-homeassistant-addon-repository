@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.66
+
+- Deduplicate repository preview plugins in ATLAS Administration by plugin ID
+  so File Studio only appears once when multiple repositories provide it.
+- Label bundled plugins as built in instead of showing a disabled install
+  action in repository previews.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.29` for the update
+  package.
+
 ## 0.1.65
 
 - Remove remaining file type labels from the ATLAS File Studio left directory

@@ -246,6 +246,7 @@ const translations = {
     "button.removeRepository": "Remove repository",
     "button.installRepositoryPackage": "Install",
     "button.updateRepositoryPackage": "Update",
+    "button.bundledRepositoryPackage": "Built in",
     "button.removeRepositoryPackage": "Remove",
     "button.removeImportedPackage": "Remove import",
     "provider.none": "Default / fallback files",
@@ -316,6 +317,7 @@ const translations = {
     "message.pluginRepositoryInstallFailed": "{name} could not be installed from repository.",
     "message.pluginRepositoryUpdateAvailable": "Update available: {installed} -> {available}",
     "message.pluginRepositoryInstalledVersion": "Installed: {version}",
+    "message.pluginRepositoryBundledVersion": "Built in: {version}",
     "message.pluginRepositoryNotInstalled": "Not installed",
     "message.pluginRepositoryNoPackage": "No installable package or manifest URL.",
     "type.plugin": "Plugin",
@@ -422,6 +424,7 @@ const translations = {
     "button.removeRepository": "Repository entfernen",
     "button.installRepositoryPackage": "Installieren",
     "button.updateRepositoryPackage": "Aktualisieren",
+    "button.bundledRepositoryPackage": "Eingebaut",
     "button.removeRepositoryPackage": "Entfernen",
     "button.removeImportedPackage": "Import entfernen",
     "provider.none": "Standard / Fallback-Dateien",
@@ -492,6 +495,7 @@ const translations = {
     "message.pluginRepositoryInstallFailed": "{name} konnte nicht aus dem Repository installiert werden.",
     "message.pluginRepositoryUpdateAvailable": "Update verfügbar: {installed} -> {available}",
     "message.pluginRepositoryInstalledVersion": "Installiert: {version}",
+    "message.pluginRepositoryBundledVersion": "Eingebaut: {version}",
     "message.pluginRepositoryNotInstalled": "Nicht installiert",
     "message.pluginRepositoryNoPackage": "Keine installierbare Paket- oder Manifest-URL.",
     "type.plugin": "Plugin",
@@ -1540,6 +1544,7 @@ async function loadPluginRepositoriesPreview() {
     }
   }
 
+  repositoryPluginDescriptors = deduplicateRepositoryPlugins(repositoryPluginDescriptors);
   pluginRepositories = nextRepositories;
   persistPluginRepositories();
   persistConfiguration();
@@ -1549,6 +1554,28 @@ async function loadPluginRepositoriesPreview() {
     count: repositoryPluginDescriptors.length,
     countRepositories: pluginRepositories.length,
   });
+}
+
+function deduplicateRepositoryPlugins(plugins) {
+  const pluginsById = new Map();
+  for (const plugin of plugins) {
+    const existing = pluginsById.get(plugin.id);
+    if (!existing) {
+      pluginsById.set(plugin.id, plugin);
+      continue;
+    }
+    const preferred = comparePluginVersions(plugin.version, existing.version) >= 0 ? plugin : existing;
+    const fallback = preferred === plugin ? existing : plugin;
+    pluginsById.set(plugin.id, {
+      ...preferred,
+      repositoryName: [...new Set([
+        ...String(fallback.repositoryName ?? "").split(",").map(value => value.trim()).filter(Boolean),
+        ...String(preferred.repositoryName ?? "").split(",").map(value => value.trim()).filter(Boolean),
+      ])].join(", "),
+    });
+  }
+  return [...pluginsById.values()]
+    .sort((left, right) => left.name.localeCompare(right.name, currentLanguage === "de" ? "de" : "en", { sensitivity: "base" }));
 }
 
 function normalizePluginRepository(repository, repositoryEntry) {
@@ -1830,11 +1857,13 @@ function comparePluginVersions(left, right) {
 
 function repositoryPluginInstallState(plugin) {
   const installed = findInstalledPlugin(plugin.id);
+  const bundled = Boolean(installed && bundledPluginIds.has(plugin.id));
   const installedVersion = installed?.version ?? "";
-  const updateAvailable = Boolean(installed && comparePluginVersions(plugin.version, installedVersion) > 0);
+  const updateAvailable = Boolean(installed && !bundled && comparePluginVersions(plugin.version, installedVersion) > 0);
 
   return {
     installed,
+    bundled,
     installedVersion,
     updateAvailable,
     removable: isRepositoryInstalledPlugin(plugin.id),
@@ -2010,6 +2039,10 @@ function renderPluginRepositoryPreview() {
         installed: installState.installedVersion,
         available: plugin.version || "-",
       });
+    } else if (installState.bundled) {
+      status.textContent = t("message.pluginRepositoryBundledVersion", {
+        version: installState.installedVersion || "-",
+      });
     } else if (installState.installed) {
       status.textContent = t("message.pluginRepositoryInstalledVersion", {
         version: installState.installedVersion || "-",
@@ -2051,8 +2084,11 @@ function renderPluginRepositoryPreview() {
     installButton.className = "accent";
     installButton.textContent = installState.updateAvailable
       ? t("button.updateRepositoryPackage")
-      : t("button.installRepositoryPackage");
-    installButton.disabled = Boolean(installState.installed && !installState.removable)
+      : installState.bundled
+        ? t("button.bundledRepositoryPackage")
+        : t("button.installRepositoryPackage");
+    installButton.disabled = installState.bundled
+      || Boolean(installState.installed && !installState.removable)
       || Boolean(installState.installed && !installState.updateAvailable)
       || (!plugin.packageUrl && !plugin.manifestUrl);
     if (!plugin.packageUrl && !plugin.manifestUrl) {
