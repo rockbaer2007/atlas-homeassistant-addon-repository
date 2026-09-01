@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.49
+
+- Add a direct Plugin Hub link below the Atlas Administration link in the Card
+  Editor.
+- Use proper German umlauts in visible Administration, Card Editor and Plugin
+  Hub labels, hints and status messages.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.12` for the update
+  package.
+
 ## 0.1.48
 
 - Require explicit ATLAS plugin repository markers before a custom repository

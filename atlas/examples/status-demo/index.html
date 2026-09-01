@@ -335,7 +335,9 @@
       }
 
       .admin-handoff-options {
-        justify-content: flex-end;
+        display: grid;
+        justify-items: end;
+        gap: 4px;
       }
 
       .admin-handoff-options a {
@@ -3007,6 +3009,7 @@
         </div>
         <div class="connection-options admin-handoff-options">
           <a href="admin" data-open-admin data-i18n="link.openAdmin">Open Atlas Administration</a>
+          <a href="/hub" data-open-hub data-i18n="link.openHub">Open Plugin Hub</a>
         </div>
         <div class="connection-actions">
           <button id="connect-home-assistant" type="button" data-i18n="button.connect">Connect</button>

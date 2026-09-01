@@ -76,6 +76,7 @@ const entitySyncState = document.querySelector("#entity-sync-state");
 const adminHandoffState = document.querySelector("#admin-handoff-state");
 const adminTranslationModuleState = document.querySelector("#admin-translation-module-state");
 const openAdminLinks = Array.from(document.querySelectorAll("[data-open-admin]"));
+const openHubLinks = Array.from(document.querySelectorAll("[data-open-hub]"));
 const connectButton = document.querySelector("#connect-home-assistant");
 const disconnectButton = document.querySelector("#disconnect-home-assistant");
 const homeAssistantEntity = document.querySelector("#home-assistant-entity");
@@ -328,6 +329,7 @@ const translations = {
     "button.turnOn": "Turn on",
     "button.turnOff": "Turn off",
     "link.openAdmin": "Open Atlas Administration",
+    "link.openHub": "Open Plugin Hub",
     "theme.auto": "Auto",
     "theme.light": "Light",
     "theme.dark": "Dark",
@@ -779,6 +781,7 @@ const translations = {
     "button.turnOn": "Einschalten",
     "button.turnOff": "Ausschalten",
     "link.openAdmin": "Atlas Administration öffnen",
+    "link.openHub": "Plugin-Hub öffnen",
     "theme.auto": "Auto",
     "theme.light": "Hell",
     "theme.dark": "Dunkel",
@@ -845,7 +848,7 @@ const translations = {
     "message.connectionStateWithReason": "Verbindung: {state} ({reason})",
     "message.connectionStateWithSubscription": "Verbindung: {state}, Subscription {subscription}",
     "message.reconnecting": "Verbinde erneut in {seconds}s ({attempt}/3).",
-    "message.stackSelectedEntities": "Fuer Stapel ausgewählte Entitäten: {selected}/{total}{entities}",
+    "message.stackSelectedEntities": "Für Stapel ausgewählte Entitäten: {selected}/{total}{entities}",
     "message.stackEntitySuffix": " - {entities}",
     "message.simpleUsesFirstEntity": "Simple nutzt die erste Entität: {entityId}",
     "message.simpleUsesFirstEntityEmpty": "Simple nutzt die erste Entität.",
@@ -870,7 +873,7 @@ const translations = {
     "message.surfaceSizeReset": "Expert-Editor-Fläche auf Standardgröße zurückgesetzt.",
     "message.arrangeNeedsFields": "Füge Expert-Felder hinzu, bevor du die Editor-Fläche anordnest.",
     "message.fieldsArranged": "Expert-Felder angeordnet. Überlappungen: {previous} -> {next}.",
-    "message.selectFieldBeforeResize": "Wähle ein Expert-Feld aus, bevor du seine Größe aenderst.",
+    "message.selectFieldBeforeResize": "Wähle ein Expert-Feld aus, bevor du seine Größe änderst.",
     "message.fieldResized": "{field} auf {width}x{height} geändert.",
     "message.fieldMoved": "{field} auf der Expert-Editor-Fläche verschoben.",
     "message.tabbedCardSettingsOpened": "Tabbed Card V2 Einstellungen für {field} geöffnet.",
@@ -1896,6 +1899,10 @@ function createAdminNavigationUrl() {
   return createPortNavigationUrl(4175, "/", createThemeSearch());
 }
 
+function createHubNavigationUrl() {
+  return createPortNavigationUrl(4176, "/hub", createThemeSearch());
+}
+
 function createThemeSearch() {
   const search = new URLSearchParams();
   search.set("theme", currentThemePreference);
@@ -1946,6 +1953,10 @@ function bindAdminNavigationLinks() {
   const adminNavigationUrl = createAdminNavigationUrl();
   for (const link of openAdminLinks) {
     link.href = adminNavigationUrl;
+  }
+  const hubNavigationUrl = createHubNavigationUrl();
+  for (const link of openHubLinks) {
+    link.href = hubNavigationUrl;
   }
 }
 
