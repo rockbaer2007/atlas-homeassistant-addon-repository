@@ -30,6 +30,8 @@
   --studio-height: clamp(820px, calc(100vh - 240px), 1024px);
   --studio-width: min(100%, 1900px);
   --editor-font-size: 14px;
+  --image-preview-width: 75vw;
+  --image-preview-height: 70vh;
   background: var(--atlas-bg);
   color: var(--atlas-text);
 }
@@ -744,8 +746,12 @@ body.is-resizing .splitter {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: min(90vw, 1280px);
-  max-height: 85vh;
+  width: var(--image-preview-width);
+  height: var(--image-preview-height);
+  min-width: 52.5vw;
+  min-height: 49vh;
+  max-width: 86.25vw;
+  max-height: 80.5vh;
   overflow: hidden;
   border: 1px solid var(--atlas-border);
   border-radius: 8px;
@@ -781,8 +787,7 @@ body.is-resizing .splitter {
   display: grid;
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 260px;
-  max-height: calc(85vh - 72px);
+  min-height: 0;
   overflow: hidden;
   place-items: center;
   padding: 18px;
@@ -801,6 +806,30 @@ body.is-resizing .splitter {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+.image-preview-resize-handle {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid #f0645c;
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, transparent 0 46%, #f0645c 47% 53%, transparent 54%),
+    linear-gradient(135deg, transparent 0 64%, #f0645c 65% 71%, transparent 72%),
+    #ffffff;
+  box-shadow: 0 6px 14px rgba(23, 32, 51, 0.16);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.image-preview-resize-handle:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--atlas-accent) 35%, transparent);
+  outline-offset: 3px;
 }
 
 .editor-input:focus {

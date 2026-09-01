@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.76
+
+- Make the File Studio image preview modal resizable with the same diagonal
+  resize handle style used by the Card Editor.
+- Start image previews at `75vw` by `70vh`, allow resizing from 30% smaller to
+  15% larger, remember the chosen size and reset it by double-clicking the
+  handle.
+- Bump ATLAS File Studio to `0.1.18` for repository update detection.
+
 ## 0.1.75
 
 - Move File Studio image previews into a modal overlay so selecting images no

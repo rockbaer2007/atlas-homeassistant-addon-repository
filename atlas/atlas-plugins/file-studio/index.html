@@ -103,6 +103,13 @@
         <div class="image-preview-stage">
           <img id="image-preview-media" alt="">
         </div>
+        <button
+          id="image-preview-resize"
+          class="image-preview-resize-handle"
+          type="button"
+          aria-label="Bildvorschau-Größe ändern"
+          title="Bildvorschau-Größe ändern"
+        ></button>
       </section>
     </div>
     <script src="editor.bundle.js"></script>
@@ -112,6 +119,10 @@
       const fileStudioHeightLimitStorageKey = "atlas.fileStudio.limitHeight";
       const fileStudioWidthLimitStorageKey = "atlas.fileStudio.limitWidth";
       const fileStudioEditorStorageKey = "atlas.fileStudio.editor";
+      const fileStudioImagePreviewStorageKey = "atlas.fileStudio.imagePreview";
+      const imagePreviewDefaultSize = { widthVw: 75, heightVh: 70 };
+      const imagePreviewMinimumSize = { widthVw: 52.5, heightVh: 49 };
+      const imagePreviewMaximumSize = { widthVw: 86.25, heightVh: 80.5 };
       const state = {
         tree: undefined,
         selectedFolderPath: "/config",
@@ -123,6 +134,7 @@
         editor: undefined,
         previewMode: "text",
         previewObjectUrl: undefined,
+        previewSize: { ...imagePreviewDefaultSize },
         editorFontSize: 14,
         wordWrap: true,
       };
@@ -356,8 +368,49 @@
         state.editor?.setLanguage?.(extension);
       }
 
+      function clampValue(value, minimum, maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
+      }
+
       function setPreviewMode(mode) {
         state.previewMode = mode;
+      }
+
+      function readImagePreviewSizePreference() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(fileStudioImagePreviewStorageKey) ?? "{}");
+          if (Number.isFinite(saved.widthVw) && Number.isFinite(saved.heightVh)) {
+            return {
+              widthVw: clampValue(saved.widthVw, imagePreviewMinimumSize.widthVw, imagePreviewMaximumSize.widthVw),
+              heightVh: clampValue(saved.heightVh, imagePreviewMinimumSize.heightVh, imagePreviewMaximumSize.heightVh),
+            };
+          }
+        } catch {
+          return { ...imagePreviewDefaultSize };
+        }
+        return { ...imagePreviewDefaultSize };
+      }
+
+      function applyImagePreviewSize(size = state.previewSize) {
+        state.previewSize = {
+          widthVw: clampValue(size.widthVw, imagePreviewMinimumSize.widthVw, imagePreviewMaximumSize.widthVw),
+          heightVh: clampValue(size.heightVh, imagePreviewMinimumSize.heightVh, imagePreviewMaximumSize.heightVh),
+        };
+        document.documentElement.style.setProperty("--image-preview-width", `${state.previewSize.widthVw}vw`);
+        document.documentElement.style.setProperty("--image-preview-height", `${state.previewSize.heightVh}vh`);
+      }
+
+      function saveImagePreviewSizePreference() {
+        try {
+          localStorage.setItem(fileStudioImagePreviewStorageKey, JSON.stringify(state.previewSize));
+        } catch {
+          return;
+        }
+      }
+
+      function resetImagePreviewSize() {
+        applyImagePreviewSize(imagePreviewDefaultSize);
+        saveImagePreviewSizePreference();
       }
 
       function clearImagePreview() {
@@ -395,6 +448,36 @@
 
       function closeImagePreview() {
         clearImagePreview();
+      }
+
+      function startImagePreviewResize(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const starting = { ...state.previewSize };
+        document.body.style.cursor = "nwse-resize";
+
+        const applyResize = pointerEvent => {
+          const widthDelta = (pointerEvent.clientX - startX) / Math.max(1, window.innerWidth) * 100;
+          const heightDelta = (pointerEvent.clientY - startY) / Math.max(1, window.innerHeight) * 100;
+          applyImagePreviewSize({
+            widthVw: starting.widthVw + widthDelta,
+            heightVh: starting.heightVh + heightDelta,
+          });
+        };
+
+        const finishResize = () => {
+          window.removeEventListener("pointermove", applyResize);
+          window.removeEventListener("pointerup", finishResize);
+          window.removeEventListener("pointercancel", finishResize);
+          document.body.style.cursor = "";
+          saveImagePreviewSizePreference();
+        };
+
+        window.addEventListener("pointermove", applyResize);
+        window.addEventListener("pointerup", finishResize, { once: true });
+        window.addEventListener("pointercancel", finishResize, { once: true });
       }
 
       function initializeEditor() {
@@ -964,6 +1047,12 @@
         });
         document.querySelector("#image-preview-close").addEventListener("click", closeImagePreview);
         document.querySelector("#image-preview-download").addEventListener("click", () => void downloadOpenFile());
+        document.querySelector("#image-preview-resize").addEventListener("pointerdown", startImagePreviewResize);
+        document.querySelector("#image-preview-resize").addEventListener("dblclick", event => {
+          event.preventDefault();
+          event.stopPropagation();
+          resetImagePreviewSize();
+        });
         document.querySelector("#image-preview").addEventListener("click", event => {
           if (event.target instanceof HTMLElement && event.target.hasAttribute("data-preview-close")) {
             closeImagePreview();
@@ -1063,6 +1152,7 @@
       }
 
       applySavedLayout();
+      applyImagePreviewSize(readImagePreviewSizePreference());
       applyHeightLimitPreference();
       applyWidthLimitPreference();
       applyThemePreference();
