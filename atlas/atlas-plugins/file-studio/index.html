@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ATLAS File Studio</title>
+    <link rel="stylesheet" href="/plugin-assets/file-studio/styles.css">
+  </head>
+  <body>
+    <main class="studio-shell">
+      <header class="studio-header">
+        <div>
+          <p class="eyebrow">ATLAS Plugin 2</p>
+          <h1>ATLAS File Studio</h1>
+          <p>Dateibaum, Editor, YAML-Prüfung und Transfer für freigegebene Home-Assistant-Pfade.</p>
+        </div>
+        <a class="button" href="/hub">Plugin Hub</a>
+      </header>
+
+      <section class="studio-grid">
+        <aside class="file-tree" aria-label="Dateibaum">
+          <div class="panel-heading">
+            <h2>Dateibaum</h2>
+            <span>/config</span>
+          </div>
+          <button type="button" class="tree-item active">configuration.yaml</button>
+          <button type="button" class="tree-item">automations.yaml</button>
+          <button type="button" class="tree-item">scripts.yaml</button>
+          <button type="button" class="tree-item locked">/addons erst nach Admin-Freigabe</button>
+        </aside>
+
+        <section class="editor-panel" aria-label="Editor">
+          <div class="panel-heading">
+            <h2>Editorfläche</h2>
+            <span>YAML</span>
+          </div>
+          <pre><code>homeassistant:
+  name: Zuhause
+
+automation: !include automations.yaml
+script: !include scripts.yaml</code></pre>
+          <div class="status-row">
+            <span class="ok">YAML-Prüfung vorbereitet</span>
+            <span>Upload/Download vorbereitet</span>
+            <span>Kein Root-Zugriff</span>
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

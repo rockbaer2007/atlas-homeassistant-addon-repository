@@ -8,6 +8,7 @@ export type AtlasWorkspacePackageName =
   | "@atlas/renderer"
   | "@atlas/theme"
   | "@atlas/homeassistant"
+  | "@atlas/file-studio"
   | "@atlas/devtools";
 
 export type AtlasWorkspacePackageDirectory =
@@ -20,6 +21,7 @@ export type AtlasWorkspacePackageDirectory =
   | "renderer"
   | "theme"
   | "homeassistant"
+  | "file-studio"
   | "devtools";
 
 export type AtlasWorkspacePackageStatus = "active";
@@ -61,7 +63,7 @@ export interface AtlasPlannedIntegrationClosure {
 export interface AtlasFrameworkReadiness {
   readonly framework: {
     readonly name: "Atlas";
-    readonly version: "0.2.0-alpha.17";
+    readonly version: "0.2.0-alpha.18";
     readonly channel: "alpha";
   };
   readonly packages: readonly AtlasWorkspacePackageDescriptor[];
@@ -151,6 +153,14 @@ export const ATLAS_WORKSPACE_PACKAGE_INVENTORY: readonly AtlasWorkspacePackageDe
       allowedDependencies: ["runtime", "theme"],
     },
     {
+      name: "@atlas/file-studio",
+      directory: "file-studio",
+      layer: 6,
+      status: "active",
+      publicApi: "open",
+      allowedDependencies: ["runtime"],
+    },
+    {
       name: "@atlas/devtools",
       directory: "devtools",
       layer: 6,
@@ -179,7 +189,7 @@ export function createAtlasFrameworkReadiness(): AtlasFrameworkReadiness {
   return {
     framework: {
       name: "Atlas",
-      version: "0.2.0-alpha.17",
+      version: "0.2.0-alpha.18",
       channel: "alpha",
     },
     packages: ATLAS_WORKSPACE_PACKAGE_INVENTORY.map((workspacePackage) => ({

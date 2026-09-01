@@ -26,6 +26,12 @@ importers:
 
   packages/devtools: {}
 
+  packages/file-studio:
+    dependencies:
+      '@atlas/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+
   packages/foundation: {}
 
   packages/homeassistant:

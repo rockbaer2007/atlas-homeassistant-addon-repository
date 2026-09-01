@@ -1,11 +1,11 @@
 {
-  "name": "@atlas/renderer",
-  "version": "0.2.0-alpha.18",
+  "name": "@atlas/file-studio",
+  "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@atlas/core": "workspace:*"
+    "@atlas/runtime": "workspace:*"
   },
   "scripts": {
     "build": "tsc -b",

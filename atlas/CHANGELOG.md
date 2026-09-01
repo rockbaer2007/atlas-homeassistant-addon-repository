@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.55
+
+- Add ATLAS File Studio as the second independent plugin line.
+- Register File Studio in Administration and the Plugin Hub with scoped file
+  access metadata for `/config` and Admin-approved `/addons`.
+- Add a File Studio plugin start surface for testing the Hub launch path.
+- Bump Atlas Framework package metadata to `0.2.0-alpha.18` for the update
+  package.
+
 ## 0.1.54
 
 - Brighten Editor and Administration placeholder text in dark mode.

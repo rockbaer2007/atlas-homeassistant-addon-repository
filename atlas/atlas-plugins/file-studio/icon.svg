@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="ATLAS File Studio">
+  <rect width="256" height="256" rx="56" fill="#101b2f"/>
+  <path d="M40 70h74l18 22h84v94a20 20 0 0 1-20 20H60a20 20 0 0 1-20-20Z" fill="#0f8f83"/>
+  <path d="M56 96h144v84a10 10 0 0 1-10 10H66a10 10 0 0 1-10-10Z" fill="#14262d"/>
+  <path d="m92 128-18 18 18 18" fill="none" stroke="#2dd4bf" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m164 128 18 18-18 18" fill="none" stroke="#2dd4bf" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m138 120-20 54" fill="none" stroke="#facc15" stroke-width="12" stroke-linecap="round"/>
+</svg>

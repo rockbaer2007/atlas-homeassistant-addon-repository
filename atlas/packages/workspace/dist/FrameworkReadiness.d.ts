@@ -1,5 +1,5 @@
-export type AtlasWorkspacePackageName = "@atlas/workspace" | "@atlas/foundation" | "@atlas/kernel" | "@atlas/notifyarchive" | "@atlas/runtime" | "@atlas/core" | "@atlas/renderer" | "@atlas/theme" | "@atlas/homeassistant" | "@atlas/devtools";
-export type AtlasWorkspacePackageDirectory = "workspace" | "foundation" | "kernel" | "notifyarchive" | "runtime" | "core" | "renderer" | "theme" | "homeassistant" | "devtools";
+export type AtlasWorkspacePackageName = "@atlas/workspace" | "@atlas/foundation" | "@atlas/kernel" | "@atlas/notifyarchive" | "@atlas/runtime" | "@atlas/core" | "@atlas/renderer" | "@atlas/theme" | "@atlas/homeassistant" | "@atlas/file-studio" | "@atlas/devtools";
+export type AtlasWorkspacePackageDirectory = "workspace" | "foundation" | "kernel" | "notifyarchive" | "runtime" | "core" | "renderer" | "theme" | "homeassistant" | "file-studio" | "devtools";
 export type AtlasWorkspacePackageStatus = "active";
 export type AtlasIntegrationClosureStatus = "planned";
 export type AtlasIntegrationPublicApiState = "closed";
@@ -22,7 +22,7 @@ export interface AtlasPlannedIntegrationClosure {
 export interface AtlasFrameworkReadiness {
     readonly framework: {
         readonly name: "Atlas";
-        readonly version: "0.2.0-alpha.17";
+        readonly version: "0.2.0-alpha.18";
         readonly channel: "alpha";
     };
     readonly packages: readonly AtlasWorkspacePackageDescriptor[];

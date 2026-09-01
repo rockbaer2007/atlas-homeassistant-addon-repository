@@ -64,6 +64,7 @@ describe("Atlas framework readiness", () => {
       "@atlas/renderer",
       "@atlas/theme",
       "@atlas/homeassistant",
+      "@atlas/file-studio",
       "@atlas/devtools",
     ]);
 
@@ -76,6 +77,7 @@ describe("Atlas framework readiness", () => {
       3,
       4,
       5,
+      6,
       6,
       6,
     ]);
@@ -139,7 +141,7 @@ describe("Atlas framework readiness", () => {
 
     expect(manifest.framework).toEqual({
       name: "Atlas",
-      version: "0.2.0-alpha.17",
+      version: "0.2.0-alpha.18",
       channel: "alpha",
     });
     expect(manifest.packages).toEqual(activeDirectories);

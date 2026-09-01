@@ -1,8 +1,8 @@
 name: "ATLAS"
-version: "0.1.54"
+version: "0.1.55"
 slug: "atlas"
 description: "ATLAS Administration and Home Assistant Card Editor preview"
-url: "https://github.com/rockbaer2007/atlas-homeassistant-addon-repository"
+url: "https://github.com/rockbaer2007/atlas"
 arch:
   - aarch64
   - amd64

@@ -72,6 +72,14 @@ export const ATLAS_WORKSPACE_PACKAGE_INVENTORY = [
         allowedDependencies: ["runtime", "theme"],
     },
     {
+        name: "@atlas/file-studio",
+        directory: "file-studio",
+        layer: 6,
+        status: "active",
+        publicApi: "open",
+        allowedDependencies: ["runtime"],
+    },
+    {
         name: "@atlas/devtools",
         directory: "devtools",
         layer: 6,
@@ -94,7 +102,7 @@ export function createAtlasFrameworkReadiness() {
     return {
         framework: {
             name: "Atlas",
-            version: "0.2.0-alpha.17",
+            version: "0.2.0-alpha.18",
             channel: "alpha",
         },
         packages: ATLAS_WORKSPACE_PACKAGE_INVENTORY.map((workspacePackage) => ({

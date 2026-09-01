@@ -12,6 +12,11 @@ import {
   deriveHomeAssistantWebSocketUrl,
   HomeAssistantCardEditorPluginId,
 } from "@atlas/homeassistant";
+import {
+  createFileStudioPlugin,
+  createFileStudioPluginInstallPackage,
+  FileStudioPluginId,
+} from "@atlas/file-studio";
 
 const languageButtons = Array.from(document.querySelectorAll("[data-language]"));
 const themeButtons = Array.from(document.querySelectorAll("[data-theme-mode]"));
@@ -157,8 +162,10 @@ const appRuntimeApiUrl = createPortNavigationUrl(4176, "/app");
 const longTermCookieMaxAge = 31536000;
 const pluginCatalog = new RuntimePluginCatalog();
 pluginCatalog.register(createHomeAssistantCardEditorPlugin());
+pluginCatalog.register(createFileStudioPlugin());
 const localPluginAssetDirectories = {
   [HomeAssistantCardEditorPluginId]: "homeassistant-card-editor",
+  [FileStudioPluginId]: "file-studio",
   "atlas.plugin.simple-editor": "simple-editor",
 };
 
@@ -2558,9 +2565,7 @@ function handlePluginAction(action, plugin) {
   }
 
   if (action === "export-package") {
-    const pluginPackage = plugin.id === HomeAssistantCardEditorPluginId
-      ? createHomeAssistantCardEditorPluginInstallPackage()
-      : createRuntimePluginInstallPackage({ plugin });
+    const pluginPackage = createPluginInstallPackage(plugin);
     downloadTextFile(pluginPackage.filename, JSON.stringify(pluginPackage, null, 2), "application/json");
     adminSaveState.textContent = t("message.pluginPackageExported", { name: pluginName });
     return;
@@ -2571,6 +2576,18 @@ function handlePluginAction(action, plugin) {
     points: plugin.extensionPoints.length,
     capabilities: plugin.provides.length,
   });
+}
+
+function createPluginInstallPackage(plugin) {
+  if (plugin.id === HomeAssistantCardEditorPluginId) {
+    return createHomeAssistantCardEditorPluginInstallPackage();
+  }
+
+  if (plugin.id === FileStudioPluginId) {
+    return createFileStudioPluginInstallPackage();
+  }
+
+  return createRuntimePluginInstallPackage({ plugin });
 }
 
 function removeImportedPluginPackage(plugin) {
