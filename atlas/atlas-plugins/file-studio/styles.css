@@ -243,10 +243,32 @@ body.is-resizing .splitter {
   font-weight: 800;
 }
 
-.tree-heading-actions {
-  display: inline-flex;
+.tree-panel-heading {
+  display: grid;
+  align-items: start;
+  justify-content: stretch;
+  gap: 8px;
+}
+
+.tree-title-row {
+  display: flex;
   align-items: center;
-  justify-content: flex-end;
+  gap: 14px;
+  min-width: 0;
+}
+
+.tree-title-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
   gap: 6px;
 }
 

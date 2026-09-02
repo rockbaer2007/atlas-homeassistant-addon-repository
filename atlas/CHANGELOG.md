@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.93
+
+- Move the File Studio Dateibaum icon toolbar below the `Dateibaum /config`
+  title row so narrow panes no longer push icons into the next column.
+- Bump ATLAS File Studio to `0.1.31` for repository update detection.
+
 ## 0.1.92
 
 - Add File Studio restore from history with a safety backup before restoring.
