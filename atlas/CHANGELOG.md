@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.98
+
+- Mark parcel service providers in Atlas Administration as prepared for later
+  use with an orange note.
+
 ## 0.1.97
 
 - Add explicit File Studio path capability switches for `/config/www`,

@@ -339,6 +339,12 @@
         font-size: 14px;
       }
 
+      .future-note {
+        color: var(--atlas-orange);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
       .capability-scope-list {
         display: grid;
         gap: 8px;
@@ -1041,7 +1047,10 @@
           </details>
 
           <details>
-            <summary data-i18n="heading.parcelSettings">Parcel service providers</summary>
+            <summary>
+              <span data-i18n="heading.parcelSettings">Parcel service providers</span>
+              <span class="future-note" data-i18n="message.preparedForLaterUse">(prepared for later use)</span>
+            </summary>
             <div class="settings-section-body">
               <p id="parcel-provider-summary"></p>
               <div id="parcel-provider-list" class="parcel-provider-list"></div>
