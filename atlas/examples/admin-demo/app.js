@@ -1726,6 +1726,7 @@ function normalizeRepositoryPlugin(plugin, repositoryEntry, index) {
     : `repository-plugin-${index + 1}`;
   return {
     id,
+    slug: typeof plugin.slug === "string" && plugin.slug.trim() ? plugin.slug.trim() : "",
     name: typeof plugin.name === "string" && plugin.name.trim() ? plugin.name.trim() : id,
     nameI18n: normalizeLocalizedPluginText(plugin.nameI18n),
     version: typeof plugin.version === "string" ? plugin.version : "",
@@ -2201,6 +2202,7 @@ async function installRepositoryPluginPackage(plugin) {
       logoUrl: plugin.logoUrl,
       previewUrl: plugin.previewUrl,
       entry: plugin.entry,
+      slug: plugin.slug,
       compatibility: plugin.compatibility,
       files: installPackage.files,
       installedAt: new Date().toISOString(),
@@ -2481,6 +2483,7 @@ function persistSharedPluginCatalogCookie() {
       logoUrl: resolvePluginDisplayAssetUrl(plugin, "logo"),
       previewUrl: resolvePluginDisplayAssetUrl(plugin, "preview"),
       entry: plugin.entry,
+      slug: plugin.slug,
     }));
 
   const encodedCatalog = encodeURIComponent(JSON.stringify({ plugins }));

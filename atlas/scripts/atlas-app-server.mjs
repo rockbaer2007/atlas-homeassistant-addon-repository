@@ -2246,10 +2246,12 @@ function readPluginManifest(directoryName, requestUrl) {
     const id = typeof manifest.id === "string" && manifest.id.trim()
       ? manifest.id.trim()
       : directoryName;
-    const entryUrl = createPluginEntryUrl(manifest.entry, requestUrl);
+    const fallbackEntryUrl = createLocalPluginEntryUrl(directoryName, requestUrl);
+    const entryUrl = createPluginEntryUrl(manifest.entry, requestUrl, fallbackEntryUrl);
 
     return {
       id,
+      slug: directoryName,
       name: typeof manifest.name === "string" ? manifest.name : id,
       nameI18n: normalizeLocalizedPluginText(manifest.nameI18n),
       version: typeof manifest.version === "string" ? manifest.version : "0.0.0",
@@ -2306,9 +2308,11 @@ function normalizeSharedPlugin(plugin, requestUrl) {
   if (!id) {
     return undefined;
   }
+  const slug = createPluginSlug(plugin.slug || plugin.directory || plugin.assetDirectory || id);
 
   return {
     id,
+    slug,
     name: typeof plugin.name === "string" && plugin.name.trim() ? plugin.name.trim() : id,
     nameI18n: normalizeLocalizedPluginText(plugin.nameI18n),
     version: typeof plugin.version === "string" ? plugin.version : "0.0.0",
@@ -2322,7 +2326,11 @@ function normalizeSharedPlugin(plugin, requestUrl) {
     iconUrl: typeof plugin.iconUrl === "string" ? plugin.iconUrl : "",
     logoUrl: typeof plugin.logoUrl === "string" ? plugin.logoUrl : "",
     previewUrl: typeof plugin.previewUrl === "string" ? plugin.previewUrl : "",
-    entryUrl: createPluginEntryUrl(plugin.entry, requestUrl),
+    entryUrl: createPluginEntryUrl(
+      plugin.entry,
+      requestUrl,
+      createSharedPluginEntryUrl(plugin, slug, requestUrl),
+    ),
   };
 }
 
@@ -2338,7 +2346,7 @@ function readCookie(cookieHeader, name) {
   return cookie ? cookie.slice(prefix.length) : "";
 }
 
-function createPluginEntryUrl(entry, requestUrl) {
+function createPluginEntryUrl(entry, requestUrl, fallbackEntryUrl = "") {
   if (entry === "admin") {
     return createPublicSurfaceUrl(requestUrl, adminPort);
   }
@@ -2348,7 +2356,48 @@ function createPluginEntryUrl(entry, requestUrl) {
   if (typeof entry === "string" && entry.trim()) {
     return new URL(entry, requestUrl).toString();
   }
-  return "";
+  return fallbackEntryUrl;
+}
+
+function createPluginSlug(value, fallback = "plugin") {
+  const slug = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^atlas\.plugin\./, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || fallback;
+}
+
+function createLocalPluginEntryUrl(directoryName, requestUrl) {
+  return hasLocalPluginIndex(directoryName)
+    ? new URL(`/plugin-assets/${encodeURIComponent(directoryName)}/index.html`, requestUrl).toString()
+    : "";
+}
+
+function createSharedPluginEntryUrl(plugin, slug, requestUrl) {
+  const directoryCandidates = [
+    plugin.directory,
+    plugin.assetDirectory,
+    plugin.slug,
+    slug,
+  ]
+    .filter(value => typeof value === "string" && value.trim())
+    .map(value => value.trim());
+  const directoryName = directoryCandidates.find(candidate => hasLocalPluginIndex(candidate));
+  return directoryName ? createLocalPluginEntryUrl(directoryName, requestUrl) : "";
+}
+
+function hasLocalPluginIndex(directoryName) {
+  if (typeof directoryName !== "string" || !directoryName.trim()) {
+    return false;
+  }
+  const pluginDirectory = resolve(pluginRoot, directoryName.trim());
+  const indexPath = resolve(pluginDirectory, "index.html");
+  return pluginDirectory.startsWith(pluginRoot)
+    && indexPath.startsWith(pluginDirectory)
+    && existsSync(indexPath)
+    && !statSync(indexPath).isDirectory();
 }
 
 function createPluginAssetUrl(directoryName, assetPath, requestUrl) {

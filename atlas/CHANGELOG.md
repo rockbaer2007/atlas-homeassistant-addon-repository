@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.108
+
+- Give local ATLAS plugins an automatic launch URL when their plugin folder
+  contains an `index.html` but the manifest does not define `entry`.
+- Include the automatic plugin URL in the app plugin catalog so users can add
+  plugins to the Home Assistant sidebar from the start.
+
 ## 0.1.107
 
 - Add spacing between the File Studio tree and the access note.
