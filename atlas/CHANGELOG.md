@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.94
+
+- Add File Studio in-app dialogs for prompts, confirmations, history and
+  problem-report previews.
+- Add multi-select delete/copy/move actions, drag-and-drop uploads, search
+  filters and backup comparison.
+- Bump ATLAS File Studio to `0.1.32` for repository update detection.
+
 ## 0.1.93
 
 - Move the File Studio Dateibaum icon toolbar below the `Dateibaum /config`

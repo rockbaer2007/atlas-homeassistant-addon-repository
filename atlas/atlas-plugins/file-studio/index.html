@@ -81,7 +81,7 @@
               <button id="delete-file" class="icon-button asset-icon-button icon-delete" type="button" aria-label="Löschen" title="Löschen" disabled></button>
               <button id="extract-archive" class="icon-button asset-icon-button icon-extract" type="button" aria-label="Archiv entpacken" title="Archiv entpacken" disabled></button>
               <button id="upload-file-trigger" class="icon-button asset-icon-button icon-replace" type="button" aria-label="Upload/Ersetzen" title="Upload/Ersetzen"></button>
-              <input id="upload-file" type="file" hidden>
+              <input id="upload-file" type="file" multiple hidden>
               <button id="font-decrease" class="icon-button asset-icon-button icon-zoom-out" type="button" aria-label="Schrift kleiner" title="A- Schrift kleiner"></button>
               <button id="font-increase" class="icon-button asset-icon-button icon-zoom-in" type="button" aria-label="Schrift größer" title="A+ Schrift größer"></button>
               <button id="word-wrap-toggle" class="icon-button asset-icon-button icon-word-wrap" type="button" aria-label="Zeilenumbruch" title="Zeilenumbruch" aria-pressed="true"></button>
@@ -105,6 +105,17 @@
         </section>
       </section>
     </main>
+    <div id="studio-dialog" class="studio-dialog-modal" role="dialog" aria-modal="true" aria-labelledby="studio-dialog-title" hidden>
+      <div class="studio-dialog-backdrop" data-dialog-cancel></div>
+      <section class="studio-dialog-card">
+        <header class="studio-dialog-header">
+          <h2 id="studio-dialog-title">File Studio</h2>
+          <button id="studio-dialog-close" class="icon-button icon-close" type="button" aria-label="Dialog schließen" title="Schließen"></button>
+        </header>
+        <div id="studio-dialog-body" class="studio-dialog-body"></div>
+        <footer id="studio-dialog-actions" class="studio-dialog-actions"></footer>
+      </section>
+    </div>
     <div id="image-preview" class="image-preview-modal" role="dialog" aria-modal="true" aria-labelledby="image-preview-title" hidden>
       <div class="image-preview-backdrop" data-preview-close></div>
       <section class="image-preview-dialog">
@@ -184,6 +195,8 @@
         editorFontSize: 14,
         wordWrap: true,
         showHidden: false,
+        selectedPaths: new Set(),
+        dialogResolve: undefined,
       };
       const imagePreviewExtensions = new Set(["png", "jpg", "jpeg", "svg", "gif", "webp", "bmp", "ico"]);
       const archivePreviewExtensions = new Set(["zip"]);
@@ -321,6 +334,124 @@
         status.classList.toggle("ok", tone === "ok");
       }
 
+      function closeStudioDialog(value) {
+        const dialog = document.querySelector("#studio-dialog");
+        dialog.hidden = true;
+        const resolve = state.dialogResolve;
+        state.dialogResolve = undefined;
+        resolve?.(value);
+      }
+
+      function showStudioDialog({ title, body, actions }) {
+        const dialog = document.querySelector("#studio-dialog");
+        const titleNode = document.querySelector("#studio-dialog-title");
+        const bodyNode = document.querySelector("#studio-dialog-body");
+        const actionsNode = document.querySelector("#studio-dialog-actions");
+        titleNode.textContent = title;
+        bodyNode.replaceChildren(typeof body === "string" ? Object.assign(document.createElement("p"), { textContent: body }) : body);
+        actionsNode.replaceChildren(...actions.map(action => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `button${action.primary ? " is-primary" : ""}`;
+          button.textContent = action.label;
+          button.addEventListener("click", () => closeStudioDialog(typeof action.value === "function" ? action.value() : action.value));
+          return button;
+        }));
+        dialog.hidden = false;
+        return new Promise(resolve => {
+          state.dialogResolve = resolve;
+          actionsNode.querySelector("button")?.focus();
+        });
+      }
+
+      async function showMessageDialog(title, message) {
+        await showStudioDialog({
+          title,
+          body: message,
+          actions: [{ label: "OK", value: true, primary: true }],
+        });
+      }
+
+      async function showConfirmDialog(title, message, confirmLabel = "OK") {
+        return await showStudioDialog({
+          title,
+          body: message,
+          actions: [
+            { label: confirmLabel, value: true, primary: true },
+            { label: "Abbrechen", value: false },
+          ],
+        }) === true;
+      }
+
+      async function showPromptDialog(title, label, value = "") {
+        const wrapper = document.createElement("label");
+        wrapper.className = "studio-dialog-field";
+        wrapper.innerHTML = `<span></span><input type="text" autocomplete="off" spellcheck="false">`;
+        wrapper.querySelector("span").textContent = label;
+        const input = wrapper.querySelector("input");
+        input.value = value;
+        input.addEventListener("keydown", event => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            closeStudioDialog(input.value);
+          }
+        });
+        const resultPromise = showStudioDialog({
+          title,
+          body: wrapper,
+          actions: [
+            { label: "Übernehmen", value: () => input.value, primary: true },
+            { label: "Abbrechen", value: undefined },
+          ],
+        });
+        requestAnimationFrame(() => input.focus());
+        return await resultPromise;
+      }
+
+      async function showFormDialog(title, form, confirmLabel = "Übernehmen") {
+        return await showStudioDialog({
+          title,
+          body: form,
+          actions: [
+            { label: confirmLabel, value: true, primary: true },
+            { label: "Abbrechen", value: false },
+          ],
+        }) === true;
+      }
+
+      function selectedPathList() {
+        return [...state.selectedPaths];
+      }
+
+      function clearSelectedPaths() {
+        state.selectedPaths.clear();
+        syncSelectedPathMarkers();
+      }
+
+      function setSingleSelectedPath(path) {
+        state.selectedPaths = new Set(path ? [path] : []);
+        syncSelectedPathMarkers();
+      }
+
+      function toggleSelectedPath(path) {
+        if (state.selectedPaths.has(path)) {
+          state.selectedPaths.delete(path);
+        } else {
+          state.selectedPaths.add(path);
+        }
+        syncSelectedPathMarkers();
+      }
+
+      function syncSelectedPathMarkers() {
+        for (const element of document.querySelectorAll("[data-path]")) {
+          element.classList.toggle("multi-selected", state.selectedPaths.has(element.dataset.path));
+        }
+        const count = state.selectedPaths.size;
+        document.querySelector("#editor-dirty-status").textContent = count > 1
+          ? `${count} Einträge markiert`
+          : document.querySelector("#editor-dirty-status").textContent;
+      }
+
       async function apiJson(path, options = {}) {
         const response = await fetch(createAppUrl(path), {
           cache: "no-store",
@@ -359,6 +490,7 @@
         const hasFile = Boolean(state.selectedFilePath);
         const isPreview = state.previewMode !== "text";
         const isDirty = !isPreview && editorValue() !== state.originalContent;
+        const selectedCount = state.selectedPaths.size;
         document.querySelector("#save-file").disabled = !hasFile || !isDirty;
         document.querySelector("#save-file-as").disabled = !hasFile || isPreview;
         document.querySelector("#discard-file").disabled = !hasFile || !isDirty;
@@ -368,13 +500,13 @@
         document.querySelector("#download-file").disabled = !hasFile;
         document.querySelector("#undo-file-change").disabled = !hasFile || isPreview;
         document.querySelector("#redo-file-change").disabled = !hasFile || isPreview;
-        document.querySelector("#rename-file").disabled = !hasFile;
-        document.querySelector("#copy-file").disabled = !hasFile;
-        document.querySelector("#move-file").disabled = !hasFile;
-        document.querySelector("#delete-file").disabled = !hasFile;
+        document.querySelector("#rename-file").disabled = !hasFile || selectedCount > 1;
+        document.querySelector("#copy-file").disabled = !hasFile && selectedCount === 0;
+        document.querySelector("#move-file").disabled = !hasFile && selectedCount === 0;
+        document.querySelector("#delete-file").disabled = !hasFile && selectedCount === 0;
         document.querySelector("#extract-archive").disabled = !hasFile || !isArchiveExtension(state.selectedFileExtension);
         document.querySelector("#editor-dirty-status").textContent = hasFile
-          ? isPreview ? "Vorschau" : isDirty ? "Geändert, nicht gespeichert" : "Gespeichert"
+          ? selectedCount > 1 ? `${selectedCount} Einträge markiert` : isPreview ? "Vorschau" : isDirty ? "Geändert, nicht gespeichert" : "Gespeichert"
           : "Keine Datei geladen";
       }
 
@@ -634,7 +766,15 @@
           summary.innerHTML = `<span class="tree-chevron" aria-hidden="true"></span><span class="tree-icon folder-icon" aria-hidden="true"></span><span class="tree-name"></span>`;
           summary.dataset.path = node.path;
           summary.querySelector(".tree-name").textContent = level === 0 ? node.path : node.name;
-          summary.addEventListener("click", () => selectFolder(node.path));
+          summary.addEventListener("click", event => {
+            if (event.ctrlKey || event.metaKey || event.shiftKey) {
+              event.preventDefault();
+              toggleSelectedPath(node.path);
+              updateEditorActions();
+              return;
+            }
+            selectFolder(node.path);
+          });
           details.append(summary);
 
           const children = document.createElement("div");
@@ -661,7 +801,14 @@
         button.dataset.path = node.path;
         button.innerHTML = `<span class="tree-icon file-icon ${fileTypeIconClass(node)}" aria-hidden="true"></span><span class="tree-name"></span>`;
         button.querySelector(".tree-name").textContent = node.name;
-        button.addEventListener("click", () => selectTreeFile(button, node));
+        button.addEventListener("click", event => {
+          if (event.ctrlKey || event.metaKey || event.shiftKey) {
+            toggleSelectedPath(node.path);
+            updateEditorActions();
+            return;
+          }
+          selectTreeFile(button, node);
+        });
         return button;
       }
 
@@ -738,6 +885,7 @@
           return;
         }
         tree.replaceChildren(createTreeNode(state.tree));
+        syncSelectedPathMarkers();
       }
 
       function openTreePath(path) {
@@ -756,6 +904,7 @@
 
       function selectFolder(path) {
         state.selectedFolderPath = path;
+        clearSelectedPaths();
         for (const selectedSummary of document.querySelectorAll(".tree-folder summary.active")) {
           selectedSummary.classList.remove("active");
         }
@@ -773,6 +922,7 @@
           selectedButton.classList.remove("active");
         }
         button?.classList?.add("active");
+        setSingleSelectedPath(node.path);
         state.selectedFilePath = node.path;
         state.selectedFileName = node.name;
         state.selectedFileExtension = node.extension;
@@ -861,7 +1011,12 @@
           button.querySelector(".folder-name span:last-child").textContent = child.name;
           button.children[1].textContent = child.type === "directory" ? "-" : formatFileSize(child.size);
           button.children[2].textContent = formatModifiedAt(child.modifiedAt);
-          button.addEventListener("click", () => {
+          button.addEventListener("click", event => {
+            if (event.ctrlKey || event.metaKey || event.shiftKey) {
+              toggleSelectedPath(child.path);
+              updateEditorActions();
+              return;
+            }
             if (child.type === "directory") {
               const detail = document.querySelector(`.tree-folder summary[data-path="${CSS.escape(child.path)}"]`)?.parentElement;
               if (detail instanceof HTMLDetailsElement) {
@@ -874,6 +1029,7 @@
           });
           return button;
         }));
+        syncSelectedPathMarkers();
       }
 
       function renderSearchResults(results, query, truncated) {
@@ -963,8 +1119,9 @@
             ? catalog.root === "/" ? "Freigegebene Pfade geladen" : `${catalog.root ?? "/config"} geladen${state.showHidden ? " inkl. versteckter Einträge" : ""}`
             : catalog.message ?? "/config ist noch nicht erreichbar.";
           status.classList.toggle("warning", !catalog.exists);
+          const addonsEnabled = (catalog.roots ?? []).some(root => root.path === "/addons" && root.enabled === true);
           rootStatus.textContent = catalog.exists
-            ? catalog.root === "/" ? "/config und /addons sichtbar" : `${catalog.root ?? "/config"} geladen`
+            ? addonsEnabled ? "Freigabe: /config + /addons" : "Freigabe: nur /config"
             : "/config nicht erreichbar";
           rootStatus.classList.toggle("ok", catalog.exists);
         } catch (error) {
@@ -979,11 +1136,15 @@
         const note = document.querySelector("#addons-access-note");
         const addonsRoot = (catalog.roots ?? []).find(root => root.path === "/addons");
         const enabled = addonsRoot?.enabled === true;
+        const roots = (catalog.roots ?? []).map(root => `${root.path}${root.enabled ? "" : " gesperrt"}`).join(", ");
         note.textContent = enabled
-          ? "/addons ist freigegeben"
-          : "/addons erst nach Admin-Freigabe";
+          ? `Freigabe aktiv: ${roots}`
+          : `Freigabe aktiv: /config. /addons erst nach Admin-Freigabe`;
         note.classList.toggle("locked", !enabled);
         note.classList.toggle("ok", enabled);
+        document.querySelector("#tree-root-status").textContent = enabled
+          ? "Freigabe: /config + /addons"
+          : "Freigabe: nur /config";
       }
 
       function applySavedLayout() {
@@ -1163,7 +1324,7 @@
           return;
         }
         const suggestedName = state.selectedFileName ? `kopie-${state.selectedFileName}` : "neue-datei.yaml";
-        const name = window.prompt("Dateiname im aktuellen Ordner", suggestedName);
+        const name = await showPromptDialog("Speichern unter", "Dateiname im aktuellen Ordner", suggestedName);
         if (!name) {
           return;
         }
@@ -1268,7 +1429,7 @@
 
       async function renameSelectedFile() {
         if (!state.selectedFilePath) return;
-        const name = window.prompt("Neuer Name", state.selectedFileName ?? "");
+        const name = await showPromptDialog("Umbenennen", "Neuer Name", state.selectedFileName ?? "");
         if (!name) return;
         const trimmedName = name.trim();
         if (!validateFileStudioName(trimmedName)) {
@@ -1293,15 +1454,23 @@
       }
 
       async function deleteSelectedFile() {
-        if (!state.selectedFilePath) return;
-        const confirmed = window.confirm(`${state.selectedFilePath} wirklich loeschen?`);
+        const paths = selectedPathList().length ? selectedPathList() : state.selectedFilePath ? [state.selectedFilePath] : [];
+        if (!paths.length) return;
+        const confirmed = await showConfirmDialog(
+          "Löschen",
+          paths.length === 1
+            ? `${paths[0]} wirklich löschen?`
+            : `${paths.length} markierte Einträge wirklich löschen?`,
+          "Löschen",
+        );
         if (!confirmed) return;
         try {
-          const deletedPath = state.selectedFilePath;
-          await apiJson("api/file-studio/delete", {
-            method: "POST",
-            body: JSON.stringify({ path: deletedPath }),
-          });
+          for (const path of paths) {
+            await apiJson("api/file-studio/delete", {
+              method: "POST",
+              body: JSON.stringify({ path }),
+            });
+          }
           state.selectedFilePath = undefined;
           state.selectedFileName = undefined;
           state.selectedFileExtension = undefined;
@@ -1311,54 +1480,74 @@
           setEditorReadOnly(true);
           document.querySelector("#editor-title").textContent = "Editorfläche";
           document.querySelector("#editor-kind").textContent = "Bereit";
+          clearSelectedPaths();
           await loadDirectoryTree({ preserveSelection: false });
-          setStatus(`Geloescht: ${deletedPath}`, "ok");
+          setStatus(paths.length === 1 ? `Gelöscht: ${paths[0]}` : `${paths.length} Einträge gelöscht`, "ok");
           updateEditorActions();
         } catch (error) {
-          setStatus(`Loeschen fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+          setStatus(`Löschen fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");
         }
       }
 
       async function copyOrMoveSelectedFile(mode) {
-        if (!state.selectedFilePath) return;
+        const paths = selectedPathList().length ? selectedPathList() : state.selectedFilePath ? [state.selectedFilePath] : [];
+        if (!paths.length) return;
         const defaultParent = selectedCreateParentPath();
-        const targetParentPath = window.prompt(mode === "copy" ? "Kopieren nach Ordner" : "Verschieben nach Ordner", defaultParent);
+        const targetParentPath = await showPromptDialog(
+          mode === "copy" ? "Kopieren" : "Verschieben",
+          mode === "copy" ? "Kopieren nach Ordner" : "Verschieben nach Ordner",
+          defaultParent,
+        );
         if (!targetParentPath) return;
-        const defaultName = mode === "copy" && state.selectedFileName
+        const defaultName = paths.length > 1
+          ? ""
+          : mode === "copy" && state.selectedFileName
           ? `kopie-${state.selectedFileName}`
           : state.selectedFileName;
-        const name = window.prompt("Zielname", defaultName ?? "");
-        if (!name) return;
-        const trimmedName = name.trim();
-        if (!validateFileStudioName(trimmedName)) {
-          setStatus("Name ungueltig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
-          return;
+        let trimmedName = "";
+        if (paths.length === 1) {
+          const name = await showPromptDialog("Zielname", "Zielname", defaultName ?? "");
+          if (!name) return;
+          trimmedName = name.trim();
+          if (!validateFileStudioName(trimmedName)) {
+            setStatus("Name ungueltig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
+            return;
+          }
         }
         try {
-          const result = await apiJson(`api/file-studio/${mode}`, {
-            method: "POST",
-            body: JSON.stringify({
-              path: state.selectedFilePath,
-              targetParentPath: targetParentPath.trim(),
-              name: trimmedName,
-            }),
-          });
+          let result;
+          for (const path of paths) {
+            const sourceNode = findNodeByPath(state.tree, path);
+            result = await apiJson(`api/file-studio/${mode}`, {
+              method: "POST",
+              body: JSON.stringify({
+                path,
+                targetParentPath: targetParentPath.trim(),
+                name: paths.length === 1 ? trimmedName : sourceNode?.name ?? path.split("/").pop(),
+              }),
+            });
+          }
           await loadDirectoryTree({ preserveSelection: false });
-          if (result.type === "file") {
+          clearSelectedPaths();
+          if (paths.length === 1 && result?.type === "file") {
             await openFile(createFileNode(result));
-          } else {
+          } else if (paths.length === 1 && result) {
             selectFolder(result.path);
           }
-          setStatus(`${mode === "copy" ? "Kopiert" : "Verschoben"}: ${result.path}`, "ok");
+          setStatus(paths.length === 1
+            ? `${mode === "copy" ? "Kopiert" : "Verschoben"}: ${result.path}`
+            : `${paths.length} Einträge ${mode === "copy" ? "kopiert" : "verschoben"}`,
+            "ok",
+          );
         } catch (error) {
-          setStatus(`${mode === "copy" ? "Kopieren" : "Verschieben"} fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+          setStatus(`${mode === "copy" ? "Kopieren" : "Verschieben"} fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");
         }
       }
 
       async function extractSelectedArchive() {
         if (!state.selectedFilePath || !isArchiveExtension(state.selectedFileExtension)) return;
         const defaultName = (state.selectedFileName ?? "archiv").replace(/\.zip$/i, "");
-        const name = window.prompt("Zielordner fuer Archiv", defaultName);
+        const name = await showPromptDialog("Archiv entpacken", "Zielordner für Archiv", defaultName);
         if (!name) return;
         const trimmedName = name.trim();
         if (!validateFileStudioName(trimmedName)) {
@@ -1383,10 +1572,21 @@
       }
 
       async function searchFiles() {
-        const query = window.prompt("Suche nach Datei oder Inhalt", "");
+        const form = document.createElement("div");
+        form.className = "studio-dialog-form";
+        form.innerHTML = `
+          <label class="studio-dialog-field"><span>Suchbegriff</span><input id="search-query-input" type="text" autocomplete="off" spellcheck="false"></label>
+          <label class="studio-dialog-field"><span>Typ</span><select id="search-type-input"><option value="all">Alles</option><option value="file">Dateien</option><option value="directory">Ordner</option><option value="yaml">YAML</option><option value="image">Bilder</option><option value="archive">Archive</option></select></label>
+          <label class="studio-dialog-check"><input id="search-content-input" type="checkbox" checked><span>In Dateiinhalten suchen</span></label>
+        `;
+        const accepted = await showFormDialog("Suche", form, "Suchen");
+        if (!accepted) return;
+        const query = form.querySelector("#search-query-input").value;
         if (!query?.trim()) return;
+        const type = form.querySelector("#search-type-input").value;
+        const content = form.querySelector("#search-content-input").checked ? "1" : "0";
         try {
-          const search = await apiJson(`api/file-studio/search?path=${encodeURIComponent(state.selectedFolderPath)}&q=${encodeURIComponent(query.trim())}&hidden=${state.showHidden ? "1" : "0"}`);
+          const search = await apiJson(`api/file-studio/search?path=${encodeURIComponent(state.selectedFolderPath)}&q=${encodeURIComponent(query.trim())}&hidden=${state.showHidden ? "1" : "0"}&type=${encodeURIComponent(type)}&content=${content}`);
           renderSearchResults(search.results ?? [], query.trim(), search.truncated === true);
           setStatus(`Suche abgeschlossen: ${(search.results ?? []).length} Treffer${search.truncated ? " (gekürzt)" : ""}`, "ok");
         } catch (error) {
@@ -1400,23 +1600,62 @@
           const history = await apiJson(`api/file-studio/history?path=${encodeURIComponent(state.selectedFilePath)}`);
           const versions = history.versions ?? [];
           if (!versions.length) {
-            window.alert("Noch keine gespeicherten Backups fuer diese Datei.");
+            await showMessageDialog("Verlauf", "Noch keine gespeicherten Backups für diese Datei.");
             return;
           }
-          const list = versions
-            .map((version, index) => `${index + 1}. ${version.createdAt} - ${version.name} (${formatFileSize(version.size)})`)
-            .join("\n");
-          const choice = window.prompt(`${list}\n\nNummer zum Wiederherstellen eingeben oder leer lassen.`, "");
-          if (!choice?.trim()) {
+          const form = document.createElement("div");
+          form.className = "studio-history-list";
+          for (const [index, version] of versions.entries()) {
+            const item = document.createElement("label");
+            item.className = "studio-history-item";
+            const input = document.createElement("input");
+            input.type = "radio";
+            input.name = "history-version";
+            input.value = String(index);
+            input.checked = index === 0;
+            const created = document.createElement("span");
+            created.textContent = version.createdAt;
+            const name = document.createElement("strong");
+            name.textContent = version.name;
+            const size = document.createElement("small");
+            size.textContent = formatFileSize(version.size);
+            item.append(input, created, name, size);
+            form.append(item);
+          }
+          const action = await showStudioDialog({
+            title: "Verlauf",
+            body: form,
+            actions: [
+              { label: "Vergleichen", value: "compare", primary: true },
+              { label: "Wiederherstellen", value: "restore" },
+              { label: "Abbrechen", value: "cancel" },
+            ],
+          });
+          if (action === "cancel") {
             return;
           }
-          const selectedIndex = Number.parseInt(choice.trim(), 10) - 1;
+          const selectedIndex = Number.parseInt(form.querySelector("input[name='history-version']:checked")?.value ?? "0", 10);
           const selected = versions[selectedIndex];
           if (!selected) {
             setStatus("Verlauf: ungueltige Auswahl.", "warning");
             return;
           }
-          const confirmed = window.confirm(`${selected.name} wirklich wiederherstellen? Der aktuelle Stand wird vorher gesichert.`);
+          if (action === "compare") {
+            const comparison = await apiJson("api/file-studio/history/compare", {
+              method: "POST",
+              body: JSON.stringify({
+                path: state.selectedFilePath,
+                backupName: selected.name,
+              }),
+            });
+            await showHistoryComparison(selected.name, comparison.diff);
+            return;
+          }
+          const confirmed = await showConfirmDialog(
+            "Wiederherstellen",
+            `${selected.name} wirklich wiederherstellen? Der aktuelle Stand wird vorher gesichert.`,
+            "Wiederherstellen",
+          );
           if (!confirmed) {
             return;
           }
@@ -1434,6 +1673,39 @@
         } catch (error) {
           setStatus(`Verlauf fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");
         }
+      }
+
+      async function showHistoryComparison(name, diff) {
+        const body = document.createElement("div");
+        body.className = "studio-diff";
+        const summary = document.createElement("p");
+        summary.textContent = diff?.equal
+          ? "Aktuelle Datei und Backup sind identisch."
+          : `${diff?.total ?? 0} geänderte Zeilen: ${diff?.changed ?? 0} geändert, ${diff?.added ?? 0} hinzugefügt, ${diff?.removed ?? 0} entfernt.`;
+        const list = document.createElement("div");
+        list.className = "studio-diff-list";
+        for (const change of diff?.changes ?? []) {
+          const row = document.createElement("div");
+          row.className = "studio-diff-row";
+          row.innerHTML = `<span></span><del></del><ins></ins>`;
+          row.children[0].textContent = `Zeile ${change.line}`;
+          row.children[1].textContent = change.before || " ";
+          row.children[2].textContent = change.after || " ";
+          list.append(row);
+        }
+        if (diff?.truncated) {
+          const truncated = document.createElement("p");
+          truncated.className = "studio-dialog-muted";
+          truncated.textContent = "Vergleich gekürzt.";
+          body.append(summary, list, truncated);
+        } else {
+          body.append(summary, list);
+        }
+        await showStudioDialog({
+          title: `Vergleich: ${name}`,
+          body,
+          actions: [{ label: "OK", value: true, primary: true }],
+        });
       }
 
       async function reportProblem() {
@@ -1480,7 +1752,7 @@
       }
 
       async function uploadFileToSelectedFolder(file) {
-        const name = window.prompt("Dateiname fuer Upload", file.name);
+        const name = await showPromptDialog("Upload", "Dateiname für Upload", file.name);
         if (!name) return;
         const trimmedName = name.trim();
         if (!validateFileStudioName(trimmedName)) {
@@ -1488,18 +1760,7 @@
           return;
         }
         try {
-          const created = await apiJson("api/file-studio/create-file", {
-            method: "POST",
-            body: JSON.stringify({
-              parentPath: selectedCreateParentPath(),
-              name: trimmedName,
-            }),
-          });
-          state.selectedFilePath = created.path;
-          state.selectedFileName = created.name;
-          state.selectedFileExtension = created.extension;
-          setEditorValue(await file.text());
-          await saveOpenFile(created.path);
+          const created = await uploadFileContent(file, selectedCreateParentPath(), trimmedName, false);
           await openFile(createFileNode(created));
           setStatus(`Upload gespeichert: ${created.path}`, "ok");
         } catch (error) {
@@ -1512,39 +1773,87 @@
       }
 
       async function resolveUploadConflict(file, parentPath, name) {
-        const choice = window.prompt(`"${name}" existiert bereits. Aktion: ersetzen, umbenennen oder abbrechen`, "umbenennen");
-        if (!choice || choice.toLowerCase().startsWith("ab")) {
-          setStatus("Upload abgebrochen.", "warning");
-          return;
-        }
-        if (choice.toLowerCase().startsWith("ers")) {
+        const choice = await showStudioDialog({
+          title: "Upload-Konflikt",
+          body: `"${name}" existiert bereits.`,
+          actions: [
+            { label: "Ersetzen", value: "replace", primary: true },
+            { label: "Umbenennen", value: "rename" },
+            { label: "Abbrechen", value: "cancel" },
+          ],
+        });
+        if (choice === "replace") {
           const targetPath = joinDisplayPath(parentPath, name);
-          state.selectedFilePath = targetPath;
-          state.selectedFileName = name;
-          state.selectedFileExtension = name.split(".").pop()?.toLowerCase();
-          setPreviewMode("text");
-          setEditorReadOnly(false);
-          setEditorValue(await file.text());
-          await saveOpenFile(targetPath);
-          await openFile(createFileNode({
-            path: targetPath,
-            name,
-            extension: state.selectedFileExtension,
-            type: "file",
-          }));
+          const uploaded = await uploadFileContent(file, parentPath, name, true);
+          await openFile(createFileNode(uploaded));
           setStatus(`Upload ersetzt: ${targetPath}`, "ok");
-          return;
+          return true;
+        }
+        if (choice !== "rename") {
+          setStatus("Upload abgebrochen.", "warning");
+          return false;
         }
         const dotIndex = name.lastIndexOf(".");
         const renamed = dotIndex > 0
           ? `${name.slice(0, dotIndex)}-1${name.slice(dotIndex)}`
           : `${name}-1`;
-        const nextName = window.prompt("Neuer Dateiname", renamed);
+        const nextName = await showPromptDialog("Upload umbenennen", "Neuer Dateiname", renamed);
         if (!nextName) {
           setStatus("Upload abgebrochen.", "warning");
-          return;
+          return false;
         }
         await uploadFileToSelectedFolder(new File([file], nextName.trim(), { type: file.type }));
+        return true;
+      }
+
+      async function uploadFileContent(file, parentPath, name, overwrite) {
+        const contentBase64 = await readFileAsBase64(file);
+        return await apiJson("api/file-studio/upload", {
+          method: "POST",
+          body: JSON.stringify({
+            parentPath,
+            name,
+            overwrite,
+            contentBase64,
+          }),
+        });
+      }
+
+      function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.addEventListener("load", () => {
+            const result = String(reader.result ?? "");
+            resolve(result.includes(",") ? result.split(",").pop() : result);
+          });
+          reader.addEventListener("error", () => reject(reader.error ?? new Error("Datei konnte nicht gelesen werden.")));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function uploadFilesToSelectedFolder(files) {
+        const queue = [...files].filter(Boolean);
+        if (!queue.length) return;
+        let uploaded = 0;
+        for (const file of queue) {
+          try {
+            await uploadFileContent(file, selectedCreateParentPath(), file.name, false);
+            uploaded += 1;
+          } catch (error) {
+            if (error instanceof Error && /already exists/i.test(error.message)) {
+              if (await resolveUploadConflict(file, selectedCreateParentPath(), file.name)) {
+                uploaded += 1;
+              }
+              continue;
+            }
+            setStatus(`Upload fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");
+            break;
+          }
+        }
+        await loadDirectoryTree({ preserveSelection: true });
+        if (uploaded > 0) {
+          setStatus(`${uploaded} Upload${uploaded === 1 ? "" : "s"} gespeichert`, "ok");
+        }
       }
 
       function joinDisplayPath(parentPath, name) {
@@ -1552,6 +1861,12 @@
       }
 
       function bindEditorControls() {
+        document.querySelector("#studio-dialog-close").addEventListener("click", () => closeStudioDialog(undefined));
+        document.querySelector("#studio-dialog").addEventListener("click", event => {
+          if (event.target instanceof HTMLElement && event.target.hasAttribute("data-dialog-cancel")) {
+            closeStudioDialog(undefined);
+          }
+        });
         document.querySelector("#save-file").addEventListener("click", () => void saveOpenFile());
         document.querySelector("#save-file-as").addEventListener("click", () => void saveOpenFileAs());
         document.querySelector("#discard-file").addEventListener("click", discardOpenFileChanges);
@@ -1569,7 +1884,12 @@
         document.querySelector("#extract-archive").addEventListener("click", () => void extractSelectedArchive());
         document.querySelector("#upload-file-trigger").addEventListener("click", () => document.querySelector("#upload-file").click());
         document.querySelector("#upload-file").addEventListener("change", event => {
-          void replaceOpenFileFromUpload(event.target.files?.[0]);
+          const files = [...(event.target.files ?? [])];
+          if (files.length > 1) {
+            void uploadFilesToSelectedFolder(files);
+          } else {
+            void replaceOpenFileFromUpload(files[0]);
+          }
           event.target.value = "";
         });
         document.querySelector("#word-wrap-toggle").addEventListener("click", () => {
@@ -1604,6 +1924,9 @@
           }
         });
         window.addEventListener("keydown", event => {
+          if (event.key === "Escape" && !document.querySelector("#studio-dialog").hidden) {
+            closeStudioDialog(undefined);
+          }
           if (event.key === "Escape" && !document.querySelector("#image-preview").hidden) {
             closeImagePreview();
           }
@@ -1647,6 +1970,28 @@
             root.open = true;
           }
         });
+      }
+
+      function bindDropUpload() {
+        for (const zone of [document.querySelector(".file-tree"), document.querySelector(".folder-panel"), document.querySelector(".editor-panel")]) {
+          zone.addEventListener("dragover", event => {
+            if (![...(event.dataTransfer?.items ?? [])].some(item => item.kind === "file")) return;
+            event.preventDefault();
+            zone.classList.add("is-drop-target");
+          });
+          zone.addEventListener("dragleave", event => {
+            if (!(event.relatedTarget instanceof Node) || !zone.contains(event.relatedTarget)) {
+              zone.classList.remove("is-drop-target");
+            }
+          });
+          zone.addEventListener("drop", event => {
+            const files = [...(event.dataTransfer?.files ?? [])];
+            if (!files.length) return;
+            event.preventDefault();
+            zone.classList.remove("is-drop-target");
+            void uploadFilesToSelectedFolder(files);
+          });
+        }
       }
 
       function bindSplitters() {
@@ -1730,6 +2075,7 @@
       bindWidthLimitToggle();
       bindEditorControls();
       bindTreeActions();
+      bindDropUpload();
       bindSplitters();
       updateEditorActions();
       updateCursorStatus();

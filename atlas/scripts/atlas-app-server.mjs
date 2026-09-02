@@ -144,6 +144,11 @@ createServer((request, response) => {
     return;
   }
 
+  if (routePath === "/api/file-studio/history/compare") {
+    void writeFileStudioHistoryCompareResponse(request, response, request.headers.cookie);
+    return;
+  }
+
   if (routePath === "/api/file-studio/write") {
     void writeFileStudioWriteResponse(request, response, request.headers.cookie);
     return;
@@ -151,6 +156,11 @@ createServer((request, response) => {
 
   if (routePath === "/api/file-studio/create-file") {
     void writeFileStudioCreateFileResponse(request, response, request.headers.cookie);
+    return;
+  }
+
+  if (routePath === "/api/file-studio/upload") {
+    void writeFileStudioUploadResponse(request, response, request.headers.cookie);
     return;
   }
 
@@ -257,8 +267,10 @@ function createRoutePath(pathname) {
     "/api/file-studio/diagnostics",
     "/api/file-studio/history",
     "/api/file-studio/history/restore",
+    "/api/file-studio/history/compare",
     "/api/file-studio/write",
     "/api/file-studio/create-file",
+    "/api/file-studio/upload",
     "/api/file-studio/create-directory",
     "/api/file-studio/rename",
     "/api/file-studio/delete",
@@ -741,6 +753,51 @@ async function writeFileStudioHistoryRestoreResponse(request, response, cookieHe
   });
 }
 
+async function writeFileStudioHistoryCompareResponse(request, response, cookieHeader) {
+  const body = await readJsonRequestBody(request);
+  const access = createFileStudioAccessContext(cookieHeader);
+  const targetPath = resolveFileStudioPath(body.path, access);
+  const backupName = String(body.backupName ?? "").trim();
+
+  if (!targetPath) {
+    writeJson(response, 403, {
+      kind: "atlas.file-studio.history.compare",
+      ok: false,
+      error: "path outside configured root",
+    });
+    return;
+  }
+
+  if (!existsSync(targetPath) || !statSync(targetPath).isFile()) {
+    writeJson(response, 404, {
+      kind: "atlas.file-studio.history.compare",
+      ok: false,
+      error: "file not found",
+    });
+    return;
+  }
+
+  const backupPath = resolveFileStudioBackupPath(targetPath, backupName);
+  if (!backupPath || !existsSync(backupPath) || !statSync(backupPath).isFile()) {
+    writeJson(response, 404, {
+      kind: "atlas.file-studio.history.compare",
+      ok: false,
+      error: "backup not found",
+    });
+    return;
+  }
+
+  const current = readFileSync(targetPath, "utf8");
+  const backup = readFileSync(backupPath, "utf8");
+  writeJson(response, 200, {
+    kind: "atlas.file-studio.history.compare",
+    ok: true,
+    path: createFileStudioDisplayPath(targetPath, access),
+    backupName,
+    diff: createFileStudioTextDiffSummary(backup, current),
+  });
+}
+
 function inspectZipArchive(targetPath) {
   const buffer = readFileSync(targetPath);
   const eocdOffset = findZipEndOfCentralDirectory(buffer);
@@ -855,6 +912,53 @@ async function writeFileStudioCreateFileResponse(request, response, cookieHeader
   const body = await readJsonRequestBody(request);
   const result = createFileStudioPath(body.parentPath, body.name, "file", createFileStudioAccessContext(cookieHeader));
   writeJson(response, result.status, result.body);
+}
+
+async function writeFileStudioUploadResponse(request, response, cookieHeader) {
+  const body = await readJsonRequestBody(request);
+  const access = createFileStudioAccessContext(cookieHeader);
+  const parentPath = typeof body.parentPath === "string" && body.parentPath.trim() ? body.parentPath : "/config";
+  const parentDirectory = resolveFileStudioPath(parentPath, access);
+  const parentScope = resolveFileStudioRootScope(parentPath, access);
+  const name = String(body.name ?? "").trim();
+  const invalidReason = validateFileStudioName(name);
+
+  if (invalidReason) {
+    writeJson(response, 400, { kind: "atlas.file-studio.upload", ok: false, error: invalidReason });
+    return;
+  }
+
+  if (!parentDirectory || !parentScope || !existsSync(parentDirectory) || !statSync(parentDirectory).isDirectory()) {
+    writeJson(response, 404, { kind: "atlas.file-studio.upload", ok: false, error: "target directory not found" });
+    return;
+  }
+
+  const targetPath = resolve(parentDirectory, name);
+  if (!isInsideFileStudioRootScope(parentScope, targetPath)) {
+    writeJson(response, 403, { kind: "atlas.file-studio.upload", ok: false, error: "path outside configured root" });
+    return;
+  }
+
+  const exists = existsSync(targetPath);
+  if (exists && body.overwrite !== true) {
+    writeJson(response, 409, { kind: "atlas.file-studio.upload", ok: false, error: "target already exists" });
+    return;
+  }
+
+  if (exists && !statSync(targetPath).isFile()) {
+    writeJson(response, 409, { kind: "atlas.file-studio.upload", ok: false, error: "target already exists" });
+    return;
+  }
+
+  const contentBase64 = String(body.contentBase64 ?? "");
+  const buffer = Buffer.from(contentBase64, "base64");
+  const backup = exists ? createFileStudioBackup(targetPath) : undefined;
+  writeFileSync(targetPath, buffer);
+  writeJson(response, 200, {
+    ...createFileStudioOperationResult("upload", targetPath, access),
+    backup,
+    replaced: exists,
+  });
 }
 
 async function writeFileStudioCreateDirectoryResponse(request, response, cookieHeader) {
@@ -973,6 +1077,8 @@ async function writeFileStudioSearchResponse(response, requestUrl, cookieHeader)
   const query = String(requestUrl.searchParams.get("q") ?? "").trim().toLowerCase();
   const rootPath = requestUrl.searchParams.get("path") ?? "/config";
   const includeHidden = requestUrl.searchParams.get("hidden") === "1";
+  const typeFilter = String(requestUrl.searchParams.get("type") ?? "all").toLowerCase();
+  const includeContent = requestUrl.searchParams.get("content") !== "0";
   const rootDirectory = resolveFileStudioPath(rootPath, access);
 
   if (!query) {
@@ -986,7 +1092,7 @@ async function writeFileStudioSearchResponse(response, requestUrl, cookieHeader)
   }
 
   const results = [];
-  searchFileStudioTree(rootDirectory, access, query, includeHidden, results);
+  searchFileStudioTree(rootDirectory, access, query, includeHidden, results, { typeFilter, includeContent });
   writeJson(response, 200, {
     kind: "atlas.file-studio.search",
     ok: true,
@@ -1065,7 +1171,7 @@ function createFileStudioOperationResult(operation, targetPath, access) {
   };
 }
 
-function searchFileStudioTree(directoryPath, access, query, includeHidden, results, depth = 0) {
+function searchFileStudioTree(directoryPath, access, query, includeHidden, results, options = {}, depth = 0) {
   if (results.length >= 200 || depth > 8) {
     return;
   }
@@ -1091,9 +1197,11 @@ function searchFileStudioTree(directoryPath, access, query, includeHidden, resul
     }
     const type = entry.isDirectory() ? "directory" : entry.isFile() ? "file" : "other";
     if (type === "other") continue;
-    const nameMatch = entry.name.toLowerCase().includes(query);
+    const extension = type === "file" ? extname(entry.name).replace(".", "").toLowerCase() : undefined;
+    const matchesType = matchesFileStudioSearchType(type, extension, options.typeFilter);
+    const nameMatch = matchesType && entry.name.toLowerCase().includes(query);
     let contentMatch;
-    if (type === "file" && isSearchableFile(entryPath, stats)) {
+    if (matchesType && options.includeContent !== false && type === "file" && isSearchableFile(entryPath, stats)) {
       try {
         contentMatch = findFileStudioContentMatch(readFileSync(entryPath, "utf8"), query);
       } catch {
@@ -1105,7 +1213,7 @@ function searchFileStudioTree(directoryPath, access, query, includeHidden, resul
         name: entry.name,
         path: displayPath,
         type,
-        extension: type === "file" ? extname(entry.name).replace(".", "").toLowerCase() : undefined,
+        extension,
         size: type === "file" ? stats.size : undefined,
         modifiedAt: stats.mtime.toISOString(),
         match: nameMatch ? "name" : "content",
@@ -1114,9 +1222,19 @@ function searchFileStudioTree(directoryPath, access, query, includeHidden, resul
       });
     }
     if (entry.isDirectory()) {
-      searchFileStudioTree(entryPath, access, query, includeHidden, results, depth + 1);
+      searchFileStudioTree(entryPath, access, query, includeHidden, results, options, depth + 1);
     }
   }
+}
+
+function matchesFileStudioSearchType(type, extension, filter = "all") {
+  if (!filter || filter === "all") return true;
+  if (filter === "file") return type === "file";
+  if (filter === "directory") return type === "directory";
+  if (filter === "yaml") return type === "file" && ["yaml", "yml"].includes(extension);
+  if (filter === "image") return type === "file" && ["png", "jpg", "jpeg", "svg", "gif", "webp", "bmp", "ico"].includes(extension);
+  if (filter === "archive") return type === "file" && ["zip", "gz", "tar"].includes(extension);
+  return true;
 }
 
 function findFileStudioContentMatch(content, query) {
@@ -1208,6 +1326,51 @@ function parseFileStudioBackupCreatedAt(name) {
     /^(\d{4}-\d{2}-\d{2}T)(\d{2})-(\d{2})-(\d{2})-(\d{3}Z)$/,
     "$1$2:$3:$4.$5",
   );
+}
+
+function createFileStudioTextDiffSummary(previousContent, currentContent) {
+  const previousLines = String(previousContent ?? "").split(/\r?\n/);
+  const currentLines = String(currentContent ?? "").split(/\r?\n/);
+  const maxLines = Math.max(previousLines.length, currentLines.length);
+  const changes = [];
+  let added = 0;
+  let removed = 0;
+  let changed = 0;
+
+  for (let index = 0; index < maxLines; index += 1) {
+    const before = previousLines[index];
+    const after = currentLines[index];
+    if (before === after) continue;
+    if (before === undefined) {
+      added += 1;
+    } else if (after === undefined) {
+      removed += 1;
+    } else {
+      changed += 1;
+    }
+    if (changes.length < 40) {
+      changes.push({
+        line: index + 1,
+        before: before === undefined ? "" : trimFileStudioDiffLine(before),
+        after: after === undefined ? "" : trimFileStudioDiffLine(after),
+      });
+    }
+  }
+
+  return {
+    equal: added === 0 && removed === 0 && changed === 0,
+    added,
+    removed,
+    changed,
+    total: added + removed + changed,
+    truncated: added + removed + changed > changes.length,
+    changes,
+  };
+}
+
+function trimFileStudioDiffLine(line) {
+  const value = String(line ?? "");
+  return value.length > 180 ? `${value.slice(0, 177)}...` : value;
 }
 
 function createFileStudioReloadHint(filename) {
