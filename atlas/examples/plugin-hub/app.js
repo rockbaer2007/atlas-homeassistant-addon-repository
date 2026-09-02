@@ -29,6 +29,7 @@ const translations = {
     "message.sidebarPluginUnavailable": "No launch URL available yet.",
     "message.sidebarPluginUrlCopied": "{name} URL copied.",
     "message.sidebarPluginYamlCopied": "{name} panel_iframe YAML copied.",
+    "message.sidebarPluginCopyFailed": "{name} could not be copied. Please select the URL or YAML text manually.",
     "label.sidebarUrl": "Sidebar URL",
     "label.sidebarYaml": "configuration.yaml",
     "summary.noPlugins": "No plugins installed",
@@ -67,6 +68,7 @@ const translations = {
     "message.sidebarPluginUnavailable": "Noch keine Start-URL verfügbar.",
     "message.sidebarPluginUrlCopied": "{name}: URL kopiert.",
     "message.sidebarPluginYamlCopied": "{name}: panel_iframe-YAML kopiert.",
+    "message.sidebarPluginCopyFailed": "{name}: Kopieren nicht möglich. Bitte URL oder YAML-Text manuell markieren.",
     "label.sidebarUrl": "Seitenleisten-URL",
     "label.sidebarYaml": "configuration.yaml",
     "summary.noPlugins": "Keine Plugins installiert",
@@ -501,18 +503,30 @@ function createTextLine(text) {
 }
 
 async function copySidebarPluginText({ name, text, messageKey }) {
+  let copied = false;
   try {
-    await navigator.clipboard.writeText(text);
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    }
   } catch {
+    copied = false;
+  }
+  if (!copied) {
     const fallback = document.createElement("textarea");
     fallback.value = text;
     fallback.className = "visually-hidden";
+    fallback.setAttribute("readonly", "");
     document.body.append(fallback);
+    fallback.focus();
     fallback.select();
-    document.execCommand("copy");
+    fallback.setSelectionRange(0, fallback.value.length);
+    copied = document.execCommand("copy");
     fallback.remove();
   }
-  pluginSummary.textContent = t(messageKey, { name });
+  pluginSummary.textContent = copied
+    ? t(messageKey, { name })
+    : t("message.sidebarPluginCopyFailed", { name });
 }
 
 function createPanelIframeId(plugin, name) {

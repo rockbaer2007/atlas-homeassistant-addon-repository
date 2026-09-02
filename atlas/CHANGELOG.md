@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.111
+
+- Make the Plugin Hub URL/YAML copy fallback work in browser contexts where the
+  Clipboard API is blocked.
+- Show a clear copy failure message instead of failing silently.
+
 ## 0.1.110
 
 - Arrange the Card Editor export controls in three side-by-side columns on wide
