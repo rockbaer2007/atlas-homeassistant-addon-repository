@@ -21,9 +21,11 @@ const translations = {
     "summary.many": "{plugins} plugins detected, {active} active",
     "button.open": "Open",
     "button.planned": "Planned",
+    "button.disabled": "Disabled",
     "status.active": "Active",
     "status.available": "Available",
     "status.planned": "Planned",
+    "status.disabled": "Disabled",
     "alt.pluginImage": "{name} plugin image",
   },
   de: {
@@ -42,9 +44,11 @@ const translations = {
     "summary.many": "{plugins} Plugins erkannt, {active} aktiv",
     "button.open": "Öffnen",
     "button.planned": "Geplant",
+    "button.disabled": "Deaktiviert",
     "status.active": "Aktiv",
     "status.available": "Verfügbar",
     "status.planned": "Geplant",
+    "status.disabled": "Deaktiviert",
     "alt.pluginImage": "{name} Plugin-Bild",
   },
 };
@@ -221,7 +225,7 @@ async function loadPlugins() {
 }
 
 function renderPlugins(plugins) {
-  const visiblePlugins = plugins.filter(plugin => plugin.status !== "planned" && plugin.entryUrl);
+  const visiblePlugins = plugins;
   lastPlugins = visiblePlugins;
   const activePlugins = visiblePlugins.filter(plugin => plugin.status === "active" && plugin.entryUrl);
   pluginSummary.textContent = createPluginSummaryText(visiblePlugins, activePlugins);
@@ -246,8 +250,22 @@ function renderPlugins(plugins) {
     pluginGrid.append(empty);
     return;
   }
+  if (shouldOpenSingleActivePlugin(activePlugins)) {
+    window.location.replace(createPluginActionUrl(activePlugins[0].entryUrl));
+    return;
+  }
   for (const plugin of visiblePlugins) {
     pluginGrid.append(createPluginCard(plugin));
+  }
+}
+
+function shouldOpenSingleActivePlugin(activePlugins) {
+  if (activePlugins.length !== 1) return false;
+  try {
+    const url = new URL(window.location.href);
+    return url.searchParams.get("select") !== "1";
+  } catch {
+    return true;
   }
 }
 
@@ -312,8 +330,13 @@ function createPluginCard(plugin) {
 
   const action = document.createElement("a");
   action.className = "plugin-action";
-  action.textContent = plugin.entryUrl ? t("button.open") : t("button.planned");
-  if (plugin.entryUrl) {
+  const launchable = plugin.status === "active" && plugin.entryUrl;
+  action.textContent = launchable
+    ? t("button.open")
+    : plugin.status === "planned"
+      ? t("button.planned")
+      : t("button.disabled");
+  if (launchable) {
     action.href = createPluginActionUrl(plugin.entryUrl);
   } else {
     action.href = "#";

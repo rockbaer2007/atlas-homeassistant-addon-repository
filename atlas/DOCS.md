@@ -16,10 +16,12 @@ The Add-on options can provide the Home Assistant URL, a long-lived access
 token, whether ATLAS Administration should import that token on startup and
 whether the Card Editor should auto-connect after the handoff.
 
-The File Studio `/addons` approval is also an Add-on option. In Home Assistant
-App/Add-on mode, Administration shows this approval as read-only because the
-effective permission comes from the Add-on configuration. In standalone Docker
-or Linux mode, the same approval can be managed in Atlas Administration.
+File Studio path approvals are also Add-on options. `/config` is the default
+scope. `/config/www`, `/config/custom_components`, `/addons` and
+`parent-of-config` are separate capabilities. In Home Assistant App/Add-on
+mode, Administration shows these approvals as read-only because the effective
+permissions come from the Add-on configuration. In standalone Docker or Linux
+mode, the same approvals can be managed in Atlas Administration.
 
 ATLAS keeps a stable app identity through the `atlas_instance_id` option. Use a
 deliberate value when encrypted Administration secrets should survive app
@@ -64,6 +66,22 @@ Platzhalter an das Add-on uebergeben. ATLAS ignoriert solche zu kurzen oder
 maskierten Werte beim Start. Der Token wird nicht dauerhaft im Card Editor
 gespeichert. Administration bleibt der Besitzer der Verbindungseinstellungen.
 
+## Home-Assistant-Update-Ablauf
+
+Nach jedem sichtbaren ATLAS-Update wird die Add-on-Version in diesem Repository
+erhoeht. Home Assistant vergleicht die installierte Version (`old`) mit der
+Repository-Version (`target`). Fuer diesen Stand ist `target` mindestens
+`0.1.97`.
+
+Wenn Home Assistant weiterhin eine alte Zielversion zeigt:
+
+1. Oeffne **Einstellungen -> Add-ons -> Add-on Store**.
+2. Lade die Repositories neu oder entferne/fuege das ATLAS Repository erneut
+   hinzu.
+3. Oeffne das ATLAS Add-on, installiere/aktualisiere die neue Version und
+   starte ATLAS neu.
+4. Pruefe danach `/app` oder `/health`, ob die neue Laufzeit aktiv ist.
+
 ## Add Editor as Dashboard/Webpage
 
 The preferred Add-on path is **Settings -> Add-ons -> ATLAS -> Show in
@@ -87,3 +105,16 @@ password fields on reload and pass only a shortened placeholder to the Add-on.
 ATLAS ignores masked or implausibly short token values during startup. The token
 is not stored permanently by the Card Editor. Administration remains the owner
 of the connection settings.
+
+## Home Assistant Update Flow
+
+Every visible ATLAS update bumps the Add-on version in this repository. Home
+Assistant compares the installed version (`old`) with the repository version
+(`target`). For this build, `target` should be at least `0.1.97`.
+
+If Home Assistant still shows an older target version:
+
+1. Open **Settings -> Add-ons -> Add-on Store**.
+2. Reload repositories or remove and add the ATLAS repository again.
+3. Open the ATLAS Add-on, install/update the new version and restart ATLAS.
+4. Check `/app` or `/health` to confirm the new runtime is active.

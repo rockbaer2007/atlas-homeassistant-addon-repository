@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.97
+
+- Add explicit File Studio path capability switches for `/config/www`,
+  `/config/custom_components`, `/addons` and `parent-of-config`.
+- Keep Home Assistant tokens Admin-owned while plugins receive scoped file
+  capabilities only.
+- Finalize Plugin Hub behavior for zero, one and multiple active plugins.
+- Align the Plugin Hub action color with the ATLAS teal/orange UI language.
+- Document the Home Assistant update flow and the meaning of old/target
+  version labels.
+- Bump ATLAS File Studio to `0.1.35` for repository update detection.
+
 ## 0.1.96
 
 - Add a dedicated SVG trash icon for File Studio.

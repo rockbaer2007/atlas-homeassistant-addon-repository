@@ -17,6 +17,15 @@ configuration:
   allow_addons_path:
     name: "File Studio: /addons freigeben"
     description: "Erlaubt ATLAS File Studio Zugriff auf lokale Home-Assistant-Add-on-Ordner unter /addons. Standardmaessig aus Sicherheitsgruenden deaktiviert."
+  allow_www_path:
+    name: "File Studio: /config/www anzeigen"
+    description: "Zeigt den Home-Assistant-www-Ordner als eigene File-Studio-Faehigkeit."
+  allow_custom_components_path:
+    name: "File Studio: /config/custom_components anzeigen"
+    description: "Zeigt custom_components als eigene File-Studio-Faehigkeit fuer Integrationen und benutzerdefinierte Dateien."
+  allow_parent_of_config_path:
+    name: "File Studio: Parent von /config freigeben"
+    description: "Erlaubt File Studio Zugriff auf den uebergeordneten Ordner von /config. Nur fuer administrativen Dateizugriff aktivieren."
 network:
   4176/tcp: "ATLAS App-Laufzeit"
   4175/tcp: "ATLAS Administration"

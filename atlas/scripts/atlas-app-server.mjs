@@ -19,6 +19,9 @@ const pluginRoot = resolve(root, "atlas-plugins");
 const fileStudioConfigRoot = resolve(process.env.ATLAS_FILE_STUDIO_CONFIG_ROOT ?? "/config");
 const fileStudioAddonsRoot = resolve(process.env.ATLAS_FILE_STUDIO_ADDONS_ROOT ?? "/addons");
 const fileStudioAllowAddons = process.env.ATLAS_FILE_STUDIO_ALLOW_ADDONS === "1";
+const fileStudioAllowWww = process.env.ATLAS_FILE_STUDIO_ALLOW_WWW === "1";
+const fileStudioAllowCustomComponents = process.env.ATLAS_FILE_STUDIO_ALLOW_CUSTOM_COMPONENTS === "1";
+const fileStudioAllowParentOfConfig = process.env.ATLAS_FILE_STUDIO_ALLOW_PARENT_OF_CONFIG === "1";
 const fileStudioHistoryRoot = resolve(process.env.ATLAS_FILE_STUDIO_HISTORY_ROOT ?? ".atlas-file-studio-history");
 const fileStudioTrashRoot = resolve(process.env.ATLAS_FILE_STUDIO_TRASH_ROOT ?? ".atlas-file-studio-trash");
 const adminConnectionCookieName = "atlas_admin_connection";
@@ -1675,26 +1678,46 @@ function createPublicSurfaceUrl(requestUrl, port) {
 }
 
 function createFileStudioAccessContext(cookieHeader = "") {
+  const cookieAccess = readFileStudioAccessFromCookie(cookieHeader);
   return {
     allowAddons: isHomeAssistantAppDistribution()
       ? fileStudioAllowAddons
-      : fileStudioAllowAddons || readFileStudioAccessFromCookie(cookieHeader).allowAddonsPath,
+      : fileStudioAllowAddons || cookieAccess.allowAddonsPath,
+    allowWww: isHomeAssistantAppDistribution()
+      ? fileStudioAllowWww
+      : fileStudioAllowWww || cookieAccess.allowWwwPath,
+    allowCustomComponents: isHomeAssistantAppDistribution()
+      ? fileStudioAllowCustomComponents
+      : fileStudioAllowCustomComponents || cookieAccess.allowCustomComponentsPath,
+    allowParentOfConfig: isHomeAssistantAppDistribution()
+      ? fileStudioAllowParentOfConfig
+      : fileStudioAllowParentOfConfig || cookieAccess.allowParentOfConfigPath,
   };
 }
 
 function readFileStudioAccessFromCookie(cookieHeader) {
   const encodedSettings = readCookie(cookieHeader, adminConnectionCookieName);
   if (!encodedSettings) {
-    return { allowAddonsPath: false };
+    return normalizeFileStudioAccessSettings();
   }
   try {
     const settings = JSON.parse(decodeURIComponent(encodedSettings));
-    return {
-      allowAddonsPath: settings?.fileStudioAccess?.allowAddonsPath === true,
-    };
+    return normalizeFileStudioAccessSettings(settings?.fileStudioAccess);
   } catch {
-    return { allowAddonsPath: false };
+    return normalizeFileStudioAccessSettings();
   }
+}
+
+function normalizeFileStudioAccessSettings(settings = {}) {
+  const allowedPaths = settings && typeof settings.allowedPaths === "object" && !Array.isArray(settings.allowedPaths)
+    ? settings.allowedPaths
+    : {};
+  return {
+    allowAddonsPath: settings?.allowAddonsPath === true || allowedPaths.addons === true,
+    allowWwwPath: settings?.allowWwwPath === true || allowedPaths.www === true,
+    allowCustomComponentsPath: settings?.allowCustomComponentsPath === true || allowedPaths.customComponents === true,
+    allowParentOfConfigPath: settings?.allowParentOfConfigPath === true || allowedPaths.parentOfConfig === true,
+  };
 }
 
 function isHomeAssistantAppDistribution() {
@@ -1713,6 +1736,24 @@ function createFileStudioRootScopes(access = createFileStudioAccessContext()) {
       source: "default",
     },
     {
+      id: "homeassistant-www",
+      label: "Home Assistant /config/www",
+      displayPath: "/config/www",
+      physicalPath: resolve(fileStudioConfigRoot, "www"),
+      enabled: access.allowWww,
+      readonly: false,
+      source: "approval",
+    },
+    {
+      id: "homeassistant-custom-components",
+      label: "Home Assistant /config/custom_components",
+      displayPath: "/config/custom_components",
+      physicalPath: resolve(fileStudioConfigRoot, "custom_components"),
+      enabled: access.allowCustomComponents,
+      readonly: false,
+      source: "approval",
+    },
+    {
       id: "homeassistant-addons",
       label: "Home Assistant /addons",
       displayPath: "/addons",
@@ -1720,6 +1761,15 @@ function createFileStudioRootScopes(access = createFileStudioAccessContext()) {
       enabled: access.allowAddons,
       readonly: false,
       source: "approval",
+    },
+    {
+      id: "homeassistant-parent-of-config",
+      label: "Parent of /config",
+      displayPath: "/parent-of-config",
+      physicalPath: dirname(fileStudioConfigRoot),
+      enabled: access.allowParentOfConfig,
+      readonly: false,
+      source: "admin",
     },
   ];
 }
@@ -1763,12 +1813,25 @@ function resolveFileStudioPath(value, access) {
   }
 
   const displayPath = normalizeFileStudioDisplayInput(value);
+  if (!isFileStudioDisplayPathAllowed(displayPath || scope.displayPath, access)) {
+    return undefined;
+  }
   const relativeInput = displayPath === scope.displayPath
     ? ""
     : displayPath.slice(scope.displayPath.length).replace(/^\/+/, "");
   const targetPath = resolve(scope.physicalPath, normalize(relativeInput));
 
   return isInsideFileStudioRootScope(scope, targetPath) ? targetPath : undefined;
+}
+
+function isFileStudioDisplayPathAllowed(displayPath, access) {
+  const normalized = normalizeFileStudioDisplayInput(displayPath);
+  if (!normalized) return true;
+  if ((normalized === "/config/www" || normalized.startsWith("/config/www/")) && !access.allowWww) return false;
+  if ((normalized === "/config/custom_components" || normalized.startsWith("/config/custom_components/")) && !access.allowCustomComponents) return false;
+  if ((normalized === "/addons" || normalized.startsWith("/addons/")) && !access.allowAddons) return false;
+  if ((normalized === "/parent-of-config" || normalized.startsWith("/parent-of-config/")) && !access.allowParentOfConfig) return false;
+  return true;
 }
 
 function createFileStudioDisplayPath(targetPath, access) {
@@ -2085,6 +2148,12 @@ function readFileStudioTreeEntry(parentDirectory, parentDisplayPath, entry, rema
     return undefined;
   }
   const displayPath = `${parentDisplayPath.replace(/\/$/, "")}/${entry.name}`.replace(/\\/g, "/");
+  if (parentDisplayPath === "/config" && entry.isDirectory() && ["www", "custom_components"].includes(entry.name)) {
+    return undefined;
+  }
+  if (!isFileStudioDisplayPathAllowed(displayPath, access)) {
+    return undefined;
+  }
   const entryStats = statSync(entryPath);
 
   if (entry.isDirectory()) {

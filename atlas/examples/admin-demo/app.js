@@ -61,6 +61,7 @@ const pluginSummary = document.querySelector("#plugin-summary");
 const pluginList = document.querySelector("#plugin-list");
 const policySummary = document.querySelector("#policy-summary");
 const allowAddonsPath = document.querySelector("#allow-addons-path");
+const fileStudioPathAccessInputs = Array.from(document.querySelectorAll("[data-file-studio-path-access]"));
 const fileStudioAccessHint = document.querySelector("#file-studio-access-hint");
 const refreshAppRuntime = document.querySelector("#refresh-app-runtime");
 const appRuntimeSummary = document.querySelector("#app-runtime-summary");
@@ -233,6 +234,11 @@ const translations = {
     "label.pluginRepositoryType": "Type",
     "label.parcelEnabled": "Enabled",
     "label.allowAddonsPath": "Allow File Studio access to /addons",
+    "label.fileStudioAccessConfig": "config",
+    "label.fileStudioAccessWww": "www",
+    "label.fileStudioAccessCustomComponents": "custom_components",
+    "label.fileStudioAccessAddons": "addons",
+    "label.fileStudioAccessParentOfConfig": "parent-of-config",
     "theme.auto": "Auto",
     "theme.light": "Light",
     "theme.dark": "Dark",
@@ -275,8 +281,8 @@ const translations = {
     "message.accessHint": "Tokens stay in Administration. Plugins receive approved paths and capabilities only.",
     "message.connectionHaAppHint": "These Home Assistant connection values come from the Home Assistant App/Add-on options.",
     "message.connectionStandaloneHint": "In Docker and Linux mode these values are managed here.",
-    "message.fileStudioAccessHaAppHint": "In Home Assistant App/Add-on mode this approval comes from the App/Add-on configuration.",
-    "message.fileStudioAccessStandaloneHint": "In Docker and Linux mode this approval is managed here.",
+    "message.fileStudioAccessHaAppHint": "In Home Assistant App/Add-on mode these file capabilities come from the App/Add-on configuration.",
+    "message.fileStudioAccessStandaloneHint": "In Docker and Linux mode these file capabilities are managed here.",
     "message.openAiApiKeyLink": "Get OpenAI API key:",
     "message.geminiApiKeyLink": "Get Gemini API key:",
     "message.deeplApiKeyLink": "Get DeepL API key:",
@@ -346,7 +352,7 @@ const translations = {
     "mode.expert": "Expert",
     "policy.token": "The Card Editor receives the token only as a browser session handoff.",
     "policy.paths": "Plugins receive approved URLs, WebSocket paths and resource paths.",
-    "policy.capabilities": "Capabilities are declared through the Runtime plugin manifest.",
+    "policy.capabilities": "Capabilities are declared through the Runtime plugin manifest and file paths are released here.",
     "text.pluginStatusAvailable": "Available",
     "text.pluginStatusActive": "Active",
     "text.pluginStatusDisabled": "Disabled",
@@ -422,6 +428,11 @@ const translations = {
     "label.pluginRepositoryType": "Typ",
     "label.parcelEnabled": "Aktiv",
     "label.allowAddonsPath": "File-Studio-Zugriff auf /addons erlauben",
+    "label.fileStudioAccessConfig": "config",
+    "label.fileStudioAccessWww": "www",
+    "label.fileStudioAccessCustomComponents": "custom_components",
+    "label.fileStudioAccessAddons": "addons",
+    "label.fileStudioAccessParentOfConfig": "parent-of-config",
     "theme.auto": "Auto",
     "theme.light": "Hell",
     "theme.dark": "Dunkel",
@@ -464,8 +475,8 @@ const translations = {
     "message.accessHint": "Tokens bleiben in der Administration. Plugins erhalten nur freigegebene Pfade und Fähigkeiten.",
     "message.connectionHaAppHint": "Diese Home-Assistant-Verbindungswerte kommen aus den Home-Assistant-App/Add-on-Optionen.",
     "message.connectionStandaloneHint": "Im Docker- und Linux-Modus werden diese Werte hier verwaltet.",
-    "message.fileStudioAccessHaAppHint": "Im Home-Assistant-App/Add-on-Modus kommt diese Freigabe aus der App/Add-on-Konfiguration.",
-    "message.fileStudioAccessStandaloneHint": "Im Docker- und Linux-Modus wird diese Freigabe hier verwaltet.",
+    "message.fileStudioAccessHaAppHint": "Im Home-Assistant-App/Add-on-Modus kommen diese Datei-Fähigkeiten aus der App/Add-on-Konfiguration.",
+    "message.fileStudioAccessStandaloneHint": "Im Docker- und Linux-Modus werden diese Datei-Fähigkeiten hier verwaltet.",
     "message.openAiApiKeyLink": "OpenAI API-Key erhalten:",
     "message.geminiApiKeyLink": "Gemini API-Key erhalten:",
     "message.deeplApiKeyLink": "DeepL API-Key erhalten:",
@@ -535,7 +546,7 @@ const translations = {
     "mode.expert": "Expert",
     "policy.token": "Der Card Editor erhält den Token nur als Browser-Sitzungsübergabe.",
     "policy.paths": "Plugins erhalten freigegebene URLs, WebSocket-Pfade und Ressourcenpfade.",
-    "policy.capabilities": "Fähigkeiten werden über das Runtime-Plugin-Manifest deklariert.",
+    "policy.capabilities": "Fähigkeiten werden über das Runtime-Plugin-Manifest deklariert und Dateipfade hier freigegeben.",
     "text.pluginStatusAvailable": "Verfügbar",
     "text.pluginStatusActive": "Aktiv",
     "text.pluginStatusDisabled": "Deaktiviert",
@@ -697,6 +708,11 @@ function applyHomeAssistantConnectionEditMode() {
     ? t("message.connectionHaAppHint")
     : t("message.connectionStandaloneHint");
   allowAddonsPath.disabled = readonly;
+  for (const input of fileStudioPathAccessInputs) {
+    if (input.dataset.fileStudioPathAccess !== "config") {
+      input.disabled = readonly;
+    }
+  }
   fileStudioAccessHint.textContent = readonly
     ? t("message.fileStudioAccessHaAppHint")
     : t("message.fileStudioAccessStandaloneHint");
@@ -874,20 +890,43 @@ function renderParcelProviders() {
 }
 
 function normalizeFileStudioAccessSettings(settings = {}) {
+  const allowedPaths = settings && typeof settings.allowedPaths === "object" && !Array.isArray(settings.allowedPaths)
+    ? settings.allowedPaths
+    : {};
   return {
-    allowAddonsPath: settings?.allowAddonsPath === true,
+    allowAddonsPath: settings?.allowAddonsPath === true || allowedPaths.addons === true,
+    allowWwwPath: settings?.allowWwwPath === true || allowedPaths.www === true,
+    allowCustomComponentsPath: settings?.allowCustomComponentsPath === true || allowedPaths.customComponents === true,
+    allowParentOfConfigPath: settings?.allowParentOfConfigPath === true || allowedPaths.parentOfConfig === true,
+    allowedPaths: {
+      config: true,
+      www: settings?.allowWwwPath === true || allowedPaths.www === true,
+      customComponents: settings?.allowCustomComponentsPath === true || allowedPaths.customComponents === true,
+      addons: settings?.allowAddonsPath === true || allowedPaths.addons === true,
+      parentOfConfig: settings?.allowParentOfConfigPath === true || allowedPaths.parentOfConfig === true,
+    },
   };
 }
 
 function readFileStudioAccessSettings() {
+  const allowedPaths = Object.fromEntries(fileStudioPathAccessInputs
+    .map(input => [input.dataset.fileStudioPathAccess, input.checked]));
   return normalizeFileStudioAccessSettings({
     allowAddonsPath: allowAddonsPath.checked,
+    allowWwwPath: allowedPaths.www === true,
+    allowCustomComponentsPath: allowedPaths.customComponents === true,
+    allowParentOfConfigPath: allowedPaths.parentOfConfig === true,
+    allowedPaths,
   });
 }
 
 function applyFileStudioAccessSettings(settings) {
   const normalized = normalizeFileStudioAccessSettings(settings);
   allowAddonsPath.checked = normalized.allowAddonsPath;
+  for (const input of fileStudioPathAccessInputs) {
+    const key = input.dataset.fileStudioPathAccess;
+    input.checked = key === "config" ? true : normalized.allowedPaths[key] === true;
+  }
   applyHomeAssistantConnectionEditMode();
 }
 
@@ -3031,6 +3070,14 @@ homeAssistantToken.addEventListener("input", () => {
 
 editorStartMode.addEventListener("change", persistConfiguration);
 allowAddonsPath.addEventListener("change", persistConfiguration);
+for (const input of fileStudioPathAccessInputs) {
+  input.addEventListener("change", () => {
+    if (input.dataset.fileStudioPathAccess === "addons") {
+      allowAddonsPath.checked = input.checked;
+    }
+    persistConfiguration();
+  });
+}
 
 rememberAdminToken.addEventListener("change", () => {
   if (!rememberAdminToken.checked) {

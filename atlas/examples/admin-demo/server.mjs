@@ -707,13 +707,29 @@ function createInitialAdminConnectionSettingsFromEnv() {
     translationProvider: "none",
     fileStudioAccess: {
       allowAddonsPath: process.env.ATLAS_FILE_STUDIO_ALLOW_ADDONS === "1",
+      allowWwwPath: process.env.ATLAS_FILE_STUDIO_ALLOW_WWW === "1",
+      allowCustomComponentsPath: process.env.ATLAS_FILE_STUDIO_ALLOW_CUSTOM_COMPONENTS === "1",
+      allowParentOfConfigPath: process.env.ATLAS_FILE_STUDIO_ALLOW_PARENT_OF_CONFIG === "1",
     },
   });
 }
 
 function normalizeFileStudioAccessSettings(settings = {}) {
+  const allowedPaths = settings && typeof settings.allowedPaths === "object" && !Array.isArray(settings.allowedPaths)
+    ? settings.allowedPaths
+    : {};
   return {
-    allowAddonsPath: settings?.allowAddonsPath === true,
+    allowAddonsPath: settings?.allowAddonsPath === true || allowedPaths.addons === true,
+    allowWwwPath: settings?.allowWwwPath === true || allowedPaths.www === true,
+    allowCustomComponentsPath: settings?.allowCustomComponentsPath === true || allowedPaths.customComponents === true,
+    allowParentOfConfigPath: settings?.allowParentOfConfigPath === true || allowedPaths.parentOfConfig === true,
+    allowedPaths: {
+      config: true,
+      www: settings?.allowWwwPath === true || allowedPaths.www === true,
+      customComponents: settings?.allowCustomComponentsPath === true || allowedPaths.customComponents === true,
+      addons: settings?.allowAddonsPath === true || allowedPaths.addons === true,
+      parentOfConfig: settings?.allowParentOfConfigPath === true || allowedPaths.parentOfConfig === true,
+    },
   };
 }
 

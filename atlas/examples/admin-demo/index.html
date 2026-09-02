@@ -339,6 +339,19 @@
         font-size: 14px;
       }
 
+      .capability-scope-list {
+        display: grid;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+      }
+
+      .capability-scope-list .checkbox-row {
+        margin: 0;
+      }
+
       .parcel-provider-list {
         display: grid;
         gap: 8px;
@@ -1145,10 +1158,28 @@
         <aside class="panel" aria-labelledby="policy-heading">
           <h2 id="policy-heading" data-i18n="heading.policy">Plugin access policy</h2>
           <p id="policy-summary"></p>
-          <label class="checkbox-row" for="allow-addons-path">
-            <input id="allow-addons-path" type="checkbox">
-            <span data-i18n="label.allowAddonsPath">Allow File Studio access to /addons</span>
-          </label>
+          <div class="capability-scope-list" role="group" aria-labelledby="policy-heading">
+            <label class="checkbox-row">
+              <input type="checkbox" data-file-studio-path-access="config" checked disabled>
+              <span data-i18n="label.fileStudioAccessConfig">config</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" data-file-studio-path-access="www">
+              <span data-i18n="label.fileStudioAccessWww">www</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" data-file-studio-path-access="customComponents">
+              <span data-i18n="label.fileStudioAccessCustomComponents">custom_components</span>
+            </label>
+            <label class="checkbox-row" for="allow-addons-path">
+              <input id="allow-addons-path" type="checkbox" data-file-studio-path-access="addons">
+              <span data-i18n="label.fileStudioAccessAddons">addons</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" data-file-studio-path-access="parentOfConfig">
+              <span data-i18n="label.fileStudioAccessParentOfConfig">parent-of-config</span>
+            </label>
+          </div>
           <p id="file-studio-access-hint" class="field-hint" data-i18n="message.fileStudioAccessStandaloneHint">In Docker and Linux mode this approval is managed here.</p>
           <ul class="policy-list">
             <li data-i18n="policy.token">The Card Editor receives the token only as a browser session handoff.</li>

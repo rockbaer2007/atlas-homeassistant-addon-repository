@@ -9,6 +9,8 @@
   --atlas-border-strong: #cbd5e1;
   --atlas-accent: #0f766e;
   --atlas-accent-strong: #0b5f59;
+  --atlas-orange: #f59e0b;
+  --atlas-orange-strong: #d97706;
   --atlas-on-accent: #ffffff;
   --atlas-warn: #c58a00;
 }
@@ -50,7 +52,7 @@ body {
 
 h1 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3.6rem);
+  font-size: 32px;
   line-height: 1;
   letter-spacing: 0;
 }
@@ -102,6 +104,12 @@ h1 {
   color: var(--atlas-text);
   font-weight: 700;
   text-decoration: none;
+}
+
+.plugin-action {
+  border-color: var(--atlas-orange);
+  background: var(--atlas-orange);
+  color: #17130a;
 }
 
 .hub-toolbar {
@@ -179,6 +187,11 @@ h1 {
   color: var(--atlas-warn);
 }
 
+.plugin-status[data-status="disabled"] {
+  background: var(--atlas-panel-soft);
+  color: var(--atlas-muted);
+}
+
 .plugin-description {
   min-height: 52px;
   margin: 14px 0;
@@ -203,8 +216,10 @@ h1 {
 }
 
 .plugin-action[aria-disabled="true"] {
+  border-color: var(--atlas-border);
+  background: var(--atlas-panel-soft);
+  color: var(--atlas-muted);
   cursor: not-allowed;
-  opacity: 0.55;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -218,6 +233,8 @@ h1 {
     --atlas-border-strong: #40535b;
     --atlas-accent: #2dd4bf;
     --atlas-accent-strong: #14b8a6;
+    --atlas-orange: #f59e0b;
+    --atlas-orange-strong: #f97316;
     --atlas-on-accent: #06201d;
     --atlas-warn: #facc15;
   }
@@ -244,6 +261,8 @@ h1 {
   --atlas-border-strong: #40535b;
   --atlas-accent: #2dd4bf;
   --atlas-accent-strong: #14b8a6;
+  --atlas-orange: #f59e0b;
+  --atlas-orange-strong: #f97316;
   --atlas-on-accent: #06201d;
   --atlas-warn: #facc15;
 }
@@ -259,6 +278,8 @@ h1 {
   --atlas-border-strong: #cbd5e1;
   --atlas-accent: #0f766e;
   --atlas-accent-strong: #0b5f59;
+  --atlas-orange: #f59e0b;
+  --atlas-orange-strong: #d97706;
   --atlas-on-accent: #ffffff;
   --atlas-warn: #c58a00;
 }

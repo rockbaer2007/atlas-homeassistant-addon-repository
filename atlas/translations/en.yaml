@@ -17,6 +17,15 @@ configuration:
   allow_addons_path:
     name: "File Studio: allow /addons"
     description: "Allows ATLAS File Studio to access local Home Assistant add-on folders under /addons. Disabled by default for safety."
+  allow_www_path:
+    name: "File Studio: show /config/www"
+    description: "Shows the Home Assistant www folder as an explicit File Studio capability."
+  allow_custom_components_path:
+    name: "File Studio: show /config/custom_components"
+    description: "Shows custom_components as an explicit File Studio capability for integrations and custom files."
+  allow_parent_of_config_path:
+    name: "File Studio: allow parent of /config"
+    description: "Allows File Studio to access the parent folder of /config. Keep disabled unless you need administrative file access."
 network:
   4176/tcp: "ATLAS app runtime"
   4175/tcp: "ATLAS Administration"
