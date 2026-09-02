@@ -8,7 +8,8 @@ by the existing Windows Automation Exporter.
 
 - read `/config/automations.yaml` through the approved File Studio path
 - upload external `.yaml` or `.yml` files for local analysis
-- list detected automations with alias, id, entities and services
+- list detected automations with alias, id, entities and classic `service:` or
+  modern `action: domain.service` calls
 - show analysis warnings for missing or duplicate ids/aliases, missing triggers
   or actions and disabled automations
 - configure a target export folder label

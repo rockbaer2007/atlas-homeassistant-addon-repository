@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.124
+
+- Detect Home Assistant service calls written with the modern
+  `action: domain.service` syntax in Automation Exporter / Editor.
+- Keep classic `service: domain.service` detection for older automation YAML.
+- Bump the bundled Automation Exporter / Editor plugin to `0.1.3`.
+
 ## 0.1.123
 
 - Add Automation Exporter / Editor analysis hints for missing ids, missing

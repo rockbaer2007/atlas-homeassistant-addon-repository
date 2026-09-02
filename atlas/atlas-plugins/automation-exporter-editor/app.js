@@ -116,7 +116,7 @@ function parseAutomations(content) {
     const alias = readYamlValue(block, "alias") || `automation-${index + 1}`;
     const id = readYamlValue(block, "id");
     const entities = uniqueMatches(block, /(?:entity_id:\s*|['"])([a-z_]+\.[a-zA-Z0-9_]+)['"]?/g);
-    const services = uniqueMatches(block, /service:\s*['"]?([a-z_]+\.[a-zA-Z0-9_]+)['"]?/g);
+    const services = uniqueMatches(block, /(?:service|action):\s*['"]?([a-z_]+\.[a-zA-Z0-9_]+)['"]?/g);
     const triggerCount = countTopLevelSections(block, ["trigger", "triggers"]);
     const conditionCount = countTopLevelSections(block, ["condition", "conditions"]);
     const actionCount = countTopLevelSections(block, ["action", "actions"]);
