@@ -292,6 +292,43 @@
         grid-template-columns: minmax(260px, 1.2fr) minmax(220px, 0.8fr);
       }
 
+      .card-export-layout,
+      .card-import-entity-layout {
+        display: grid;
+        grid-template-columns: minmax(220px, 0.78fr) minmax(360px, 1.24fr) minmax(320px, 0.98fr);
+        gap: 12px;
+        align-items: start;
+      }
+
+      .card-export-column,
+      .entity-picker-column {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+        align-content: start;
+      }
+
+      .card-export-field-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card-export-actions-column .connection-actions.uniform-actions,
+      .import-debug-column .connection-actions.uniform-actions,
+      .entity-filter-column .connection-actions.uniform-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+        align-items: stretch;
+      }
+
+      .card-export-actions-column .connection-actions.uniform-actions button,
+      .card-export-actions-column .connection-actions.uniform-actions .import-button,
+      .import-debug-column .connection-actions.uniform-actions button,
+      .import-debug-column .connection-actions.uniform-actions .import-button,
+      .entity-filter-column .connection-actions.uniform-actions button {
+        flex: 0 1 auto;
+        width: 100%;
+      }
+
       .connection-config .field-pair[hidden] {
         display: none;
       }
@@ -362,7 +399,7 @@
 
       .card-export-language-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
         gap: 6px;
       }
 
@@ -812,7 +849,7 @@
       .resource-hint-field {
         display: grid;
         gap: 6px;
-        margin: 8px 0 0;
+        margin: 0;
         padding: 10px 12px;
         border: 1px solid #cbd5e1;
         border-radius: 6px;
@@ -901,6 +938,10 @@
         color: #172033;
         font-size: 13px;
         font-weight: 700;
+      }
+
+      .card-import-entity-layout .temporary-resource-debug-toggle {
+        margin: 0;
       }
 
       #temporary-ha-card-resource-list {
@@ -2551,8 +2592,10 @@
       }
 
       .card-entity-overview {
-        margin-top: 12px;
+        margin-top: 0;
+        max-height: min(360px, 46vh);
         overflow-x: auto;
+        overflow-y: auto;
       }
 
       .atlas-entity-card {
@@ -2605,6 +2648,27 @@
       .selected-entities-panel summary:focus-visible {
         outline: 2px solid #0f766e;
         outline-offset: 2px;
+      }
+
+      .entity-picker-panel .field-pair {
+        min-width: 0;
+      }
+
+      @media (max-width: 1180px) {
+        .card-export-layout,
+        .card-import-entity-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .card-export-actions-column .connection-actions.uniform-actions,
+        .import-debug-column .connection-actions.uniform-actions,
+        .entity-filter-column .connection-actions.uniform-actions {
+          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        }
+
+        .card-entity-overview {
+          max-height: none;
+        }
       }
 
       #stack-selection-summary {
@@ -3188,150 +3252,160 @@
         </div>
       </details>
       <div class="connection-config">
-        <div class="field-grid three-column">
-          <div id="panel-group-control" class="field-pair">
-            <label for="home-assistant-group" data-i18n="label.panelGroup">Panel group</label>
-            <select id="home-assistant-group">
-              <option value="overview" data-i18n="group.overview">Overview</option>
-              <option value="energy" data-i18n="group.energy">Energy</option>
-              <option value="safety" data-i18n="group.safety">Safety</option>
-              <option value="custom" data-i18n="group.custom">Custom</option>
-            </select>
-          </div>
-          <div id="group-name-control" class="field-pair">
-            <label for="home-assistant-group-name" data-i18n="label.groupName">Group name</label>
-            <input id="home-assistant-group-name" type="text" autocomplete="off">
-          </div>
-          <div id="card-target-control" class="field-pair">
-            <label for="ha-card-target" data-i18n="label.cardTarget">Card target</label>
-            <select id="ha-card-target"></select>
-          </div>
-          <div id="card-layout-control" class="field-pair">
-            <label for="ha-card-layout" data-i18n="label.cardLayout">Card layout</label>
-            <select id="ha-card-layout">
-              <option value="single" data-i18n="layout.single">Simple</option>
-              <option value="horizontal-stack" data-i18n="layout.horizontal">Horizontal stack</option>
-              <option value="vertical-stack" data-i18n="layout.vertical">Vertical stack</option>
-            </select>
-          </div>
-          <div class="field-pair">
-            <label for="ha-card-format" data-i18n="label.cardFormat">Card format</label>
-            <select id="ha-card-format">
-              <option value="json">JSON</option>
-              <option value="yaml" selected>YAML</option>
-            </select>
-          </div>
-          <div id="card-style-export-control" class="field-pair" hidden>
-            <label for="ha-card-style-export" data-i18n="label.cardStyleExport">Style export</label>
-            <select id="ha-card-style-export">
-              <option value="card-mod">card-mod</option>
-              <option value="uix-style">uix:</option>
-            </select>
-          </div>
-          <div class="field-pair">
-            <label for="ha-card-script-filename" data-i18n="label.scriptFilename">HACS script filename</label>
-            <input id="ha-card-script-filename" type="text" autocomplete="off" spellcheck="false" placeholder="energy-kitchen.js" data-i18n-placeholder="placeholder.scriptFilename">
-          </div>
-        </div>
-        <fieldset class="card-export-language-panel">
-          <legend data-i18n="label.cardExportLanguages">Card export languages</legend>
-          <div class="card-export-language-grid">
-            <label><input type="checkbox" data-card-export-language="en" checked disabled> EN English</label>
-            <label><input type="checkbox" data-card-export-language="de" checked> DE Deutsch</label>
-            <label><input type="checkbox" data-card-export-language="fr"> FR Français</label>
-            <label><input type="checkbox" data-card-export-language="es"> ES Español</label>
-            <label><input type="checkbox" data-card-export-language="it"> IT Italiano</label>
-            <label><input type="checkbox" data-card-export-language="nl"> NL Nederlands</label>
-            <label><input type="checkbox" data-card-export-language="sv"> SV Svenska</label>
-            <label><input type="checkbox" data-card-export-language="no"> NO Norsk</label>
-            <label><input type="checkbox" data-card-export-language="da"> DA Dansk</label>
-            <label><input type="checkbox" data-card-export-language="cs"> CS Česky</label>
-            <label><input type="checkbox" data-card-export-language="ru"> RU русский</label>
-            <label><input type="checkbox" data-card-export-language="pl"> PL Polski</label>
-            <label><input type="checkbox" data-card-export-language="pt"> PT Português</label>
-            <label><input type="checkbox" data-card-export-language="fi"> FI Suomi</label>
-          </div>
-          <div class="card-export-translation-controls">
-            <output id="card-translation-status" class="card-translation-module-status" aria-live="polite"></output>
-            <label for="card-auto-translate">
-              <input id="card-auto-translate" type="checkbox">
-              <span data-i18n="label.autoTranslateCardLanguages">Run automatic translation on export</span>
-            </label>
-            <progress id="card-translation-progress" class="card-export-translation-progress" max="100" value="0" hidden></progress>
-          </div>
-          <p class="card-export-language-hint" data-i18n="message.cardExportLanguageHint">EN is the required fallback. Additional languages are exported as English fallback files for now. Please review and translate the corresponding language files before publishing. Automatic translation later requires an internet connection.</p>
-        </fieldset>
-        <div class="connection-actions uniform-actions action-row">
-          <button id="save-home-assistant-group" class="action-group" type="button" data-i18n="button.saveGroup">Save group</button>
-          <button id="delete-home-assistant-group" class="action-group" type="button" data-i18n="button.deleteGroup">Delete group</button>
-          <button id="duplicate-home-assistant-group" class="action-group" type="button" data-i18n="button.duplicateGroup">Duplicate group</button>
-        </div>
-        <div class="connection-actions uniform-actions action-row">
-          <button id="export-home-assistant-config" class="action-export" type="button" data-i18n="button.export">Export</button>
-          <button id="export-ha-card-config" class="action-export" type="button" data-i18n="button.exportHaCard">Export HA card</button>
-          <button id="export-ha-card-package" class="action-export" type="button" data-i18n="button.exportCardPackage">Export card package</button>
-          <button id="export-ha-card-script" class="action-export" type="button" data-i18n="button.exportCardScript">Export card script</button>
-          <button id="export-ha-card-bundle" class="action-export" type="button" data-i18n="button.exportCardBundle">Export HACS bundle</button>
-          <button id="copy-ha-card-config" class="action-export" type="button" data-i18n="button.copyHaCard">Copy HA card</button>
-        </div>
-        <div class="connection-actions uniform-actions action-row">
-          <button id="copy-ha-card-resources" class="action-resource" type="button" disabled data-i18n="button.copyResources">Copy resources</button>
-          <button id="check-ha-card-resources" class="action-resource" type="button" disabled data-i18n="button.checkResources">Check resources</button>
-        </div>
-        <div class="resource-hint-field">
-          <strong data-i18n="heading.resourceHint">Resource hint</strong>
-          <output id="ha-card-dependency" aria-live="polite"></output>
-        </div>
-        <label class="temporary-resource-debug-toggle">
-          <input id="toggle-temporary-resource-debug" type="checkbox">
-          <span data-i18n="label.showTemporaryResourceDebug">Show resource debug</span>
-        </label>
-        <details id="temporary-resource-debug" class="temporary-resource-debug" hidden>
-          <summary data-i18n="heading.temporaryResourceDebug">Temporary HA card resource check</summary>
-          <output id="temporary-ha-card-resource-list" aria-live="polite"></output>
-        </details>
-        <div class="connection-actions uniform-actions action-row">
-          <label class="import-button action-import" for="import-home-assistant-config" data-i18n="button.import">Import</label>
-          <input id="import-home-assistant-config" type="file" accept="application/json" hidden>
-          <label class="import-button action-import" for="import-ha-card-config" data-i18n="button.importHaCard">Import HA card</label>
-          <input id="import-ha-card-config" type="file" accept="application/json,application/zip,.json,.yaml,.yml,.zip" hidden>
-          <button id="open-ha-card-paste-import" class="action-import" type="button" data-i18n="button.pasteHaCard">Paste YAML</button>
-        </div>
-        <output id="ha-card-import-review" aria-live="polite"></output>
-        <pre id="ha-card-style-review" class="ha-card-style-review" hidden></pre>
-        <details id="simple-entity-controls" class="entity-picker-panel" open>
-          <summary data-i18n="heading.entitySelection">Entities for the card</summary>
-          <div class="field-grid two-column">
-            <div class="field-pair">
-              <label for="home-assistant-entity" data-i18n="label.entityIds">Entity IDs</label>
-              <input id="home-assistant-entity" type="text" value="binary_sensor.atlas_status, sensor.atlas_temperature" autocomplete="off" spellcheck="false">
-            </div>
-            <div class="field-pair">
-              <label for="home-assistant-entity-domain" data-i18n="label.entityType">Entity type</label>
-              <select id="home-assistant-entity-domain"></select>
-            </div>
-          </div>
-          <div id="home-assistant-entity-domain-shortcuts" class="entity-domain-shortcuts" aria-label="Entity type shortcuts" data-i18n-aria-label="aria.entityTypeShortcuts"></div>
-          <div class="field-grid two-column">
-            <div class="field-pair">
-              <label for="home-assistant-entity-search" data-i18n="label.entitySearch">Entity search</label>
-              <div class="entity-search-control">
-                <input id="home-assistant-entity-search" type="search" autocomplete="off" spellcheck="false" placeholder="Filter by name or entity ID" data-i18n-placeholder="placeholder.entitySearch">
-                <button id="clear-home-assistant-entity-search" type="button" aria-label="Clear entity search" title="Clear entity search" data-i18n-aria-label="aria.clearEntitySearch" data-i18n-title="aria.clearEntitySearch" disabled>&times;</button>
+        <div class="card-export-layout">
+          <section class="card-export-column card-export-settings">
+            <div class="field-grid card-export-field-grid">
+              <div id="panel-group-control" class="field-pair">
+                <label for="home-assistant-group" data-i18n="label.panelGroup">Panel group</label>
+                <select id="home-assistant-group">
+                  <option value="overview" data-i18n="group.overview">Overview</option>
+                  <option value="energy" data-i18n="group.energy">Energy</option>
+                  <option value="safety" data-i18n="group.safety">Safety</option>
+                  <option value="custom" data-i18n="group.custom">Custom</option>
+                </select>
+              </div>
+              <div id="group-name-control" class="field-pair">
+                <label for="home-assistant-group-name" data-i18n="label.groupName">Group name</label>
+                <input id="home-assistant-group-name" type="text" autocomplete="off">
+              </div>
+              <div id="card-target-control" class="field-pair">
+                <label for="ha-card-target" data-i18n="label.cardTarget">Card target</label>
+                <select id="ha-card-target"></select>
+              </div>
+              <div id="card-layout-control" class="field-pair">
+                <label for="ha-card-layout" data-i18n="label.cardLayout">Card layout</label>
+                <select id="ha-card-layout">
+                  <option value="single" data-i18n="layout.single">Simple</option>
+                  <option value="horizontal-stack" data-i18n="layout.horizontal">Horizontal stack</option>
+                  <option value="vertical-stack" data-i18n="layout.vertical">Vertical stack</option>
+                </select>
+              </div>
+              <div class="field-pair">
+                <label for="ha-card-format" data-i18n="label.cardFormat">Card format</label>
+                <select id="ha-card-format">
+                  <option value="json">JSON</option>
+                  <option value="yaml" selected>YAML</option>
+                </select>
+              </div>
+              <div id="card-style-export-control" class="field-pair" hidden>
+                <label for="ha-card-style-export" data-i18n="label.cardStyleExport">Style export</label>
+                <select id="ha-card-style-export">
+                  <option value="card-mod">card-mod</option>
+                  <option value="uix-style">uix:</option>
+                </select>
+              </div>
+              <div class="field-pair">
+                <label for="ha-card-script-filename" data-i18n="label.scriptFilename">HACS script filename</label>
+                <input id="ha-card-script-filename" type="text" autocomplete="off" spellcheck="false" placeholder="energy-kitchen.js" data-i18n-placeholder="placeholder.scriptFilename">
               </div>
             </div>
-            <div class="field-pair">
-              <label for="home-assistant-entity-picker" data-i18n="label.entityPicker">Entity picker</label>
-              <select id="home-assistant-entity-picker"></select>
+          </section>
+          <fieldset class="card-export-language-panel">
+            <legend data-i18n="label.cardExportLanguages">Card export languages</legend>
+            <div class="card-export-language-grid">
+              <label><input type="checkbox" data-card-export-language="en" checked disabled> EN English</label>
+              <label><input type="checkbox" data-card-export-language="de" checked> DE Deutsch</label>
+              <label><input type="checkbox" data-card-export-language="fr"> FR Français</label>
+              <label><input type="checkbox" data-card-export-language="es"> ES Español</label>
+              <label><input type="checkbox" data-card-export-language="it"> IT Italiano</label>
+              <label><input type="checkbox" data-card-export-language="nl"> NL Nederlands</label>
+              <label><input type="checkbox" data-card-export-language="sv"> SV Svenska</label>
+              <label><input type="checkbox" data-card-export-language="no"> NO Norsk</label>
+              <label><input type="checkbox" data-card-export-language="da"> DA Dansk</label>
+              <label><input type="checkbox" data-card-export-language="cs"> CS Česky</label>
+              <label><input type="checkbox" data-card-export-language="ru"> RU русский</label>
+              <label><input type="checkbox" data-card-export-language="pl"> PL Polski</label>
+              <label><input type="checkbox" data-card-export-language="pt"> PT Português</label>
+              <label><input type="checkbox" data-card-export-language="fi"> FI Suomi</label>
             </div>
+            <div class="card-export-translation-controls">
+              <output id="card-translation-status" class="card-translation-module-status" aria-live="polite"></output>
+              <label for="card-auto-translate">
+                <input id="card-auto-translate" type="checkbox">
+                <span data-i18n="label.autoTranslateCardLanguages">Run automatic translation on export</span>
+              </label>
+              <progress id="card-translation-progress" class="card-export-translation-progress" max="100" value="0" hidden></progress>
+            </div>
+            <p class="card-export-language-hint" data-i18n="message.cardExportLanguageHint">EN is the required fallback. Additional languages are exported as English fallback files for now. Please review and translate the corresponding language files before publishing. Automatic translation later requires an internet connection.</p>
+          </fieldset>
+          <section class="card-export-column card-export-actions-column">
+            <div class="connection-actions uniform-actions action-row">
+              <button id="save-home-assistant-group" class="action-group" type="button" data-i18n="button.saveGroup">Save group</button>
+              <button id="delete-home-assistant-group" class="action-group" type="button" data-i18n="button.deleteGroup">Delete group</button>
+              <button id="duplicate-home-assistant-group" class="action-group" type="button" data-i18n="button.duplicateGroup">Duplicate group</button>
+            </div>
+            <div class="connection-actions uniform-actions action-row">
+              <button id="export-home-assistant-config" class="action-export" type="button" data-i18n="button.export">Export</button>
+              <button id="export-ha-card-config" class="action-export" type="button" data-i18n="button.exportHaCard">Export HA card</button>
+              <button id="export-ha-card-package" class="action-export" type="button" data-i18n="button.exportCardPackage">Export card package</button>
+              <button id="export-ha-card-script" class="action-export" type="button" data-i18n="button.exportCardScript">Export card script</button>
+              <button id="export-ha-card-bundle" class="action-export" type="button" data-i18n="button.exportCardBundle">Export HACS bundle</button>
+              <button id="copy-ha-card-config" class="action-export" type="button" data-i18n="button.copyHaCard">Copy HA card</button>
+            </div>
+            <div class="connection-actions uniform-actions action-row">
+              <button id="copy-ha-card-resources" class="action-resource" type="button" disabled data-i18n="button.copyResources">Copy resources</button>
+              <button id="check-ha-card-resources" class="action-resource" type="button" disabled data-i18n="button.checkResources">Check resources</button>
+            </div>
+            <div class="resource-hint-field">
+              <strong data-i18n="heading.resourceHint">Resource hint</strong>
+              <output id="ha-card-dependency" aria-live="polite"></output>
+            </div>
+          </section>
+        </div>
+        <details id="simple-entity-controls" class="entity-picker-panel" open>
+          <summary data-i18n="heading.entitySelection">Entities for the card</summary>
+          <div class="card-import-entity-layout">
+            <section class="entity-picker-column import-debug-column">
+              <label class="temporary-resource-debug-toggle">
+                <input id="toggle-temporary-resource-debug" type="checkbox">
+                <span data-i18n="label.showTemporaryResourceDebug">Show resource debug</span>
+              </label>
+              <details id="temporary-resource-debug" class="temporary-resource-debug" hidden>
+                <summary data-i18n="heading.temporaryResourceDebug">Temporary HA card resource check</summary>
+                <output id="temporary-ha-card-resource-list" aria-live="polite"></output>
+              </details>
+              <div class="connection-actions uniform-actions action-row">
+                <label class="import-button action-import" for="import-home-assistant-config" data-i18n="button.import">Import</label>
+                <input id="import-home-assistant-config" type="file" accept="application/json" hidden>
+                <label class="import-button action-import" for="import-ha-card-config" data-i18n="button.importHaCard">Import HA card</label>
+                <input id="import-ha-card-config" type="file" accept="application/json,application/zip,.json,.yaml,.yml,.zip" hidden>
+                <button id="open-ha-card-paste-import" class="action-import" type="button" data-i18n="button.pasteHaCard">Paste YAML</button>
+              </div>
+              <output id="ha-card-import-review" aria-live="polite"></output>
+              <pre id="ha-card-style-review" class="ha-card-style-review" hidden></pre>
+            </section>
+            <section class="entity-picker-column entity-filter-column">
+              <div class="field-pair">
+                <label for="home-assistant-entity" data-i18n="label.entityIds">Entity IDs</label>
+                <input id="home-assistant-entity" type="text" value="binary_sensor.atlas_status, sensor.atlas_temperature" autocomplete="off" spellcheck="false">
+              </div>
+              <div id="home-assistant-entity-domain-shortcuts" class="entity-domain-shortcuts" aria-label="Entity type shortcuts" data-i18n-aria-label="aria.entityTypeShortcuts"></div>
+              <div class="field-pair">
+                <label for="home-assistant-entity-search" data-i18n="label.entitySearch">Entity search</label>
+                <div class="entity-search-control">
+                  <input id="home-assistant-entity-search" type="search" autocomplete="off" spellcheck="false" placeholder="Filter by name or entity ID" data-i18n-placeholder="placeholder.entitySearch">
+                  <button id="clear-home-assistant-entity-search" type="button" aria-label="Clear entity search" title="Clear entity search" data-i18n-aria-label="aria.clearEntitySearch" data-i18n-title="aria.clearEntitySearch" disabled>&times;</button>
+                </div>
+              </div>
+              <output id="home-assistant-entity-picker-status" class="entity-picker-status" aria-live="polite"></output>
+              <div class="connection-actions uniform-actions">
+                <button id="add-home-assistant-entity" type="button" data-i18n="button.addEntity">Add entity</button>
+                <button id="refresh-home-assistant-entities" type="button" data-i18n="button.refreshEntities">Refresh entities</button>
+              </div>
+              <output id="selected-entity" aria-live="polite"></output>
+            </section>
+            <section class="entity-picker-column entity-selection-column">
+              <div class="field-pair">
+                <label for="home-assistant-entity-domain" data-i18n="label.entityType">Entity type</label>
+                <select id="home-assistant-entity-domain"></select>
+              </div>
+              <div class="field-pair">
+                <label for="home-assistant-entity-picker" data-i18n="label.entityPicker">Entity picker</label>
+                <select id="home-assistant-entity-picker"></select>
+              </div>
+              <div id="card-entity-overview" class="card-entity-overview" aria-live="polite"></div>
+            </section>
           </div>
-          <output id="home-assistant-entity-picker-status" class="entity-picker-status" aria-live="polite"></output>
-          <div class="connection-actions uniform-actions">
-            <button id="add-home-assistant-entity" type="button" data-i18n="button.addEntity">Add entity</button>
-            <button id="refresh-home-assistant-entities" type="button" data-i18n="button.refreshEntities">Refresh entities</button>
-          </div>
-          <output id="selected-entity" aria-live="polite"></output>
-          <div id="card-entity-overview" class="card-entity-overview" aria-live="polite"></div>
         </details>
         <div class="editor-mode-toggle" role="group" aria-label="Card editor mode" data-i18n-aria-label="aria.cardEditorMode">
           <button type="button" data-editor-mode="simple" aria-pressed="true" data-i18n="button.simpleMode">Simple</button>

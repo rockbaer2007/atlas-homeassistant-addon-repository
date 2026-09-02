@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.110
+
+- Arrange the Card Editor export controls in three side-by-side columns on wide
+  screens.
+- Arrange import, entity filtering and entity selection in three side-by-side
+  columns with a responsive single-column fallback.
+- Bump the Home Assistant Card Editor plugin to `0.2.0-alpha.40`.
+
 ## 0.1.109
 
 - Fix the Expert Card Editor raster sliders so extra columns and rows render as
