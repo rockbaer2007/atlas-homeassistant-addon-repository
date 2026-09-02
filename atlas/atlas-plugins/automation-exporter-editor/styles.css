@@ -267,6 +267,23 @@ h3 {
   accent-color: var(--teal);
 }
 
+.checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.checkbox-row input {
+  width: 16px;
+  min-height: 16px;
+  accent-color: var(--teal);
+}
+
 .tag-list {
   display: flex;
   flex-wrap: wrap;
@@ -280,6 +297,11 @@ h3 {
   padding: 3px 8px;
   color: var(--teal-soft);
   font-size: 12px;
+}
+
+.tag.warning {
+  border-color: color-mix(in srgb, var(--orange), var(--line) 30%);
+  color: var(--orange);
 }
 
 .details pre {

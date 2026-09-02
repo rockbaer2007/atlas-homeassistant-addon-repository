@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.123
+
+- Add Automation Exporter / Editor analysis hints for missing ids, missing
+  aliases, duplicate ids or aliases, missing triggers/actions and disabled
+  automations.
+- Add a "warnings only" filter and warnings summary count.
+- Bump the bundled Automation Exporter / Editor plugin to `0.1.2`.
+
 ## 0.1.122
 
 - Make Plugin Hub capability lists collapsible by default on every plugin card.

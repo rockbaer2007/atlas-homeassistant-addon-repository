@@ -12,6 +12,7 @@ const elements = {
   sourceStatus: document.querySelector("#source-status"),
   exportFolder: document.querySelector("#export-folder"),
   search: document.querySelector("#search"),
+  filterWarnings: document.querySelector("#filter-warnings"),
   selectAll: document.querySelector("#select-all"),
   selectNone: document.querySelector("#select-none"),
   exportSelected: document.querySelector("#export-selected"),
@@ -23,6 +24,7 @@ const elements = {
   countAutomations: document.querySelector("#count-automations"),
   countEntities: document.querySelector("#count-entities"),
   countServices: document.querySelector("#count-services"),
+  countWarnings: document.querySelector("#count-warnings"),
 };
 
 const demoYaml = `- id: atlas_demo_light
@@ -52,6 +54,7 @@ const demoYaml = `- id: atlas_demo_light
 elements.loadSystem.addEventListener("click", loadSystemAutomations);
 elements.upload.addEventListener("change", handleUpload);
 elements.search.addEventListener("input", render);
+elements.filterWarnings.addEventListener("change", render);
 elements.selectAll.addEventListener("click", selectVisible);
 elements.selectNone.addEventListener("click", () => {
   state.selectedIds.clear();
@@ -102,26 +105,38 @@ function analyzeSource(sourceName, content) {
   state.automations = parseAutomations(content);
   state.selectedIds = new Set(state.automations.map(item => item.localId));
   state.activeId = state.automations[0]?.localId ?? "";
-  setStatus(`${sourceName}: ${state.automations.length} Automationen erkannt.`);
+  const warningCount = countWarnings(state.automations);
+  const warningText = warningCount > 0 ? `, ${warningCount} Hinweis(e)` : ", keine Hinweise";
+  setStatus(`${sourceName}: ${state.automations.length} Automationen erkannt${warningText}.`);
   render();
 }
 
 function parseAutomations(content) {
-  return splitAutomationBlocks(content).map((block, index) => {
+  const automations = splitAutomationBlocks(content).map((block, index) => {
     const alias = readYamlValue(block, "alias") || `automation-${index + 1}`;
     const id = readYamlValue(block, "id");
     const entities = uniqueMatches(block, /(?:entity_id:\s*|['"])([a-z_]+\.[a-zA-Z0-9_]+)['"]?/g);
     const services = uniqueMatches(block, /service:\s*['"]?([a-z_]+\.[a-zA-Z0-9_]+)['"]?/g);
+    const triggerCount = countTopLevelSections(block, ["trigger", "triggers"]);
+    const conditionCount = countTopLevelSections(block, ["condition", "conditions"]);
+    const actionCount = countTopLevelSections(block, ["action", "actions"]);
+    const disabled = /^\s*-?\s*(initial_state|enabled)\s*:\s*(false|off|no)\s*$/im.test(block);
     return {
       localId: `${index}-${slugify(alias || id || "automation")}`,
       alias,
       id,
       entities,
       services,
+      triggerCount,
+      conditionCount,
+      actionCount,
+      disabled,
+      warnings: [],
       yaml: normalizeAutomationYaml(block),
       sourceIndex: index + 1,
     };
   });
+  return addAutomationWarnings(automations);
 }
 
 function splitAutomationBlocks(content) {
@@ -145,6 +160,36 @@ function splitAutomationBlocks(content) {
 function readYamlValue(block, key) {
   const match = block.match(new RegExp(`^\\s*-?\\s*${key}:\\s*["']?([^"'\\n#]+)`, "m"));
   return match?.[1]?.trim() ?? "";
+}
+
+function countTopLevelSections(block, keys) {
+  const keyPattern = keys.map(key => key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const match = block.match(new RegExp(`^\\s*-?\\s*(${keyPattern})\\s*:`, "gim"));
+  return match?.length ?? 0;
+}
+
+function addAutomationWarnings(automations) {
+  const idCounts = countBy(automations.map(item => item.id).filter(Boolean));
+  const aliasCounts = countBy(automations.map(item => item.alias).filter(Boolean).map(value => value.toLowerCase()));
+  return automations.map(automation => {
+    const warnings = [];
+    if (!automation.id) warnings.push("Keine ID gefunden");
+    if (!automation.alias || /^automation-\d+$/.test(automation.alias)) warnings.push("Kein Alias gefunden");
+    if (automation.id && idCounts.get(automation.id) > 1) warnings.push("Doppelte ID");
+    if (automation.alias && aliasCounts.get(automation.alias.toLowerCase()) > 1) warnings.push("Doppelter Alias");
+    if (automation.triggerCount === 0) warnings.push("Kein Trigger erkannt");
+    if (automation.actionCount === 0) warnings.push("Keine Action erkannt");
+    if (automation.disabled) warnings.push("Deaktiviert");
+    return { ...automation, warnings };
+  });
+}
+
+function countBy(values) {
+  const counts = new Map();
+  for (const value of values) {
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return counts;
 }
 
 function normalizeAutomationYaml(block) {
@@ -184,12 +229,13 @@ function createAutomationRow(automation) {
   title.textContent = automation.alias;
   const meta = document.createElement("div");
   meta.className = "automation-meta";
-  meta.textContent = `#${automation.sourceIndex} · ID ${automation.id || "-"} · ${automation.entities.length} Entitaeten · ${automation.services.length} Services`;
+  meta.textContent = `#${automation.sourceIndex} · ID ${automation.id || "-"} · ${automation.triggerCount} Trigger · ${automation.conditionCount} Conditions · ${automation.actionCount} Actions`;
   const tags = document.createElement("div");
   tags.className = "tag-list";
-  for (const value of [...automation.entities.slice(0, 4), ...automation.services.slice(0, 3)]) {
+  for (const value of [...automation.warnings.map(warning => `Hinweis: ${warning}`), ...automation.entities.slice(0, 4), ...automation.services.slice(0, 3)]) {
     const tag = document.createElement("span");
     tag.className = "tag";
+    if (value.startsWith("Hinweis: ")) tag.classList.add("warning");
     tag.textContent = value;
     tags.append(tag);
   }
@@ -233,13 +279,13 @@ function renderDetails() {
   title.textContent = automation.alias;
   const meta = document.createElement("p");
   meta.className = "muted";
-  meta.textContent = `${automation.entities.length} Entitaeten, ${automation.services.length} Services`;
+  meta.textContent = `${automation.triggerCount} Trigger, ${automation.conditionCount} Conditions, ${automation.actionCount} Actions, ${automation.entities.length} Entitaeten, ${automation.services.length} Services`;
   const pre = document.createElement("pre");
   pre.textContent = automation.yaml;
-  elements.details.append(title, meta, createTagBlock("Entitaeten", automation.entities), createTagBlock("Services", automation.services), pre);
+  elements.details.append(title, meta, createTagBlock("Hinweise", automation.warnings, "warning"), createTagBlock("Entitaeten", automation.entities), createTagBlock("Services", automation.services), pre);
 }
 
-function createTagBlock(label, values) {
+function createTagBlock(label, values, variant = "") {
   const wrapper = document.createElement("div");
   const heading = document.createElement("h3");
   heading.textContent = label;
@@ -248,6 +294,7 @@ function createTagBlock(label, values) {
   for (const value of values.length ? values : ["-"]) {
     const tag = document.createElement("span");
     tag.className = "tag";
+    if (variant) tag.classList.add(variant);
     tag.textContent = value;
     tags.append(tag);
   }
@@ -261,6 +308,7 @@ function renderSummary() {
   elements.countAutomations.textContent = String(state.automations.length);
   elements.countEntities.textContent = String(allEntities.size);
   elements.countServices.textContent = String(allServices.size);
+  elements.countWarnings.textContent = String(countWarnings(state.automations));
   elements.selectionCount.textContent = `${state.selectedIds.size} ausgewaehlt`;
 }
 
@@ -287,16 +335,27 @@ function renderHistory() {
 
 function getVisibleAutomations() {
   const query = elements.search.value.trim().toLowerCase();
-  if (!query) {
-    return state.automations;
-  }
-  return state.automations.filter(item => [
+  const warningOnly = elements.filterWarnings.checked;
+  return state.automations.filter(item => {
+    if (warningOnly && item.warnings.length === 0) {
+      return false;
+    }
+    if (!query) {
+      return true;
+    }
+    return [
     item.alias,
     item.id,
+    ...item.warnings,
     ...item.entities,
     ...item.services,
     item.yaml,
-  ].join(" ").toLowerCase().includes(query));
+    ].join(" ").toLowerCase().includes(query);
+  });
+}
+
+function countWarnings(automations) {
+  return automations.reduce((sum, automation) => sum + automation.warnings.length, 0);
 }
 
 function selectVisible() {
