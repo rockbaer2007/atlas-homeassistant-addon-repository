@@ -13,6 +13,7 @@ by the existing Windows Automation Exporter.
 - show analysis warnings for missing or duplicate ids/aliases, missing triggers
   or actions and disabled automations
 - show the selected automation YAML with Studio-like highlighting
+- keep the automation list internally scrollable with roughly 15 visible rows
 - configure a target export folder label
 - export selected automations as separate YAML files
 - name exports as `name_dd_mm_yy-hh_mm_ss.yaml`

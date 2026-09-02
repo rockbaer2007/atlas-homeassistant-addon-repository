@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.126
+
+- Limit the Automation Exporter / Editor automation list to roughly 15 visible
+  entries and scroll inside the list for larger `automations.yaml` files.
+- Bump the bundled Automation Exporter / Editor plugin to `0.1.5`.
+
 ## 0.1.125
 
 - Add Studio-like YAML highlighting to the Automation Exporter / Editor details

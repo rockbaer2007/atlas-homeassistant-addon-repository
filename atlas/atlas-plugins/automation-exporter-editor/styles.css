@@ -227,6 +227,12 @@ h3 {
   margin-top: 14px;
 }
 
+.automation-list {
+  max-height: min(72vh, calc(15 * 74px));
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
 .automation-row,
 .export-row {
   align-items: center;
