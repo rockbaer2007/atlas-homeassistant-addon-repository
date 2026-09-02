@@ -167,6 +167,10 @@ const expertColumn = document.querySelector("#expert-column");
 const expertRow = document.querySelector("#expert-row");
 const expertWidth = document.querySelector("#expert-width");
 const expertHeight = document.querySelector("#expert-height");
+const expertGridColumnsControl = document.querySelector("#expert-grid-columns");
+const expertGridRowsControl = document.querySelector("#expert-grid-rows");
+const expertGridColumnsOutput = document.querySelector("#expert-grid-columns-output");
+const expertGridRowsOutput = document.querySelector("#expert-grid-rows-output");
 const addExpertField = document.querySelector("#add-expert-field");
 const editExpertField = document.querySelector("#edit-expert-field");
 const arrangeExpertFields = document.querySelector("#arrange-expert-fields");
@@ -269,6 +273,8 @@ const translations = {
     "label.row": "Row",
     "label.width": "Width",
     "label.height": "Height",
+    "label.gridColumns": "Horizontal grid",
+    "label.gridRows": "Vertical grid",
     "button.connect": "Connect",
     "button.disconnect": "Disconnect",
     "button.saveGroup": "Save group",
@@ -428,7 +434,7 @@ const translations = {
     "message.refreshingResources": "{message} Refreshing Lovelace resources from Home Assistant.",
     "message.connectAndScanAgain": "{message} Connect to Home Assistant and scan again to refresh the list.",
     "message.templateSizeSet": "{template} size set to {columns} columns and {rows} rows.",
-    "message.surfaceResized": "Expert editor surface resized: +{columns} columns, +{rows} rows.",
+    "message.surfaceResized": "Expert editor grid set to {columns}x{rows}.",
     "message.surfaceSizeReset": "Expert editor surface size reset to the default.",
     "message.arrangeNeedsFields": "Add Expert fields before arranging the editor surface.",
     "message.fieldsArranged": "Expert fields arranged. Overlaps: {previous} -> {next}.",
@@ -729,6 +735,8 @@ const translations = {
     "label.row": "Zeile",
     "label.width": "Breite",
     "label.height": "Höhe",
+    "label.gridColumns": "Raster horizontal",
+    "label.gridRows": "Raster vertikal",
     "button.connect": "Verbinden",
     "button.disconnect": "Trennen",
     "button.saveGroup": "Gruppe speichern",
@@ -888,7 +896,7 @@ const translations = {
     "message.refreshingResources": "{message} Lovelace-Ressourcen werden von Home Assistant aktualisiert.",
     "message.connectAndScanAgain": "{message} Verbinde Home Assistant und scanne erneut, um die Liste zu aktualisieren.",
     "message.templateSizeSet": "{template} Größe auf {columns} Spalten und {rows} Zeilen gesetzt.",
-    "message.surfaceResized": "Expert-Editor-Fläche geändert: +{columns} Spalten, +{rows} Zeilen.",
+    "message.surfaceResized": "Expert-Editor-Raster auf {columns}x{rows} gesetzt.",
     "message.surfaceSizeReset": "Expert-Editor-Fläche auf Standardgröße zurückgesetzt.",
     "message.arrangeNeedsFields": "Füge Expert-Felder hinzu, bevor du die Editor-Fläche anordnest.",
     "message.fieldsArranged": "Expert-Felder angeordnet. Überlappungen: {previous} -> {next}.",
@@ -1395,11 +1403,14 @@ const expertTemplateSizing = new Map(cardEditorTemplates.map(template => [
     rows: "auto",
   },
 ]));
-const expertGridColumns = 12;
-const expertGridRows = 12;
+const expertGridBaseColumns = 12;
+const expertGridBaseRows = 12;
+const expertGridMaxExtraColumns = 5;
+const expertGridMaxExtraRows = 5;
+const expertGridCellSize = 52;
+let expertGridColumns = expertGridBaseColumns;
+let expertGridRows = expertGridBaseRows;
 const expertFieldMaxResizeDelta = 5;
-const expertEditorSurfaceMaxResizeDelta = 5;
-const expertEditorSurfaceHeightStep = 40;
 let expertEditorSurfaceSize = { columns: 0, rows: 0 };
 let expertDragFieldOffset = { column: 0, row: 0 };
 let connection;
@@ -1509,7 +1520,7 @@ try {
   if (savedConfiguration?.expertEditorSurfaceSize && typeof savedConfiguration.expertEditorSurfaceSize === "object") {
     expertEditorSurfaceSize = {
       columns: clampExpertEditorSurfaceDelta(savedConfiguration.expertEditorSurfaceSize.columns),
-      rows: clampExpertEditorSurfaceDelta(savedConfiguration.expertEditorSurfaceSize.rows),
+      rows: clampExpertEditorSurfaceDelta(savedConfiguration.expertEditorSurfaceSize.rows, expertGridMaxExtraRows),
     };
   }
   if (Array.isArray(savedConfiguration?.expertEditorFields)) {
@@ -4875,86 +4886,104 @@ function clampExpertFieldOffset(value, fallback, max) {
   return Math.max(0, Math.min(max, nextValue));
 }
 
-function clampExpertEditorSurfaceDelta(value) {
+function clampExpertEditorSurfaceDelta(value, max = expertGridMaxExtraColumns) {
   const numericValue = Number(value);
   const nextValue = Number.isFinite(numericValue) ? Math.floor(numericValue) : 0;
-  return Math.max(0, Math.min(expertEditorSurfaceMaxResizeDelta, nextValue));
+  return Math.max(0, Math.min(max, nextValue));
 }
 
-function expertEditorSurfaceWidthStep() {
-  const configuredBaseWidth = Number.parseFloat(expertEditorDropzone.style.getPropertyValue("--expert-editor-base-width"));
-  const containerWidth = Number.isFinite(configuredBaseWidth) && configuredBaseWidth > 0
-    ? configuredBaseWidth
-    : expertEditorDropzone.clientWidth || 672;
-  return Math.max(48, Math.round(containerWidth / expertGridColumns));
+function clampExpertGridColumns(value) {
+  const numericValue = Number(value);
+  const nextValue = Number.isFinite(numericValue) ? Math.floor(numericValue) : expertGridBaseColumns;
+  return Math.max(expertGridBaseColumns, Math.min(expertGridBaseColumns + expertGridMaxExtraColumns, nextValue));
+}
+
+function clampExpertGridRows(value) {
+  const numericValue = Number(value);
+  const nextValue = Number.isFinite(numericValue) ? Math.floor(numericValue) : expertGridBaseRows;
+  return Math.max(expertGridBaseRows, Math.min(expertGridBaseRows + expertGridMaxExtraRows, nextValue));
+}
+
+function syncExpertGridSizeFromSurfaceDelta() {
+  expertGridColumns = clampExpertGridColumns(expertGridBaseColumns + clampExpertEditorSurfaceDelta(expertEditorSurfaceSize.columns));
+  expertGridRows = clampExpertGridRows(expertGridBaseRows + clampExpertEditorSurfaceDelta(expertEditorSurfaceSize.rows, expertGridMaxExtraRows));
+  expertEditorSurfaceSize = {
+    columns: expertGridColumns - expertGridBaseColumns,
+    rows: expertGridRows - expertGridBaseRows,
+  };
+}
+
+function syncExpertSurfaceDeltaFromGridSize() {
+  expertEditorSurfaceSize = {
+    columns: expertGridColumns - expertGridBaseColumns,
+    rows: expertGridRows - expertGridBaseRows,
+  };
+}
+
+function syncExpertGridControls() {
+  if (expertGridColumnsControl) {
+    expertGridColumnsControl.min = String(expertGridBaseColumns);
+    expertGridColumnsControl.max = String(expertGridBaseColumns + expertGridMaxExtraColumns);
+    expertGridColumnsControl.value = String(expertGridColumns);
+  }
+  if (expertGridRowsControl) {
+    expertGridRowsControl.min = String(expertGridBaseRows);
+    expertGridRowsControl.max = String(expertGridBaseRows + expertGridMaxExtraRows);
+    expertGridRowsControl.value = String(expertGridRows);
+  }
+  if (expertGridColumnsOutput) {
+    expertGridColumnsOutput.value = String(expertGridColumns);
+    expertGridColumnsOutput.textContent = String(expertGridColumns);
+  }
+  if (expertGridRowsOutput) {
+    expertGridRowsOutput.value = String(expertGridRows);
+    expertGridRowsOutput.textContent = String(expertGridRows);
+  }
 }
 
 function applyExpertEditorSurfaceSize() {
-  const availableWidth = expertEditorCanvasRow?.clientWidth || expertEditorCanvasRow?.parentElement?.clientWidth || 972;
-  const baseWidth = Math.max(640, availableWidth);
-  expertEditorDropzone.style.setProperty("--expert-editor-base-width", `${baseWidth}px`);
-  expertEditorDropzone.style.setProperty(
-    "--expert-editor-extra-width",
-    `${expertEditorSurfaceSize.columns * expertEditorSurfaceWidthStep()}px`,
-  );
-  expertEditorDropzone.style.setProperty(
-    "--expert-editor-extra-height",
-    `${expertEditorSurfaceSize.rows * expertEditorSurfaceHeightStep}px`,
-  );
+  syncExpertGridSizeFromSurfaceDelta();
+  syncExpertGridControls();
+  expertEditorDropzone.style.setProperty("--expert-editor-columns", String(expertGridColumns));
+  expertEditorDropzone.style.setProperty("--expert-editor-rows", String(expertGridRows));
+  expertEditorDropzone.style.setProperty("--expert-editor-cell-size", `${expertGridCellSize}px`);
+  expertEditorDropzone.style.setProperty("--expert-editor-surface-width", `${expertGridColumns * expertGridCellSize}px`);
+  expertEditorDropzone.style.setProperty("--expert-editor-surface-height", `${expertGridRows * expertGridCellSize}px`);
 }
 
-function appendExpertEditorSurfaceResizeHandle() {
-  const handle = document.createElement("button");
-  handle.type = "button";
-  handle.className = "expert-editor-surface-resize-handle";
-  handle.setAttribute("aria-label", t("aria.resizeExpertSurface"));
-  handle.title = t("aria.resizeExpertSurface");
-  handle.addEventListener("pointerdown", startExpertEditorSurfaceResize);
-  handle.addEventListener("click", event => {
-    event.preventDefault();
-    event.stopPropagation();
+function updateExpertEditorGridSize() {
+  expertGridColumns = clampExpertGridColumns(expertGridColumnsControl?.value);
+  expertGridRows = clampExpertGridRows(expertGridRowsControl?.value);
+  syncExpertSurfaceDeltaFromGridSize();
+  clampExpertFieldsToGrid();
+  persistConfiguration();
+  renderExpertEditorPreview();
+  statusMessage.textContent = t("message.surfaceResized", {
+    columns: expertGridColumns,
+    rows: expertGridRows,
   });
-  expertEditorDropzone.append(handle);
-}
-
-function startExpertEditorSurfaceResize(event) {
-  event.preventDefault();
-  event.stopPropagation();
-  const starting = { ...expertEditorSurfaceSize };
-  const startX = event.clientX;
-  const startY = event.clientY;
-  const widthStep = expertEditorSurfaceWidthStep();
-  const heightStep = expertEditorSurfaceHeightStep;
-  document.body.style.cursor = "nwse-resize";
-
-  const applyResize = pointerEvent => {
-    expertEditorSurfaceSize = {
-      columns: clampExpertEditorSurfaceDelta(starting.columns + Math.round((pointerEvent.clientX - startX) / widthStep)),
-      rows: clampExpertEditorSurfaceDelta(starting.rows + Math.round((pointerEvent.clientY - startY) / heightStep)),
-    };
-    applyExpertEditorSurfaceSize();
-  };
-
-  const finishResize = () => {
-    window.removeEventListener("pointermove", applyResize);
-    window.removeEventListener("pointerup", finishResize);
-    document.body.style.cursor = "";
-    persistConfiguration();
-    statusMessage.textContent = t("message.surfaceResized", {
-      columns: expertEditorSurfaceSize.columns,
-      rows: expertEditorSurfaceSize.rows,
-    });
-  };
-
-  window.addEventListener("pointermove", applyResize);
-  window.addEventListener("pointerup", finishResize, { once: true });
 }
 
 function resetExpertEditorSurfaceSize() {
   expertEditorSurfaceSize = { columns: 0, rows: 0 };
-  applyExpertEditorSurfaceSize();
+  syncExpertGridSizeFromSurfaceDelta();
   persistConfiguration();
+  renderExpertEditorPreview();
   statusMessage.textContent = t("message.surfaceSizeReset");
+}
+
+function clampExpertFieldsToGrid() {
+  for (const [index, field] of expertEditorFields.entries()) {
+    const width = Math.max(1, Math.min(expertGridColumns, field.width));
+    const height = Math.max(1, Math.min(expertGridRows, field.height));
+    expertEditorFields[index] = {
+      ...field,
+      width,
+      height,
+      column: Math.max(0, Math.min(expertGridColumns - width, field.column)),
+      row: Math.max(0, Math.min(expertGridRows - height, field.row)),
+    };
+  }
 }
 
 function arrangeExpertEditorFields() {
@@ -5136,7 +5165,6 @@ function renderExpertEditorSurface() {
     empty.textContent = t("message.dragCard");
     grid.append(empty);
     expertEditorDropzone.append(grid);
-    appendExpertEditorSurfaceResizeHandle();
     renderExpertSelectedCardDetails();
     return;
   }
@@ -5235,7 +5263,6 @@ function renderExpertEditorSurface() {
     grid.append(tile);
   });
   expertEditorDropzone.append(grid);
-  appendExpertEditorSurfaceResizeHandle();
   renderExpertSelectedCardDetails();
 }
 
@@ -6785,6 +6812,10 @@ function createProblemReportData() {
       cardName: currentExpertCardName(),
       selectedFieldIndex: selectedExpertFieldIndex,
       editing: expertFieldEditing,
+      grid: {
+        columns: expertGridColumns,
+        rows: expertGridRows,
+      },
       surfaceSize: expertEditorSurfaceSize,
       fields: normalizedExpertEditorFields(),
       summary: expertEditorSummary.textContent,
@@ -7637,6 +7668,10 @@ expertBubbleButtonType.addEventListener("change", updateSelectedExpertFieldBubbl
 for (const control of [expertColumn, expertRow, expertWidth, expertHeight]) {
   control.addEventListener("change", updateSelectedExpertFieldGeometry);
 }
+for (const control of [expertGridColumnsControl, expertGridRowsControl].filter(Boolean)) {
+  control.addEventListener("input", updateExpertEditorGridSize);
+  control.addEventListener("change", updateExpertEditorGridSize);
+}
 applyExpertTitle.addEventListener("click", () => {
   updateSelectedExpertFieldTitle(expertTitle.value);
 });
@@ -7982,7 +8017,7 @@ importHomeAssistantConfig.addEventListener("change", async () => {
     if (pendingImport.expertEditorSurfaceSize && typeof pendingImport.expertEditorSurfaceSize === "object") {
       expertEditorSurfaceSize = {
         columns: clampExpertEditorSurfaceDelta(pendingImport.expertEditorSurfaceSize.columns),
-        rows: clampExpertEditorSurfaceDelta(pendingImport.expertEditorSurfaceSize.rows),
+        rows: clampExpertEditorSurfaceDelta(pendingImport.expertEditorSurfaceSize.rows, expertGridMaxExtraRows),
       };
     } else {
       expertEditorSurfaceSize = { columns: 0, rows: 0 };

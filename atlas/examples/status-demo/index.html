@@ -1190,6 +1190,61 @@
         padding-bottom: 10px;
       }
 
+      .expert-grid-frame {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .expert-grid-axis-control {
+        display: grid;
+        gap: 4px;
+        color: #536079;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .expert-grid-axis-control label {
+        color: #172033;
+        font-weight: 800;
+      }
+
+      .expert-grid-axis-control input[type="range"] {
+        width: 100%;
+        accent-color: #0f766e;
+      }
+
+      .expert-grid-axis-control output {
+        color: #0f766e;
+        font-weight: 800;
+      }
+
+      .expert-grid-body {
+        display: grid;
+        grid-template-columns: 40px minmax(0, 1fr);
+        gap: 8px;
+        align-items: stretch;
+        min-width: 0;
+      }
+
+      .expert-grid-rows-control {
+        justify-items: center;
+        min-height: 220px;
+        padding-top: 6px;
+      }
+
+      .expert-grid-rows-control label,
+      .expert-grid-rows-control output {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+      }
+
+      .expert-grid-rows-control input[type="range"] {
+        width: 220px;
+        transform: rotate(-90deg);
+        transform-origin: center;
+      }
+
       .expert-editor-controls .wide {
         grid-column: 1 / -1;
       }
@@ -1452,11 +1507,13 @@
       }
 
       .expert-editor-dropzone {
-        --expert-editor-base-width: 640px;
-        --expert-editor-extra-width: 0px;
-        --expert-editor-extra-height: 0px;
+        --expert-editor-cell-size: 52px;
+        --expert-editor-columns: 12;
+        --expert-editor-rows: 12;
+        --expert-editor-surface-width: 624px;
+        --expert-editor-surface-height: 624px;
         position: relative;
-        width: calc(var(--expert-editor-base-width) + var(--expert-editor-extra-width));
+        width: calc(var(--expert-editor-surface-width) + 28px);
         max-width: none;
         padding: 14px;
         border: 1px dashed #0f766e;
@@ -1464,44 +1521,23 @@
         background: #f8fffd;
         color: #115e59;
         box-sizing: border-box;
-        min-height: calc(448px + var(--expert-editor-extra-height));
+        min-height: calc(var(--expert-editor-surface-height) + 28px);
         text-align: center;
       }
 
       .expert-surface-grid {
         display: grid;
-        grid-template-columns: repeat(12, minmax(0, 1fr));
-        grid-template-rows: repeat(12, minmax(32px, 1fr));
+        grid-template-columns: repeat(var(--expert-editor-columns), var(--expert-editor-cell-size));
+        grid-template-rows: repeat(var(--expert-editor-rows), var(--expert-editor-cell-size));
         gap: 4px;
-        min-height: calc(420px + var(--expert-editor-extra-height));
+        width: var(--expert-editor-surface-width);
+        min-height: var(--expert-editor-surface-height);
         background:
           linear-gradient(to right, rgba(15, 118, 110, 0.16) 1px, transparent 1px),
           linear-gradient(to bottom, rgba(15, 118, 110, 0.16) 1px, transparent 1px);
-        background-size: calc(100% / 12) 100%, 100% calc(100% / 12);
-      }
-
-      .expert-editor-surface-resize-handle {
-        position: absolute;
-        right: -8px;
-        bottom: -8px;
-        z-index: 4;
-        width: 28px;
-        height: 28px;
-        padding: 0;
-        border: 2px solid #f0645c;
-        border-radius: 6px;
-        background:
-          linear-gradient(135deg, transparent 0 46%, #f0645c 47% 53%, transparent 54%),
-          linear-gradient(135deg, transparent 0 64%, #f0645c 65% 71%, transparent 72%),
-          #ffffff;
-        box-shadow: 0 6px 14px rgba(23, 32, 51, 0.16);
-        cursor: nwse-resize;
-        touch-action: none;
-      }
-
-      .expert-editor-surface-resize-handle:focus-visible {
-        outline: 3px solid rgba(15, 118, 110, 0.35);
-        outline-offset: 3px;
+        background-size:
+          var(--expert-editor-cell-size) var(--expert-editor-cell-size),
+          var(--expert-editor-cell-size) var(--expert-editor-cell-size);
       }
 
       .expert-surface-grid p {
@@ -3295,8 +3331,22 @@
           </aside>
           <section class="expert-editor-surface" aria-label="Expert editor surface" data-i18n-aria-label="aria.expertSurface">
             <aside id="expert-selected-card-details" class="expert-selected-card-details" aria-live="polite"></aside>
-            <div class="expert-editor-canvas-row">
-              <div id="expert-editor-dropzone" class="expert-editor-dropzone"></div>
+            <div class="expert-grid-frame">
+              <div class="expert-grid-axis-control expert-grid-columns-control">
+                <label for="expert-grid-columns" data-i18n="label.gridColumns">Raster horizontal</label>
+                <input id="expert-grid-columns" type="range" min="12" max="17" value="12">
+                <output id="expert-grid-columns-output" for="expert-grid-columns">12</output>
+              </div>
+              <div class="expert-grid-body">
+                <div class="expert-grid-axis-control expert-grid-rows-control">
+                  <label for="expert-grid-rows" data-i18n="label.gridRows">Raster vertikal</label>
+                  <input id="expert-grid-rows" type="range" min="12" max="17" value="12">
+                  <output id="expert-grid-rows-output" for="expert-grid-rows">12</output>
+                </div>
+                <div class="expert-editor-canvas-row">
+                  <div id="expert-editor-dropzone" class="expert-editor-dropzone"></div>
+                </div>
+              </div>
             </div>
             <div class="expert-editor-controls">
               <div class="field-pair span-2">

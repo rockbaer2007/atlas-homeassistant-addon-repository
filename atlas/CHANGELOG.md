@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.105
+
+- Replace the Expert Card Editor surface stretch handle with horizontal and
+  vertical grid sliders.
+- Keep Expert editor grid cells square while increasing or reducing the
+  available column and row count.
+
 ## 0.1.104
 
 - Add a separate "Copy URL" action to the Plugin Hub sidebar helper for users
