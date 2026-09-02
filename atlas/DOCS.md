@@ -13,6 +13,10 @@ safe first automation workflow plugin. It can analyze `/config/automations.yaml`
 through the approved File Studio path or uploaded YAML files, export selected
 automations with timestamped filenames and hand users over to File Studio for
 editing.
+The Plugin Hub keeps long capability lists and sidebar URLs collapsed by
+default so plugin cards stay compact. Its sidebar helper can copy a direct URL
+for Home Assistant Webpage dashboards or a ready-to-use `panel_iframe` YAML
+block for `configuration.yaml`.
 
 The Home Assistant token and translation provider keys stay in ATLAS
 Administration. The Card Editor receives only the current browser session
@@ -76,7 +80,7 @@ gespeichert. Administration bleibt der Besitzer der Verbindungseinstellungen.
 Nach jedem sichtbaren ATLAS-Update wird die Add-on-Version in diesem Repository
 erhoeht. Home Assistant vergleicht die installierte Version (`old`) mit der
 Repository-Version (`target`). Fuer diesen Stand ist `target` mindestens
-`0.1.97`.
+`0.1.128`.
 
 Wenn Home Assistant weiterhin eine alte Zielversion zeigt:
 
@@ -115,7 +119,7 @@ of the connection settings.
 
 Every visible ATLAS update bumps the Add-on version in this repository. Home
 Assistant compares the installed version (`old`) with the repository version
-(`target`). For this build, `target` should be at least `0.1.97`.
+(`target`). For this build, `target` should be at least `0.1.128`.
 
 If Home Assistant still shows an older target version:
 
