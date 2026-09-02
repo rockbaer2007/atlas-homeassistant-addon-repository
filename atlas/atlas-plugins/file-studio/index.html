@@ -67,21 +67,27 @@
             <span id="editor-kind">Bereit</span>
           </div>
           <div class="editor-toolbar" aria-label="Editor-Aktionen">
-            <button id="save-file" class="icon-button asset-icon-button icon-save" type="button" aria-label="Speichern" title="Speichern" disabled></button>
-            <button id="save-file-as" class="icon-button asset-icon-button icon-save-as" type="button" aria-label="Speichern unter" title="Speichern unter" disabled></button>
-            <button id="discard-file" class="button" type="button" disabled>Verwerfen</button>
-            <button id="validate-file" class="button" type="button" disabled>YAML prüfen</button>
-            <button id="download-file" class="icon-button asset-icon-button icon-download" type="button" aria-label="Download" title="Download" disabled></button>
-            <button id="rename-file" class="icon-button asset-icon-button icon-rename" type="button" aria-label="Umbenennen" title="Umbenennen" disabled></button>
-            <button id="copy-file" class="icon-button asset-icon-button icon-copy" type="button" aria-label="Kopieren" title="Kopieren" disabled></button>
-            <button id="move-file" class="icon-button asset-icon-button icon-move" type="button" aria-label="Verschieben" title="Verschieben" disabled></button>
-            <button id="delete-file" class="icon-button asset-icon-button icon-delete" type="button" aria-label="Löschen" title="Löschen" disabled></button>
-            <button id="extract-archive" class="icon-button asset-icon-button icon-extract" type="button" aria-label="Archiv entpacken" title="Archiv entpacken" disabled></button>
-            <button id="upload-file-trigger" class="button" type="button">Upload/Ersetzen</button>
-            <input id="upload-file" type="file" hidden>
-            <button id="font-decrease" class="icon-button asset-icon-button icon-zoom-out" type="button" aria-label="Schrift kleiner" title="A- Schrift kleiner"></button>
-            <button id="font-increase" class="icon-button asset-icon-button icon-zoom-in" type="button" aria-label="Schrift größer" title="A+ Schrift größer"></button>
-            <button id="word-wrap-toggle" class="button" type="button" aria-pressed="true">Zeilenumbruch</button>
+            <div class="editor-toolbar-icons" aria-label="Editor-Iconaktionen">
+              <button id="save-file" class="icon-button asset-icon-button icon-save" type="button" aria-label="Speichern" title="Speichern" disabled></button>
+              <button id="save-file-as" class="icon-button asset-icon-button icon-save-as" type="button" aria-label="Speichern unter" title="Speichern unter" disabled></button>
+              <button id="download-file" class="icon-button asset-icon-button icon-download" type="button" aria-label="Download" title="Download" disabled></button>
+              <button id="undo-file-change" class="icon-button asset-icon-button icon-undo" type="button" aria-label="Rückgängig" title="Rückgängig" disabled></button>
+              <button id="redo-file-change" class="icon-button asset-icon-button icon-redo" type="button" aria-label="Wiederholen" title="Wiederholen" disabled></button>
+              <button id="rename-file" class="icon-button asset-icon-button icon-rename" type="button" aria-label="Umbenennen" title="Umbenennen" disabled></button>
+              <button id="copy-file" class="icon-button asset-icon-button icon-copy" type="button" aria-label="Kopieren" title="Kopieren" disabled></button>
+              <button id="move-file" class="icon-button asset-icon-button icon-move" type="button" aria-label="Verschieben" title="Verschieben" disabled></button>
+              <button id="delete-file" class="icon-button asset-icon-button icon-delete" type="button" aria-label="Löschen" title="Löschen" disabled></button>
+              <button id="extract-archive" class="icon-button asset-icon-button icon-extract" type="button" aria-label="Archiv entpacken" title="Archiv entpacken" disabled></button>
+              <button id="upload-file-trigger" class="icon-button asset-icon-button icon-replace" type="button" aria-label="Upload/Ersetzen" title="Upload/Ersetzen"></button>
+              <input id="upload-file" type="file" hidden>
+              <button id="font-decrease" class="icon-button asset-icon-button icon-zoom-out" type="button" aria-label="Schrift kleiner" title="A- Schrift kleiner"></button>
+              <button id="font-increase" class="icon-button asset-icon-button icon-zoom-in" type="button" aria-label="Schrift größer" title="A+ Schrift größer"></button>
+              <button id="word-wrap-toggle" class="icon-button asset-icon-button icon-word-wrap" type="button" aria-label="Zeilenumbruch" title="Zeilenumbruch" aria-pressed="true"></button>
+            </div>
+            <div class="editor-toolbar-text" aria-label="Editor-Textaktionen">
+              <button id="discard-file" class="button" type="button" disabled>Verwerfen</button>
+              <button id="validate-file" class="button" type="button" disabled>YAML prüfen</button>
+            </div>
           </div>
           <div id="editor-input" class="editor-input" role="textbox" aria-label="Dateieditor"></div>
           <div class="status-row">
@@ -342,6 +348,8 @@
         document.querySelector("#discard-file").disabled = !hasFile || !isDirty;
         document.querySelector("#validate-file").disabled = !hasFile || isPreview;
         document.querySelector("#download-file").disabled = !hasFile;
+        document.querySelector("#undo-file-change").disabled = !hasFile || isPreview;
+        document.querySelector("#redo-file-change").disabled = !hasFile || isPreview;
         document.querySelector("#rename-file").disabled = !hasFile;
         document.querySelector("#copy-file").disabled = !hasFile;
         document.querySelector("#move-file").disabled = !hasFile;
@@ -1145,6 +1153,24 @@
         updateEditorActions();
       }
 
+      function undoEditorChange() {
+        if (!state.selectedFilePath || state.previewMode !== "text") {
+          return;
+        }
+        state.editor?.undo?.();
+        updateCursorStatus();
+        updateEditorActions();
+      }
+
+      function redoEditorChange() {
+        if (!state.selectedFilePath || state.previewMode !== "text") {
+          return;
+        }
+        state.editor?.redo?.();
+        updateCursorStatus();
+        updateEditorActions();
+      }
+
       async function downloadOpenFile() {
         if (!state.selectedFilePath) {
           return;
@@ -1344,6 +1370,8 @@
         document.querySelector("#discard-file").addEventListener("click", discardOpenFileChanges);
         document.querySelector("#validate-file").addEventListener("click", () => void validateOpenFile());
         document.querySelector("#download-file").addEventListener("click", () => void downloadOpenFile());
+        document.querySelector("#undo-file-change").addEventListener("click", undoEditorChange);
+        document.querySelector("#redo-file-change").addEventListener("click", redoEditorChange);
         document.querySelector("#rename-file").addEventListener("click", () => void renameSelectedFile());
         document.querySelector("#copy-file").addEventListener("click", () => void copyOrMoveSelectedFile("copy"));
         document.querySelector("#move-file").addEventListener("click", () => void copyOrMoveSelectedFile("move"));

@@ -517,6 +517,27 @@ body.is-resizing .splitter {
   );
 }
 
+.asset-icon-button.icon-replace::before {
+  background-image: image-set(
+    url("icons/24x24/Replace.png") 1x,
+    url("icons/48x48/Replace.png") 2x
+  );
+}
+
+.asset-icon-button.icon-undo::before {
+  background-image: image-set(
+    url("icons/24x24/Undo.png") 1x,
+    url("icons/48x48/Undo.png") 2x
+  );
+}
+
+.asset-icon-button.icon-redo::before {
+  background-image: image-set(
+    url("icons/24x24/Redo.png") 1x,
+    url("icons/48x48/Redo.png") 2x
+  );
+}
+
 .tree-status,
 .tree-note {
   margin-bottom: 10px;
@@ -852,8 +873,27 @@ body.is-resizing .splitter {
 .editor-toolbar {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin-bottom: 10px;
+}
+
+.editor-toolbar-icons,
+.editor-toolbar-text {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-toolbar-icons {
+  justify-content: flex-start;
+}
+
+.editor-toolbar-text {
+  margin-left: auto;
+  justify-content: flex-end;
 }
 
 .small-button {

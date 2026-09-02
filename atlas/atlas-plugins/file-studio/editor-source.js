@@ -1,4 +1,4 @@
-import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap, indentWithTab, redo, undo } from "@codemirror/commands";
 import { javascript } from "@codemirror/lang-javascript";
 import { json } from "@codemirror/lang-json";
 import { markdown } from "@codemirror/lang-markdown";
@@ -185,6 +185,12 @@ function createEditor(host, options = {}) {
     },
     cursorPosition() {
       return getCursorPosition(view);
+    },
+    undo() {
+      return undo(view);
+    },
+    redo() {
+      return redo(view);
     },
     focus() {
       view.focus();

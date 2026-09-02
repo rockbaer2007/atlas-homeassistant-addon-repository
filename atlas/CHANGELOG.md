@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.89
+
+- Clean up the File Studio toolbar with left-aligned icon buttons and
+  right-aligned text buttons.
+- Add Word-wrap, Upload/Replace, Undo and Redo icon controls.
+- Bump ATLAS File Studio to `0.1.27` for repository update detection.
+
 ## 0.1.88
 
 - Add automatic read-only plugin update checks in Atlas Administration after
