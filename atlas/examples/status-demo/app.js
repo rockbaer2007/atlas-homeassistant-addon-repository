@@ -1413,8 +1413,9 @@ const expertGridMaxExtraColumns = 5;
 const expertGridMaxExtraRows = 5;
 const expertGridDefaultCellSize = 52;
 const expertGridGap = 4;
-const expertGridMinZoomPercent = 74;
+const expertGridMinZoomPercent = 75;
 const expertGridMaxZoomPercent = 150;
+const expertGridZoomStepPercent = 5;
 const expertGridMinCellSize = expertGridDefaultCellSize * (expertGridMinZoomPercent / 100);
 const expertGridMaxCellSize = expertGridDefaultCellSize * (expertGridMaxZoomPercent / 100);
 let expertGridCellSize = expertGridDefaultCellSize;
@@ -4923,15 +4924,18 @@ function clampExpertGridCellSize(value) {
 }
 
 function cellSizeToExpertGridZoomPercent(cellSize) {
+  const rawZoomPercent = Math.round((cellSize / expertGridDefaultCellSize) * 100);
+  const steppedZoomPercent = Math.round(rawZoomPercent / expertGridZoomStepPercent) * expertGridZoomStepPercent;
   return Math.max(
     expertGridMinZoomPercent,
-    Math.min(expertGridMaxZoomPercent, Math.round((cellSize / expertGridDefaultCellSize) * 100)),
+    Math.min(expertGridMaxZoomPercent, steppedZoomPercent),
   );
 }
 
 function expertGridZoomPercentToCellSize(value) {
   const numericValue = Number(value);
-  const zoomPercent = Number.isFinite(numericValue) ? Math.floor(numericValue) : 100;
+  const rawZoomPercent = Number.isFinite(numericValue) ? Math.floor(numericValue) : 100;
+  const zoomPercent = Math.round(rawZoomPercent / expertGridZoomStepPercent) * expertGridZoomStepPercent;
   const clampedZoomPercent = Math.max(expertGridMinZoomPercent, Math.min(expertGridMaxZoomPercent, zoomPercent));
   return clampExpertGridCellSize(expertGridDefaultCellSize * (clampedZoomPercent / 100));
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.118
+
+- Change the Expert Card Editor Zoom slider to 5-percent steps from `75%` to
+  `150%`.
+- Bump the Home Assistant Card Editor plugin to `0.2.0-alpha.46`.
+
 ## 0.1.117
 
 - Set the Expert Card Editor Zoom slider to roughly one and a half times the
