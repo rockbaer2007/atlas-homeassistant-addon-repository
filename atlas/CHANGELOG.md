@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.115
+
+- Move the Expert Card Editor X, Y and Zoom sliders into a compact toolbar above
+  the editor grid.
+- Show X and Y as additional fields from `0` to `+5` and Zoom as a percentage.
+- Start the "Entities for the card" panel collapsed by default.
+- Bump the Home Assistant Card Editor plugin to `0.2.0-alpha.43`.
+
 ## 0.1.114
 
 - Render Expert Card Editor raster cells explicitly so the horizontal and

@@ -275,8 +275,8 @@ const translations = {
     "label.row": "Row",
     "label.width": "Width",
     "label.height": "Height",
-    "label.gridColumns": "Horizontal grid",
-    "label.gridRows": "Vertical grid",
+    "label.gridColumns": "X",
+    "label.gridRows": "Y",
     "label.gridZoom": "Zoom",
     "button.connect": "Connect",
     "button.disconnect": "Disconnect",
@@ -738,8 +738,8 @@ const translations = {
     "label.row": "Zeile",
     "label.width": "Breite",
     "label.height": "Höhe",
-    "label.gridColumns": "Raster horizontal",
-    "label.gridRows": "Raster vertikal",
+    "label.gridColumns": "X",
+    "label.gridRows": "Y",
     "label.gridZoom": "Zoom",
     "button.connect": "Verbinden",
     "button.disconnect": "Trennen",
@@ -4938,14 +4938,14 @@ function syncExpertSurfaceDeltaFromGridSize() {
 
 function syncExpertGridControls() {
   if (expertGridColumnsControl) {
-    expertGridColumnsControl.min = String(expertGridBaseColumns);
-    expertGridColumnsControl.max = String(expertGridBaseColumns + expertGridMaxExtraColumns);
-    expertGridColumnsControl.value = String(expertGridColumns);
+    expertGridColumnsControl.min = "0";
+    expertGridColumnsControl.max = String(expertGridMaxExtraColumns);
+    expertGridColumnsControl.value = String(expertGridColumns - expertGridBaseColumns);
   }
   if (expertGridRowsControl) {
-    expertGridRowsControl.min = String(expertGridBaseRows);
-    expertGridRowsControl.max = String(expertGridBaseRows + expertGridMaxExtraRows);
-    expertGridRowsControl.value = String(expertGridRows);
+    expertGridRowsControl.min = "0";
+    expertGridRowsControl.max = String(expertGridMaxExtraRows);
+    expertGridRowsControl.value = String(expertGridRows - expertGridBaseRows);
   }
   if (expertGridZoomControl) {
     expertGridZoomControl.min = String(expertGridMinCellSize);
@@ -4953,16 +4953,21 @@ function syncExpertGridControls() {
     expertGridZoomControl.value = String(expertGridCellSize);
   }
   if (expertGridColumnsOutput) {
-    expertGridColumnsOutput.value = String(expertGridColumns);
-    expertGridColumnsOutput.textContent = String(expertGridColumns);
+    const extraColumns = expertGridColumns - expertGridBaseColumns;
+    const extraColumnsLabel = extraColumns === 0 ? "0" : `+${extraColumns}`;
+    expertGridColumnsOutput.value = extraColumnsLabel;
+    expertGridColumnsOutput.textContent = extraColumnsLabel;
   }
   if (expertGridRowsOutput) {
-    expertGridRowsOutput.value = String(expertGridRows);
-    expertGridRowsOutput.textContent = String(expertGridRows);
+    const extraRows = expertGridRows - expertGridBaseRows;
+    const extraRowsLabel = extraRows === 0 ? "0" : `+${extraRows}`;
+    expertGridRowsOutput.value = extraRowsLabel;
+    expertGridRowsOutput.textContent = extraRowsLabel;
   }
   if (expertGridZoomOutput) {
-    expertGridZoomOutput.value = `${expertGridCellSize}px`;
-    expertGridZoomOutput.textContent = `${expertGridCellSize}px`;
+    const zoomPercent = Math.round((expertGridCellSize / expertGridDefaultCellSize) * 100);
+    expertGridZoomOutput.value = `${zoomPercent}%`;
+    expertGridZoomOutput.textContent = `${zoomPercent}%`;
   }
 }
 
@@ -5005,8 +5010,8 @@ function renderExpertSurfaceCells(grid) {
 }
 
 function updateExpertEditorGridSize() {
-  expertGridColumns = clampExpertGridColumns(expertGridColumnsControl?.value);
-  expertGridRows = clampExpertGridRows(expertGridRowsControl?.value);
+  expertGridColumns = clampExpertGridColumns(expertGridBaseColumns + clampExpertEditorSurfaceDelta(expertGridColumnsControl?.value));
+  expertGridRows = clampExpertGridRows(expertGridBaseRows + clampExpertEditorSurfaceDelta(expertGridRowsControl?.value, expertGridMaxExtraRows));
   syncExpertSurfaceDeltaFromGridSize();
   clampExpertFieldsToGrid();
   persistConfiguration();
