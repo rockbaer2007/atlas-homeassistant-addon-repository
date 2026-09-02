@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.106
+
+- Add an Expert Card Editor zoom slider that scales square grid cells evenly.
+- Keep column and row sliders dedicated to field count only.
+- Reposition the vertical grid slider so it sits beside the editor surface.
+
 ## 0.1.105
 
 - Replace the Expert Card Editor surface stretch handle with horizontal and

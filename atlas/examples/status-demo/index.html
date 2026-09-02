@@ -1196,6 +1196,13 @@
         min-width: 0;
       }
 
+      .expert-grid-top-controls {
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) minmax(150px, 220px);
+        gap: 10px;
+        align-items: end;
+      }
+
       .expert-grid-axis-control {
         display: grid;
         gap: 4px;
@@ -1221,16 +1228,20 @@
 
       .expert-grid-body {
         display: grid;
-        grid-template-columns: 40px minmax(0, 1fr);
+        grid-template-columns: 52px minmax(0, 1fr);
         gap: 8px;
         align-items: stretch;
         min-width: 0;
       }
 
       .expert-grid-rows-control {
+        align-content: start;
         justify-items: center;
-        min-height: 220px;
-        padding-top: 6px;
+        min-height: 280px;
+        padding: 8px 4px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
       }
 
       .expert-grid-rows-control label,
@@ -1240,9 +1251,10 @@
       }
 
       .expert-grid-rows-control input[type="range"] {
-        width: 220px;
-        transform: rotate(-90deg);
-        transform-origin: center;
+        width: 28px;
+        height: 210px;
+        writing-mode: vertical-lr;
+        direction: rtl;
       }
 
       .expert-editor-controls .wide {
@@ -1313,6 +1325,29 @@
       @media (max-width: 720px) {
         .expert-editor-controls {
           grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .expert-grid-top-controls,
+        .expert-grid-body {
+          grid-template-columns: 1fr;
+        }
+
+        .expert-grid-rows-control {
+          min-height: 0;
+          justify-items: stretch;
+        }
+
+        .expert-grid-rows-control label,
+        .expert-grid-rows-control output {
+          writing-mode: horizontal-tb;
+          transform: none;
+        }
+
+        .expert-grid-rows-control input[type="range"] {
+          width: 100%;
+          height: auto;
+          writing-mode: horizontal-tb;
+          direction: ltr;
         }
 
         .expert-editor-controls .span-2 {
@@ -3332,10 +3367,17 @@
           <section class="expert-editor-surface" aria-label="Expert editor surface" data-i18n-aria-label="aria.expertSurface">
             <aside id="expert-selected-card-details" class="expert-selected-card-details" aria-live="polite"></aside>
             <div class="expert-grid-frame">
-              <div class="expert-grid-axis-control expert-grid-columns-control">
-                <label for="expert-grid-columns" data-i18n="label.gridColumns">Raster horizontal</label>
-                <input id="expert-grid-columns" type="range" min="12" max="17" value="12">
-                <output id="expert-grid-columns-output" for="expert-grid-columns">12</output>
+              <div class="expert-grid-top-controls">
+                <div class="expert-grid-axis-control expert-grid-columns-control">
+                  <label for="expert-grid-columns" data-i18n="label.gridColumns">Raster horizontal</label>
+                  <input id="expert-grid-columns" type="range" min="12" max="17" value="12">
+                  <output id="expert-grid-columns-output" for="expert-grid-columns">12</output>
+                </div>
+                <div class="expert-grid-axis-control expert-grid-zoom-control">
+                  <label for="expert-grid-zoom" data-i18n="label.gridZoom">Zoom</label>
+                  <input id="expert-grid-zoom" type="range" min="40" max="72" value="52">
+                  <output id="expert-grid-zoom-output" for="expert-grid-zoom">52</output>
+                </div>
               </div>
               <div class="expert-grid-body">
                 <div class="expert-grid-axis-control expert-grid-rows-control">
