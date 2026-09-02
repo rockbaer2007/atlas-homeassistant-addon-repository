@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.92
+
+- Add File Studio restore from history with a safety backup before restoring.
+- Add GitHub issue preparation for secret-free File Studio problem reports.
+- Expand Home Assistant YAML hints for automations, scripts, packages and
+  `configuration.yaml`.
+- Bump ATLAS File Studio to `0.1.30` for repository update detection.
+
 ## 0.1.91
 
 - Add File Studio diagnostics with opt-in debug report preview.

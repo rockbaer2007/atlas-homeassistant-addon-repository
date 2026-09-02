@@ -1397,9 +1397,38 @@
         try {
           const history = await apiJson(`api/file-studio/history?path=${encodeURIComponent(state.selectedFilePath)}`);
           const versions = history.versions ?? [];
-          window.alert(versions.length
-            ? versions.map(version => `${version.createdAt} - ${version.name} (${formatFileSize(version.size)})`).join("\n")
-            : "Noch keine gespeicherten Backups fuer diese Datei.");
+          if (!versions.length) {
+            window.alert("Noch keine gespeicherten Backups fuer diese Datei.");
+            return;
+          }
+          const list = versions
+            .map((version, index) => `${index + 1}. ${version.createdAt} - ${version.name} (${formatFileSize(version.size)})`)
+            .join("\n");
+          const choice = window.prompt(`${list}\n\nNummer zum Wiederherstellen eingeben oder leer lassen.`, "");
+          if (!choice?.trim()) {
+            return;
+          }
+          const selectedIndex = Number.parseInt(choice.trim(), 10) - 1;
+          const selected = versions[selectedIndex];
+          if (!selected) {
+            setStatus("Verlauf: ungueltige Auswahl.", "warning");
+            return;
+          }
+          const confirmed = window.confirm(`${selected.name} wirklich wiederherstellen? Der aktuelle Stand wird vorher gesichert.`);
+          if (!confirmed) {
+            return;
+          }
+          const restored = await apiJson("api/file-studio/history/restore", {
+            method: "POST",
+            body: JSON.stringify({
+              path: state.selectedFilePath,
+              backupName: selected.name,
+            }),
+          });
+          setStatus(`Wiederhergestellt aus Verlauf: ${restored.restoredFrom}. ${restored.reload?.message ?? ""}`, "ok");
+          await loadDirectoryTree({ preserveSelection: true });
+          const restoredFile = await apiJson(`api/file-studio/file?path=${encodeURIComponent(restored.path)}`);
+          await openFile(createFileNode(restoredFile));
         } catch (error) {
           setStatus(`Verlauf fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");
         }
@@ -1415,12 +1444,17 @@
             }),
           });
           const report = JSON.stringify(diagnostics.report, null, 2);
-          const confirmed = window.confirm(`Problembericht ohne Secrets anzeigen?\n\n${report.slice(0, 1400)}`);
+          const confirmed = window.confirm(`Problembericht ohne Secrets anzeigen?\n\n${report.slice(0, 1400)}\n\nGitHub-Issue vorbereiten?`);
           if (!confirmed) {
             setStatus("Problembericht verworfen.", "warning");
             return;
           }
           await navigator.clipboard?.writeText(report);
+          if (diagnostics.report?.issueUrl) {
+            window.open(diagnostics.report.issueUrl, "_blank", "noopener,noreferrer");
+            setStatus("Problembericht kopiert und GitHub-Issue vorbereitet.", "ok");
+            return;
+          }
           setStatus("Problembericht ohne Secrets wurde in die Zwischenablage kopiert.", "ok");
         } catch (error) {
           setStatus(`Problembericht fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");

@@ -139,6 +139,11 @@ createServer((request, response) => {
     return;
   }
 
+  if (routePath === "/api/file-studio/history/restore") {
+    void writeFileStudioHistoryRestoreResponse(request, response, request.headers.cookie);
+    return;
+  }
+
   if (routePath === "/api/file-studio/write") {
     void writeFileStudioWriteResponse(request, response, request.headers.cookie);
     return;
@@ -251,6 +256,7 @@ function createRoutePath(pathname) {
     "/api/file-studio/validate",
     "/api/file-studio/diagnostics",
     "/api/file-studio/history",
+    "/api/file-studio/history/restore",
     "/api/file-studio/write",
     "/api/file-studio/create-file",
     "/api/file-studio/create-directory",
@@ -658,6 +664,7 @@ async function writeFileStudioDiagnosticsResponse(request, response, cookieHeade
         roots: createFileStudioRootSummaries(access),
       },
       secretsIncluded: false,
+      issueUrl: createFileStudioIssueUrl(path, validation),
       note: "Debugbericht enthaelt keine Home-Assistant-Token, Provider-API-Keys oder Dateiinhalte.",
     },
   });
@@ -682,6 +689,55 @@ async function writeFileStudioHistoryResponse(response, requestUrl, cookieHeader
     ok: true,
     path: createFileStudioDisplayPath(targetPath, access),
     versions: readFileStudioHistoryEntries(targetPath),
+  });
+}
+
+async function writeFileStudioHistoryRestoreResponse(request, response, cookieHeader) {
+  const body = await readJsonRequestBody(request);
+  const access = createFileStudioAccessContext(cookieHeader);
+  const targetPath = resolveFileStudioPath(body.path, access);
+  const backupName = String(body.backupName ?? "").trim();
+
+  if (!targetPath) {
+    writeJson(response, 403, {
+      kind: "atlas.file-studio.history.restore",
+      ok: false,
+      error: "path outside configured root",
+    });
+    return;
+  }
+
+  if (!existsSync(targetPath) || !statSync(targetPath).isFile()) {
+    writeJson(response, 404, {
+      kind: "atlas.file-studio.history.restore",
+      ok: false,
+      error: "file not found",
+    });
+    return;
+  }
+
+  const backupPath = resolveFileStudioBackupPath(targetPath, backupName);
+  if (!backupPath || !existsSync(backupPath) || !statSync(backupPath).isFile()) {
+    writeJson(response, 404, {
+      kind: "atlas.file-studio.history.restore",
+      ok: false,
+      error: "backup not found",
+    });
+    return;
+  }
+
+  const previous = createFileStudioBackup(targetPath);
+  cpSync(backupPath, targetPath);
+  const stats = statSync(targetPath);
+  writeJson(response, 200, {
+    kind: "atlas.file-studio.history.restore",
+    ok: true,
+    path: createFileStudioDisplayPath(targetPath, access),
+    restoredFrom: backupName,
+    previous,
+    size: stats.size,
+    modifiedAt: stats.mtime.toISOString(),
+    reload: createFileStudioReloadHint(body.path),
   });
 }
 
@@ -1090,8 +1146,7 @@ function createFileStudioBackup(targetPath) {
   if (!existsSync(targetPath) || !statSync(targetPath).isFile()) {
     return undefined;
   }
-  const relativeTarget = relative(root, targetPath).replace(/[:\\/]+/g, "_").replace(/^_+/, "");
-  const historyDirectory = resolve(root, fileStudioHistoryRoot, relativeTarget || "file");
+  const historyDirectory = createFileStudioHistoryDirectoryPath(targetPath);
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const backupName = `${timestamp}-${basename(targetPath)}.bak`;
   const backupPath = resolve(historyDirectory, backupName);
@@ -1105,8 +1160,7 @@ function createFileStudioBackup(targetPath) {
 }
 
 function readFileStudioHistoryEntries(targetPath) {
-  const relativeTarget = relative(root, targetPath).replace(/[:\\/]+/g, "_").replace(/^_+/, "");
-  const historyDirectory = resolve(root, fileStudioHistoryRoot, relativeTarget || "file");
+  const historyDirectory = createFileStudioHistoryDirectoryPath(targetPath);
   if (!existsSync(historyDirectory) || !statSync(historyDirectory).isDirectory()) {
     return [];
   }
@@ -1124,6 +1178,25 @@ function readFileStudioHistoryEntries(targetPath) {
     })
     .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
     .slice(0, 20);
+}
+
+function resolveFileStudioBackupPath(targetPath, backupName) {
+  if (!backupName || backupName.includes("/") || backupName.includes("\\") || backupName.includes("..")) {
+    return undefined;
+  }
+  const historyDirectory = createFileStudioHistoryDirectoryPath(targetPath);
+  const backupPath = resolve(historyDirectory, backupName);
+  return isInsideDirectory(historyDirectory, backupPath) ? backupPath : undefined;
+}
+
+function createFileStudioHistoryDirectoryPath(targetPath) {
+  const relativeTarget = relative(root, targetPath).replace(/[:\\/]+/g, "_").replace(/^_+/, "");
+  return resolve(root, fileStudioHistoryRoot, relativeTarget || "file");
+}
+
+function isInsideDirectory(directoryPath, targetPath) {
+  const relativeTargetPath = relative(directoryPath, targetPath);
+  return relativeTargetPath === "" || (!relativeTargetPath.startsWith("..") && !isAbsolute(relativeTargetPath));
 }
 
 function parseFileStudioBackupCreatedAt(name) {
@@ -1168,6 +1241,26 @@ function createFileStudioReloadHint(filename) {
     level: "none",
     message: "Keine besondere Home-Assistant-Reload-Aktion erkannt.",
   };
+}
+
+function createFileStudioIssueUrl(path, validation) {
+  const title = encodeURIComponent(`File Studio Problem${path ? `: ${path}` : ""}`);
+  const body = encodeURIComponent([
+    "## Beschreibung",
+    "",
+    "Bitte kurz beschreiben, was im ATLAS File Studio passiert ist.",
+    "",
+    "## Diagnose",
+    "",
+    "```json",
+    JSON.stringify({
+      path: path || undefined,
+      validation,
+      secretsIncluded: false,
+    }, null, 2),
+    "```",
+  ].join("\n"));
+  return `https://github.com/rockbaer2007/atlas/issues/new?title=${title}&body=${body}`;
 }
 
 function extractZipArchive(sourcePath, targetDirectory, targetScope) {
@@ -1570,6 +1663,7 @@ function validateFileStudioContent(content, filename) {
   if (["configuration.yaml", "automations.yaml", "scripts.yaml"].includes(baseName) && !content.trim()) {
     warnings.push(`${baseName} ist leer; Home Assistant kann dadurch Konfiguration verlieren oder Reloads ohne Wirkung ausfuehren.`);
   }
+  warnings.push(...findHomeAssistantYamlWarnings(lines, baseName, displayPath));
   const reload = createFileStudioReloadHint(filename);
   const message = warnings.length
     ? `YAML-Basispruefung bestanden, ${warnings.length} Hinweis(e). ${reload.message}`
@@ -1581,6 +1675,44 @@ function validateFileStudioContent(content, filename) {
     warnings,
     reload,
   };
+}
+
+function findHomeAssistantYamlWarnings(lines, baseName, displayPath) {
+  const warnings = [];
+  const meaningfulLines = lines
+    .map((line, index) => ({ line, index }))
+    .filter(entry => entry.line.trim() && !entry.line.trimStart().startsWith("#"));
+  const oddIndent = meaningfulLines.find(entry => {
+    const indent = entry.line.match(/^\s*/)?.[0].length ?? 0;
+    return indent % 2 !== 0;
+  });
+  if (oddIndent) {
+    warnings.push(`Zeile ${oddIndent.index + 1} nutzt eine ungerade Einrueckung; Home-Assistant-YAML ist meist mit 2 Leerzeichen lesbarer.`);
+  }
+  if (baseName === "automations.yaml" && meaningfulLines.length && !meaningfulLines[0].line.trimStart().startsWith("-")) {
+    warnings.push("automations.yaml beginnt normalerweise mit einer Liste von Automationen (`- id:` oder `- alias:`).");
+  }
+  if (baseName === "scripts.yaml" && meaningfulLines.some(entry => entry.line.match(/^-\s+/))) {
+    warnings.push("scripts.yaml ist normalerweise eine Zuordnung aus Script-ID zu Script-Definition, keine oberste Liste.");
+  }
+  if (baseName === "configuration.yaml") {
+    const rootKeys = new Set(meaningfulLines
+      .map(entry => entry.line.match(/^([A-Za-z0-9_.-]+):(?:\s|$)/)?.[1])
+      .filter(Boolean));
+    if (!rootKeys.has("default_config") && !rootKeys.has("homeassistant")) {
+      warnings.push("configuration.yaml enthaelt weder `default_config:` noch `homeassistant:`; bitte pruefen, ob das beabsichtigt ist.");
+    }
+    if (rootKeys.has("automation") && !meaningfulLines.some(entry => entry.line.includes("!include"))) {
+      warnings.push("Automationen direkt in configuration.yaml erkannt; oft ist `automation: !include automations.yaml` uebersichtlicher.");
+    }
+  }
+  if (displayPath.includes("/packages/")) {
+    const hasRootMapping = meaningfulLines.some(entry => /^[A-Za-z0-9_.-]+:\s*/.test(entry.line));
+    if (!hasRootMapping) {
+      warnings.push("Package-Dateien enthalten normalerweise Root-Keys wie `sensor:`, `automation:` oder `template:`.");
+    }
+  }
+  return warnings;
 }
 
 function findDuplicateYamlKey(lines) {
