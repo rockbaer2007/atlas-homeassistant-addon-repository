@@ -1413,8 +1413,10 @@ const expertGridMaxExtraColumns = 5;
 const expertGridMaxExtraRows = 5;
 const expertGridDefaultCellSize = 52;
 const expertGridGap = 4;
-const expertGridMinCellSize = 40;
-const expertGridMaxCellSize = 72;
+const expertGridMinZoomPercent = 74;
+const expertGridMaxZoomPercent = 150;
+const expertGridMinCellSize = expertGridDefaultCellSize * (expertGridMinZoomPercent / 100);
+const expertGridMaxCellSize = expertGridDefaultCellSize * (expertGridMaxZoomPercent / 100);
 let expertGridCellSize = expertGridDefaultCellSize;
 let expertGridColumns = expertGridBaseColumns;
 let expertGridRows = expertGridBaseRows;
@@ -4916,8 +4918,22 @@ function clampExpertGridRows(value) {
 
 function clampExpertGridCellSize(value) {
   const numericValue = Number(value);
-  const nextValue = Number.isFinite(numericValue) ? Math.floor(numericValue) : expertGridDefaultCellSize;
+  const nextValue = Number.isFinite(numericValue) ? numericValue : expertGridDefaultCellSize;
   return Math.max(expertGridMinCellSize, Math.min(expertGridMaxCellSize, nextValue));
+}
+
+function cellSizeToExpertGridZoomPercent(cellSize) {
+  return Math.max(
+    expertGridMinZoomPercent,
+    Math.min(expertGridMaxZoomPercent, Math.round((cellSize / expertGridDefaultCellSize) * 100)),
+  );
+}
+
+function expertGridZoomPercentToCellSize(value) {
+  const numericValue = Number(value);
+  const zoomPercent = Number.isFinite(numericValue) ? Math.floor(numericValue) : 100;
+  const clampedZoomPercent = Math.max(expertGridMinZoomPercent, Math.min(expertGridMaxZoomPercent, zoomPercent));
+  return clampExpertGridCellSize(expertGridDefaultCellSize * (clampedZoomPercent / 100));
 }
 
 function syncExpertGridSizeFromSurfaceDelta() {
@@ -4948,9 +4964,9 @@ function syncExpertGridControls() {
     expertGridRowsControl.value = String(expertGridRows - expertGridBaseRows);
   }
   if (expertGridZoomControl) {
-    expertGridZoomControl.min = String(expertGridMinCellSize);
-    expertGridZoomControl.max = String(expertGridMaxCellSize);
-    expertGridZoomControl.value = String(expertGridCellSize);
+    expertGridZoomControl.min = String(expertGridMinZoomPercent);
+    expertGridZoomControl.max = String(expertGridMaxZoomPercent);
+    expertGridZoomControl.value = String(cellSizeToExpertGridZoomPercent(expertGridCellSize));
   }
   if (expertGridColumnsOutput) {
     const extraColumns = expertGridColumns - expertGridBaseColumns;
@@ -4965,7 +4981,7 @@ function syncExpertGridControls() {
     expertGridRowsOutput.textContent = extraRowsLabel;
   }
   if (expertGridZoomOutput) {
-    const zoomPercent = Math.round((expertGridCellSize / expertGridDefaultCellSize) * 100);
+    const zoomPercent = cellSizeToExpertGridZoomPercent(expertGridCellSize);
     expertGridZoomOutput.value = `${zoomPercent}%`;
     expertGridZoomOutput.textContent = `${zoomPercent}%`;
   }
@@ -5023,7 +5039,7 @@ function updateExpertEditorGridSize() {
 }
 
 function updateExpertEditorZoom() {
-  expertGridCellSize = clampExpertGridCellSize(expertGridZoomControl?.value);
+  expertGridCellSize = expertGridZoomPercentToCellSize(expertGridZoomControl?.value);
   syncExpertGridControls();
   persistConfiguration();
   renderExpertEditorPreview();
