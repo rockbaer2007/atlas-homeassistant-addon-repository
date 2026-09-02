@@ -460,6 +460,43 @@ body.is-resizing .splitter {
   opacity: 0.5;
 }
 
+.svg-icon-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-color: var(--atlas-border);
+  background: var(--atlas-panel-soft);
+}
+
+.svg-icon-button::before {
+  inset: 5px;
+  border: 0;
+  border-radius: 0;
+  background: currentColor;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: 22px 22px;
+}
+
+.svg-icon-button::after {
+  content: none;
+}
+
+.icon-trash {
+  color: var(--atlas-muted);
+}
+
+.icon-trash.has-trash {
+  border-color: var(--atlas-danger-text);
+  background: var(--atlas-danger-soft);
+  color: var(--atlas-danger-text);
+}
+
+.icon-trash::before {
+  mask-image: url("icons/trash.svg");
+}
+
 .asset-icon-button.icon-save::before {
   background-image: image-set(
     url("icons/24x24/Save.png") 1x,
@@ -958,7 +995,8 @@ body.is-resizing .splitter {
 }
 
 .editor-toolbar-icons,
-.editor-toolbar-text {
+.editor-toolbar-text,
+.editor-toolbar-trash {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
@@ -972,6 +1010,19 @@ body.is-resizing .splitter {
 .editor-toolbar-text {
   margin-left: auto;
   justify-content: flex-end;
+}
+
+.editor-toolbar-trash {
+  flex: 0 0 auto;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.toolbar-separator {
+  display: inline-block;
+  width: 1px;
+  height: 28px;
+  background: var(--atlas-border);
 }
 
 .small-button {

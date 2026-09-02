@@ -93,8 +93,11 @@
               <button id="validate-file" class="button" type="button" disabled>YAML prüfen</button>
               <button id="check-ha-config" class="button" type="button" disabled>HA prüfen</button>
               <button id="show-history" class="button" type="button" disabled>Verlauf</button>
-              <button id="show-trash" class="button" type="button">Papierkorb</button>
               <button id="report-problem" class="button" type="button">Problem melden</button>
+            </div>
+            <div class="editor-toolbar-trash" aria-label="Papierkorb">
+              <span class="toolbar-separator" aria-hidden="true"></span>
+              <button id="show-trash" class="icon-button svg-icon-button icon-trash is-empty" type="button" aria-label="Papierkorb leer" title="Papierkorb leer" aria-pressed="false"></button>
             </div>
           </div>
           <div id="editor-input" class="editor-input" role="textbox" aria-label="Dateieditor"></div>
@@ -1556,6 +1559,7 @@
           document.querySelector("#editor-kind").textContent = "Bereit";
           clearSelectedPaths();
           await loadDirectoryTree({ preserveSelection: false });
+          await refreshTrashButton();
           setStatus(paths.length === 1 ? `In Papierkorb verschoben: ${paths[0]}` : `${paths.length} Einträge in Papierkorb verschoben`, "ok");
           updateEditorActions();
         } catch (error) {
@@ -1567,6 +1571,7 @@
         try {
           const trash = await apiJson("api/file-studio/trash");
           const entries = trash.entries ?? [];
+          syncTrashButton(entries.length);
           if (!entries.length) {
             await showMessageDialog("Papierkorb", "Der Papierkorb ist leer.");
             return;
@@ -1608,6 +1613,25 @@
         }
       }
 
+      async function refreshTrashButton() {
+        try {
+          const trash = await apiJson("api/file-studio/trash");
+          syncTrashButton((trash.entries ?? []).length);
+        } catch {
+          syncTrashButton(0);
+        }
+      }
+
+      function syncTrashButton(count) {
+        const button = document.querySelector("#show-trash");
+        const hasTrash = count > 0;
+        button.classList.toggle("has-trash", hasTrash);
+        button.classList.toggle("is-empty", !hasTrash);
+        button.setAttribute("aria-label", hasTrash ? `Papierkorb (${count})` : "Papierkorb leer");
+        button.title = hasTrash ? `Papierkorb (${count})` : "Papierkorb leer";
+        button.setAttribute("aria-pressed", String(hasTrash));
+      }
+
       async function restoreTrashEntry(entry, overwrite) {
         try {
           const restored = await apiJson("api/file-studio/trash/restore", {
@@ -1615,6 +1639,7 @@
             body: JSON.stringify({ id: entry.id, overwrite }),
           });
           await loadDirectoryTree({ preserveSelection: false });
+          await refreshTrashButton();
           if (restored.type === "file") {
             await openFile(createFileNode(restored));
           } else {
@@ -2230,6 +2255,7 @@
       bindSplitters();
       updateEditorActions();
       updateCursorStatus();
+      void refreshTrashButton();
       void loadDirectoryTree();
       window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener("change", applyThemePreference);
     </script>

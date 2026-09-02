@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.96
+
+- Add a dedicated SVG trash icon for File Studio.
+- Move the File Studio trash control to the far right of the editor toolbar
+  behind a separator.
+- Show the trash icon gray when empty and red when entries exist.
+- Bump ATLAS File Studio to `0.1.34` for repository update detection.
+
 ## 0.1.95
 
 - Move File Studio delete operations into a restorable ATLAS trash area.
