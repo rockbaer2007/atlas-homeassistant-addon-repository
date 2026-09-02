@@ -1,7 +1,8 @@
 import { spawn } from "node:child_process";
-import { createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { extname, isAbsolute, normalize, relative, resolve } from "node:path";
+import { basename, dirname, extname, isAbsolute, normalize, relative, resolve } from "node:path";
+import { inflateRawSync } from "node:zlib";
 
 const root = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -142,6 +143,36 @@ createServer((request, response) => {
     return;
   }
 
+  if (routePath === "/api/file-studio/rename") {
+    void writeFileStudioRenameResponse(request, response, request.headers.cookie);
+    return;
+  }
+
+  if (routePath === "/api/file-studio/delete") {
+    void writeFileStudioDeleteResponse(request, response, request.headers.cookie);
+    return;
+  }
+
+  if (routePath === "/api/file-studio/copy") {
+    void writeFileStudioCopyMoveResponse(request, response, request.headers.cookie, "copy");
+    return;
+  }
+
+  if (routePath === "/api/file-studio/move") {
+    void writeFileStudioCopyMoveResponse(request, response, request.headers.cookie, "move");
+    return;
+  }
+
+  if (routePath === "/api/file-studio/search") {
+    void writeFileStudioSearchResponse(response, requestUrl, request.headers.cookie);
+    return;
+  }
+
+  if (routePath === "/api/file-studio/extract") {
+    void writeFileStudioExtractResponse(request, response, request.headers.cookie);
+    return;
+  }
+
   if (routePath === "/") {
     const activePlugins = readLaunchablePluginCatalog(requestUrl, request.headers.cookie);
     if (activePlugins.length === 1) {
@@ -210,6 +241,12 @@ function createRoutePath(pathname) {
     "/api/file-studio/write",
     "/api/file-studio/create-file",
     "/api/file-studio/create-directory",
+    "/api/file-studio/rename",
+    "/api/file-studio/delete",
+    "/api/file-studio/copy",
+    "/api/file-studio/move",
+    "/api/file-studio/search",
+    "/api/file-studio/extract",
     "/examples/plugin-hub/",
     "/plugin-assets/",
   ];
@@ -361,6 +398,7 @@ async function writePluginCatalogResponse(response, requestUrl, cookieHeader) {
 async function writeFileStudioTreeResponse(response, requestUrl, cookieHeader) {
   const depth = clampNumber(Number(requestUrl.searchParams.get("depth") ?? "3"), 1, 8);
   const relativePath = requestUrl.searchParams.get("path") ?? "";
+  const includeHidden = requestUrl.searchParams.get("hidden") === "1";
   const access = createFileStudioAccessContext(cookieHeader);
   const rootScope = resolveFileStudioRootScope(relativePath, access);
   const targetPath = resolveFileStudioPath(relativePath, access);
@@ -381,7 +419,7 @@ async function writeFileStudioTreeResponse(response, requestUrl, cookieHeader) {
       root: "/",
       roots: createFileStudioRootSummaries(access),
       exists: true,
-      tree: createFileStudioVirtualRoot(depth, access),
+      tree: createFileStudioVirtualRoot(depth, access, includeHidden),
     });
     return;
   }
@@ -409,8 +447,8 @@ async function writeFileStudioTreeResponse(response, requestUrl, cookieHeader) {
     roots: createFileStudioRootSummaries(access),
     exists: true,
     tree: access.allowAddons && (!relativePath || relativePath === "/" || relativePath === ".")
-      ? createFileStudioVirtualRoot(depth, access)
-      : readFileStudioTree(targetPath, depth, rootScope.displayPath, access),
+      ? createFileStudioVirtualRoot(depth, access, includeHidden)
+      : readFileStudioTree(targetPath, depth, rootScope.displayPath, access, includeHidden),
   });
 }
 
@@ -700,6 +738,361 @@ async function writeFileStudioCreateDirectoryResponse(request, response, cookieH
   const body = await readJsonRequestBody(request);
   const result = createFileStudioPath(body.parentPath, body.name, "directory", createFileStudioAccessContext(cookieHeader));
   writeJson(response, result.status, result.body);
+}
+
+async function writeFileStudioRenameResponse(request, response, cookieHeader) {
+  const body = await readJsonRequestBody(request);
+  const access = createFileStudioAccessContext(cookieHeader);
+  const sourcePath = resolveFileStudioPath(body.path, access);
+  const sourceScope = resolveFileStudioRootScope(body.path, access);
+  const normalizedName = String(body.name ?? "").trim();
+  const invalidReason = validateFileStudioName(normalizedName);
+
+  if (invalidReason) {
+    writeJson(response, 400, { kind: "atlas.file-studio.rename", ok: false, error: invalidReason });
+    return;
+  }
+
+  if (!sourcePath || !sourceScope || !existsSync(sourcePath)) {
+    writeJson(response, 404, { kind: "atlas.file-studio.rename", ok: false, error: "file or directory not found" });
+    return;
+  }
+
+  const targetPath = resolve(dirname(sourcePath), normalizedName);
+  if (!isInsideFileStudioRootScope(sourceScope, targetPath)) {
+    writeJson(response, 403, { kind: "atlas.file-studio.rename", ok: false, error: "path outside configured root" });
+    return;
+  }
+
+  if (existsSync(targetPath)) {
+    writeJson(response, 409, { kind: "atlas.file-studio.rename", ok: false, error: "target already exists" });
+    return;
+  }
+
+  renameSync(sourcePath, targetPath);
+  writeJson(response, 200, createFileStudioOperationResult("rename", targetPath, access));
+}
+
+async function writeFileStudioDeleteResponse(request, response, cookieHeader) {
+  const body = await readJsonRequestBody(request);
+  const access = createFileStudioAccessContext(cookieHeader);
+  const targetPath = resolveFileStudioPath(body.path, access);
+  const targetScope = resolveFileStudioRootScope(body.path, access);
+
+  if (!targetPath || !targetScope || !existsSync(targetPath)) {
+    writeJson(response, 404, { kind: "atlas.file-studio.delete", ok: false, error: "file or directory not found" });
+    return;
+  }
+
+  if (targetPath === targetScope.physicalPath) {
+    writeJson(response, 400, { kind: "atlas.file-studio.delete", ok: false, error: "root directory cannot be deleted" });
+    return;
+  }
+
+  rmSync(targetPath, { recursive: true, force: false });
+  writeJson(response, 200, {
+    kind: "atlas.file-studio.delete",
+    ok: true,
+    path: normalizeFileStudioDisplayInput(body.path),
+  });
+}
+
+async function writeFileStudioCopyMoveResponse(request, response, cookieHeader, mode) {
+  const body = await readJsonRequestBody(request);
+  const access = createFileStudioAccessContext(cookieHeader);
+  const sourcePath = resolveFileStudioPath(body.path, access);
+  const sourceScope = resolveFileStudioRootScope(body.path, access);
+  const parentPath = typeof body.targetParentPath === "string" && body.targetParentPath.trim()
+    ? body.targetParentPath
+    : dirname(normalizeFileStudioDisplayInput(body.path));
+  const targetParent = resolveFileStudioPath(parentPath, access);
+  const targetScope = resolveFileStudioRootScope(parentPath, access);
+  const requestedName = String(body.name ?? basename(String(body.path ?? ""))).trim();
+  const invalidReason = validateFileStudioName(requestedName);
+
+  if (invalidReason) {
+    writeJson(response, 400, { kind: `atlas.file-studio.${mode}`, ok: false, error: invalidReason });
+    return;
+  }
+
+  if (!sourcePath || !sourceScope || !existsSync(sourcePath)) {
+    writeJson(response, 404, { kind: `atlas.file-studio.${mode}`, ok: false, error: "source not found" });
+    return;
+  }
+
+  if (!targetParent || !targetScope || !existsSync(targetParent) || !statSync(targetParent).isDirectory()) {
+    writeJson(response, 404, { kind: `atlas.file-studio.${mode}`, ok: false, error: "target directory not found" });
+    return;
+  }
+
+  const targetPath = resolve(targetParent, requestedName);
+  if (!isInsideFileStudioRootScope(targetScope, targetPath)) {
+    writeJson(response, 403, { kind: `atlas.file-studio.${mode}`, ok: false, error: "path outside configured root" });
+    return;
+  }
+
+  if (existsSync(targetPath)) {
+    writeJson(response, 409, { kind: `atlas.file-studio.${mode}`, ok: false, error: "target already exists" });
+    return;
+  }
+
+  if (mode === "copy") {
+    cpSync(sourcePath, targetPath, { recursive: true, errorOnExist: true });
+  } else {
+    renameSync(sourcePath, targetPath);
+  }
+
+  writeJson(response, 200, createFileStudioOperationResult(mode, targetPath, access));
+}
+
+async function writeFileStudioSearchResponse(response, requestUrl, cookieHeader) {
+  const access = createFileStudioAccessContext(cookieHeader);
+  const query = String(requestUrl.searchParams.get("q") ?? "").trim().toLowerCase();
+  const rootPath = requestUrl.searchParams.get("path") ?? "/config";
+  const includeHidden = requestUrl.searchParams.get("hidden") === "1";
+  const rootDirectory = resolveFileStudioPath(rootPath, access);
+
+  if (!query) {
+    writeJson(response, 400, { kind: "atlas.file-studio.search", ok: false, error: "search query is required" });
+    return;
+  }
+
+  if (!rootDirectory || !existsSync(rootDirectory) || !statSync(rootDirectory).isDirectory()) {
+    writeJson(response, 404, { kind: "atlas.file-studio.search", ok: false, error: "search root not found" });
+    return;
+  }
+
+  const results = [];
+  searchFileStudioTree(rootDirectory, access, query, includeHidden, results);
+  writeJson(response, 200, {
+    kind: "atlas.file-studio.search",
+    ok: true,
+    query,
+    results,
+    truncated: results.length >= 200,
+  });
+}
+
+async function writeFileStudioExtractResponse(request, response, cookieHeader) {
+  const body = await readJsonRequestBody(request);
+  const access = createFileStudioAccessContext(cookieHeader);
+  const sourcePath = resolveFileStudioPath(body.path, access);
+  const targetParentPath = typeof body.targetParentPath === "string" && body.targetParentPath.trim()
+    ? body.targetParentPath
+    : dirname(normalizeFileStudioDisplayInput(body.path));
+  const targetParent = resolveFileStudioPath(targetParentPath, access);
+  const targetScope = resolveFileStudioRootScope(targetParentPath, access);
+  const requestedName = String(body.name ?? basename(String(body.path ?? ""), ".zip")).trim();
+  const invalidReason = validateFileStudioName(requestedName);
+
+  if (invalidReason) {
+    writeJson(response, 400, { kind: "atlas.file-studio.extract", ok: false, error: invalidReason });
+    return;
+  }
+
+  if (!sourcePath || !existsSync(sourcePath) || !statSync(sourcePath).isFile() || extname(sourcePath).toLowerCase() !== ".zip") {
+    writeJson(response, 404, { kind: "atlas.file-studio.extract", ok: false, error: "zip file not found" });
+    return;
+  }
+
+  if (!targetParent || !targetScope || !existsSync(targetParent) || !statSync(targetParent).isDirectory()) {
+    writeJson(response, 404, { kind: "atlas.file-studio.extract", ok: false, error: "target directory not found" });
+    return;
+  }
+
+  const targetDirectory = resolve(targetParent, requestedName);
+  if (!isInsideFileStudioRootScope(targetScope, targetDirectory)) {
+    writeJson(response, 403, { kind: "atlas.file-studio.extract", ok: false, error: "path outside configured root" });
+    return;
+  }
+
+  if (existsSync(targetDirectory)) {
+    writeJson(response, 409, { kind: "atlas.file-studio.extract", ok: false, error: "target already exists" });
+    return;
+  }
+
+  try {
+    const extracted = extractZipArchive(sourcePath, targetDirectory, targetScope);
+    writeJson(response, 200, {
+      ...createFileStudioOperationResult("extract", targetDirectory, access),
+      extracted,
+    });
+  } catch (error) {
+    writeJson(response, 422, {
+      kind: "atlas.file-studio.extract",
+      ok: false,
+      error: error instanceof Error ? error.message : "archive could not be extracted",
+    });
+  }
+}
+
+function createFileStudioOperationResult(operation, targetPath, access) {
+  const stats = statSync(targetPath);
+  const type = stats.isDirectory() ? "directory" : "file";
+  const name = basename(targetPath);
+  return {
+    kind: `atlas.file-studio.${operation}`,
+    ok: true,
+    path: createFileStudioDisplayPath(targetPath, access),
+    name,
+    type,
+    extension: type === "file" ? extname(name).replace(".", "").toLowerCase() : undefined,
+    size: type === "file" ? stats.size : undefined,
+    modifiedAt: stats.mtime.toISOString(),
+  };
+}
+
+function searchFileStudioTree(directoryPath, access, query, includeHidden, results, depth = 0) {
+  if (results.length >= 200 || depth > 8) {
+    return;
+  }
+
+  let entries;
+  try {
+    entries = readdirSync(directoryPath, { withFileTypes: true });
+  } catch {
+    return;
+  }
+
+  for (const entry of entries) {
+    if (results.length >= 200) return;
+    if (!includeHidden && entry.name.startsWith(".")) continue;
+    const entryPath = resolve(directoryPath, entry.name);
+    const displayPath = createFileStudioDisplayPath(entryPath, access);
+    if (!displayPath) continue;
+    let stats;
+    try {
+      stats = statSync(entryPath);
+    } catch {
+      continue;
+    }
+    const type = entry.isDirectory() ? "directory" : entry.isFile() ? "file" : "other";
+    if (type === "other") continue;
+    const nameMatch = entry.name.toLowerCase().includes(query);
+    let contentMatch = false;
+    if (type === "file" && isSearchableFile(entryPath, stats)) {
+      try {
+        contentMatch = readFileSync(entryPath, "utf8").toLowerCase().includes(query);
+      } catch {
+        contentMatch = false;
+      }
+    }
+    if (nameMatch || contentMatch) {
+      results.push({
+        name: entry.name,
+        path: displayPath,
+        type,
+        extension: type === "file" ? extname(entry.name).replace(".", "").toLowerCase() : undefined,
+        size: type === "file" ? stats.size : undefined,
+        modifiedAt: stats.mtime.toISOString(),
+        match: nameMatch ? "name" : "content",
+      });
+    }
+    if (entry.isDirectory()) {
+      searchFileStudioTree(entryPath, access, query, includeHidden, results, depth + 1);
+    }
+  }
+}
+
+function isSearchableFile(filePath, stats) {
+  if (stats.size > 512 * 1024) {
+    return false;
+  }
+  const extension = extname(filePath).toLowerCase();
+  return [".yaml", ".yml", ".json", ".js", ".mjs", ".ts", ".md", ".txt", ".log", ".css", ".html"].includes(extension);
+}
+
+function extractZipArchive(sourcePath, targetDirectory, targetScope) {
+  const buffer = readFileSync(sourcePath);
+  const eocdOffset = findZipEndOfCentralDirectory(buffer);
+  if (eocdOffset < 0) {
+    throw new Error("ZIP-Zentralverzeichnis nicht gefunden.");
+  }
+
+  const totalEntries = buffer.readUInt16LE(eocdOffset + 10);
+  const centralDirectorySize = buffer.readUInt32LE(eocdOffset + 12);
+  const centralDirectoryOffset = buffer.readUInt32LE(eocdOffset + 16);
+  const centralDirectoryEnd = centralDirectoryOffset + centralDirectorySize;
+  if (centralDirectoryEnd > buffer.length) {
+    throw new Error("ZIP-Zentralverzeichnis ist unvollstaendig.");
+  }
+
+  mkdirSync(targetDirectory, { recursive: true });
+  let extracted = 0;
+  let offset = centralDirectoryOffset;
+  while (offset + 46 <= centralDirectoryEnd && extracted < Math.min(totalEntries, 500)) {
+    if (buffer.readUInt32LE(offset) !== 0x02014b50) {
+      throw new Error("ZIP-Zentralverzeichnis enthaelt einen ungueltigen Eintrag.");
+    }
+    const compressionMethod = buffer.readUInt16LE(offset + 10);
+    const compressedSize = buffer.readUInt32LE(offset + 20);
+    const uncompressedSize = buffer.readUInt32LE(offset + 24);
+    const nameLength = buffer.readUInt16LE(offset + 28);
+    const extraLength = buffer.readUInt16LE(offset + 30);
+    const commentLength = buffer.readUInt16LE(offset + 32);
+    const localHeaderOffset = buffer.readUInt32LE(offset + 42);
+    const nameStart = offset + 46;
+    const nameEnd = nameStart + nameLength;
+    if (nameEnd > centralDirectoryEnd) {
+      throw new Error("ZIP-Eintragsname ist unvollstaendig.");
+    }
+    const archivePath = buffer.toString("utf8", nameStart, nameEnd);
+    extractZipEntry(buffer, archivePath, localHeaderOffset, compressedSize, uncompressedSize, compressionMethod, targetDirectory, targetScope);
+    extracted += 1;
+    offset = nameEnd + extraLength + commentLength;
+  }
+
+  return extracted;
+}
+
+function extractZipEntry(buffer, archivePath, localHeaderOffset, compressedSize, uncompressedSize, compressionMethod, targetDirectory, targetScope) {
+  const normalizedArchivePath = archivePath.replace(/\\/g, "/").split("/").filter(part =>
+    part && part !== "." && part !== "..",
+  ).join("/");
+  if (!normalizedArchivePath) {
+    return;
+  }
+
+  const targetPath = resolve(targetDirectory, normalizedArchivePath);
+  if (!isInsideFileStudioDirectory(targetDirectory, targetPath) || !isInsideFileStudioRootScope(targetScope, targetPath)) {
+    throw new Error(`ZIP-Eintrag liegt ausserhalb des Zielordners: ${archivePath}`);
+  }
+
+  if (archivePath.endsWith("/")) {
+    mkdirSync(targetPath, { recursive: true });
+    return;
+  }
+
+  if (buffer.readUInt32LE(localHeaderOffset) !== 0x04034b50) {
+    throw new Error(`ZIP-Lokalkopf ungueltig: ${archivePath}`);
+  }
+  const localNameLength = buffer.readUInt16LE(localHeaderOffset + 26);
+  const localExtraLength = buffer.readUInt16LE(localHeaderOffset + 28);
+  const dataStart = localHeaderOffset + 30 + localNameLength + localExtraLength;
+  const dataEnd = dataStart + compressedSize;
+  if (dataEnd > buffer.length) {
+    throw new Error(`ZIP-Daten unvollstaendig: ${archivePath}`);
+  }
+
+  const compressed = buffer.subarray(dataStart, dataEnd);
+  const content = compressionMethod === 0
+    ? compressed
+    : compressionMethod === 8
+      ? inflateRawSync(compressed)
+      : undefined;
+  if (!content) {
+    throw new Error(`ZIP-Kompression nicht unterstuetzt: Methode ${compressionMethod}`);
+  }
+  if (content.length !== uncompressedSize) {
+    throw new Error(`ZIP-Groesse passt nicht: ${archivePath}`);
+  }
+  mkdirSync(dirname(targetPath), { recursive: true });
+  writeFileSync(targetPath, content);
+}
+
+function isInsideFileStudioDirectory(directoryPath, targetPath) {
+  const relativeTargetPath = relative(directoryPath, targetPath);
+  return relativeTargetPath === "" || (!relativeTargetPath.startsWith("..") && !isAbsolute(relativeTargetPath));
 }
 
 async function waitForServer(url, timeoutMs) {
@@ -1002,7 +1395,7 @@ function validateFileStudioContent(content, filename) {
   };
 }
 
-function readFileStudioTree(directoryPath, remainingDepth, displayPath, access) {
+function readFileStudioTree(directoryPath, remainingDepth, displayPath, access, includeHidden = false) {
   const directoryStats = statSync(directoryPath);
   const name = displayPath === "/config"
     ? "config"
@@ -1023,8 +1416,8 @@ function readFileStudioTree(directoryPath, remainingDepth, displayPath, access) 
 
   try {
     node.children = readdirSync(directoryPath, { withFileTypes: true })
-      .filter(entry => !entry.name.startsWith("."))
-      .map(entry => readFileStudioTreeEntry(directoryPath, displayPath, entry, remainingDepth, access))
+      .filter(entry => includeHidden || !entry.name.startsWith("."))
+      .map(entry => readFileStudioTreeEntry(directoryPath, displayPath, entry, remainingDepth, access, includeHidden))
       .filter(Boolean)
       .sort(sortFileStudioTreeEntries);
   } catch (error) {
@@ -1034,7 +1427,7 @@ function readFileStudioTree(directoryPath, remainingDepth, displayPath, access) 
   return node;
 }
 
-function readFileStudioTreeEntry(parentDirectory, parentDisplayPath, entry, remainingDepth, access) {
+function readFileStudioTreeEntry(parentDirectory, parentDisplayPath, entry, remainingDepth, access, includeHidden = false) {
   const entryPath = resolve(parentDirectory, entry.name);
   const scope = resolveFileStudioRootScope(parentDisplayPath, access);
   if (!scope || !isInsideFileStudioRootScope(scope, entryPath)) {
@@ -1044,7 +1437,7 @@ function readFileStudioTreeEntry(parentDirectory, parentDisplayPath, entry, rema
   const entryStats = statSync(entryPath);
 
   if (entry.isDirectory()) {
-    return readFileStudioTree(entryPath, remainingDepth - 1, displayPath, access);
+    return readFileStudioTree(entryPath, remainingDepth - 1, displayPath, access, includeHidden);
   }
 
   if (!entry.isFile()) {
@@ -1061,7 +1454,7 @@ function readFileStudioTreeEntry(parentDirectory, parentDisplayPath, entry, rema
   };
 }
 
-function createFileStudioVirtualRoot(depth, access) {
+function createFileStudioVirtualRoot(depth, access, includeHidden = false) {
   return {
     name: "ATLAS",
     path: "/",
@@ -1076,7 +1469,7 @@ function createFileStudioVirtualRoot(depth, access) {
           error: `${scope.displayPath} ist noch nicht erreichbar.`,
         };
       }
-      return readFileStudioTree(scope.physicalPath, Math.max(1, depth) - 1, scope.displayPath, access);
+      return readFileStudioTree(scope.physicalPath, Math.max(1, depth) - 1, scope.displayPath, access, includeHidden);
     }),
   };
 }

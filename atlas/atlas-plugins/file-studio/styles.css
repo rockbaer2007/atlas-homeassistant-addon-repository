@@ -468,6 +468,55 @@ body.is-resizing .splitter {
   );
 }
 
+.asset-icon-button.icon-search::before {
+  background-image: image-set(
+    url("icons/24x24/Find.png") 1x,
+    url("icons/48x48/Find.png") 2x
+  );
+}
+
+.asset-icon-button.icon-hidden::before {
+  background-image: image-set(
+    url("icons/24x24/All-chars.png") 1x,
+    url("icons/48x48/All-chars.png") 2x
+  );
+}
+
+.asset-icon-button.icon-rename::before {
+  background-image: image-set(
+    url("icons/24x24/Replace.png") 1x,
+    url("icons/48x48/Replace.png") 2x
+  );
+}
+
+.asset-icon-button.icon-copy::before {
+  background-image: image-set(
+    url("icons/24x24/Copy.png") 1x,
+    url("icons/48x48/Copy.png") 2x
+  );
+}
+
+.asset-icon-button.icon-move::before {
+  background-image: image-set(
+    url("icons/24x24/Cut.png") 1x,
+    url("icons/48x48/Cut.png") 2x
+  );
+}
+
+.asset-icon-button.icon-delete::before {
+  background-image: image-set(
+    url("icons/24x24/Close.png") 1x,
+    url("icons/48x48/Close.png") 2x
+  );
+}
+
+.asset-icon-button.icon-extract::before {
+  background-image: image-set(
+    url("icons/24x24/Paste.png") 1x,
+    url("icons/48x48/Paste.png") 2x
+  );
+}
+
 .tree-status,
 .tree-note {
   margin-bottom: 10px;

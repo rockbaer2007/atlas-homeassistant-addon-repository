@@ -33,6 +33,8 @@
               <span>/config</span>
               <button class="icon-button icon-file-add" type="button" data-tree-action="new-file" aria-label="Neue Datei" title="Neue Datei"></button>
               <button class="icon-button icon-folder-add" type="button" data-tree-action="new-folder" aria-label="Neuer Ordner" title="Neuer Ordner"></button>
+              <button id="search-files" class="icon-button asset-icon-button icon-search" type="button" aria-label="Suche" title="Suche"></button>
+              <button id="show-hidden-toggle" class="icon-button asset-icon-button icon-hidden" type="button" aria-label="Versteckte Dateien anzeigen" title="Versteckte Dateien anzeigen" aria-pressed="false"></button>
               <button class="icon-button icon-refresh" type="button" data-tree-action="refresh" aria-label="Neu einlesen" title="Neu einlesen"></button>
               <button class="icon-button icon-collapse" type="button" data-tree-action="collapse" aria-label="Alle einklappen" title="Alle einklappen"></button>
             </div>
@@ -70,6 +72,11 @@
             <button id="discard-file" class="button" type="button" disabled>Verwerfen</button>
             <button id="validate-file" class="button" type="button" disabled>YAML prüfen</button>
             <button id="download-file" class="icon-button asset-icon-button icon-download" type="button" aria-label="Download" title="Download" disabled></button>
+            <button id="rename-file" class="icon-button asset-icon-button icon-rename" type="button" aria-label="Umbenennen" title="Umbenennen" disabled></button>
+            <button id="copy-file" class="icon-button asset-icon-button icon-copy" type="button" aria-label="Kopieren" title="Kopieren" disabled></button>
+            <button id="move-file" class="icon-button asset-icon-button icon-move" type="button" aria-label="Verschieben" title="Verschieben" disabled></button>
+            <button id="delete-file" class="icon-button asset-icon-button icon-delete" type="button" aria-label="Löschen" title="Löschen" disabled></button>
+            <button id="extract-archive" class="icon-button asset-icon-button icon-extract" type="button" aria-label="Archiv entpacken" title="Archiv entpacken" disabled></button>
             <button id="upload-file-trigger" class="button" type="button">Upload/Ersetzen</button>
             <input id="upload-file" type="file" hidden>
             <button id="word-wrap-toggle" class="icon-button asset-icon-button icon-word-wrap" type="button" aria-label="Zeilenumbruch" title="Zeilenumbruch" aria-pressed="true"></button>
@@ -164,6 +171,7 @@
         imageNaturalWidth: undefined,
         editorFontSize: 14,
         wordWrap: true,
+        showHidden: false,
       };
       const imagePreviewExtensions = new Set(["png", "jpg", "jpeg", "svg", "gif", "webp", "bmp", "ico"]);
       const archivePreviewExtensions = new Set(["zip"]);
@@ -334,6 +342,11 @@
         document.querySelector("#discard-file").disabled = !hasFile || !isDirty;
         document.querySelector("#validate-file").disabled = !hasFile || isPreview;
         document.querySelector("#download-file").disabled = !hasFile;
+        document.querySelector("#rename-file").disabled = !hasFile;
+        document.querySelector("#copy-file").disabled = !hasFile;
+        document.querySelector("#move-file").disabled = !hasFile;
+        document.querySelector("#delete-file").disabled = !hasFile;
+        document.querySelector("#extract-archive").disabled = !hasFile || !isArchiveExtension(state.selectedFileExtension);
         document.querySelector("#editor-dirty-status").textContent = hasFile
           ? isPreview ? "Vorschau" : isDirty ? "Geändert, nicht gespeichert" : "Gespeichert"
           : "Keine Datei geladen";
@@ -837,6 +850,52 @@
         }));
       }
 
+      function renderSearchResults(results, query, truncated) {
+        const list = document.querySelector("#folder-list");
+        const title = document.querySelector("#folder-title");
+        const count = document.querySelector("#folder-count");
+        title.textContent = `Suche: ${query}`;
+        count.textContent = String(results.length);
+
+        if (!results.length) {
+          const empty = document.createElement("p");
+          empty.className = "folder-empty";
+          empty.textContent = "Keine Treffer.";
+          list.replaceChildren(empty);
+          return;
+        }
+
+        const rows = results.map(result => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `folder-row ${result.type}`;
+          button.dataset.path = result.path;
+          button.innerHTML = `<span class="folder-name"><span class="tree-icon" aria-hidden="true"></span><span></span></span><span></span><span></span>`;
+          button.querySelector(".tree-icon").classList.add(result.type === "directory" ? "folder-icon" : "file-icon", fileTypeIconClass(result));
+          button.querySelector(".folder-name span:last-child").textContent = result.path;
+          button.children[1].textContent = result.match === "content" ? "Inhalt" : "Name";
+          button.children[2].textContent = result.type === "directory" ? "-" : formatFileSize(result.size);
+          button.addEventListener("click", () => {
+            openTreePath(result.path);
+            if (result.type === "directory") {
+              selectFolder(result.path);
+              return;
+            }
+            void selectFileFromList(result);
+          });
+          return button;
+        });
+
+        if (truncated) {
+          const note = document.createElement("p");
+          note.className = "folder-empty";
+          note.textContent = "Trefferliste gekuerzt.";
+          list.replaceChildren(...rows, note);
+          return;
+        }
+        list.replaceChildren(...rows);
+      }
+
       async function selectFileFromList(node) {
         const treeButton = document.querySelector(`.tree-file[data-path="${CSS.escape(node.path)}"]`);
         if (treeButton) {
@@ -853,7 +912,8 @@
         const previousFilePath = state.selectedFilePath;
 
         try {
-          const response = await fetch(createAppUrl("api/file-studio/tree?depth=4"), { cache: "no-store" });
+          const treeUrl = `api/file-studio/tree?depth=4&hidden=${state.showHidden ? "1" : "0"}`;
+          const response = await fetch(createAppUrl(treeUrl), { cache: "no-store" });
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
           }
@@ -874,7 +934,7 @@
             }
           }
           status.textContent = catalog.exists
-            ? catalog.root === "/" ? "Freigegebene Pfade geladen" : `${catalog.root ?? "/config"} geladen`
+            ? catalog.root === "/" ? "Freigegebene Pfade geladen" : `${catalog.root ?? "/config"} geladen${state.showHidden ? " inkl. versteckter Einträge" : ""}`
             : catalog.message ?? "/config ist noch nicht erreichbar.";
           status.classList.toggle("warning", !catalog.exists);
           rootStatus.textContent = catalog.exists
@@ -1106,8 +1166,138 @@
         URL.revokeObjectURL(link.href);
       }
 
+      async function renameSelectedFile() {
+        if (!state.selectedFilePath) return;
+        const name = window.prompt("Neuer Name", state.selectedFileName ?? "");
+        if (!name) return;
+        const trimmedName = name.trim();
+        if (!validateFileStudioName(trimmedName)) {
+          setStatus("Name ungueltig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
+          return;
+        }
+        try {
+          const renamed = await apiJson("api/file-studio/rename", {
+            method: "POST",
+            body: JSON.stringify({ path: state.selectedFilePath, name: trimmedName }),
+          });
+          await loadDirectoryTree({ preserveSelection: false });
+          if (renamed.type === "file") {
+            await openFile(createFileNode(renamed));
+          } else {
+            selectFolder(renamed.path);
+          }
+          setStatus(`Umbenannt: ${renamed.path}`, "ok");
+        } catch (error) {
+          setStatus(`Umbenennen fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+        }
+      }
+
+      async function deleteSelectedFile() {
+        if (!state.selectedFilePath) return;
+        const confirmed = window.confirm(`${state.selectedFilePath} wirklich loeschen?`);
+        if (!confirmed) return;
+        try {
+          const deletedPath = state.selectedFilePath;
+          await apiJson("api/file-studio/delete", {
+            method: "POST",
+            body: JSON.stringify({ path: deletedPath }),
+          });
+          state.selectedFilePath = undefined;
+          state.selectedFileName = undefined;
+          state.selectedFileExtension = undefined;
+          state.originalContent = "";
+          setPreviewMode("text");
+          setEditorValue("");
+          setEditorReadOnly(true);
+          document.querySelector("#editor-title").textContent = "Editorfläche";
+          document.querySelector("#editor-kind").textContent = "Bereit";
+          await loadDirectoryTree({ preserveSelection: false });
+          setStatus(`Geloescht: ${deletedPath}`, "ok");
+          updateEditorActions();
+        } catch (error) {
+          setStatus(`Loeschen fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+        }
+      }
+
+      async function copyOrMoveSelectedFile(mode) {
+        if (!state.selectedFilePath) return;
+        const defaultParent = selectedCreateParentPath();
+        const targetParentPath = window.prompt(mode === "copy" ? "Kopieren nach Ordner" : "Verschieben nach Ordner", defaultParent);
+        if (!targetParentPath) return;
+        const defaultName = mode === "copy" && state.selectedFileName
+          ? `kopie-${state.selectedFileName}`
+          : state.selectedFileName;
+        const name = window.prompt("Zielname", defaultName ?? "");
+        if (!name) return;
+        const trimmedName = name.trim();
+        if (!validateFileStudioName(trimmedName)) {
+          setStatus("Name ungueltig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
+          return;
+        }
+        try {
+          const result = await apiJson(`api/file-studio/${mode}`, {
+            method: "POST",
+            body: JSON.stringify({
+              path: state.selectedFilePath,
+              targetParentPath: targetParentPath.trim(),
+              name: trimmedName,
+            }),
+          });
+          await loadDirectoryTree({ preserveSelection: false });
+          if (result.type === "file") {
+            await openFile(createFileNode(result));
+          } else {
+            selectFolder(result.path);
+          }
+          setStatus(`${mode === "copy" ? "Kopiert" : "Verschoben"}: ${result.path}`, "ok");
+        } catch (error) {
+          setStatus(`${mode === "copy" ? "Kopieren" : "Verschieben"} fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+        }
+      }
+
+      async function extractSelectedArchive() {
+        if (!state.selectedFilePath || !isArchiveExtension(state.selectedFileExtension)) return;
+        const defaultName = (state.selectedFileName ?? "archiv").replace(/\.zip$/i, "");
+        const name = window.prompt("Zielordner fuer Archiv", defaultName);
+        if (!name) return;
+        const trimmedName = name.trim();
+        if (!validateFileStudioName(trimmedName)) {
+          setStatus("Name ungueltig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
+          return;
+        }
+        try {
+          const extracted = await apiJson("api/file-studio/extract", {
+            method: "POST",
+            body: JSON.stringify({
+              path: state.selectedFilePath,
+              targetParentPath: selectedCreateParentPath(),
+              name: trimmedName,
+            }),
+          });
+          await loadDirectoryTree({ preserveSelection: false });
+          selectFolder(extracted.path);
+          setStatus(`Archiv entpackt: ${extracted.path} (${extracted.extracted} Eintraege)`, "ok");
+        } catch (error) {
+          setStatus(`Entpacken fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+        }
+      }
+
+      async function searchFiles() {
+        const query = window.prompt("Suche nach Datei oder Inhalt", "");
+        if (!query?.trim()) return;
+        try {
+          const search = await apiJson(`api/file-studio/search?path=${encodeURIComponent(state.selectedFolderPath)}&q=${encodeURIComponent(query.trim())}&hidden=${state.showHidden ? "1" : "0"}`);
+          renderSearchResults(search.results ?? [], query.trim(), search.truncated === true);
+          setStatus(`Suche abgeschlossen: ${(search.results ?? []).length} Treffer${search.truncated ? " (gekürzt)" : ""}`, "ok");
+        } catch (error) {
+          setStatus(`Suche fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+        }
+      }
+
       async function replaceOpenFileFromUpload(file) {
         if (!file || !state.selectedFilePath) {
+          if (!file) return;
+          await uploadFileToSelectedFolder(file);
           return;
         }
         if (state.previewMode !== "text") {
@@ -1120,12 +1310,45 @@
         updateEditorActions();
       }
 
+      async function uploadFileToSelectedFolder(file) {
+        const name = window.prompt("Dateiname fuer Upload", file.name);
+        if (!name) return;
+        const trimmedName = name.trim();
+        if (!validateFileStudioName(trimmedName)) {
+          setStatus("Name ungueltig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
+          return;
+        }
+        try {
+          const created = await apiJson("api/file-studio/create-file", {
+            method: "POST",
+            body: JSON.stringify({
+              parentPath: selectedCreateParentPath(),
+              name: trimmedName,
+            }),
+          });
+          state.selectedFilePath = created.path;
+          state.selectedFileName = created.name;
+          state.selectedFileExtension = created.extension;
+          setEditorValue(await file.text());
+          await saveOpenFile(created.path);
+          await openFile(createFileNode(created));
+          setStatus(`Upload gespeichert: ${created.path}`, "ok");
+        } catch (error) {
+          setStatus(`Upload fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+        }
+      }
+
       function bindEditorControls() {
         document.querySelector("#save-file").addEventListener("click", () => void saveOpenFile());
         document.querySelector("#save-file-as").addEventListener("click", () => void saveOpenFileAs());
         document.querySelector("#discard-file").addEventListener("click", discardOpenFileChanges);
         document.querySelector("#validate-file").addEventListener("click", () => void validateOpenFile());
         document.querySelector("#download-file").addEventListener("click", () => void downloadOpenFile());
+        document.querySelector("#rename-file").addEventListener("click", () => void renameSelectedFile());
+        document.querySelector("#copy-file").addEventListener("click", () => void copyOrMoveSelectedFile("copy"));
+        document.querySelector("#move-file").addEventListener("click", () => void copyOrMoveSelectedFile("move"));
+        document.querySelector("#delete-file").addEventListener("click", () => void deleteSelectedFile());
+        document.querySelector("#extract-archive").addEventListener("click", () => void extractSelectedArchive());
         document.querySelector("#upload-file-trigger").addEventListener("click", () => document.querySelector("#upload-file").click());
         document.querySelector("#upload-file").addEventListener("change", event => {
           void replaceOpenFileFromUpload(event.target.files?.[0]);
@@ -1180,6 +1403,12 @@
       }
 
       function bindTreeActions() {
+        document.querySelector("#search-files").addEventListener("click", () => void searchFiles());
+        document.querySelector("#show-hidden-toggle").addEventListener("click", () => {
+          state.showHidden = !state.showHidden;
+          document.querySelector("#show-hidden-toggle").setAttribute("aria-pressed", String(state.showHidden));
+          void loadDirectoryTree({ preserveSelection: true });
+        });
         document.querySelector("[data-tree-action='new-file']").addEventListener("click", () => {
           state.pendingCreate = { kind: "file", parentPath: selectedCreateParentPath() };
           renderDirectoryTree();

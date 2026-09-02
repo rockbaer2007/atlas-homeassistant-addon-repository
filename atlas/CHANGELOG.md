@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.86
+
+- Add File Studio icon-button actions for rename, delete, copy, move, search,
+  archive extraction and optional hidden-file display.
+- Bump ATLAS File Studio to `0.1.25` for repository update detection.
+
 ## 0.1.85
 
 - Publish the prepared ATLAS Add-on layout directly at the GitHub repository
