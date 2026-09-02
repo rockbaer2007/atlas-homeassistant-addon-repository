@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.112
+
+- Make the Card Editor export and import/entity areas visibly three-column with
+  equal-width column panels on wide screens.
+- Bump the Home Assistant Card Editor plugin to `0.2.0-alpha.41`.
+
 ## 0.1.111
 
 - Make the Plugin Hub URL/YAML copy fallback work in browser contexts where the

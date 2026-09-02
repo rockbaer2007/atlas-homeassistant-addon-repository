@@ -295,17 +295,23 @@
       .card-export-layout,
       .card-import-entity-layout {
         display: grid;
-        grid-template-columns: minmax(220px, 0.78fr) minmax(360px, 1.24fr) minmax(320px, 0.98fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 12px;
-        align-items: start;
+        align-items: stretch;
       }
 
       .card-export-column,
-      .entity-picker-column {
+      .entity-picker-column,
+      .card-export-language-panel {
         display: grid;
         gap: 8px;
         min-width: 0;
         align-content: start;
+        min-height: 100%;
+        padding: 10px;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
       }
 
       .card-export-field-grid {
@@ -385,10 +391,6 @@
       .card-export-language-panel {
         display: grid;
         gap: 6px;
-        border: 1px solid var(--atlas-border);
-        border-radius: 6px;
-        background: var(--atlas-panel-soft);
-        padding: 10px;
       }
 
       .card-export-language-panel legend {
@@ -2813,7 +2815,9 @@
       }
 
       :root[data-theme="dark"] .connection-config.compact-panel,
+      :root[data-theme="dark"] .card-export-column,
       :root[data-theme="dark"] .card-export-language-panel,
+      :root[data-theme="dark"] .entity-picker-column,
       :root[data-theme="dark"] .diagnostics-panel,
       :root[data-theme="dark"] .selected-entities-panel,
       :root[data-theme="dark"] .entity-picker-panel,
