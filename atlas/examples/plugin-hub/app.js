@@ -32,6 +32,8 @@ const translations = {
     "message.sidebarPluginCopyFallback": "{name}: browser copy is blocked. The text is selected below; press Ctrl+C.",
     "label.sidebarUrl": "Sidebar URL",
     "label.sidebarYaml": "configuration.yaml",
+    "label.capabilitiesToggle": "Show capabilities ({count})",
+    "label.noCapabilities": "No capabilities declared",
     "summary.noPlugins": "No plugins installed",
     "summary.oneActive": "1 active plugin opens directly from ATLAS start",
     "summary.many": "{plugins} plugins detected, {active} active",
@@ -71,6 +73,8 @@ const translations = {
     "message.sidebarPluginCopyFallback": "{name}: Browser-Kopieren blockiert. Der Text ist unten markiert; bitte Strg+C drücken.",
     "label.sidebarUrl": "Seitenleisten-URL",
     "label.sidebarYaml": "configuration.yaml",
+    "label.capabilitiesToggle": "Fähigkeiten anzeigen ({count})",
+    "label.noCapabilities": "Keine Fähigkeiten deklariert",
     "summary.noPlugins": "Keine Plugins installiert",
     "summary.oneActive": "1 aktives Plugin öffnet direkt vom ATLAS-Start",
     "summary.many": "{plugins} Plugins erkannt, {active} aktiv",
@@ -371,14 +375,7 @@ function createPluginCard(plugin) {
   description.textContent = localizedPluginText(plugin, "description", plugin.id);
   body.append(description);
 
-  const capabilities = document.createElement("div");
-  capabilities.className = "capability-list";
-  for (const capability of plugin.capabilities ?? []) {
-    const tag = document.createElement("span");
-    tag.textContent = capability;
-    capabilities.append(tag);
-  }
-  body.append(capabilities);
+  body.append(createCapabilityDetails(plugin.capabilities ?? []));
 
   const action = document.createElement("a");
   action.className = "plugin-action";
@@ -404,6 +401,32 @@ function createPluginCard(plugin) {
 
   card.append(body);
   return card;
+}
+
+function createCapabilityDetails(capabilities) {
+  const details = document.createElement("details");
+  details.className = "capability-details";
+  const summary = document.createElement("summary");
+  summary.textContent = t("label.capabilitiesToggle", { count: capabilities.length });
+  details.append(summary);
+
+  if (capabilities.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "capability-empty";
+    empty.textContent = t("label.noCapabilities");
+    details.append(empty);
+    return details;
+  }
+
+  const list = document.createElement("div");
+  list.className = "capability-list";
+  for (const capability of capabilities) {
+    const tag = document.createElement("span");
+    tag.textContent = capability;
+    list.append(tag);
+  }
+  details.append(list);
+  return details;
 }
 
 function renderSidebarPluginEntries(plugins) {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.122
+
+- Make Plugin Hub capability lists collapsible by default on every plugin card.
+- Keep plugin cards more compact while preserving full capability details on
+  demand.
+
 ## 0.1.121
 
 - Align the bundled ATLAS Automation Exporter / Editor with the installable

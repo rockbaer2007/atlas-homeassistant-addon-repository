@@ -417,12 +417,56 @@ h1 {
   overflow-wrap: anywhere;
 }
 
+.capability-details {
+  margin-bottom: 16px;
+}
+
+.capability-details summary {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--atlas-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  list-style: none;
+}
+
+.capability-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.capability-details summary::after {
+  content: "+";
+  min-width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--atlas-border);
+  border-radius: 999px;
+  color: var(--atlas-orange);
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.capability-details[open] summary::after {
+  content: "-";
+}
+
+.capability-empty {
+  margin: 6px 0 0;
+  color: var(--atlas-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .capability-list {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   min-height: 26px;
-  margin-bottom: 16px;
+  margin-top: 8px;
 }
 
 .capability-list span {
