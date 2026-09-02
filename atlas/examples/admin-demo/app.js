@@ -53,6 +53,9 @@ const refreshPluginRepositories = document.querySelector("#refresh-plugin-reposi
 const pluginRepositoryStatus = document.querySelector("#plugin-repository-status");
 const pluginRepositoryList = document.querySelector("#plugin-repository-list");
 const pluginRepositoryPluginList = document.querySelector("#plugin-repository-plugin-list");
+const refreshPluginUpdates = document.querySelector("#refresh-plugin-updates");
+const pluginUpdateSummary = document.querySelector("#plugin-update-summary");
+const pluginUpdateList = document.querySelector("#plugin-update-list");
 const adminSaveState = document.querySelector("#admin-save-state");
 const pluginSummary = document.querySelector("#plugin-summary");
 const pluginList = document.querySelector("#plugin-list");
@@ -74,6 +77,7 @@ const adminStorageKey = "atlas.administration.configuration";
 const adminPluginStorageKey = "atlas.administration.importedPlugins";
 const adminPluginStateStorageKey = "atlas.administration.pluginState";
 const adminPluginRepositoryStorageKey = "atlas.administration.pluginRepository";
+const adminPluginUpdateCheckStorageKey = "atlas.administration.pluginUpdateCheck";
 const atlasThemeStorageKey = "atlas.themePreference";
 const adminConnectionCookieName = "atlas_admin_connection";
 const adminSecretsCookieName = "atlas_admin_secrets";
@@ -201,6 +205,7 @@ const translations = {
     "heading.releaseChecks": "Release checks",
     "heading.releaseTargets": "Distribution targets",
     "heading.plugins": "Installed plugins",
+    "heading.pluginUpdates": "Plugin updates",
     "heading.policy": "Plugin access policy",
     "heading.addPluginRepository": "Add ATLAS repository",
     "label.haUrl": "Home Assistant URL",
@@ -246,6 +251,7 @@ const translations = {
     "button.addRepository": "Add",
     "button.cancel": "Cancel",
     "button.refreshRepositories": "Refresh repositories",
+    "button.refreshPluginUpdates": "Check updates",
     "button.removeRepository": "Remove repository",
     "button.installRepositoryPackage": "Install",
     "button.updateRepositoryPackage": "Update",
@@ -325,6 +331,12 @@ const translations = {
     "message.pluginRepositoryBundledVersion": "Built in: {version}",
     "message.pluginRepositoryNotInstalled": "Not installed",
     "message.pluginRepositoryNoPackage": "No installable package or manifest URL.",
+    "message.pluginUpdatesHint": "Atlas checks custom plugin repositories on Administration start and after reload.",
+    "message.pluginUpdatesChecking": "Checking plugin repositories for updates...",
+    "message.pluginUpdatesNoRepositories": "No custom plugin repositories configured yet.",
+    "message.pluginUpdatesNone": "No plugin updates found. Last checked: {checkedAt}.",
+    "message.pluginUpdatesFound": "{count} plugin update(s) found. Last checked: {checkedAt}.",
+    "message.pluginUpdatesPending": "Plugin update check has not run yet.",
     "type.plugin": "Plugin",
     "type.card": "Card",
     "type.integration": "Integration",
@@ -382,6 +394,7 @@ const translations = {
     "heading.releaseChecks": "Freigabe-Checks",
     "heading.releaseTargets": "Ausgabeziele",
     "heading.plugins": "Installierte Plugins",
+    "heading.pluginUpdates": "Plugin-Updates",
     "heading.policy": "Plugin-Zugriffsregel",
     "heading.addPluginRepository": "ATLAS Repository hinzufügen",
     "label.haUrl": "Home Assistant URL",
@@ -427,6 +440,7 @@ const translations = {
     "button.addRepository": "Hinzufügen",
     "button.cancel": "Abbrechen",
     "button.refreshRepositories": "Repositories aktualisieren",
+    "button.refreshPluginUpdates": "Updates prüfen",
     "button.removeRepository": "Repository entfernen",
     "button.installRepositoryPackage": "Installieren",
     "button.updateRepositoryPackage": "Aktualisieren",
@@ -506,6 +520,12 @@ const translations = {
     "message.pluginRepositoryBundledVersion": "Eingebaut: {version}",
     "message.pluginRepositoryNotInstalled": "Nicht installiert",
     "message.pluginRepositoryNoPackage": "Keine installierbare Paket- oder Manifest-URL.",
+    "message.pluginUpdatesHint": "Atlas prüft benutzerdefinierte Plugin-Repositories beim Start der Administration und nach einem Reload.",
+    "message.pluginUpdatesChecking": "Plugin-Repositories werden auf Updates geprüft...",
+    "message.pluginUpdatesNoRepositories": "Noch keine benutzerdefinierten Plugin-Repositories eingerichtet.",
+    "message.pluginUpdatesNone": "Keine Plugin-Updates gefunden. Zuletzt geprüft: {checkedAt}.",
+    "message.pluginUpdatesFound": "{count} Plugin-Update(s) gefunden. Zuletzt geprüft: {checkedAt}.",
+    "message.pluginUpdatesPending": "Plugin-Update-Prüfung wurde noch nicht ausgeführt.",
     "type.plugin": "Plugin",
     "type.card": "Card",
     "type.integration": "Integration",
@@ -1539,10 +1559,12 @@ function renderPluginRepositories() {
 async function loadPluginRepositoriesPreview() {
   repositoryPluginDescriptors = [];
   pluginRepositoryPluginList.replaceChildren();
+  renderPluginUpdateStatus({ checking: true });
 
   if (!pluginRepositories.length) {
     renderPluginRepositories();
     pluginRepositoryStatus.textContent = t("message.pluginRepositoryEmpty");
+    renderPluginUpdateStatus();
     return;
   }
 
@@ -1584,6 +1606,7 @@ async function loadPluginRepositoriesPreview() {
   persistConfiguration();
   renderPluginRepositories();
   renderPluginRepositoryPreview();
+  renderPluginUpdateStatus();
   pluginRepositoryStatus.textContent = t("message.pluginRepositoryLoaded", {
     count: repositoryPluginDescriptors.length,
     countRepositories: pluginRepositories.length,
@@ -1902,6 +1925,112 @@ function repositoryPluginInstallState(plugin) {
     updateAvailable,
     removable: isRepositoryInstalledPlugin(plugin.id),
   };
+}
+
+function readLastPluginUpdateCheck() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(adminPluginUpdateCheckStorageKey) ?? "null");
+    return saved && typeof saved.checkedAt === "string" ? saved : undefined;
+  } catch {
+    localStorage.removeItem(adminPluginUpdateCheckStorageKey);
+    return undefined;
+  }
+}
+
+function persistLastPluginUpdateCheck(updates) {
+  const checkedAt = new Date().toISOString();
+  const summary = {
+    checkedAt,
+    updateCount: updates.length,
+    updates: updates.map(update => ({
+      id: update.id,
+      name: update.name,
+      installedVersion: update.installedVersion,
+      availableVersion: update.availableVersion,
+      repositoryName: update.repositoryName,
+    })),
+  };
+  localStorage.setItem(adminPluginUpdateCheckStorageKey, JSON.stringify(summary));
+  return summary;
+}
+
+function collectPluginUpdates() {
+  return repositoryPluginDescriptors
+    .map(plugin => {
+      const installState = repositoryPluginInstallState(plugin);
+      if (!installState.updateAvailable) {
+        return undefined;
+      }
+      return {
+        id: plugin.id,
+        name: localizedPluginText(plugin, "name", plugin.id),
+        installedVersion: installState.installedVersion,
+        availableVersion: plugin.version || "-",
+        repositoryName: plugin.repositoryName,
+        plugin,
+      };
+    })
+    .filter(Boolean);
+}
+
+function renderPluginUpdateStatus(options = {}) {
+  pluginUpdateList.replaceChildren();
+
+  if (options.checking) {
+    pluginUpdateSummary.textContent = t("message.pluginUpdatesChecking");
+    return;
+  }
+
+  if (!pluginRepositories.length) {
+    pluginUpdateSummary.textContent = t("message.pluginUpdatesNoRepositories");
+    return;
+  }
+
+  const updates = collectPluginUpdates();
+  const savedCheck = persistLastPluginUpdateCheck(updates);
+  const checkedAt = formatRuntimeDate(savedCheck.checkedAt);
+  pluginUpdateSummary.textContent = updates.length
+    ? t("message.pluginUpdatesFound", { count: updates.length, checkedAt })
+    : t("message.pluginUpdatesNone", { checkedAt });
+
+  for (const update of updates) {
+    const item = document.createElement("div");
+    const title = document.createElement("div");
+    const reason = document.createElement("div");
+    const status = document.createElement("span");
+
+    item.className = "readiness-item";
+    title.className = "readiness-title";
+    reason.className = "readiness-reason";
+    status.className = "readiness-status";
+    status.dataset.status = "in-progress";
+    title.textContent = update.name;
+    reason.textContent = [
+      t("message.pluginRepositoryUpdateAvailable", {
+        installed: update.installedVersion,
+        available: update.availableVersion,
+      }),
+      update.repositoryName,
+    ].filter(Boolean).join(" · ");
+    status.textContent = t("button.updateRepositoryPackage");
+    item.append(title, reason, status);
+    pluginUpdateList.append(item);
+  }
+}
+
+function renderPersistedPluginUpdateStatus() {
+  const savedCheck = readLastPluginUpdateCheck();
+  if (!savedCheck) {
+    pluginUpdateSummary.textContent = t("message.pluginUpdatesPending");
+    pluginUpdateList.replaceChildren();
+    return;
+  }
+
+  const checkedAt = formatRuntimeDate(savedCheck.checkedAt);
+  pluginUpdateSummary.textContent = savedCheck.updateCount
+    ? t("message.pluginUpdatesFound", { count: savedCheck.updateCount, checkedAt })
+    : t("message.pluginUpdatesNone", { checkedAt });
+  pluginUpdateList.replaceChildren();
 }
 
 async function fetchRepositoryPluginInstallPackage(plugin) {
@@ -2831,6 +2960,7 @@ function setLanguage(language) {
   renderParcelProviders();
   renderPluginRepositories();
   renderPluginRepositoryPreview();
+  renderPersistedPluginUpdateStatus();
   renderAdministration();
   renderAppRuntimeStatus(lastAppRuntime);
   persistConfiguration();
@@ -2859,8 +2989,10 @@ async function initializeAdministration() {
   renderParcelProviders();
   renderPluginRepositories();
   renderPluginRepositoryPreview();
+  renderPersistedPluginUpdateStatus();
   renderAdministration();
   pluginRepositoryStatus.textContent = t("message.pluginRepositoryEmpty");
+  void loadPluginRepositoriesPreview();
   void loadAppRuntimeStatus();
   void restoreServerConnectionSettings();
 }
@@ -2949,6 +3081,9 @@ previewPluginRepository.addEventListener("click", () => {
 });
 closePluginRepositoryDialog.addEventListener("click", closePluginRepositoryAddDialog);
 refreshPluginRepositories.addEventListener("click", () => {
+  void loadPluginRepositoriesPreview();
+});
+refreshPluginUpdates.addEventListener("click", () => {
   void loadPluginRepositoriesPreview();
 });
 

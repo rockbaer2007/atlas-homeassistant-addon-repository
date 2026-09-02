@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.88
+
+- Add automatic read-only plugin update checks in Atlas Administration after
+  app start or reload.
+
 ## 0.1.87
 
 - Update the File Studio toolbar so the font-size controls are adjacent

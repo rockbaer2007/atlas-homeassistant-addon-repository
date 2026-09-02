@@ -636,6 +636,21 @@
         gap: 8px;
       }
 
+      .plugin-update-panel {
+        display: grid;
+        gap: 8px;
+        margin: 12px 0;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+        padding: 10px;
+      }
+
+      .plugin-update-list {
+        display: grid;
+        gap: 8px;
+      }
+
       .plugin-repository-tools {
         display: grid;
         gap: 10px;
@@ -1101,6 +1116,17 @@
                 <img class="atlas-repository-logo" src="/examples/admin-demo/atlas-icon.png" alt="">
               </span>
             </button>
+          </div>
+          <div class="plugin-update-panel" aria-labelledby="plugin-updates-heading">
+            <div class="panel-header">
+              <div>
+                <h3 id="plugin-updates-heading" data-i18n="heading.pluginUpdates">Plugin updates</h3>
+                <p data-i18n="message.pluginUpdatesHint">Atlas checks custom plugin repositories on Administration start and after reload.</p>
+              </div>
+              <button id="refresh-plugin-updates" type="button" data-i18n="button.refreshPluginUpdates">Check updates</button>
+            </div>
+            <output id="plugin-update-summary" aria-live="polite"></output>
+            <div id="plugin-update-list" class="plugin-update-list"></div>
           </div>
           <div class="plugin-repository-tools">
             <div class="panel-header">
