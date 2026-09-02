@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.99
+
+- Keep the File Studio editor pane fixed-height for large files so the editor
+  scrolls internally and status texts remain visible.
+- Bump ATLAS File Studio to `0.1.36` for repository update detection.
+
 ## 0.1.98
 
 - Mark parcel service providers in Atlas Administration as prepared for later
