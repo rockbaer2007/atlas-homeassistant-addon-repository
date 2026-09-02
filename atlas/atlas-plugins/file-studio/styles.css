@@ -414,6 +414,18 @@ body.is-resizing .splitter {
   background: currentColor;
 }
 
+.icon-star::before {
+  inset: 6px;
+  background: currentColor;
+  clip-path: polygon(50% 0, 62% 34%, 98% 35%, 69% 56%, 80% 91%, 50% 70%, 20% 91%, 31% 56%, 2% 35%, 38% 34%);
+}
+
+.icon-star[aria-pressed="true"] {
+  border-color: var(--atlas-accent);
+  background: var(--atlas-accent-soft);
+  color: var(--atlas-folder);
+}
+
 .asset-icon-button {
   display: inline-flex;
   flex: 0 0 auto;
@@ -585,6 +597,36 @@ body.is-resizing .splitter {
   color: var(--atlas-link);
 }
 
+.favorite-paths {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+
+.favorite-path {
+  max-width: 100%;
+  min-height: 28px;
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: 4px;
+  background: var(--atlas-panel-soft);
+  color: var(--atlas-link);
+  padding: 4px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.favorite-path:hover,
+.favorite-path:focus-visible {
+  border-color: var(--atlas-accent);
+  outline: 0;
+}
+
 .directory-tree {
   display: grid;
   gap: 3px;
@@ -699,30 +741,37 @@ body.is-resizing .splitter {
 
 .file-icon-yaml {
   color: var(--atlas-file-yaml);
+  --file-label: "Y";
 }
 
 .file-icon-json {
   color: var(--atlas-file-json);
+  --file-label: "J";
 }
 
 .file-icon-code {
   color: var(--atlas-file-code);
+  --file-label: "<>";
 }
 
 .file-icon-markdown {
   color: var(--atlas-file-markdown);
+  --file-label: "M";
 }
 
 .file-icon-text {
   color: var(--atlas-file-text);
+  --file-label: "T";
 }
 
 .file-icon-archive {
   color: var(--atlas-file-archive);
+  --file-label: "Z";
 }
 
 .file-icon-image {
   color: var(--atlas-file-image);
+  --file-label: "I";
 }
 
 .file-icon::before {
@@ -735,56 +784,48 @@ body.is-resizing .splitter {
 }
 
 .file-icon::after {
-  content: "";
+  content: var(--file-label, "");
   position: absolute;
-  left: 5px;
+  left: 4px;
+  right: 4px;
   bottom: 3px;
-  width: 6px;
-  height: 5px;
+  width: auto;
+  height: 7px;
   border-radius: 1px;
   background: currentColor;
+  color: var(--atlas-panel);
+  font-size: 6px;
+  font-weight: 900;
+  line-height: 7px;
+  text-align: center;
 }
 
 .file-icon-yaml::after {
-  clip-path: polygon(0 0, 45% 0, 50% 42%, 55% 0, 100% 0, 72% 100%, 28% 100%);
+  clip-path: none;
 }
 
 .file-icon-json::after {
-  clip-path: polygon(38% 0, 100% 0, 72% 50%, 100% 100%, 38% 100%, 66% 50%);
+  clip-path: none;
 }
 
 .file-icon-code::after {
-  clip-path: polygon(0 50%, 40% 8%, 52% 22%, 26% 50%, 52% 78%, 40% 92%);
+  clip-path: none;
 }
 
 .file-icon-markdown::after {
-  clip-path: polygon(0 100%, 0 0, 28% 0, 50% 48%, 72% 0, 100% 0, 100% 100%, 72% 100%, 72% 46%, 50% 90%, 28% 46%, 28% 100%);
+  clip-path: none;
 }
 
 .file-icon-text::after {
-  top: 4px;
-  left: 6px;
-  width: 5px;
-  height: 1.5px;
-  border-radius: 999px;
-  box-shadow: 0 4px 0 currentColor;
+  box-shadow: none;
 }
 
 .file-icon-archive::after {
-  left: 6px;
-  top: 3px;
-  width: 4px;
-  height: 9px;
-  background:
-    linear-gradient(currentColor 0 1px, transparent 1px 2px) 0 0 / 4px 2px repeat-y;
+  background: currentColor;
 }
 
 .file-icon-image::after {
-  left: 5px;
-  bottom: 4px;
-  width: 7px;
-  height: 5px;
-  clip-path: polygon(0 100%, 32% 42%, 52% 70%, 70% 34%, 100% 100%);
+  clip-path: none;
 }
 
 .folder-icon::before {

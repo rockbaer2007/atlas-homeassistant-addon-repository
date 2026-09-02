@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.95
+
+- Move File Studio delete operations into a restorable ATLAS trash area.
+- Add File Studio favorites for quick path access and a compact favorite toggle.
+- Expand Home Assistant YAML hints for common root keys, automations, scripts
+  and direct secret values.
+- Refine File Studio file-type icons with compact type badges.
+- Bump ATLAS File Studio to `0.1.33` for repository update detection.
+
 ## 0.1.94
 
 - Add File Studio in-app dialogs for prompts, confirmations, history and

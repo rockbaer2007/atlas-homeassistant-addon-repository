@@ -36,11 +36,13 @@
               <button class="icon-button icon-file-add" type="button" data-tree-action="new-file" aria-label="Neue Datei" title="Neue Datei"></button>
               <button class="icon-button icon-folder-add" type="button" data-tree-action="new-folder" aria-label="Neuer Ordner" title="Neuer Ordner"></button>
               <button id="search-files" class="icon-button asset-icon-button icon-search" type="button" aria-label="Suche" title="Suche"></button>
+              <button id="favorite-path-toggle" class="icon-button icon-star" type="button" aria-label="Favorit umschalten" title="Favorit umschalten" aria-pressed="false"></button>
               <button id="show-hidden-toggle" class="icon-button asset-icon-button icon-hidden" type="button" aria-label="Versteckte Dateien anzeigen" title="Versteckte Dateien anzeigen" aria-pressed="false"></button>
               <button class="icon-button icon-refresh" type="button" data-tree-action="refresh" aria-label="Neu einlesen" title="Neu einlesen"></button>
               <button class="icon-button icon-collapse" type="button" data-tree-action="collapse" aria-label="Alle einklappen" title="Alle einklappen"></button>
             </div>
           </div>
+          <div id="favorite-paths" class="favorite-paths" aria-label="Favoriten"></div>
           <div id="tree-status" class="tree-status" role="status">/config wird geladen...</div>
           <div id="directory-tree" class="directory-tree" aria-live="polite"></div>
           <div id="addons-access-note" class="tree-note locked">/addons erst nach Admin-Freigabe</div>
@@ -91,6 +93,7 @@
               <button id="validate-file" class="button" type="button" disabled>YAML prüfen</button>
               <button id="check-ha-config" class="button" type="button" disabled>HA prüfen</button>
               <button id="show-history" class="button" type="button" disabled>Verlauf</button>
+              <button id="show-trash" class="button" type="button">Papierkorb</button>
               <button id="report-problem" class="button" type="button">Problem melden</button>
             </div>
           </div>
@@ -175,6 +178,7 @@
       const fileStudioWidthLimitStorageKey = "atlas.fileStudio.limitWidth";
       const fileStudioEditorStorageKey = "atlas.fileStudio.editor";
       const fileStudioDownloadStorageKey = "atlas.fileStudio.downloadNames";
+      const fileStudioFavoritesStorageKey = "atlas.fileStudio.favorites";
       const imagePreviewDefaultSize = { widthVw: 70, heightVh: 70 };
       const imagePreviewMinimumSize = { widthVw: 40, heightVh: 40 };
       const imagePreviewMaximumSize = { widthVw: 80, heightVh: 80 };
@@ -196,6 +200,7 @@
         wordWrap: true,
         showHidden: false,
         selectedPaths: new Set(),
+        favorites: [],
         dialogResolve: undefined,
       };
       const imagePreviewExtensions = new Set(["png", "jpg", "jpeg", "svg", "gif", "webp", "bmp", "ico"]);
@@ -421,6 +426,71 @@
 
       function selectedPathList() {
         return [...state.selectedPaths];
+      }
+
+      function activeFavoritePath() {
+        return state.selectedFilePath ?? state.selectedFolderPath ?? "/config";
+      }
+
+      function loadFavoritePaths() {
+        try {
+          const favorites = JSON.parse(localStorage.getItem(fileStudioFavoritesStorageKey) ?? "[]");
+          state.favorites = Array.isArray(favorites) ? favorites.filter(path => typeof path === "string").slice(0, 12) : [];
+        } catch {
+          state.favorites = [];
+        }
+        if (!state.favorites.includes("/config")) {
+          state.favorites.unshift("/config");
+        }
+        renderFavoritePaths();
+      }
+
+      function saveFavoritePaths() {
+        try {
+          localStorage.setItem(fileStudioFavoritesStorageKey, JSON.stringify(state.favorites));
+        } catch {
+          return;
+        }
+      }
+
+      function toggleFavoritePath() {
+        const path = activeFavoritePath();
+        if (state.favorites.includes(path)) {
+          state.favorites = state.favorites.filter(favorite => favorite !== path);
+        } else {
+          state.favorites = [path, ...state.favorites.filter(favorite => favorite !== path)].slice(0, 12);
+        }
+        saveFavoritePaths();
+        renderFavoritePaths();
+      }
+
+      function renderFavoritePaths() {
+        const container = document.querySelector("#favorite-paths");
+        if (!container) return;
+        const buttons = state.favorites.map(path => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "favorite-path";
+          button.textContent = path;
+          button.title = path;
+          button.addEventListener("click", () => {
+            const node = findNodeByPath(state.tree, path);
+            openTreePath(path);
+            if (node?.type === "file") {
+              void selectFileFromList(node);
+            } else {
+              selectFolder(node?.path ?? path);
+            }
+          });
+          return button;
+        });
+        container.replaceChildren(...buttons);
+        syncFavoriteToggle();
+      }
+
+      function syncFavoriteToggle() {
+        const toggle = document.querySelector("#favorite-path-toggle");
+        toggle?.setAttribute("aria-pressed", String(state.favorites.includes(activeFavoritePath())));
       }
 
       function clearSelectedPaths() {
@@ -911,6 +981,7 @@
         const summary = document.querySelector(`.tree-folder summary[data-path="${CSS.escape(path)}"]`);
         summary?.classList.add("active");
         renderFolderList(findNodeByPath(state.tree, path));
+        syncFavoriteToggle();
       }
 
       function selectTreeFile(button, node) {
@@ -940,9 +1011,10 @@
             document.querySelector("#editor-title").textContent = imageFile.name;
             document.querySelector("#editor-kind").textContent = "BILD";
             document.querySelector("#editor-validation-status").textContent = "Bildvorschau bereit";
-            updateCursorStatus();
-            updateEditorActions();
-            return;
+          updateCursorStatus();
+          updateEditorActions();
+          syncFavoriteToggle();
+          return;
           }
 
           if (isArchiveExtension(node.extension)) {
@@ -952,9 +1024,10 @@
             document.querySelector("#editor-title").textContent = archiveFile.name;
             document.querySelector("#editor-kind").textContent = "ZIP";
             document.querySelector("#editor-validation-status").textContent = "ZIP-Inhalt bereit";
-            updateCursorStatus();
-            updateEditorActions();
-            return;
+          updateCursorStatus();
+          updateEditorActions();
+          syncFavoriteToggle();
+          return;
           }
 
           const file = await apiJson(`api/file-studio/file?path=${encodeURIComponent(node.path)}`);
@@ -971,6 +1044,7 @@
           document.querySelector("#editor-validation-status").textContent = file.readonly ? "Readonly" : "Bereit";
           updateCursorStatus();
           updateEditorActions();
+          syncFavoriteToggle();
         } catch (error) {
           setPreviewMode("text");
           clearImagePreview();
@@ -1482,10 +1556,84 @@
           document.querySelector("#editor-kind").textContent = "Bereit";
           clearSelectedPaths();
           await loadDirectoryTree({ preserveSelection: false });
-          setStatus(paths.length === 1 ? `Gelöscht: ${paths[0]}` : `${paths.length} Einträge gelöscht`, "ok");
+          setStatus(paths.length === 1 ? `In Papierkorb verschoben: ${paths[0]}` : `${paths.length} Einträge in Papierkorb verschoben`, "ok");
           updateEditorActions();
         } catch (error) {
           setStatus(`Löschen fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");
+        }
+      }
+
+      async function showTrash() {
+        try {
+          const trash = await apiJson("api/file-studio/trash");
+          const entries = trash.entries ?? [];
+          if (!entries.length) {
+            await showMessageDialog("Papierkorb", "Der Papierkorb ist leer.");
+            return;
+          }
+          const form = document.createElement("div");
+          form.className = "studio-history-list";
+          for (const [index, entry] of entries.entries()) {
+            const item = document.createElement("label");
+            item.className = "studio-history-item";
+            const input = document.createElement("input");
+            input.type = "radio";
+            input.name = "trash-entry";
+            input.value = String(index);
+            input.checked = index === 0;
+            const deletedAt = document.createElement("span");
+            deletedAt.textContent = entry.deletedAt;
+            const name = document.createElement("strong");
+            name.textContent = entry.originalPath;
+            const type = document.createElement("small");
+            type.textContent = entry.type === "directory" ? "Ordner" : formatFileSize(entry.size);
+            item.append(input, deletedAt, name, type);
+            form.append(item);
+          }
+          const action = await showStudioDialog({
+            title: "Papierkorb",
+            body: form,
+            actions: [
+              { label: "Wiederherstellen", value: "restore", primary: true },
+              { label: "Abbrechen", value: "cancel" },
+            ],
+          });
+          if (action !== "restore") return;
+          const selectedIndex = Number.parseInt(form.querySelector("input[name='trash-entry']:checked")?.value ?? "0", 10);
+          const selected = entries[selectedIndex];
+          if (!selected) return;
+          await restoreTrashEntry(selected, false);
+        } catch (error) {
+          setStatus(`Papierkorb fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");
+        }
+      }
+
+      async function restoreTrashEntry(entry, overwrite) {
+        try {
+          const restored = await apiJson("api/file-studio/trash/restore", {
+            method: "POST",
+            body: JSON.stringify({ id: entry.id, overwrite }),
+          });
+          await loadDirectoryTree({ preserveSelection: false });
+          if (restored.type === "file") {
+            await openFile(createFileNode(restored));
+          } else {
+            selectFolder(restored.path);
+          }
+          setStatus(`Wiederhergestellt: ${restored.path}`, "ok");
+        } catch (error) {
+          if (error instanceof Error && /already exists/i.test(error.message)) {
+            const confirmed = await showConfirmDialog(
+              "Papierkorb",
+              `${entry.originalPath} existiert bereits. Aktuellen Stand sichern und ersetzen?`,
+              "Ersetzen",
+            );
+            if (confirmed) {
+              await restoreTrashEntry(entry, true);
+            }
+            return;
+          }
+          throw error;
         }
       }
 
@@ -1873,6 +2021,7 @@
         document.querySelector("#validate-file").addEventListener("click", () => void validateOpenFile());
         document.querySelector("#check-ha-config").addEventListener("click", () => void checkHomeAssistantConfig());
         document.querySelector("#show-history").addEventListener("click", () => void showFileHistory());
+        document.querySelector("#show-trash").addEventListener("click", () => void showTrash());
         document.querySelector("#report-problem").addEventListener("click", () => void reportProblem());
         document.querySelector("#download-file").addEventListener("click", () => void downloadOpenFile());
         document.querySelector("#undo-file-change").addEventListener("click", undoEditorChange);
@@ -1945,6 +2094,7 @@
 
       function bindTreeActions() {
         document.querySelector("#search-files").addEventListener("click", () => void searchFiles());
+        document.querySelector("#favorite-path-toggle").addEventListener("click", toggleFavoritePath);
         document.querySelector("#show-hidden-toggle").addEventListener("click", () => {
           state.showHidden = !state.showHidden;
           document.querySelector("#show-hidden-toggle").setAttribute("aria-pressed", String(state.showHidden));
@@ -2069,6 +2219,7 @@
       applyWidthLimitPreference();
       applyThemePreference();
       applyEditorPreferences();
+      loadFavoritePaths();
       initializeEditor();
       applyEditorPreferences();
       bindHeightLimitToggle();
