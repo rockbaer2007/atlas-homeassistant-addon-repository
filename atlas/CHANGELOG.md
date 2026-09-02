@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.119
+
+- Lighten the Expert Card Editor X/Y/Zoom slider text in dark mode.
+- Bump the Home Assistant Card Editor plugin to `0.2.0-alpha.47`.
+
 ## 0.1.118
 
 - Change the Expert Card Editor Zoom slider to 5-percent steps from `75%` to
