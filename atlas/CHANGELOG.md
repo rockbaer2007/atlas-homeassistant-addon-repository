@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.107
+
+- Add spacing between the File Studio tree and the access note.
+- Reduce the File Studio access note text size slightly.
+
 ## 0.1.106
 
 - Add an Expert Card Editor zoom slider that scales square grid cells evenly.

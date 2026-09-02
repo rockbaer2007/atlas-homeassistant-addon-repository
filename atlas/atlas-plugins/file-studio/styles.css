@@ -624,6 +624,12 @@ body.is-resizing .splitter {
   font-weight: 800;
 }
 
+.tree-note {
+  margin-top: 12px;
+  margin-bottom: 0;
+  font-size: 0.76rem;
+}
+
 .tree-status.warning,
 .tree-note.locked {
   background: var(--atlas-danger-soft);
