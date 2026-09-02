@@ -113,7 +113,7 @@ export function createFileStudioPlugin(
         de: "ATLAS File Studio",
         en: "ATLAS File Studio",
       },
-      version: "0.1.25",
+      version: "0.1.26",
       description: "Scoped file tree, editor, image preview and ZIP inspection plugin for Home Assistant configuration files.",
       descriptionI18n: {
         de: "Abgesichertes Dateibaum-, Editor-, Bildvorschau- und ZIP-Inspektions-Plugin für Home-Assistant-Konfigurationsdateien.",

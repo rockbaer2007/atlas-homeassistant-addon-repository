@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.87
+
+- Update the File Studio toolbar so the font-size controls are adjacent
+  Color-icon buttons and the word-wrap control follows as a text button.
+- Bump ATLAS File Studio to `0.1.26` for repository update detection.
+
 ## 0.1.86
 
 - Add File Studio icon-button actions for rename, delete, copy, move, search,
