@@ -316,6 +316,35 @@ h3 {
   white-space: pre-wrap;
 }
 
+.yaml-preview {
+  tab-size: 2;
+}
+
+.yaml-key {
+  color: #7af7df;
+  font-weight: 800;
+}
+
+.yaml-string {
+  color: #f8d48a;
+}
+
+.yaml-number,
+.yaml-boolean {
+  color: #9cc7ff;
+  font-weight: 700;
+}
+
+.yaml-ha-token {
+  color: #ffb24a;
+  font-weight: 700;
+}
+
+.yaml-comment {
+  color: #7f9298;
+  font-style: italic;
+}
+
 .empty-state {
   color: var(--muted);
 }

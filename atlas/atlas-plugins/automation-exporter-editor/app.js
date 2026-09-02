@@ -281,7 +281,8 @@ function renderDetails() {
   meta.className = "muted";
   meta.textContent = `${automation.triggerCount} Trigger, ${automation.conditionCount} Conditions, ${automation.actionCount} Actions, ${automation.entities.length} Entitaeten, ${automation.services.length} Services`;
   const pre = document.createElement("pre");
-  pre.textContent = automation.yaml;
+  pre.className = "yaml-preview";
+  pre.innerHTML = highlightYaml(automation.yaml);
   elements.details.append(title, meta, createTagBlock("Hinweise", automation.warnings, "warning"), createTagBlock("Entitaeten", automation.entities), createTagBlock("Services", automation.services), pre);
 }
 
@@ -422,6 +423,28 @@ function escapeHtml(value) {
     '"': "&quot;",
     "'": "&#39;",
   })[character]);
+}
+
+function highlightYaml(value) {
+  return escapeHtml(value)
+    .split("\n")
+    .map(line => highlightYamlLine(line))
+    .join("\n");
+}
+
+function highlightYamlLine(line) {
+  const commentIndex = line.indexOf("#");
+  const yamlPart = commentIndex >= 0 ? line.slice(0, commentIndex) : line;
+  const commentPart = commentIndex >= 0
+    ? `<span class="yaml-comment">${line.slice(commentIndex)}</span>`
+    : "";
+  const highlighted = yamlPart
+    .replace(/^(\s*-?\s*)([A-Za-z0-9_-]+)(\s*:)/, `$1<span class="yaml-key">$2</span>$3`)
+    .replace(/([A-Za-z_]+\.[A-Za-z0-9_]+)/g, `<span class="yaml-ha-token">$1</span>`)
+    .replace(/(&quot;[^&]*?&quot;|'[^']*?')/g, `<span class="yaml-string">$1</span>`)
+    .replace(/(:\s*)(true|false|on|off|null|yes|no)\b/gi, `$1<span class="yaml-boolean">$2</span>`)
+    .replace(/(:\s*)(-?\d+(?:\.\d+)?)\b/g, `$1<span class="yaml-number">$2</span>`);
+  return highlighted + commentPart;
 }
 
 renderHistory();

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.125
+
+- Add Studio-like YAML highlighting to the Automation Exporter / Editor details
+  preview.
+- Highlight YAML keys, strings, booleans, numbers, Home Assistant entity/service
+  tokens and comments.
+- Bump the bundled Automation Exporter / Editor plugin to `0.1.4`.
+
 ## 0.1.124
 
 - Detect Home Assistant service calls written with the modern
