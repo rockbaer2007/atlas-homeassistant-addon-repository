@@ -249,6 +249,33 @@ h1 {
   white-space: pre;
 }
 
+.sidebar-plugin-actions {
+  display: grid;
+  gap: 8px;
+  min-width: 150px;
+}
+
+.sidebar-plugin-actions .plugin-action {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--atlas-orange);
+  font: inherit;
+  cursor: pointer;
+}
+
+.sidebar-plugin-actions .plugin-action.secondary {
+  border-color: var(--atlas-border-strong);
+  background: var(--atlas-panel);
+  color: var(--atlas-text);
+}
+
+.sidebar-plugin-actions .plugin-action:disabled {
+  border-color: var(--atlas-border);
+  background: var(--atlas-panel-soft);
+  color: var(--atlas-muted);
+  cursor: not-allowed;
+}
+
 .sidebar-guide {
   display: grid;
   gap: 6px;
@@ -502,5 +529,10 @@ h1 {
 
   .sidebar-plugin-card {
     grid-template-columns: 1fr;
+  }
+
+  .sidebar-plugin-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
   }
 }

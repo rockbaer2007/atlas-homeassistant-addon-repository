@@ -27,13 +27,15 @@ const translations = {
     "message.sidebarHint": "Plugins can be added to the Home Assistant sidebar as Webpage dashboards. Open the dialog to copy the prepared values.",
     "message.sidebarDialogHint": "Copy a ready panel_iframe YAML block for Home Assistant.",
     "message.sidebarPluginUnavailable": "No launch URL available yet.",
-    "message.sidebarPluginCopied": "{name} panel_iframe YAML copied.",
+    "message.sidebarPluginUrlCopied": "{name} URL copied.",
+    "message.sidebarPluginYamlCopied": "{name} panel_iframe YAML copied.",
     "label.sidebarUrl": "Sidebar URL",
     "label.sidebarYaml": "configuration.yaml",
     "summary.noPlugins": "No plugins installed",
     "summary.oneActive": "1 active plugin opens directly from ATLAS start",
     "summary.many": "{plugins} plugins detected, {active} active",
     "button.open": "Open",
+    "button.copyUrl": "Copy URL",
     "button.copyYaml": "Copy YAML",
     "button.close": "Close",
     "button.planned": "Planned",
@@ -63,13 +65,15 @@ const translations = {
     "message.sidebarHint": "Plugins können in Home Assistant als Webseiten-Dashboard zur Seitenleiste hinzugefügt werden. Öffne den Dialog, um die vorbereiteten Werte zu kopieren.",
     "message.sidebarDialogHint": "Kopiert einen fertigen panel_iframe-YAML-Block für Home Assistant.",
     "message.sidebarPluginUnavailable": "Noch keine Start-URL verfügbar.",
-    "message.sidebarPluginCopied": "{name}: panel_iframe-YAML kopiert.",
+    "message.sidebarPluginUrlCopied": "{name}: URL kopiert.",
+    "message.sidebarPluginYamlCopied": "{name}: panel_iframe-YAML kopiert.",
     "label.sidebarUrl": "Seitenleisten-URL",
     "label.sidebarYaml": "configuration.yaml",
     "summary.noPlugins": "Keine Plugins installiert",
     "summary.oneActive": "1 aktives Plugin öffnet direkt vom ATLAS-Start",
     "summary.many": "{plugins} Plugins erkannt, {active} aktiv",
     "button.open": "Öffnen",
+    "button.copyUrl": "URL kopieren",
     "button.copyYaml": "YAML kopieren",
     "button.close": "Schließen",
     "button.planned": "Geplant",
@@ -419,7 +423,9 @@ function createSidebarPluginEntry(plugin) {
   const yamlLabel = document.createElement("span");
   const yaml = document.createElement("pre");
   const yamlCode = document.createElement("code");
-  const action = document.createElement("button");
+  const actions = document.createElement("div");
+  const copyUrlAction = document.createElement("button");
+  const copyYamlAction = document.createElement("button");
   const name = localizedPluginText(plugin, "name", plugin.id);
   const url = createPluginSidebarUrl(plugin);
   const icon = createPluginSidebarIcon(plugin);
@@ -440,17 +446,32 @@ function createSidebarPluginEntry(plugin) {
   yamlLabel.textContent = t("label.sidebarYaml");
   yamlCode.textContent = panelIframeYaml;
   yaml.append(yamlCode);
-  action.type = "button";
-  action.className = "plugin-action";
-  action.textContent = t("button.copyYaml");
-  action.disabled = !url;
-  action.addEventListener("click", () => copySidebarPluginEntry({ name, panelIframeYaml }));
+  actions.className = "sidebar-plugin-actions";
+  copyUrlAction.type = "button";
+  copyUrlAction.className = "plugin-action secondary";
+  copyUrlAction.textContent = t("button.copyUrl");
+  copyUrlAction.disabled = !url;
+  copyUrlAction.addEventListener("click", () => copySidebarPluginText({
+    name,
+    text: url,
+    messageKey: "message.sidebarPluginUrlCopied",
+  }));
+  copyYamlAction.type = "button";
+  copyYamlAction.className = "plugin-action";
+  copyYamlAction.textContent = t("button.copyYaml");
+  copyYamlAction.disabled = !url;
+  copyYamlAction.addEventListener("click", () => copySidebarPluginText({
+    name,
+    text: panelIframeYaml,
+    messageKey: "message.sidebarPluginYamlCopied",
+  }));
+  actions.append(copyUrlAction, copyYamlAction);
 
   body.append(title, meta);
   if (panelIframeYaml) {
     body.append(yamlLabel, yaml);
   }
-  card.append(body, action);
+  card.append(body, actions);
   return card;
 }
 
@@ -479,19 +500,19 @@ function createTextLine(text) {
   return line;
 }
 
-async function copySidebarPluginEntry({ name, panelIframeYaml }) {
+async function copySidebarPluginText({ name, text, messageKey }) {
   try {
-    await navigator.clipboard.writeText(panelIframeYaml);
+    await navigator.clipboard.writeText(text);
   } catch {
     const fallback = document.createElement("textarea");
-    fallback.value = panelIframeYaml;
+    fallback.value = text;
     fallback.className = "visually-hidden";
     document.body.append(fallback);
     fallback.select();
     document.execCommand("copy");
     fallback.remove();
   }
-  pluginSummary.textContent = t("message.sidebarPluginCopied", { name });
+  pluginSummary.textContent = t(messageKey, { name });
 }
 
 function createPanelIframeId(plugin, name) {

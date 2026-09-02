@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.104
+
+- Add a separate "Copy URL" action to the Plugin Hub sidebar helper for users
+  who create Home Assistant Webpage dashboards manually.
+
 ## 0.1.103
 
 - Move the Home Assistant sidebar helper dialog into the Plugin Hub.
