@@ -670,6 +670,59 @@
         gap: 8px;
       }
 
+      .sidebar-dialog {
+        width: min(900px, 80vw);
+        max-height: 80vh;
+      }
+
+      .sidebar-dialog .dialog-panel {
+        max-height: 80vh;
+        overflow: hidden;
+      }
+
+      .sidebar-plugin-list {
+        display: grid;
+        gap: 10px;
+        max-height: min(48vh, 460px);
+        overflow: auto;
+        padding-right: 4px;
+      }
+
+      .sidebar-plugin-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: start;
+        border: 1px solid var(--atlas-border);
+        border-left: 4px solid var(--atlas-orange);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+        padding: 10px;
+      }
+
+      .sidebar-plugin-title {
+        color: var(--atlas-text);
+        font-weight: 800;
+      }
+
+      .sidebar-plugin-meta {
+        display: grid;
+        gap: 4px;
+        margin-top: 4px;
+        color: var(--atlas-muted);
+        font-size: 12px;
+      }
+
+      .sidebar-guide {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding-left: 20px;
+        color: var(--atlas-muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
       .plugin-repository-tools {
         display: grid;
         gap: 10px;
@@ -1130,6 +1183,7 @@
           </div>
           <div class="plugin-tools">
             <button id="import-plugin-package" type="button" data-i18n="button.importPackage">Import package</button>
+            <button id="open-sidebar-plugin-dialog" type="button" data-i18n="button.openSidebarPluginDialog">Add plugin to sidebar</button>
             <input id="plugin-package-file" class="visually-hidden" type="file" accept=".json,.atlas-plugin.json,application/json">
             <button id="open-plugin-repository-dialog" class="atlas-repository-button" type="button">
               <span data-i18n="button.openRepositoryDialog">Add ATLAS repository</span>
@@ -1228,6 +1282,26 @@
           <button id="preview-plugin-repository" type="button" data-i18n="button.previewRepository">Preview repository</button>
           <button id="add-plugin-repository" class="accent" type="button" data-i18n="button.addRepository">Add</button>
           <button id="close-plugin-repository-dialog" class="secondary" type="button" data-i18n="button.cancel">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="sidebar-plugin-dialog" class="sidebar-dialog" aria-labelledby="sidebar-plugin-dialog-heading">
+      <form class="dialog-panel" method="dialog">
+        <div class="panel-header">
+          <div>
+            <h2 id="sidebar-plugin-dialog-heading" data-i18n="heading.sidebarPluginDialog">Plugin als Seitenleisteneintrag</h2>
+            <p data-i18n="message.sidebarPluginDialogHint">Prepare a Home Assistant Webpage dashboard entry for an ATLAS plugin.</p>
+          </div>
+        </div>
+        <div id="sidebar-plugin-list" class="sidebar-plugin-list"></div>
+        <ol class="sidebar-guide">
+          <li data-i18n="guide.sidebarStep1">Open Home Assistant Settings > Dashboards.</li>
+          <li data-i18n="guide.sidebarStep2">Add a dashboard of type Webpage.</li>
+          <li data-i18n="guide.sidebarStep3">Use the copied name, URL and icon suggestion.</li>
+          <li data-i18n="guide.sidebarStep4">Enable Show in sidebar and save.</li>
+        </ol>
+        <div class="dialog-actions">
+          <button id="close-sidebar-plugin-dialog" class="secondary" type="button" data-i18n="button.close">Close</button>
         </div>
       </form>
     </dialog>

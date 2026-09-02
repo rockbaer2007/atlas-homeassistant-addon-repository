@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.100
+
+- Add an Atlas Administration dialog that lists current plugins and prepares
+  Home Assistant Webpage dashboard/sidebar entries with name, URL and icon.
+
 ## 0.1.99
 
 - Keep the File Studio editor pane fixed-height for large files so the editor

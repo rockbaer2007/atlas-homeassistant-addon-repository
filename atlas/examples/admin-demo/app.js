@@ -36,6 +36,10 @@ const saveAdminSettings = document.querySelector("#save-admin-settings");
 const forgetAdminToken = document.querySelector("#forget-admin-token");
 const exportAdminSettings = document.querySelector("#export-admin-settings");
 const openCardEditor = document.querySelector("#open-card-editor");
+const openSidebarPluginDialog = document.querySelector("#open-sidebar-plugin-dialog");
+const sidebarPluginDialog = document.querySelector("#sidebar-plugin-dialog");
+const sidebarPluginList = document.querySelector("#sidebar-plugin-list");
+const closeSidebarPluginDialog = document.querySelector("#close-sidebar-plugin-dialog");
 const adminConnectionModeHint = document.querySelector("#admin-connection-mode-hint");
 const editorStartMode = document.querySelector("#editor-start-mode");
 const importPluginPackage = document.querySelector("#import-plugin-package");
@@ -209,6 +213,7 @@ const translations = {
     "heading.pluginUpdates": "Plugin updates",
     "heading.policy": "Plugin access policy",
     "heading.addPluginRepository": "Add ATLAS repository",
+    "heading.sidebarPluginDialog": "Plugin sidebar entry",
     "label.haUrl": "Home Assistant URL",
     "label.accessToken": "Access token",
     "label.translationProvider": "Translation module",
@@ -252,6 +257,9 @@ const translations = {
     "button.deactivate": "Deactivate",
     "button.exportPackage": "Export package",
     "button.importPackage": "Import package",
+    "button.openSidebarPluginDialog": "Add plugin to sidebar",
+    "button.prepareSidebarPlugin": "Prepare add",
+    "button.close": "Close",
     "button.openRepositoryDialog": "Add ATLAS repository",
     "button.previewRepository": "Preview repository",
     "button.addRepository": "Add",
@@ -338,6 +346,9 @@ const translations = {
     "message.pluginRepositoryBundledVersion": "Built in: {version}",
     "message.pluginRepositoryNotInstalled": "Not installed",
     "message.pluginRepositoryNoPackage": "No installable package or manifest URL.",
+    "message.sidebarPluginDialogHint": "Prepare a Home Assistant Webpage dashboard entry for an ATLAS plugin.",
+    "message.sidebarPluginCopied": "{name} sidebar values copied.",
+    "message.sidebarPluginUnavailable": "No launch URL available yet.",
     "message.pluginUpdatesHint": "Atlas checks custom plugin repositories on Administration start and after reload.",
     "message.pluginUpdatesChecking": "Checking plugin repositories for updates...",
     "message.pluginUpdatesNoRepositories": "No custom plugin repositories configured yet.",
@@ -349,6 +360,10 @@ const translations = {
     "type.integration": "Integration",
     "type.tool": "Tool",
     "type.theme": "Theme",
+    "guide.sidebarStep1": "Open Home Assistant Settings > Dashboards.",
+    "guide.sidebarStep2": "Add a dashboard of type Webpage.",
+    "guide.sidebarStep3": "Use the copied name, URL and icon suggestion.",
+    "guide.sidebarStep4": "Enable Show in sidebar and save.",
     "mode.simple": "Simple",
     "mode.expert": "Expert",
     "policy.token": "The Card Editor receives the token only as a browser session handoff.",
@@ -404,6 +419,7 @@ const translations = {
     "heading.pluginUpdates": "Plugin-Updates",
     "heading.policy": "Plugin-Zugriffsregel",
     "heading.addPluginRepository": "ATLAS Repository hinzufügen",
+    "heading.sidebarPluginDialog": "Plugin als Seitenleisteneintrag",
     "label.haUrl": "Home Assistant URL",
     "label.accessToken": "Access Token",
     "label.translationProvider": "Übersetzungsmodul",
@@ -447,6 +463,9 @@ const translations = {
     "button.deactivate": "Deaktivieren",
     "button.exportPackage": "Paket exportieren",
     "button.importPackage": "Paket importieren",
+    "button.openSidebarPluginDialog": "Plugin zur Seitenleiste hinzufügen",
+    "button.prepareSidebarPlugin": "Hinzufügen vorbereiten",
+    "button.close": "Schließen",
     "button.openRepositoryDialog": "ATLAS Repository hinzufügen",
     "button.previewRepository": "Repository prüfen",
     "button.addRepository": "Hinzufügen",
@@ -533,6 +552,9 @@ const translations = {
     "message.pluginRepositoryBundledVersion": "Eingebaut: {version}",
     "message.pluginRepositoryNotInstalled": "Nicht installiert",
     "message.pluginRepositoryNoPackage": "Keine installierbare Paket- oder Manifest-URL.",
+    "message.sidebarPluginDialogHint": "Bereitet einen Home-Assistant-Webseiten-Dashboard-Eintrag für ein ATLAS-Plugin vor.",
+    "message.sidebarPluginCopied": "{name}: Seitenleistenwerte kopiert.",
+    "message.sidebarPluginUnavailable": "Noch keine Start-URL verfügbar.",
     "message.pluginUpdatesHint": "Atlas prüft benutzerdefinierte Plugin-Repositories beim Start der Administration und nach einem Reload.",
     "message.pluginUpdatesChecking": "Plugin-Repositories werden auf Updates geprüft...",
     "message.pluginUpdatesNoRepositories": "Noch keine benutzerdefinierten Plugin-Repositories eingerichtet.",
@@ -544,6 +566,10 @@ const translations = {
     "type.integration": "Integration",
     "type.tool": "Tool",
     "type.theme": "Theme",
+    "guide.sidebarStep1": "Öffne Home Assistant Einstellungen > Dashboards.",
+    "guide.sidebarStep2": "Füge ein Dashboard vom Typ Webseite hinzu.",
+    "guide.sidebarStep3": "Nutze den kopierten Namen, die URL und den Icon-Vorschlag.",
+    "guide.sidebarStep4": "Aktiviere In Seitenleiste anzeigen und speichere.",
     "mode.simple": "Simple",
     "mode.expert": "Expert",
     "policy.token": "Der Card Editor erhält den Token nur als Browser-Sitzungsübergabe.",
@@ -2784,6 +2810,121 @@ function createHubNavigationUrl() {
   return appendThemeSearch(lastAppRuntime?.urls?.hub) || createPortNavigationUrl(4176, "/hub", createThemeSearch());
 }
 
+function createPluginNavigationUrl(plugin) {
+  const entry = typeof plugin?.entry === "string" ? plugin.entry.trim() : "";
+  if (plugin.id === HomeAssistantCardEditorPluginId || entry === "editor") {
+    return createEditorNavigationUrl();
+  }
+  if (entry === "admin") {
+    return appendThemeSearch(lastAppRuntime?.urls?.admin) || createPortNavigationUrl(4175, "/", createThemeSearch());
+  }
+  if (!entry) {
+    return "";
+  }
+
+  try {
+    const appUrl = new URL(lastAppRuntime?.urls?.app ?? createPortNavigationUrl(4176, "/"), window.location.href);
+    appUrl.pathname = "/";
+    appUrl.search = "";
+    appUrl.hash = "";
+    const pluginUrl = new URL(entry.replace(/^\/+/, ""), appUrl);
+    pluginUrl.searchParams.set("theme", currentThemePreference);
+    return pluginUrl.toString();
+  } catch {
+    return "";
+  }
+}
+
+function createPluginSidebarIcon(plugin) {
+  if (plugin.id === HomeAssistantCardEditorPluginId) return "mdi:view-dashboard-edit";
+  if (plugin.id === FileStudioPluginId) return "mdi:file-document-edit";
+  return "mdi:puzzle";
+}
+
+function openSidebarPluginEntryDialog() {
+  renderSidebarPluginEntries();
+  if (typeof sidebarPluginDialog.showModal === "function") {
+    sidebarPluginDialog.showModal();
+  } else {
+    sidebarPluginDialog.setAttribute("open", "");
+  }
+}
+
+function closeSidebarPluginEntryDialog() {
+  sidebarPluginDialog.close?.();
+  sidebarPluginDialog.removeAttribute("open");
+}
+
+function renderSidebarPluginEntries() {
+  sidebarPluginList.replaceChildren();
+  const plugins = currentPluginDescriptors()
+    .slice()
+    .sort((left, right) => (left.order ?? 999) - (right.order ?? 999) || localizedPluginText(left, "name", left.id).localeCompare(localizedPluginText(right, "name", right.id)));
+
+  for (const plugin of plugins) {
+    sidebarPluginList.append(createSidebarPluginEntry(plugin));
+  }
+}
+
+function createSidebarPluginEntry(plugin) {
+  const card = document.createElement("article");
+  const body = document.createElement("div");
+  const title = document.createElement("div");
+  const meta = document.createElement("div");
+  const action = document.createElement("button");
+  const name = localizedPluginText(plugin, "name", plugin.id);
+  const url = createPluginNavigationUrl(plugin);
+  const icon = createPluginSidebarIcon(plugin);
+  const status = activePluginIds.has(plugin.id) ? t("text.pluginStatusActive") : translatePluginStatus(plugin.status);
+
+  card.className = "sidebar-plugin-card";
+  title.className = "sidebar-plugin-title";
+  meta.className = "sidebar-plugin-meta";
+  title.textContent = name;
+  meta.append(
+    createTextLine(`${status} · ${plugin.version}`),
+    createTextLine(url || t("message.sidebarPluginUnavailable")),
+    createTextLine(icon),
+  );
+  action.type = "button";
+  action.className = "accent";
+  action.textContent = t("button.prepareSidebarPlugin");
+  action.disabled = !url;
+  action.addEventListener("click", () => copySidebarPluginEntry({ name, url, icon }));
+
+  body.append(title, meta);
+  card.append(body, action);
+  return card;
+}
+
+function createTextLine(text) {
+  const line = document.createElement("span");
+  line.textContent = text;
+  return line;
+}
+
+async function copySidebarPluginEntry({ name, url, icon }) {
+  const text = [
+    `Name: ${name}`,
+    `URL: ${url}`,
+    `Icon: ${icon}`,
+  ].join("\n");
+
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const fallback = document.createElement("textarea");
+    fallback.value = text;
+    fallback.className = "visually-hidden";
+    document.body.append(fallback);
+    fallback.select();
+    document.execCommand("copy");
+    fallback.remove();
+  }
+
+  adminSaveState.textContent = t("message.sidebarPluginCopied", { name });
+}
+
 function createThemeSearch() {
   const search = new URLSearchParams();
   search.set("theme", currentThemePreference);
@@ -3111,6 +3252,8 @@ exportAdminSettings.addEventListener("click", () => {
 });
 
 openCardEditor.addEventListener("click", openEditorWithConnectionHandoff);
+openSidebarPluginDialog.addEventListener("click", openSidebarPluginEntryDialog);
+closeSidebarPluginDialog.addEventListener("click", closeSidebarPluginEntryDialog);
 importPluginPackage.addEventListener("click", () => pluginPackageFile.click());
 pluginPackageFile.addEventListener("change", importSelectedPluginPackage);
 openPluginRepositoryDialog.addEventListener("click", openPluginRepositoryAddDialog);
