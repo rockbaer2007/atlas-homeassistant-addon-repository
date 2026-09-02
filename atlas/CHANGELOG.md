@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.109
+
+- Fix the Expert Card Editor raster sliders so extra columns and rows render as
+  real grid cells with stable cell geometry.
+- Bump the Home Assistant Card Editor plugin to `0.2.0-alpha.39`.
+
 ## 0.1.108
 
 - Give local ATLAS plugins an automatic launch URL when their plugin folder

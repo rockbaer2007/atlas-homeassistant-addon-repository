@@ -1412,6 +1412,7 @@ const expertGridBaseRows = 12;
 const expertGridMaxExtraColumns = 5;
 const expertGridMaxExtraRows = 5;
 const expertGridDefaultCellSize = 52;
+const expertGridGap = 4;
 const expertGridMinCellSize = 40;
 const expertGridMaxCellSize = 72;
 let expertGridCellSize = expertGridDefaultCellSize;
@@ -4968,11 +4969,14 @@ function syncExpertGridControls() {
 function applyExpertEditorSurfaceSize() {
   syncExpertGridSizeFromSurfaceDelta();
   syncExpertGridControls();
+  const surfaceWidth = expertGridColumns * expertGridCellSize + Math.max(0, expertGridColumns - 1) * expertGridGap;
+  const surfaceHeight = expertGridRows * expertGridCellSize + Math.max(0, expertGridRows - 1) * expertGridGap;
   expertEditorDropzone.style.setProperty("--expert-editor-columns", String(expertGridColumns));
   expertEditorDropzone.style.setProperty("--expert-editor-rows", String(expertGridRows));
   expertEditorDropzone.style.setProperty("--expert-editor-cell-size", `${expertGridCellSize}px`);
-  expertEditorDropzone.style.setProperty("--expert-editor-surface-width", `${expertGridColumns * expertGridCellSize}px`);
-  expertEditorDropzone.style.setProperty("--expert-editor-surface-height", `${expertGridRows * expertGridCellSize}px`);
+  expertEditorDropzone.style.setProperty("--expert-editor-grid-gap", `${expertGridGap}px`);
+  expertEditorDropzone.style.setProperty("--expert-editor-surface-width", `${surfaceWidth}px`);
+  expertEditorDropzone.style.setProperty("--expert-editor-surface-height", `${surfaceHeight}px`);
 }
 
 function updateExpertEditorGridSize() {

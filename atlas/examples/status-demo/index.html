@@ -1543,10 +1543,11 @@
 
       .expert-editor-dropzone {
         --expert-editor-cell-size: 52px;
+        --expert-editor-grid-gap: 4px;
         --expert-editor-columns: 12;
         --expert-editor-rows: 12;
-        --expert-editor-surface-width: 624px;
-        --expert-editor-surface-height: 624px;
+        --expert-editor-surface-width: 668px;
+        --expert-editor-surface-height: 668px;
         position: relative;
         width: calc(var(--expert-editor-surface-width) + 28px);
         max-width: none;
@@ -1564,15 +1565,15 @@
         display: grid;
         grid-template-columns: repeat(var(--expert-editor-columns), var(--expert-editor-cell-size));
         grid-template-rows: repeat(var(--expert-editor-rows), var(--expert-editor-cell-size));
-        gap: 4px;
+        gap: var(--expert-editor-grid-gap);
         width: var(--expert-editor-surface-width);
-        min-height: var(--expert-editor-surface-height);
+        height: var(--expert-editor-surface-height);
         background:
           linear-gradient(to right, rgba(15, 118, 110, 0.16) 1px, transparent 1px),
           linear-gradient(to bottom, rgba(15, 118, 110, 0.16) 1px, transparent 1px);
         background-size:
-          var(--expert-editor-cell-size) var(--expert-editor-cell-size),
-          var(--expert-editor-cell-size) var(--expert-editor-cell-size);
+          calc(var(--expert-editor-cell-size) + var(--expert-editor-grid-gap)) calc(var(--expert-editor-cell-size) + var(--expert-editor-grid-gap)),
+          calc(var(--expert-editor-cell-size) + var(--expert-editor-grid-gap)) calc(var(--expert-editor-cell-size) + var(--expert-editor-grid-gap));
       }
 
       .expert-surface-grid p {
