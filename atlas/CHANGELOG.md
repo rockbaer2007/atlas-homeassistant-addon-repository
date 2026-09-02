@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.127
+
+- Make Plugin Hub sidebar URLs collapsible by default on plugin cards.
+- Add the planned File Studio switch between `/config` and the Automation
+  Exporter output folder to the roadmap.
+
 ## 0.1.126
 
 - Limit the Automation Exporter / Editor automation list to roughly 15 visible

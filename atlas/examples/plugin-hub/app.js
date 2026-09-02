@@ -32,6 +32,7 @@ const translations = {
     "message.sidebarPluginCopyFallback": "{name}: browser copy is blocked. The text is selected below; press Ctrl+C.",
     "label.sidebarUrl": "Sidebar URL",
     "label.sidebarYaml": "configuration.yaml",
+    "label.sidebarUrlToggle": "Show sidebar URL",
     "label.capabilitiesToggle": "Show capabilities ({count})",
     "label.noCapabilities": "No capabilities declared",
     "summary.noPlugins": "No plugins installed",
@@ -73,6 +74,7 @@ const translations = {
     "message.sidebarPluginCopyFallback": "{name}: Browser-Kopieren blockiert. Der Text ist unten markiert; bitte Strg+C drücken.",
     "label.sidebarUrl": "Seitenleisten-URL",
     "label.sidebarYaml": "configuration.yaml",
+    "label.sidebarUrlToggle": "Seitenleisten-URL anzeigen",
     "label.capabilitiesToggle": "Fähigkeiten anzeigen ({count})",
     "label.noCapabilities": "Keine Fähigkeiten deklariert",
     "summary.noPlugins": "Keine Plugins installiert",
@@ -387,10 +389,7 @@ function createPluginCard(plugin) {
       ? t("button.planned")
       : t("button.disabled");
   if (launchable) {
-    const sidebarUrl = document.createElement("p");
-    sidebarUrl.className = "plugin-sidebar-url";
-    sidebarUrl.textContent = `${t("label.sidebarUrl")}: ${sidebarActionUrl}`;
-    body.append(sidebarUrl);
+    body.append(createSidebarUrlDetails(sidebarActionUrl));
     action.href = sidebarActionUrl;
   } else {
     action.href = "#";
@@ -401,6 +400,18 @@ function createPluginCard(plugin) {
 
   card.append(body);
   return card;
+}
+
+function createSidebarUrlDetails(sidebarActionUrl) {
+  const details = document.createElement("details");
+  details.className = "plugin-sidebar-url-details";
+  const summary = document.createElement("summary");
+  summary.textContent = t("label.sidebarUrlToggle");
+  const url = document.createElement("code");
+  url.className = "plugin-sidebar-url";
+  url.textContent = sidebarActionUrl;
+  details.append(summary, url);
+  return details;
 }
 
 function createCapabilityDetails(capabilities) {
