@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.102
+
+- Open the plugin sidebar helper dialog directly from the Plugin Hub.
+- Add ready-to-copy `panel_iframe` YAML blocks for plugin sidebar entries.
+- Fix ATLAS File Studio sidebar preparation by showing its direct plugin URL.
+
 ## 0.1.101
 
 - Add a Plugin Hub hint for adding plugins to the Home Assistant sidebar as
