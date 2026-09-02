@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.121
+
+- Align the bundled ATLAS Automation Exporter / Editor with the installable
+  GitHub plugin package `0.1.1`.
+- Keep the Home Assistant Add-on update target moving after the plugin install
+  package fix.
+
 ## 0.1.120
 
 - Add the ATLAS Automation Exporter / Editor as the next Home Assistant plugin.
