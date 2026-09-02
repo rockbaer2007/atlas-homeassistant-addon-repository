@@ -65,14 +65,14 @@
             <span id="editor-kind">Bereit</span>
           </div>
           <div class="editor-toolbar" aria-label="Editor-Aktionen">
-            <button id="save-file" class="button" type="button" disabled>Speichern</button>
-            <button id="save-file-as" class="button" type="button" disabled>Speichern unter</button>
+            <button id="save-file" class="icon-button asset-icon-button icon-save" type="button" aria-label="Speichern" title="Speichern" disabled></button>
+            <button id="save-file-as" class="icon-button asset-icon-button icon-save-as" type="button" aria-label="Speichern unter" title="Speichern unter" disabled></button>
             <button id="discard-file" class="button" type="button" disabled>Verwerfen</button>
             <button id="validate-file" class="button" type="button" disabled>YAML prüfen</button>
-            <button id="download-file" class="button" type="button" disabled>Download</button>
+            <button id="download-file" class="icon-button asset-icon-button icon-download" type="button" aria-label="Download" title="Download" disabled></button>
             <button id="upload-file-trigger" class="button" type="button">Upload/Ersetzen</button>
             <input id="upload-file" type="file" hidden>
-            <label class="wrap-toggle"><input id="word-wrap-toggle" type="checkbox" checked> Umbruch</label>
+            <button id="word-wrap-toggle" class="icon-button asset-icon-button icon-word-wrap" type="button" aria-label="Zeilenumbruch" title="Zeilenumbruch" aria-pressed="true"></button>
             <button id="font-decrease" class="button small-button" type="button" aria-label="Schrift kleiner" title="Schrift kleiner">A-</button>
             <button id="font-increase" class="button small-button" type="button" aria-label="Schrift größer" title="Schrift größer">A+</button>
           </div>
@@ -96,10 +96,10 @@
             <p id="image-preview-meta"></p>
           </div>
           <div class="image-preview-actions">
-            <button id="image-preview-zoom-out" class="icon-button icon-zoom-out" type="button" aria-label="Bild verkleinern" title="Zoom -"></button>
+            <button id="image-preview-zoom-out" class="icon-button asset-icon-button icon-zoom-out" type="button" aria-label="Bild verkleinern" title="Zoom -"></button>
             <button id="image-preview-zoom-reset" class="icon-button icon-zoom-reset" type="button" aria-label="Bild in Originalgröße anzeigen" title="100%"></button>
-            <button id="image-preview-zoom-in" class="icon-button icon-zoom-in" type="button" aria-label="Bild vergrößern" title="Zoom +"></button>
-            <button id="image-preview-download" class="button" type="button">Download</button>
+            <button id="image-preview-zoom-in" class="icon-button asset-icon-button icon-zoom-in" type="button" aria-label="Bild vergrößern" title="Zoom +"></button>
+            <button id="image-preview-download" class="icon-button asset-icon-button icon-download" type="button" aria-label="Download" title="Download"></button>
             <button id="image-preview-close" class="icon-button icon-close" type="button" aria-label="Bildvorschau schließen" title="Schließen"></button>
           </div>
         </header>
@@ -124,7 +124,7 @@
             <p id="archive-preview-meta"></p>
           </div>
           <div class="archive-preview-actions">
-            <button id="archive-preview-download" class="button" type="button">Download</button>
+            <button id="archive-preview-download" class="icon-button asset-icon-button icon-download" type="button" aria-label="Download" title="Download"></button>
             <button id="archive-preview-close" class="icon-button icon-close" type="button" aria-label="ZIP-Inhalt schließen" title="Schließen"></button>
           </div>
         </header>
@@ -363,7 +363,7 @@
         editor.style.setProperty("--editor-font-size", `${state.editorFontSize}px`);
         state.editor?.setWordWrap?.(state.wordWrap);
         state.editor?.setFontSize?.(state.editorFontSize);
-        document.querySelector("#word-wrap-toggle").checked = state.wordWrap;
+        document.querySelector("#word-wrap-toggle").setAttribute("aria-pressed", String(state.wordWrap));
       }
 
       function saveEditorPreferences() {
@@ -1131,8 +1131,8 @@
           void replaceOpenFileFromUpload(event.target.files?.[0]);
           event.target.value = "";
         });
-        document.querySelector("#word-wrap-toggle").addEventListener("change", event => {
-          state.wordWrap = event.target.checked;
+        document.querySelector("#word-wrap-toggle").addEventListener("click", () => {
+          state.wordWrap = !state.wordWrap;
           syncEditorPreferences();
           saveEditorPreferences();
         });

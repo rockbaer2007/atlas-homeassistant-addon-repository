@@ -392,6 +392,82 @@ body.is-resizing .splitter {
   background: currentColor;
 }
 
+.asset-icon-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-color: var(--atlas-border);
+  background: var(--atlas-panel-soft);
+}
+
+.asset-icon-button:hover,
+.asset-icon-button:focus-visible,
+.asset-icon-button[aria-pressed="true"] {
+  border-color: var(--atlas-accent);
+  background: var(--atlas-accent-soft);
+}
+
+.asset-icon-button::before {
+  inset: 3px;
+  border: 0;
+  border-radius: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 20px 20px;
+}
+
+.asset-icon-button::after {
+  content: none;
+}
+
+.asset-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.asset-icon-button.icon-save::before {
+  background-image: image-set(
+    url("icons/24x24/Save.png") 1x,
+    url("icons/48x48/Save.png") 2x
+  );
+}
+
+.asset-icon-button.icon-save-as::before {
+  background-image: image-set(
+    url("icons/24x24/Save-all.png") 1x,
+    url("icons/48x48/Save-all.png") 2x
+  );
+}
+
+.asset-icon-button.icon-download::before {
+  background-image: image-set(
+    url("icons/24x24/Open.png") 1x,
+    url("icons/48x48/Open.png") 2x
+  );
+}
+
+.asset-icon-button.icon-word-wrap::before {
+  background-image: image-set(
+    url("icons/24x24/Word-wrap.png") 1x,
+    url("icons/48x48/Word-wrap.png") 2x
+  );
+}
+
+.asset-icon-button.icon-zoom-in::before {
+  background-image: image-set(
+    url("icons/24x24/Zoom-in.png") 1x,
+    url("icons/48x48/Zoom-in.png") 2x
+  );
+}
+
+.asset-icon-button.icon-zoom-out::before {
+  background-image: image-set(
+    url("icons/24x24/Zoom-out.png") 1x,
+    url("icons/48x48/Zoom-out.png") 2x
+  );
+}
+
 .tree-status,
 .tree-note {
   margin-bottom: 10px;
@@ -733,20 +809,6 @@ body.is-resizing .splitter {
 
 .small-button {
   min-width: 38px;
-}
-
-.wrap-toggle {
-  display: inline-flex;
-  min-height: 34px;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--atlas-border);
-  border-radius: 4px;
-  background: var(--atlas-panel-soft);
-  color: var(--atlas-link);
-  padding: 7px 10px;
-  font-size: 13px;
-  font-weight: 700;
 }
 
 .editor-input {
