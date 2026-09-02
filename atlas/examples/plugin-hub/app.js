@@ -1,13 +1,14 @@
 const pluginGrid = document.querySelector("#plugin-grid");
 const pluginSummary = document.querySelector("#plugin-summary");
 const languageButtons = Array.from(document.querySelectorAll("[data-language]"));
-const surfaceLinks = Array.from(document.querySelectorAll(".hub-actions a[href]"));
+const surfaceLinks = Array.from(document.querySelectorAll(".hub-actions a[href], .sidebar-hint a[href]"));
 const atlasThemeStorageKey = "atlas.themePreference";
 const hubLanguageStorageKey = "atlas.pluginHub.language";
 const translations = {
   en: {
     "heading.hub": "Plugin Hub",
     "link.admin": "Administration",
+    "link.sidebarHelper": "Sidebar helper",
     "aria.surfaces": "ATLAS surfaces",
     "aria.language": "Language",
     "aria.filters": "Plugin filters",
@@ -16,6 +17,8 @@ const translations = {
     "message.unknownCatalogError": "Unknown plugin catalog error.",
     "message.noPlugins": "No plugins installed",
     "message.noPluginsHint": "Open Administration to add an ATLAS plugin repository or import a plugin package.",
+    "message.sidebarHint": "Plugins can be added to the Home Assistant sidebar as Webpage dashboards. Open Administration to prepare name, URL and icon.",
+    "label.sidebarUrl": "Sidebar URL",
     "summary.noPlugins": "No plugins installed",
     "summary.oneActive": "1 active plugin opens directly from ATLAS start",
     "summary.many": "{plugins} plugins detected, {active} active",
@@ -31,6 +34,7 @@ const translations = {
   de: {
     "heading.hub": "Plugin Hub",
     "link.admin": "Administration",
+    "link.sidebarHelper": "Seitenleisten-Hilfe",
     "aria.surfaces": "ATLAS-Oberflächen",
     "aria.language": "Sprache",
     "aria.filters": "Plugin-Filter",
@@ -39,6 +43,8 @@ const translations = {
     "message.unknownCatalogError": "Unbekannter Plugin-Katalogfehler.",
     "message.noPlugins": "Keine Plugins installiert",
     "message.noPluginsHint": "Öffne die Administration, um ein ATLAS-Plugin-Repository hinzuzufügen oder ein Plugin-Paket zu importieren.",
+    "message.sidebarHint": "Plugins können in Home Assistant als Webseiten-Dashboard zur Seitenleiste hinzugefügt werden. In der Administration lassen sich Name, URL und Icon vorbereiten.",
+    "label.sidebarUrl": "Seitenleisten-URL",
     "summary.noPlugins": "Keine Plugins installiert",
     "summary.oneActive": "1 aktives Plugin öffnet direkt vom ATLAS-Start",
     "summary.many": "{plugins} Plugins erkannt, {active} aktiv",
@@ -337,7 +343,12 @@ function createPluginCard(plugin) {
       ? t("button.planned")
       : t("button.disabled");
   if (launchable) {
-    action.href = createPluginActionUrl(plugin.entryUrl);
+    const actionUrl = createPluginActionUrl(plugin.entryUrl);
+    const sidebarUrl = document.createElement("p");
+    sidebarUrl.className = "plugin-sidebar-url";
+    sidebarUrl.textContent = `${t("label.sidebarUrl")}: ${actionUrl}`;
+    body.append(sidebarUrl);
+    action.href = actionUrl;
   } else {
     action.href = "#";
     action.setAttribute("aria-disabled", "true");

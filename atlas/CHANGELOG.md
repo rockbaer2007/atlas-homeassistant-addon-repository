@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.101
+
+- Add a Plugin Hub hint for adding plugins to the Home Assistant sidebar as
+  Webpage dashboards.
+- Show direct sidebar URLs for launchable plugins, including ATLAS File Studio.
+
 ## 0.1.100
 
 - Add an Atlas Administration dialog that lists current plugins and prepares
