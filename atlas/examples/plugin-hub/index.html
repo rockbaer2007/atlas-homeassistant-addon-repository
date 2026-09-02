@@ -26,10 +26,29 @@
       </section>
       <section class="sidebar-hint" aria-label="Home Assistant sidebar hint">
         <p data-i18n="message.sidebarHint">Plugins can be added to the Home Assistant sidebar as Webpage dashboards. Open Administration to prepare name, URL and icon.</p>
-        <a href="admin?sidebar=plugins" data-i18n="link.sidebarHelper">Seitenleisten-Hilfe</a>
+        <button id="open-sidebar-dialog" type="button" data-i18n="link.sidebarHelper">Seitenleisten-Hilfe</button>
       </section>
       <section id="plugin-grid" class="plugin-grid" aria-live="polite"></section>
     </main>
+    <dialog id="sidebar-dialog" class="sidebar-dialog" aria-labelledby="sidebar-dialog-heading">
+      <form class="sidebar-dialog-panel" method="dialog">
+        <div class="sidebar-dialog-header">
+          <div>
+            <h2 id="sidebar-dialog-heading" data-i18n="heading.sidebarDialog">Plugin als Seitenleisteneintrag</h2>
+            <p data-i18n="message.sidebarDialogHint">Copy a ready panel_iframe YAML block for Home Assistant.</p>
+          </div>
+        </div>
+        <div id="sidebar-plugin-list" class="sidebar-plugin-list"></div>
+        <ol class="sidebar-guide">
+          <li data-i18n="guide.sidebarStep1">Open configuration.yaml or Home Assistant Settings > Dashboards.</li>
+          <li data-i18n="guide.sidebarStep2">Paste the copied panel_iframe block or create a Webpage dashboard entry.</li>
+          <li data-i18n="guide.sidebarStep3">Check YAML and reload Panel iFrames or restart Home Assistant.</li>
+        </ol>
+        <div class="sidebar-dialog-actions">
+          <button id="close-sidebar-dialog" type="button" data-i18n="button.close">Schließen</button>
+        </div>
+      </form>
+    </dialog>
     <script type="module" src="examples/plugin-hub/app.js"></script>
   </body>
 </html>

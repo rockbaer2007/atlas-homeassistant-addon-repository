@@ -139,7 +139,7 @@ h1 {
   line-height: 1.4;
 }
 
-.sidebar-hint a {
+.sidebar-hint button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -150,9 +150,128 @@ h1 {
   color: #17130a;
   padding: 0 12px;
   font-size: 0.86rem;
+  font-family: inherit;
   font-weight: 800;
-  text-decoration: none;
   white-space: nowrap;
+  cursor: pointer;
+}
+
+.sidebar-dialog {
+  width: min(900px, 80vw);
+  max-height: 80vh;
+  border: 1px solid var(--atlas-accent);
+  border-radius: 8px;
+  background: var(--atlas-panel);
+  color: var(--atlas-text);
+  padding: 0;
+  box-shadow: 0 24px 70px rgb(15 20 23 / 32%);
+}
+
+.sidebar-dialog::backdrop {
+  background: rgb(5 12 15 / 56%);
+}
+
+.sidebar-dialog-panel {
+  display: grid;
+  gap: 14px;
+  max-height: 80vh;
+  margin: 0;
+  padding: 22px 28px 28px;
+  overflow: hidden;
+}
+
+.sidebar-dialog-header h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.sidebar-dialog-header p {
+  margin: 8px 0 0;
+  color: var(--atlas-muted);
+  line-height: 1.45;
+}
+
+.sidebar-plugin-list {
+  display: grid;
+  gap: 10px;
+  max-height: min(46vh, 440px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.sidebar-plugin-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid var(--atlas-border);
+  border-left: 4px solid var(--atlas-orange);
+  border-radius: 6px;
+  background: var(--atlas-panel-soft);
+  padding: 10px;
+}
+
+.sidebar-plugin-title {
+  color: var(--atlas-text);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.sidebar-plugin-meta {
+  display: grid;
+  gap: 4px;
+  margin-top: 4px;
+  color: var(--atlas-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.sidebar-plugin-yaml-label {
+  display: block;
+  margin-top: 10px;
+  color: var(--atlas-accent);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sidebar-plugin-yaml {
+  max-width: 100%;
+  margin: 6px 0 0;
+  border: 1px solid var(--atlas-border);
+  border-radius: 6px;
+  background: var(--atlas-panel);
+  color: var(--atlas-text);
+  padding: 8px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre;
+}
+
+.sidebar-guide {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--atlas-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sidebar-dialog-actions {
+  display: grid;
+}
+
+.sidebar-dialog-actions button {
+  min-height: 40px;
+  border: 1px solid var(--atlas-border);
+  border-radius: 7px;
+  background: var(--atlas-panel);
+  color: var(--atlas-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .plugin-grid {
@@ -371,5 +490,17 @@ h1 {
 
   .sidebar-hint {
     display: flex;
+  }
+
+  .sidebar-dialog {
+    width: min(100vw - 20px, 80vw);
+  }
+
+  .sidebar-dialog-panel {
+    padding: 18px;
+  }
+
+  .sidebar-plugin-card {
+    grid-template-columns: 1fr;
   }
 }

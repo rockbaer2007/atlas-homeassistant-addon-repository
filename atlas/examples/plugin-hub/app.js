@@ -1,12 +1,19 @@
 const pluginGrid = document.querySelector("#plugin-grid");
 const pluginSummary = document.querySelector("#plugin-summary");
+const openSidebarDialog = document.querySelector("#open-sidebar-dialog");
+const sidebarDialog = document.querySelector("#sidebar-dialog");
+const sidebarPluginList = document.querySelector("#sidebar-plugin-list");
+const closeSidebarDialog = document.querySelector("#close-sidebar-dialog");
 const languageButtons = Array.from(document.querySelectorAll("[data-language]"));
-const surfaceLinks = Array.from(document.querySelectorAll(".hub-actions a[href], .sidebar-hint a[href]"));
+const surfaceLinks = Array.from(document.querySelectorAll(".hub-actions a[href]"));
 const atlasThemeStorageKey = "atlas.themePreference";
 const hubLanguageStorageKey = "atlas.pluginHub.language";
+const FileStudioPluginId = "atlas.plugin.file-studio";
+const HomeAssistantCardEditorPluginId = "atlas.plugin.homeassistant-card-editor";
 const translations = {
   en: {
     "heading.hub": "Plugin Hub",
+    "heading.sidebarDialog": "Plugin sidebar entry",
     "link.admin": "Administration",
     "link.sidebarHelper": "Open sidebar dialog",
     "aria.surfaces": "ATLAS surfaces",
@@ -17,12 +24,18 @@ const translations = {
     "message.unknownCatalogError": "Unknown plugin catalog error.",
     "message.noPlugins": "No plugins installed",
     "message.noPluginsHint": "Open Administration to add an ATLAS plugin repository or import a plugin package.",
-    "message.sidebarHint": "Plugins can be added to the Home Assistant sidebar as Webpage dashboards. Open the Administration dialog to copy the prepared values.",
+    "message.sidebarHint": "Plugins can be added to the Home Assistant sidebar as Webpage dashboards. Open the dialog to copy the prepared values.",
+    "message.sidebarDialogHint": "Copy a ready panel_iframe YAML block for Home Assistant.",
+    "message.sidebarPluginUnavailable": "No launch URL available yet.",
+    "message.sidebarPluginCopied": "{name} panel_iframe YAML copied.",
     "label.sidebarUrl": "Sidebar URL",
+    "label.sidebarYaml": "configuration.yaml",
     "summary.noPlugins": "No plugins installed",
     "summary.oneActive": "1 active plugin opens directly from ATLAS start",
     "summary.many": "{plugins} plugins detected, {active} active",
     "button.open": "Open",
+    "button.copyYaml": "Copy YAML",
+    "button.close": "Close",
     "button.planned": "Planned",
     "button.disabled": "Disabled",
     "status.active": "Active",
@@ -30,9 +43,13 @@ const translations = {
     "status.planned": "Planned",
     "status.disabled": "Disabled",
     "alt.pluginImage": "{name} plugin image",
+    "guide.sidebarStep1": "Open configuration.yaml or Home Assistant Settings > Dashboards.",
+    "guide.sidebarStep2": "Paste the copied panel_iframe block or create a Webpage dashboard entry.",
+    "guide.sidebarStep3": "Check YAML and reload Panel iFrames or restart Home Assistant.",
   },
   de: {
     "heading.hub": "Plugin Hub",
+    "heading.sidebarDialog": "Plugin als Seitenleisteneintrag",
     "link.admin": "Administration",
     "link.sidebarHelper": "Seitenleisten-Dialog öffnen",
     "aria.surfaces": "ATLAS-Oberflächen",
@@ -43,12 +60,18 @@ const translations = {
     "message.unknownCatalogError": "Unbekannter Plugin-Katalogfehler.",
     "message.noPlugins": "Keine Plugins installiert",
     "message.noPluginsHint": "Öffne die Administration, um ein ATLAS-Plugin-Repository hinzuzufügen oder ein Plugin-Paket zu importieren.",
-    "message.sidebarHint": "Plugins können in Home Assistant als Webseiten-Dashboard zur Seitenleiste hinzugefügt werden. Öffne den Administrationsdialog, um die vorbereiteten Werte zu kopieren.",
+    "message.sidebarHint": "Plugins können in Home Assistant als Webseiten-Dashboard zur Seitenleiste hinzugefügt werden. Öffne den Dialog, um die vorbereiteten Werte zu kopieren.",
+    "message.sidebarDialogHint": "Kopiert einen fertigen panel_iframe-YAML-Block für Home Assistant.",
+    "message.sidebarPluginUnavailable": "Noch keine Start-URL verfügbar.",
+    "message.sidebarPluginCopied": "{name}: panel_iframe-YAML kopiert.",
     "label.sidebarUrl": "Seitenleisten-URL",
+    "label.sidebarYaml": "configuration.yaml",
     "summary.noPlugins": "Keine Plugins installiert",
     "summary.oneActive": "1 aktives Plugin öffnet direkt vom ATLAS-Start",
     "summary.many": "{plugins} Plugins erkannt, {active} aktiv",
     "button.open": "Öffnen",
+    "button.copyYaml": "YAML kopieren",
+    "button.close": "Schließen",
     "button.planned": "Geplant",
     "button.disabled": "Deaktiviert",
     "status.active": "Aktiv",
@@ -56,6 +79,9 @@ const translations = {
     "status.planned": "Geplant",
     "status.disabled": "Deaktiviert",
     "alt.pluginImage": "{name} Plugin-Bild",
+    "guide.sidebarStep1": "Öffne configuration.yaml oder Home Assistant Einstellungen > Dashboards.",
+    "guide.sidebarStep2": "Füge den kopierten panel_iframe-Block ein oder lege einen Webseiten-Dashboard-Eintrag an.",
+    "guide.sidebarStep3": "Prüfe YAML und lade Panel-iFrames neu oder starte Home Assistant neu.",
   },
 };
 let currentLanguage = readStoredLanguage();
@@ -118,6 +144,20 @@ function setLanguage(language) {
   }
   applyLanguage();
   renderPlugins(lastPlugins);
+}
+
+function openPluginSidebarDialog() {
+  renderSidebarPluginEntries(lastPlugins);
+  if (typeof sidebarDialog.showModal === "function") {
+    sidebarDialog.showModal();
+  } else {
+    sidebarDialog.setAttribute("open", "");
+  }
+}
+
+function closePluginSidebarDialog() {
+  sidebarDialog.close?.();
+  sidebarDialog.removeAttribute("open");
 }
 
 function readThemePreferenceFromLocation() {
@@ -233,7 +273,7 @@ async function loadPlugins() {
 function renderPlugins(plugins) {
   const visiblePlugins = plugins;
   lastPlugins = visiblePlugins;
-  const activePlugins = visiblePlugins.filter(plugin => plugin.status === "active" && plugin.entryUrl);
+  const activePlugins = visiblePlugins.filter(plugin => plugin.status === "active" && createPluginSidebarUrl(plugin));
   pluginSummary.textContent = createPluginSummaryText(visiblePlugins, activePlugins);
   pluginGrid.innerHTML = "";
   if (!visiblePlugins.length) {
@@ -336,19 +376,19 @@ function createPluginCard(plugin) {
 
   const action = document.createElement("a");
   action.className = "plugin-action";
-  const launchable = plugin.status === "active" && plugin.entryUrl;
+  const sidebarActionUrl = createPluginSidebarUrl(plugin);
+  const launchable = plugin.status === "active" && sidebarActionUrl;
   action.textContent = launchable
     ? t("button.open")
     : plugin.status === "planned"
       ? t("button.planned")
       : t("button.disabled");
   if (launchable) {
-    const actionUrl = createPluginActionUrl(plugin.entryUrl);
     const sidebarUrl = document.createElement("p");
     sidebarUrl.className = "plugin-sidebar-url";
-    sidebarUrl.textContent = `${t("label.sidebarUrl")}: ${actionUrl}`;
+    sidebarUrl.textContent = `${t("label.sidebarUrl")}: ${sidebarActionUrl}`;
     body.append(sidebarUrl);
-    action.href = actionUrl;
+    action.href = sidebarActionUrl;
   } else {
     action.href = "#";
     action.setAttribute("aria-disabled", "true");
@@ -360,6 +400,127 @@ function createPluginCard(plugin) {
   return card;
 }
 
+function renderSidebarPluginEntries(plugins) {
+  sidebarPluginList.replaceChildren();
+  const sortedPlugins = plugins
+    .slice()
+    .sort((left, right) => (left.order ?? 999) - (right.order ?? 999) || localizedPluginText(left, "name", left.id).localeCompare(localizedPluginText(right, "name", right.id)));
+
+  for (const plugin of sortedPlugins) {
+    sidebarPluginList.append(createSidebarPluginEntry(plugin));
+  }
+}
+
+function createSidebarPluginEntry(plugin) {
+  const card = document.createElement("article");
+  const body = document.createElement("div");
+  const title = document.createElement("div");
+  const meta = document.createElement("div");
+  const yamlLabel = document.createElement("span");
+  const yaml = document.createElement("pre");
+  const yamlCode = document.createElement("code");
+  const action = document.createElement("button");
+  const name = localizedPluginText(plugin, "name", plugin.id);
+  const url = createPluginSidebarUrl(plugin);
+  const icon = createPluginSidebarIcon(plugin);
+  const panelId = createPanelIframeId(plugin, name);
+  const panelIframeYaml = url ? createPanelIframeYaml({ panelId, name, url, icon }) : "";
+
+  card.className = "sidebar-plugin-card";
+  title.className = "sidebar-plugin-title";
+  meta.className = "sidebar-plugin-meta";
+  yamlLabel.className = "sidebar-plugin-yaml-label";
+  yaml.className = "sidebar-plugin-yaml";
+  title.textContent = name;
+  meta.append(
+    createTextLine(`${translatePluginStatus(plugin.status)} · ${plugin.version}`),
+    createTextLine(url || t("message.sidebarPluginUnavailable")),
+    createTextLine(icon),
+  );
+  yamlLabel.textContent = t("label.sidebarYaml");
+  yamlCode.textContent = panelIframeYaml;
+  yaml.append(yamlCode);
+  action.type = "button";
+  action.className = "plugin-action";
+  action.textContent = t("button.copyYaml");
+  action.disabled = !url;
+  action.addEventListener("click", () => copySidebarPluginEntry({ name, panelIframeYaml }));
+
+  body.append(title, meta);
+  if (panelIframeYaml) {
+    body.append(yamlLabel, yaml);
+  }
+  card.append(body, action);
+  return card;
+}
+
+function translatePluginStatus(status) {
+  const key = `status.${status}`;
+  const value = t(key);
+  return value === key ? status : value;
+}
+
+function createPluginSidebarUrl(plugin) {
+  if (plugin?.id === FileStudioPluginId && (!plugin.entryUrl || !String(plugin.entryUrl).trim())) {
+    return createPluginActionUrl("/plugin-assets/file-studio/index.html");
+  }
+  return createPluginActionUrl(plugin?.entryUrl);
+}
+
+function createPluginSidebarIcon(plugin) {
+  if (plugin?.id === HomeAssistantCardEditorPluginId) return "mdi:view-dashboard-edit";
+  if (plugin?.id === FileStudioPluginId) return "mdi:file-document-edit";
+  return "mdi:puzzle";
+}
+
+function createTextLine(text) {
+  const line = document.createElement("span");
+  line.textContent = text;
+  return line;
+}
+
+async function copySidebarPluginEntry({ name, panelIframeYaml }) {
+  try {
+    await navigator.clipboard.writeText(panelIframeYaml);
+  } catch {
+    const fallback = document.createElement("textarea");
+    fallback.value = panelIframeYaml;
+    fallback.className = "visually-hidden";
+    document.body.append(fallback);
+    fallback.select();
+    document.execCommand("copy");
+    fallback.remove();
+  }
+  pluginSummary.textContent = t("message.sidebarPluginCopied", { name });
+}
+
+function createPanelIframeId(plugin, name) {
+  const source = plugin?.id || name || "atlas_plugin";
+  const suffix = String(source)
+    .toLowerCase()
+    .replace(/^atlas\.plugin\./, "atlas_")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return suffix || "atlas_plugin";
+}
+
+function createPanelIframeYaml({ panelId, name, url, icon }) {
+  return [
+    "panel_iframe:",
+    `  ${panelId}:`,
+    `    title: "${escapeYamlDoubleQuotedString(name)}"`,
+    `    url: "${escapeYamlDoubleQuotedString(url)}"`,
+    `    icon: "${escapeYamlDoubleQuotedString(icon)}"`,
+  ].join("\n");
+}
+
+function escapeYamlDoubleQuotedString(value) {
+  return String(value ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 for (const button of languageButtons) {
   button.addEventListener("click", () => setLanguage(button.dataset.language));
 }
+
+openSidebarDialog.addEventListener("click", openPluginSidebarDialog);
+closeSidebarDialog.addEventListener("click", closePluginSidebarDialog);

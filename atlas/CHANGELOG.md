@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.103
+
+- Move the Home Assistant sidebar helper dialog into the Plugin Hub.
+- Remove the visible Administration button for sidebar preparation.
+- Always provide an ATLAS File Studio fallback URL for sidebar YAML.
+
 ## 0.1.102
 
 - Open the plugin sidebar helper dialog directly from the Plugin Hub.

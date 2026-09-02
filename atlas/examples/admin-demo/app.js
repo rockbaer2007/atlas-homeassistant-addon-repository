@@ -3301,7 +3301,7 @@ exportAdminSettings.addEventListener("click", () => {
 });
 
 openCardEditor.addEventListener("click", openEditorWithConnectionHandoff);
-openSidebarPluginDialog.addEventListener("click", openSidebarPluginEntryDialog);
+openSidebarPluginDialog?.addEventListener("click", openSidebarPluginEntryDialog);
 closeSidebarPluginDialog.addEventListener("click", closeSidebarPluginEntryDialog);
 importPluginPackage.addEventListener("click", () => pluginPackageFile.click());
 pluginPackageFile.addEventListener("change", importSelectedPluginPackage);
