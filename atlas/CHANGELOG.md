@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.114
+
+- Render Expert Card Editor raster cells explicitly so the horizontal and
+  vertical sliders visibly add real fields instead of stretching the grid.
+- Re-render the Expert Card Editor surface after zoom changes so cell geometry
+  stays consistent.
+- Bump the Home Assistant Card Editor plugin to `0.2.0-alpha.42`.
+
 ## 0.1.113
 
 - Stop reporting Plugin Hub URL/YAML copy success when the browser blocks direct

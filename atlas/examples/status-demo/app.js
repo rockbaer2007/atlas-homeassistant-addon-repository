@@ -4979,6 +4979,31 @@ function applyExpertEditorSurfaceSize() {
   expertEditorDropzone.style.setProperty("--expert-editor-surface-height", `${surfaceHeight}px`);
 }
 
+function applyExpertSurfaceGridGeometry(grid) {
+  const surfaceWidth = expertGridColumns * expertGridCellSize + Math.max(0, expertGridColumns - 1) * expertGridGap;
+  const surfaceHeight = expertGridRows * expertGridCellSize + Math.max(0, expertGridRows - 1) * expertGridGap;
+  grid.style.gridTemplateColumns = `repeat(${expertGridColumns}, ${expertGridCellSize}px)`;
+  grid.style.gridTemplateRows = `repeat(${expertGridRows}, ${expertGridCellSize}px)`;
+  grid.style.gap = `${expertGridGap}px`;
+  grid.style.width = `${surfaceWidth}px`;
+  grid.style.height = `${surfaceHeight}px`;
+}
+
+function renderExpertSurfaceCells(grid) {
+  const fragment = document.createDocumentFragment();
+  for (let row = 0; row < expertGridRows; row += 1) {
+    for (let column = 0; column < expertGridColumns; column += 1) {
+      const cell = document.createElement("div");
+      cell.className = "expert-surface-cell";
+      cell.style.gridColumn = String(column + 1);
+      cell.style.gridRow = String(row + 1);
+      cell.setAttribute("aria-hidden", "true");
+      fragment.append(cell);
+    }
+  }
+  grid.append(fragment);
+}
+
 function updateExpertEditorGridSize() {
   expertGridColumns = clampExpertGridColumns(expertGridColumnsControl?.value);
   expertGridRows = clampExpertGridRows(expertGridRowsControl?.value);
@@ -4995,8 +5020,8 @@ function updateExpertEditorGridSize() {
 function updateExpertEditorZoom() {
   expertGridCellSize = clampExpertGridCellSize(expertGridZoomControl?.value);
   syncExpertGridControls();
-  applyExpertEditorSurfaceSize();
   persistConfiguration();
+  renderExpertEditorPreview();
   statusMessage.textContent = t("message.surfaceResized", {
     columns: expertGridColumns,
     rows: expertGridRows,
@@ -5198,6 +5223,8 @@ function renderExpertEditorSurface() {
   applyExpertEditorSurfaceSize();
   const grid = document.createElement("div");
   grid.className = "expert-surface-grid";
+  applyExpertSurfaceGridGeometry(grid);
+  renderExpertSurfaceCells(grid);
   const surfaceAnalysis = analyzeHomeAssistantCardEditorSurface(expertEditorFields);
   const overlappingFieldIds = new Set(surfaceAnalysis.overlappingFieldIds);
   if (expertEditorFields.length === 0) {

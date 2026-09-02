@@ -1611,24 +1611,31 @@
         gap: var(--expert-editor-grid-gap);
         width: var(--expert-editor-surface-width);
         height: var(--expert-editor-surface-height);
-        background:
-          linear-gradient(to right, rgba(15, 118, 110, 0.16) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(15, 118, 110, 0.16) 1px, transparent 1px);
-        background-size:
-          calc(var(--expert-editor-cell-size) + var(--expert-editor-grid-gap)) calc(var(--expert-editor-cell-size) + var(--expert-editor-grid-gap)),
-          calc(var(--expert-editor-cell-size) + var(--expert-editor-grid-gap)) calc(var(--expert-editor-cell-size) + var(--expert-editor-grid-gap));
+        background: #f8fffd;
+      }
+
+      .expert-surface-cell {
+        min-width: 0;
+        min-height: 0;
+        border: 1px solid rgba(15, 118, 110, 0.16);
+        background: rgba(15, 118, 110, 0.025);
+        box-sizing: border-box;
+        pointer-events: none;
       }
 
       .expert-surface-grid p {
         grid-column: 1 / -1;
+        grid-row: 1 / -1;
         place-self: center;
         margin: 0;
+        z-index: 2;
       }
 
       .expert-surface-field {
         display: grid;
         place-items: center;
         position: relative;
+        z-index: 1;
         min-height: 54px;
         padding: 8px;
         border: 1px solid #0f766e;
@@ -3011,10 +3018,12 @@
       }
 
       :root[data-theme="dark"] .expert-surface-grid {
-        background:
-          linear-gradient(to right, rgba(45, 212, 191, 0.18) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(45, 212, 191, 0.18) 1px, transparent 1px);
-        background-size: calc(100% / 12) 100%, 100% calc(100% / 12);
+        background: var(--atlas-panel);
+      }
+
+      :root[data-theme="dark"] .expert-surface-cell {
+        border-color: rgba(45, 212, 191, 0.18);
+        background: rgba(45, 212, 191, 0.04);
       }
 
       :root[data-theme="dark"] .expert-template-card:hover,
