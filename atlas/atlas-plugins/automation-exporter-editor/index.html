@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ATLAS Automation Exporter / Editor</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">ATLAS Plugin</p>
+          <h1>Automation Exporter / Editor</h1>
+        </div>
+        <a class="ghost-link" href="/plugin-assets/file-studio/index.html">File Studio</a>
+      </header>
+
+      <section class="source-grid" aria-label="Quellen und Export">
+        <article class="panel source-panel">
+          <h2>Quelle</h2>
+          <div class="button-row">
+            <button id="load-system" type="button">System automations.yaml</button>
+            <label class="file-button">
+              YAML hochladen
+              <input id="yaml-upload" type="file" accept=".yaml,.yml,text/yaml,text/plain">
+            </label>
+          </div>
+          <p id="source-status" class="status-line">Noch keine YAML geladen.</p>
+        </article>
+
+        <article class="panel export-panel">
+          <h2>Export</h2>
+          <label class="field-label" for="export-folder">Export-Ordner</label>
+          <input id="export-folder" type="text" value="/config/atlas_exports/automations">
+          <p class="field-hint">Der Browser laedt Dateien lokal herunter. Der Ordner ist die Zielvorgabe fuer den spaeteren File-Studio-Schreibpfad.</p>
+        </article>
+
+        <article class="panel summary-panel">
+          <h2>Status</h2>
+          <dl class="summary-list">
+            <div><dt>Automationen</dt><dd id="count-automations">0</dd></div>
+            <div><dt>Entitaeten</dt><dd id="count-entities">0</dd></div>
+            <div><dt>Services</dt><dd id="count-services">0</dd></div>
+          </dl>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <aside class="panel tools-panel">
+          <h2>Werkzeuge</h2>
+          <input id="search" type="search" placeholder="Alias, ID, Entitaet oder Service suchen">
+          <div class="stacked-actions">
+            <button id="select-all" type="button">Alle markieren</button>
+            <button id="select-none" type="button">Auswahl leeren</button>
+            <button id="export-selected" type="button" class="primary">Auswahl exportieren</button>
+          </div>
+          <h3>Naechste Ausbaustufe</h3>
+          <ul class="roadmap">
+            <li>System-Export direkt in freigegebenen Ordner schreiben</li>
+            <li>Vergleich mit File-Studio-Versionen</li>
+            <li>Rueckfuehrungsplan fuer automations.yaml</li>
+            <li>Gruppierung nach Bereich, Geraet und Domain</li>
+          </ul>
+        </aside>
+
+        <section class="panel table-panel" aria-label="Automationen">
+          <div class="table-header">
+            <h2>Automationen</h2>
+            <span id="selection-count">0 ausgewaehlt</span>
+          </div>
+          <div id="automation-list" class="automation-list empty-state">
+            Lade eine Systemdatei oder eine fremde YAML hoch.
+          </div>
+        </section>
+
+        <aside class="panel details-panel">
+          <h2>Details</h2>
+          <div id="details" class="details empty-state">Waehle eine Automation aus.</div>
+        </aside>
+      </section>
+
+      <section class="panel export-history-panel">
+        <div class="table-header">
+          <h2>Exportierte Automationen</h2>
+          <button id="clear-history" type="button">Liste leeren</button>
+        </div>
+        <div id="export-history" class="export-history empty-state">Noch keine Exporte in dieser Sitzung.</div>
+      </section>
+    </main>
+    <script src="./app.js" defer></script>
+  </body>
+</html>

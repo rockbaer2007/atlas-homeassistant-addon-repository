@@ -1,0 +1,29 @@
+<svg width="960" height="540" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">ATLAS Automation Exporter / Editor Preview</title>
+  <desc id="desc">Preview of automation analysis, source selection and export overview.</desc>
+  <rect width="960" height="540" fill="#071115"/>
+  <rect x="28" y="28" width="904" height="484" rx="14" fill="#10191d" stroke="#24434a"/>
+  <text x="54" y="78" fill="#f4fbff" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="700">ATLAS Automation Exporter / Editor</text>
+  <text x="54" y="111" fill="#7af7df" font-family="Segoe UI, Arial, sans-serif" font-size="17">automations.yaml lesen, fremde YAML pruefen, einzelne Automationen exportieren</text>
+  <rect x="54" y="146" width="252" height="94" rx="8" fill="#0b1518" stroke="#24434a"/>
+  <rect x="328" y="146" width="252" height="94" rx="8" fill="#0b1518" stroke="#24434a"/>
+  <rect x="602" y="146" width="252" height="94" rx="8" fill="#0b1518" stroke="#24434a"/>
+  <text x="76" y="183" fill="#ff9f0a" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">Quelle</text>
+  <text x="350" y="183" fill="#ff9f0a" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">Analyse</text>
+  <text x="624" y="183" fill="#ff9f0a" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">Export</text>
+  <text x="76" y="214" fill="#d8e4e8" font-family="Segoe UI, Arial, sans-serif" font-size="16">System oder Upload</text>
+  <text x="350" y="214" fill="#d8e4e8" font-family="Segoe UI, Arial, sans-serif" font-size="16">Entitaeten und Services</text>
+  <text x="624" y="214" fill="#d8e4e8" font-family="Segoe UI, Arial, sans-serif" font-size="16">Name_dd_mm_yy-hh_mm_ss.yaml</text>
+  <rect x="54" y="280" width="850" height="52" rx="6" fill="#13272b"/>
+  <rect x="54" y="340" width="850" height="52" rx="6" fill="#0b1518"/>
+  <rect x="54" y="400" width="850" height="52" rx="6" fill="#0b1518"/>
+  <rect x="70" y="297" width="18" height="18" rx="3" fill="#19d6c3"/>
+  <rect x="70" y="357" width="18" height="18" rx="3" fill="#19d6c3"/>
+  <rect x="70" y="417" width="18" height="18" rx="3" fill="#24434a"/>
+  <text x="106" y="315" fill="#f4fbff" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700">Licht Kueche Abend</text>
+  <text x="106" y="375" fill="#f4fbff" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700">Heizung Eco Nacht</text>
+  <text x="106" y="435" fill="#f4fbff" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700">Fenster Warnung</text>
+  <text x="620" y="315" fill="#7af7df" font-family="Segoe UI, Arial, sans-serif" font-size="15">3 Entitaeten · 2 Services</text>
+  <text x="620" y="375" fill="#7af7df" font-family="Segoe UI, Arial, sans-serif" font-size="15">2 Entitaeten · 1 Service</text>
+  <text x="620" y="435" fill="#7af7df" font-family="Segoe UI, Arial, sans-serif" font-size="15">4 Entitaeten · 1 Service</text>
+</svg>

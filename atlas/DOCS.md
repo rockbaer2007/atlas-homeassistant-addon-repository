@@ -8,6 +8,11 @@ The `/app` endpoint reports this package as `home-assistant-app-preview`.
 The Add-on enables Home Assistant Ingress on the ATLAS app port. ATLAS then
 opens the only active plugin directly or shows the Plugin Hub when multiple
 plugins are active.
+The packaged preview also includes ATLAS Automation Exporter / Editor as a
+safe first automation workflow plugin. It can analyze `/config/automations.yaml`
+through the approved File Studio path or uploaded YAML files, export selected
+automations with timestamped filenames and hand users over to File Studio for
+editing.
 
 The Home Assistant token and translation provider keys stay in ATLAS
 Administration. The Card Editor receives only the current browser session

@@ -1,0 +1,26 @@
+{
+  "id": "atlas.plugin.automation-exporter-editor",
+  "name": "ATLAS Automation Exporter / Editor",
+  "nameI18n": {
+    "de": "ATLAS Automation Exporter / Editor",
+    "en": "ATLAS Automation Exporter / Editor"
+  },
+  "version": "0.1.0",
+  "description": "Analyze Home Assistant automations, export selected entries and continue editing them through File Studio.",
+  "descriptionI18n": {
+    "de": "Home-Assistant-Automationen analysieren, ausgewaehlte Eintraege exportieren und ueber File Studio weiter bearbeiten.",
+    "en": "Analyze Home Assistant automations, export selected entries and continue editing them through File Studio."
+  },
+  "status": "active",
+  "order": 30,
+  "entry": "/plugin-assets/automation-exporter-editor/index.html",
+  "icon": "icon.svg",
+  "preview": "preview.svg",
+  "capabilities": [
+    "homeassistant.automation-analysis",
+    "homeassistant.automation-export",
+    "atlas.yaml-upload",
+    "atlas.file-studio-handoff",
+    "atlas.scoped-filesystem"
+  ]
+}

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.120
+
+- Add the ATLAS Automation Exporter / Editor as the next Home Assistant plugin.
+- Provide a first safe automation analysis surface with system YAML loading,
+  external YAML upload, selectable exports and File Studio handoff.
+- Add a dedicated ATLAS overlay icon and plugin preview.
+
 ## 0.1.119
 
 - Lighten the Expert Card Editor X/Y/Zoom slider text in dark mode.
