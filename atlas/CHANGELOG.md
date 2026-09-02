@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.113
+
+- Stop reporting Plugin Hub URL/YAML copy success when the browser blocks direct
+  clipboard writes.
+- Show and select the URL/YAML text inline so users can copy it manually with
+  Ctrl+C in restricted Home Assistant browser contexts.
+
 ## 0.1.112
 
 - Make the Card Editor export and import/entity areas visibly three-column with

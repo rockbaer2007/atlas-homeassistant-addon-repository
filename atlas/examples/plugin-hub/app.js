@@ -29,7 +29,7 @@ const translations = {
     "message.sidebarPluginUnavailable": "No launch URL available yet.",
     "message.sidebarPluginUrlCopied": "{name} URL copied.",
     "message.sidebarPluginYamlCopied": "{name} panel_iframe YAML copied.",
-    "message.sidebarPluginCopyFailed": "{name} could not be copied. Please select the URL or YAML text manually.",
+    "message.sidebarPluginCopyFallback": "{name}: browser copy is blocked. The text is selected below; press Ctrl+C.",
     "label.sidebarUrl": "Sidebar URL",
     "label.sidebarYaml": "configuration.yaml",
     "summary.noPlugins": "No plugins installed",
@@ -68,7 +68,7 @@ const translations = {
     "message.sidebarPluginUnavailable": "Noch keine Start-URL verfügbar.",
     "message.sidebarPluginUrlCopied": "{name}: URL kopiert.",
     "message.sidebarPluginYamlCopied": "{name}: panel_iframe-YAML kopiert.",
-    "message.sidebarPluginCopyFailed": "{name}: Kopieren nicht möglich. Bitte URL oder YAML-Text manuell markieren.",
+    "message.sidebarPluginCopyFallback": "{name}: Browser-Kopieren blockiert. Der Text ist unten markiert; bitte Strg+C drücken.",
     "label.sidebarUrl": "Seitenleisten-URL",
     "label.sidebarYaml": "configuration.yaml",
     "summary.noPlugins": "Keine Plugins installiert",
@@ -425,6 +425,7 @@ function createSidebarPluginEntry(plugin) {
   const yamlLabel = document.createElement("span");
   const yaml = document.createElement("pre");
   const yamlCode = document.createElement("code");
+  const manualCopy = document.createElement("textarea");
   const actions = document.createElement("div");
   const copyUrlAction = document.createElement("button");
   const copyYamlAction = document.createElement("button");
@@ -439,6 +440,9 @@ function createSidebarPluginEntry(plugin) {
   meta.className = "sidebar-plugin-meta";
   yamlLabel.className = "sidebar-plugin-yaml-label";
   yaml.className = "sidebar-plugin-yaml";
+  manualCopy.className = "sidebar-plugin-manual-copy";
+  manualCopy.readOnly = true;
+  manualCopy.hidden = true;
   title.textContent = name;
   meta.append(
     createTextLine(`${translatePluginStatus(plugin.status)} · ${plugin.version}`),
@@ -457,6 +461,7 @@ function createSidebarPluginEntry(plugin) {
     name,
     text: url,
     messageKey: "message.sidebarPluginUrlCopied",
+    manualTarget: manualCopy,
   }));
   copyYamlAction.type = "button";
   copyYamlAction.className = "plugin-action";
@@ -466,12 +471,13 @@ function createSidebarPluginEntry(plugin) {
     name,
     text: panelIframeYaml,
     messageKey: "message.sidebarPluginYamlCopied",
+    manualTarget: manualCopy,
   }));
   actions.append(copyUrlAction, copyYamlAction);
 
   body.append(title, meta);
   if (panelIframeYaml) {
-    body.append(yamlLabel, yaml);
+    body.append(yamlLabel, yaml, manualCopy);
   }
   card.append(body, actions);
   return card;
@@ -502,31 +508,28 @@ function createTextLine(text) {
   return line;
 }
 
-async function copySidebarPluginText({ name, text, messageKey }) {
-  let copied = false;
+async function copySidebarPluginText({ name, text, messageKey, manualTarget }) {
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
-      copied = true;
+      manualTarget?.setAttribute("hidden", "");
+      pluginSummary.textContent = t(messageKey, { name });
+      return;
     }
   } catch {
-    copied = false;
+    // Fall back to a visible, selected field below.
   }
-  if (!copied) {
-    const fallback = document.createElement("textarea");
-    fallback.value = text;
-    fallback.className = "visually-hidden";
-    fallback.setAttribute("readonly", "");
-    document.body.append(fallback);
-    fallback.focus();
-    fallback.select();
-    fallback.setSelectionRange(0, fallback.value.length);
-    copied = document.execCommand("copy");
-    fallback.remove();
-  }
-  pluginSummary.textContent = copied
-    ? t(messageKey, { name })
-    : t("message.sidebarPluginCopyFailed", { name });
+  showManualCopyFallback({ name, text, manualTarget });
+}
+
+function showManualCopyFallback({ name, text, manualTarget }) {
+  if (!manualTarget) return;
+  manualTarget.hidden = false;
+  manualTarget.value = text;
+  manualTarget.focus();
+  manualTarget.select();
+  manualTarget.setSelectionRange(0, manualTarget.value.length);
+  pluginSummary.textContent = t("message.sidebarPluginCopyFallback", { name });
 }
 
 function createPanelIframeId(plugin, name) {

@@ -259,6 +259,25 @@ h1 {
   white-space: pre;
 }
 
+.sidebar-plugin-manual-copy {
+  width: 100%;
+  min-height: 72px;
+  margin-top: 8px;
+  border: 1px solid var(--atlas-accent);
+  border-radius: 6px;
+  background: var(--atlas-panel);
+  color: var(--atlas-text);
+  padding: 8px;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.sidebar-plugin-manual-copy[hidden] {
+  display: none;
+}
+
 .sidebar-plugin-actions {
   display: grid;
   gap: 8px;
