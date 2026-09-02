@@ -87,6 +87,9 @@
             <div class="editor-toolbar-text" aria-label="Editor-Textaktionen">
               <button id="discard-file" class="button" type="button" disabled>Verwerfen</button>
               <button id="validate-file" class="button" type="button" disabled>YAML prüfen</button>
+              <button id="check-ha-config" class="button" type="button" disabled>HA prüfen</button>
+              <button id="show-history" class="button" type="button" disabled>Verlauf</button>
+              <button id="report-problem" class="button" type="button">Problem melden</button>
             </div>
           </div>
           <div id="editor-input" class="editor-input" role="textbox" aria-label="Dateieditor"></div>
@@ -158,6 +161,7 @@
       const fileStudioHeightLimitStorageKey = "atlas.fileStudio.limitHeight";
       const fileStudioWidthLimitStorageKey = "atlas.fileStudio.limitWidth";
       const fileStudioEditorStorageKey = "atlas.fileStudio.editor";
+      const fileStudioDownloadStorageKey = "atlas.fileStudio.downloadNames";
       const imagePreviewDefaultSize = { widthVw: 70, heightVh: 70 };
       const imagePreviewMinimumSize = { widthVw: 40, heightVh: 40 };
       const imagePreviewMaximumSize = { widthVw: 80, heightVh: 80 };
@@ -331,6 +335,16 @@
         return body;
       }
 
+      function describeFileStudioError(error) {
+        const message = error instanceof Error ? error.message : String(error ?? "unbekannter Fehler");
+        if (/outside configured root/i.test(message)) return "Pfad liegt ausserhalb der freigegebenen File-Studio-Bereiche.";
+        if (/not found/i.test(message)) return "Datei oder Ordner wurde nicht gefunden.";
+        if (/already exists/i.test(message)) return "Am Ziel existiert bereits eine Datei oder ein Ordner mit diesem Namen.";
+        if (/too large/i.test(message)) return "Die Anfrage ist zu gross fuer File Studio.";
+        if (/path separators|relative path/i.test(message)) return "Name ungueltig: keine Pfadtrenner und keine relativen Pfade verwenden.";
+        return message;
+      }
+
       function validateFileStudioName(name) {
         const value = String(name ?? "").trim();
         if (!value || value === "." || value === ".." || value.includes("..")) {
@@ -347,6 +361,8 @@
         document.querySelector("#save-file-as").disabled = !hasFile || isPreview;
         document.querySelector("#discard-file").disabled = !hasFile || !isDirty;
         document.querySelector("#validate-file").disabled = !hasFile || isPreview;
+        document.querySelector("#check-ha-config").disabled = !hasFile || isPreview;
+        document.querySelector("#show-history").disabled = !hasFile;
         document.querySelector("#download-file").disabled = !hasFile;
         document.querySelector("#undo-file-change").disabled = !hasFile || isPreview;
         document.querySelector("#redo-file-change").disabled = !hasFile || isPreview;
@@ -881,8 +897,8 @@
           button.innerHTML = `<span class="folder-name"><span class="tree-icon" aria-hidden="true"></span><span></span></span><span></span><span></span>`;
           button.querySelector(".tree-icon").classList.add(result.type === "directory" ? "folder-icon" : "file-icon", fileTypeIconClass(result));
           button.querySelector(".folder-name span:last-child").textContent = result.path;
-          button.children[1].textContent = result.match === "content" ? "Inhalt" : "Name";
-          button.children[2].textContent = result.type === "directory" ? "-" : formatFileSize(result.size);
+          button.children[1].textContent = result.match === "content" && result.line ? `Zeile ${result.line}` : result.match === "content" ? "Inhalt" : "Name";
+          button.children[2].textContent = result.preview ?? (result.type === "directory" ? "-" : formatFileSize(result.size));
           button.addEventListener("click", () => {
             openTreePath(result.path);
             if (result.type === "directory") {
@@ -1082,6 +1098,32 @@
         }
       }
 
+      async function checkHomeAssistantConfig() {
+        if (!state.selectedFilePath) {
+          return;
+        }
+        const status = document.querySelector("#editor-validation-status");
+        try {
+          const validation = await apiJson("api/file-studio/validate", {
+            method: "POST",
+            body: JSON.stringify({
+              path: state.selectedFilePath,
+              content: editorValue(),
+            }),
+          });
+          const warnings = Array.isArray(validation.warnings) && validation.warnings.length
+            ? ` Hinweise: ${validation.warnings.join(" ")}`
+            : "";
+          status.textContent = `${validation.message ?? "HA-Pruefung abgeschlossen."}${warnings}`;
+          status.classList.toggle("ok", validation.ok === true);
+          status.classList.toggle("warning", validation.ok !== true || warnings.length > 0);
+        } catch (error) {
+          status.textContent = `HA-Pruefung fehlgeschlagen: ${describeFileStudioError(error)}`;
+          status.classList.remove("ok");
+          status.classList.add("warning");
+        }
+      }
+
       async function saveOpenFile(path = state.selectedFilePath) {
         if (!path) {
           return;
@@ -1097,13 +1139,17 @@
           });
           state.selectedFilePath = saved.path;
           state.originalContent = editorValue();
-          status.textContent = saved.validation?.message ?? "Gespeichert.";
+          status.textContent = [
+            saved.validation?.message ?? "Gespeichert.",
+            saved.backup?.name ? `Backup: ${saved.backup.name}` : "",
+            saved.reload?.message ?? "",
+          ].filter(Boolean).join(" ");
           status.classList.toggle("ok", true);
           status.classList.remove("warning");
           await loadDirectoryTree({ preserveSelection: true });
           updateEditorActions();
         } catch (error) {
-          status.textContent = `Speichern fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`;
+          status.textContent = `Speichern fehlgeschlagen: ${describeFileStudioError(error)}`;
           status.classList.remove("ok");
           status.classList.add("warning");
           updateEditorActions();
@@ -1139,7 +1185,7 @@
           await saveOpenFile(created.path);
           await openFile(createFileNode(created));
         } catch (error) {
-          setStatus(`Speichern unter fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+          setStatus(`Speichern unter fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");
         }
       }
 
@@ -1187,9 +1233,35 @@
         } else {
           link.href = URL.createObjectURL(new Blob([editorValue()], { type: "text/plain;charset=utf-8" }));
         }
-        link.download = state.selectedFileName ?? "atlas-file-studio.txt";
+        link.download = createUniqueDownloadName(state.selectedFileName ?? "atlas-file-studio.txt");
         link.click();
         URL.revokeObjectURL(link.href);
+      }
+
+      function createUniqueDownloadName(filename) {
+        const normalizedName = String(filename || "atlas-file-studio.txt").trim() || "atlas-file-studio.txt";
+        let names;
+        try {
+          names = JSON.parse(localStorage.getItem(fileStudioDownloadStorageKey) ?? "{}");
+        } catch {
+          names = {};
+        }
+        const key = normalizedName.toLowerCase();
+        const count = Number.isFinite(names[key]) ? names[key] + 1 : 0;
+        names[key] = count;
+        try {
+          localStorage.setItem(fileStudioDownloadStorageKey, JSON.stringify(names));
+        } catch {
+          // Download still works without persisted name tracking.
+        }
+        if (count === 0) {
+          return normalizedName;
+        }
+        const dotIndex = normalizedName.lastIndexOf(".");
+        if (dotIndex <= 0) {
+          return `${normalizedName}-${count}`;
+        }
+        return `${normalizedName.slice(0, dotIndex)}-${count}${normalizedName.slice(dotIndex)}`;
       }
 
       async function renameSelectedFile() {
@@ -1320,6 +1392,41 @@
         }
       }
 
+      async function showFileHistory() {
+        if (!state.selectedFilePath) return;
+        try {
+          const history = await apiJson(`api/file-studio/history?path=${encodeURIComponent(state.selectedFilePath)}`);
+          const versions = history.versions ?? [];
+          window.alert(versions.length
+            ? versions.map(version => `${version.createdAt} - ${version.name} (${formatFileSize(version.size)})`).join("\n")
+            : "Noch keine gespeicherten Backups fuer diese Datei.");
+        } catch (error) {
+          setStatus(`Verlauf fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");
+        }
+      }
+
+      async function reportProblem() {
+        try {
+          const diagnostics = await apiJson("api/file-studio/diagnostics", {
+            method: "POST",
+            body: JSON.stringify({
+              path: state.selectedFilePath,
+              content: state.previewMode === "text" ? editorValue() : "",
+            }),
+          });
+          const report = JSON.stringify(diagnostics.report, null, 2);
+          const confirmed = window.confirm(`Problembericht ohne Secrets anzeigen?\n\n${report.slice(0, 1400)}`);
+          if (!confirmed) {
+            setStatus("Problembericht verworfen.", "warning");
+            return;
+          }
+          await navigator.clipboard?.writeText(report);
+          setStatus("Problembericht ohne Secrets wurde in die Zwischenablage kopiert.", "ok");
+        } catch (error) {
+          setStatus(`Problembericht fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");
+        }
+      }
+
       async function replaceOpenFileFromUpload(file) {
         if (!file || !state.selectedFilePath) {
           if (!file) return;
@@ -1360,8 +1467,52 @@
           await openFile(createFileNode(created));
           setStatus(`Upload gespeichert: ${created.path}`, "ok");
         } catch (error) {
-          setStatus(`Upload fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+          if (error instanceof Error && /already exists/i.test(error.message)) {
+            await resolveUploadConflict(file, selectedCreateParentPath(), trimmedName);
+            return;
+          }
+          setStatus(`Upload fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");
         }
+      }
+
+      async function resolveUploadConflict(file, parentPath, name) {
+        const choice = window.prompt(`"${name}" existiert bereits. Aktion: ersetzen, umbenennen oder abbrechen`, "umbenennen");
+        if (!choice || choice.toLowerCase().startsWith("ab")) {
+          setStatus("Upload abgebrochen.", "warning");
+          return;
+        }
+        if (choice.toLowerCase().startsWith("ers")) {
+          const targetPath = joinDisplayPath(parentPath, name);
+          state.selectedFilePath = targetPath;
+          state.selectedFileName = name;
+          state.selectedFileExtension = name.split(".").pop()?.toLowerCase();
+          setPreviewMode("text");
+          setEditorReadOnly(false);
+          setEditorValue(await file.text());
+          await saveOpenFile(targetPath);
+          await openFile(createFileNode({
+            path: targetPath,
+            name,
+            extension: state.selectedFileExtension,
+            type: "file",
+          }));
+          setStatus(`Upload ersetzt: ${targetPath}`, "ok");
+          return;
+        }
+        const dotIndex = name.lastIndexOf(".");
+        const renamed = dotIndex > 0
+          ? `${name.slice(0, dotIndex)}-1${name.slice(dotIndex)}`
+          : `${name}-1`;
+        const nextName = window.prompt("Neuer Dateiname", renamed);
+        if (!nextName) {
+          setStatus("Upload abgebrochen.", "warning");
+          return;
+        }
+        await uploadFileToSelectedFolder(new File([file], nextName.trim(), { type: file.type }));
+      }
+
+      function joinDisplayPath(parentPath, name) {
+        return `${String(parentPath || "/config").replace(/\/$/, "")}/${name}`.replace(/\/+/g, "/");
       }
 
       function bindEditorControls() {
@@ -1369,6 +1520,9 @@
         document.querySelector("#save-file-as").addEventListener("click", () => void saveOpenFileAs());
         document.querySelector("#discard-file").addEventListener("click", discardOpenFileChanges);
         document.querySelector("#validate-file").addEventListener("click", () => void validateOpenFile());
+        document.querySelector("#check-ha-config").addEventListener("click", () => void checkHomeAssistantConfig());
+        document.querySelector("#show-history").addEventListener("click", () => void showFileHistory());
+        document.querySelector("#report-problem").addEventListener("click", () => void reportProblem());
         document.querySelector("#download-file").addEventListener("click", () => void downloadOpenFile());
         document.querySelector("#undo-file-change").addEventListener("click", undoEditorChange);
         document.querySelector("#redo-file-change").addEventListener("click", redoEditorChange);

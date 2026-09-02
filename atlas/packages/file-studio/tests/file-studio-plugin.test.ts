@@ -24,7 +24,7 @@ describe("File Studio plugin", () => {
     expect(plugin.manifest).toMatchObject({
       id: FileStudioPluginId,
       name: "ATLAS File Studio",
-      version: "0.1.28",
+      version: "0.1.29",
       extensionPoints: [
         FileStudioExtensionPoints.fileTree,
         FileStudioExtensionPoints.editor,
@@ -107,6 +107,8 @@ describe("File Studio plugin", () => {
     expect(service.pluginId).toBe(FileStudioPluginId);
     expect(service.capabilities).toContain("atlas.file-tree");
     expect(service.capabilities).toContain("atlas.yaml-validation");
+    expect(service.capabilities).toContain("atlas.file-backup");
+    expect(service.capabilities).toContain("atlas.problem-report");
     expect(service.accessPolicy.defaultRoot).toBe("/config");
   });
 

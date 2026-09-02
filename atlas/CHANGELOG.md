@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.91
+
+- Add File Studio diagnostics with opt-in debug report preview.
+- Add HA-oriented YAML/reload hints, automatic save backups, history listing,
+  richer search previews and conflict-aware upload/download naming.
+- Bump ATLAS File Studio to `0.1.29` for repository update detection.
+
 ## 0.1.90
 
 - Increase File Studio icon buttons to `32x32` for better readability.
