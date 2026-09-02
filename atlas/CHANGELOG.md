@@ -1,9 +1,14 @@
 # Changelog
 
+## 0.1.117
+
+- Set the Expert Card Editor Zoom slider to roughly one and a half times the
+  compact X/Y slider width.
+- Bump the Home Assistant Card Editor plugin to `0.2.0-alpha.45`.
+
 ## 0.1.116
 
-- Make the Expert Card Editor Zoom slider half width compared with the X/Y
-  sliders.
+- Make the Expert Card Editor Zoom slider use a compact percent range.
 - Change the Zoom slider range to `74%` through `150%`.
 - Bump the Home Assistant Card Editor plugin to `0.2.0-alpha.44`.
 
