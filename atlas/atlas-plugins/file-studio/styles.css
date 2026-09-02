@@ -252,8 +252,8 @@ body.is-resizing .splitter {
 
 .icon-button {
   position: relative;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
@@ -409,12 +409,12 @@ body.is-resizing .splitter {
 }
 
 .asset-icon-button::before {
-  inset: 3px;
+  inset: 4px;
   border: 0;
   border-radius: 0;
   background-position: center;
   background-repeat: no-repeat;
-  background-size: 20px 20px;
+  background-size: 22px 22px;
 }
 
 .asset-icon-button::after {

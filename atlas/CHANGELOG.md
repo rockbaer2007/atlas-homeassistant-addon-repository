@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.90
+
+- Increase File Studio icon buttons to `32x32` for better readability.
+- Bump ATLAS File Studio to `0.1.28` for repository update detection.
+
 ## 0.1.89
 
 - Clean up the File Studio toolbar with left-aligned icon buttons and

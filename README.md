@@ -15,4 +15,4 @@ Aktuelles Add-on:
 
 - Name: ATLAS
 - Slug: `atlas`
-- Version: `0.1.89`
+- Version: `0.1.90`
