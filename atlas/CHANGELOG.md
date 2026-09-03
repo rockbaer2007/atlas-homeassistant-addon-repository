@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.147
+
+- Do not preselect automations after loading or uploading an automation YAML
+  source in the Automation Exporter / Editor.
+- Bump Automation Exporter / Editor to `0.1.15`.
+
 ## 0.1.146
 
 - Make Automation Exporter / Editor folder exports more robust by falling back

@@ -193,7 +193,7 @@ async function handleUpload(event) {
 function analyzeSource(sourceName, content) {
   state.sourceName = sourceName;
   state.automations = parseAutomations(content);
-  state.selectedIds = new Set(state.automations.map(item => item.localId));
+  state.selectedIds = new Set();
   state.activeId = state.automations[0]?.localId ?? "";
   const warningCount = countWarnings(state.automations);
   const warningText = warningCount > 0 ? `, ${warningCount} Hinweis(e)` : ", keine Hinweise";
