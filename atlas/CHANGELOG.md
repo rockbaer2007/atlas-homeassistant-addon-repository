@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.130
+
+- Add a Plugin Hub button to the ATLAS Automation Exporter / Editor header.
+- Arrange the Expert Card Editor lower work area into three columns: controls,
+  field overview and generated code.
+- Keep the Expert preview reset action above those columns instead of inside
+  the code column.
+- Bump the bundled Automation Exporter / Editor plugin to `0.1.6`.
+
 ## 0.1.129
 
 - Serve Administration and Card Editor through ATLAS app routes so Hub and

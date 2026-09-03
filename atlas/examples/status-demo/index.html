@@ -1191,8 +1191,34 @@
 
       .expert-editor-controls {
         display: grid;
-        grid-template-columns: repeat(4, minmax(96px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 8px;
+      }
+
+      .expert-output-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 14px;
+      }
+
+      .expert-output-grid {
+        display: grid;
+        grid-template-columns: minmax(420px, 1.1fr) minmax(320px, 0.8fr) minmax(420px, 1fr);
+        gap: 12px;
+        align-items: start;
+        margin-top: 8px;
+      }
+
+      .expert-output-column {
+        min-width: 0;
+      }
+
+      .expert-output-column.ha-card-preview {
+        margin: 0;
+      }
+
+      .expert-output-column.ha-card-preview pre {
+        min-height: 188px;
       }
 
       .editor-mode-toggle {
@@ -1283,7 +1309,7 @@
       }
 
       .expert-editor-controls .wide {
-        grid-column: 1 / -1;
+        grid-column: span 2;
       }
 
       .expert-editor-controls .span-2 {
@@ -1347,7 +1373,15 @@
         white-space: nowrap;
       }
 
+      .expert-output-grid .expert-editor-actions {
+        margin-top: 8px;
+      }
+
       @media (max-width: 720px) {
+        .expert-output-grid {
+          grid-template-columns: 1fr;
+        }
+
         .expert-editor-controls {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -3459,67 +3493,75 @@
                 </div>
               </div>
             </div>
-            <div class="expert-editor-controls">
-              <div class="field-pair span-2">
-                <label for="expert-card-name" data-i18n="label.expertCardName">Expert card name</label>
-                <input id="expert-card-name" type="text" autocomplete="off" spellcheck="false" placeholder="ATLAS Expert card" data-i18n-placeholder="placeholder.expertCardName">
-              </div>
-              <div class="field-pair">
-                <label for="expert-template" data-i18n="label.template">Template</label>
-                <select id="expert-template"></select>
-              </div>
-              <div class="field-pair">
-                <label for="expert-target" data-i18n="label.cardFamily">Card family</label>
-                <select id="expert-target"></select>
-              </div>
-              <div id="expert-bubble-type-control" class="field-pair span-2" hidden>
-                <label for="expert-bubble-button-type" data-i18n="label.bubbleButtonType">Bubble button type</label>
-                <select id="expert-bubble-button-type"></select>
-              </div>
-              <label class="wide" for="expert-title" data-i18n="label.title">Title</label>
-              <div class="expert-title-row wide">
-                <input id="expert-title" type="text" autocomplete="off" spellcheck="false" placeholder="Use template title when empty" data-i18n-placeholder="placeholder.expertTitle">
-                <button id="apply-expert-title" type="button" data-i18n="button.applyTitle">Apply title</button>
-                <button id="use-entity-name-as-title" type="button" data-i18n="button.useEntityName">Use entity name</button>
-              </div>
-              <div class="field-pair span-2">
-                <label for="expert-entity" data-i18n="label.entity">Entity</label>
-                <input id="expert-entity" type="text" autocomplete="off" spellcheck="false" placeholder="Use current entity when empty" data-i18n-placeholder="placeholder.expertEntity">
-              </div>
-              <div class="expert-number-controls span-2">
-                <div class="field-pair">
-                  <label for="expert-column" data-i18n="label.column">Column</label>
-                  <input id="expert-column" type="number" min="0" max="99" value="0">
-                </div>
-                <div class="field-pair">
-                  <label for="expert-row" data-i18n="label.row">Row</label>
-                  <input id="expert-row" type="number" min="0" max="99" value="0">
-                </div>
-                <div class="field-pair">
-                  <label for="expert-width" data-i18n="label.width">Width</label>
-                  <input id="expert-width" type="number" min="1" max="99" value="3">
-                </div>
-                <div class="field-pair">
-                  <label for="expert-height" data-i18n="label.height">Height</label>
-                  <input id="expert-height" type="number" min="1" max="99" value="2">
-                </div>
-              </div>
+            <div class="expert-output-toolbar">
+              <button id="reset-expert-preview" class="preview-reset-button" type="button" data-i18n="button.resetPreview">Reset preview</button>
             </div>
-            <div class="connection-actions expert-editor-actions">
-              <button id="add-expert-field" type="button" data-i18n="button.addTemplate">Add template</button>
-              <button id="edit-expert-field" type="button" data-i18n="button.editSelected">Edit selected</button>
-              <button id="arrange-expert-fields" type="button" data-i18n="button.autoArrange">Auto arrange</button>
-              <button id="reset-expert-surface-size" type="button" data-i18n="button.resetSize">Reset size</button>
-              <button id="clear-expert-fields" type="button" data-i18n="button.clearPreview">Clear preview</button>
-            </div>
-            <output id="expert-editor-summary" aria-live="polite"></output>
-            <div id="expert-field-list" class="expert-field-list" aria-live="polite"></div>
-            <div class="ha-card-preview">
-              <div class="preview-heading-row">
+            <div class="expert-output-grid">
+              <div class="expert-output-column">
+                <div class="expert-editor-controls">
+                  <div class="field-pair">
+                    <label for="expert-card-name" data-i18n="label.expertCardName">Expert card name</label>
+                    <input id="expert-card-name" type="text" autocomplete="off" spellcheck="false" placeholder="ATLAS Expert card" data-i18n-placeholder="placeholder.expertCardName">
+                  </div>
+                  <div class="field-pair">
+                    <label for="expert-template" data-i18n="label.template">Template</label>
+                    <select id="expert-template"></select>
+                  </div>
+                  <div class="field-pair">
+                    <label for="expert-target" data-i18n="label.cardFamily">Card family</label>
+                    <select id="expert-target"></select>
+                  </div>
+                  <div id="expert-bubble-type-control" class="field-pair" hidden>
+                    <label for="expert-bubble-button-type" data-i18n="label.bubbleButtonType">Bubble button type</label>
+                    <select id="expert-bubble-button-type"></select>
+                  </div>
+                  <div class="field-pair span-2">
+                    <label for="expert-title" data-i18n="label.title">Title</label>
+                    <div class="expert-title-row">
+                      <input id="expert-title" type="text" autocomplete="off" spellcheck="false" placeholder="Use template title when empty" data-i18n-placeholder="placeholder.expertTitle">
+                      <button id="apply-expert-title" type="button" data-i18n="button.applyTitle">Apply title</button>
+                      <button id="use-entity-name-as-title" type="button" data-i18n="button.useEntityName">Use entity name</button>
+                    </div>
+                  </div>
+                  <div class="field-pair">
+                    <label for="expert-entity" data-i18n="label.entity">Entity</label>
+                    <input id="expert-entity" type="text" autocomplete="off" spellcheck="false" placeholder="Use current entity when empty" data-i18n-placeholder="placeholder.expertEntity">
+                  </div>
+                  <div class="expert-number-controls span-2">
+                    <div class="field-pair">
+                      <label for="expert-column" data-i18n="label.column">Column</label>
+                      <input id="expert-column" type="number" min="0" max="99" value="0">
+                    </div>
+                    <div class="field-pair">
+                      <label for="expert-row" data-i18n="label.row">Row</label>
+                      <input id="expert-row" type="number" min="0" max="99" value="0">
+                    </div>
+                    <div class="field-pair">
+                      <label for="expert-width" data-i18n="label.width">Width</label>
+                      <input id="expert-width" type="number" min="1" max="99" value="3">
+                    </div>
+                    <div class="field-pair">
+                      <label for="expert-height" data-i18n="label.height">Height</label>
+                      <input id="expert-height" type="number" min="1" max="99" value="2">
+                    </div>
+                  </div>
+                </div>
+                <div class="connection-actions expert-editor-actions">
+                  <button id="add-expert-field" type="button" data-i18n="button.addTemplate">Add template</button>
+                  <button id="edit-expert-field" type="button" data-i18n="button.editSelected">Edit selected</button>
+                  <button id="arrange-expert-fields" type="button" data-i18n="button.autoArrange">Auto arrange</button>
+                  <button id="reset-expert-surface-size" type="button" data-i18n="button.resetSize">Reset size</button>
+                  <button id="clear-expert-fields" type="button" data-i18n="button.clearPreview">Clear preview</button>
+                </div>
+              </div>
+              <div class="expert-output-column">
+                <output id="expert-editor-summary" aria-live="polite"></output>
+                <div id="expert-field-list" class="expert-field-list" aria-live="polite"></div>
+              </div>
+              <div class="expert-output-column ha-card-preview">
                 <label for="expert-editor-preview" data-i18n="label.expertHaCardCode">Expert HA card code</label>
-                <button id="reset-expert-preview" class="preview-reset-button" type="button" data-i18n="button.resetPreview">Reset preview</button>
+                <pre id="expert-editor-preview" aria-live="polite"></pre>
               </div>
-              <pre id="expert-editor-preview" aria-live="polite"></pre>
             </div>
           </section>
           </div>

@@ -27,6 +27,32 @@ const elements = {
   countWarnings: document.querySelector("#count-warnings"),
 };
 
+function createAppUrl(path) {
+  try {
+    const baseUrl = new URL(window.location.href);
+    baseUrl.search = "";
+    baseUrl.hash = "";
+    baseUrl.pathname = baseUrl.pathname.replace(/\/plugin-assets\/automation-exporter-editor\/.*$/, "/");
+    if (!baseUrl.pathname.endsWith("/")) {
+      baseUrl.pathname = `${baseUrl.pathname}/`;
+    }
+    return new URL(String(path ?? "").replace(/^\/+/, ""), baseUrl).toString();
+  } catch {
+    return path;
+  }
+}
+
+function bindHubLinks() {
+  for (const link of document.querySelectorAll("[data-open-hub]")) {
+    const url = new URL(createAppUrl("hub"), window.location.href);
+    const theme = new URL(window.location.href).searchParams.get("theme");
+    if (theme) {
+      url.searchParams.set("theme", theme);
+    }
+    link.href = url.toString();
+  }
+}
+
 const demoYaml = `- id: atlas_demo_light
   alias: Licht Kueche Abend
   trigger:
@@ -66,6 +92,7 @@ elements.clearHistory.addEventListener("click", () => {
   renderHistory();
 });
 
+bindHubLinks();
 analyzeSource("Beispiel", demoYaml);
 
 async function loadSystemAutomations() {

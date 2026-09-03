@@ -82,6 +82,7 @@ input {
 }
 
 .topbar,
+.header-actions,
 .source-grid,
 .workspace,
 .table-header,
@@ -97,6 +98,11 @@ input {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 18px;
+}
+
+.header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .eyebrow {

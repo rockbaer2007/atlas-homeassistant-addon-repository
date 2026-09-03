@@ -170,7 +170,7 @@ const parcelProviderDefaults = [
   },
 ];
 const editorOrigin = createPortOrigin(4174);
-const appRuntimeApiUrl = createPortNavigationUrl(4176, "/app");
+const appRuntimeApiUrl = createAppRuntimeApiUrl();
 const longTermCookieMaxAge = 31536000;
 const pluginCatalog = new RuntimePluginCatalog();
 pluginCatalog.register(createHomeAssistantCardEditorPlugin());
@@ -3017,8 +3017,43 @@ function createPortNavigationUrl(port, pathname = "/", search = "", fallback = "
   }
 }
 
+function createAppRuntimeApiUrl() {
+  if (isAppRouteSurface()) {
+    return createAppRouteNavigationUrl("/app");
+  }
+  return createPortNavigationUrl(4176, "/app");
+}
+
+function isAppRouteSurface() {
+  try {
+    const url = new URL(window.location.href);
+    return url.port === "4176"
+      || url.pathname.includes("/api/hassio_ingress/")
+      || url.pathname.includes("/ingress/");
+  } catch {
+    return false;
+  }
+}
+
+function createAppRouteNavigationUrl(pathname, search = "") {
+  try {
+    const url = new URL(window.location.href);
+    const knownRoutes = ["/admin", "/admin/", "/editor", "/editor/", "/hub", "/hub/"];
+    const route = knownRoutes.find(candidate => url.pathname === candidate || url.pathname.endsWith(candidate));
+    const routeIndex = route ? url.pathname.lastIndexOf(route) : -1;
+    const basePath = routeIndex >= 0 ? url.pathname.slice(0, routeIndex) : "";
+    url.pathname = `${basePath}/${String(pathname).replace(/^\/+/, "")}`.replace(/\/{2,}/g, "/");
+    url.search = search;
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return pathname;
+  }
+}
+
 function receiveEditorReady(event) {
-  if (event.origin !== editorOrigin || event.data?.type !== "atlas.editor.ready.v1") {
+  const allowedOrigin = isAppRouteSurface() ? window.location.origin : editorOrigin;
+  if (event.origin !== allowedOrigin || event.data?.type !== "atlas.editor.ready.v1") {
     return;
   }
 

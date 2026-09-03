@@ -1954,7 +1954,8 @@ async function applyStoredAdminConnectionSettings({ autoConnect = false } = {}) 
 }
 
 function receiveAdminConnectionHandoff(event) {
-  if (event.origin !== adminOrigin || event.data?.type !== "atlas.admin.connection.v1") {
+  const allowedOrigin = isHomeAssistantAppSurface() ? window.location.origin : adminOrigin;
+  if (event.origin !== allowedOrigin || event.data?.type !== "atlas.admin.connection.v1") {
     return;
   }
 
@@ -1970,14 +1971,20 @@ function requestAdminConnectionHandoff() {
   window.opener.postMessage({
     type: "atlas.editor.ready.v1",
     sentAt: new Date().toISOString(),
-  }, adminOrigin);
+  }, isHomeAssistantAppSurface() ? window.location.origin : adminOrigin);
 }
 
 function createAdminNavigationUrl() {
+  if (isHomeAssistantAppSurface()) {
+    return createAppRouteNavigationUrl("/admin", createThemeSearch());
+  }
   return createPortNavigationUrl(4175, "/", createThemeSearch());
 }
 
 function createHubNavigationUrl() {
+  if (isHomeAssistantAppSurface()) {
+    return createAppRouteNavigationUrl("/hub", createThemeSearch());
+  }
   return createPortNavigationUrl(4176, "/hub", createThemeSearch());
 }
 
@@ -2035,6 +2042,22 @@ function createPortNavigationUrl(port, pathname = "/", search = "", fallback = "
     return url.toString();
   } catch {
     return fallback;
+  }
+}
+
+function createAppRouteNavigationUrl(pathname, search = "") {
+  try {
+    const url = new URL(window.location.href);
+    const knownRoutes = ["/editor", "/editor/", "/admin", "/admin/", "/hub", "/hub/"];
+    const route = knownRoutes.find(candidate => url.pathname === candidate || url.pathname.endsWith(candidate));
+    const routeIndex = route ? url.pathname.lastIndexOf(route) : -1;
+    const basePath = routeIndex >= 0 ? url.pathname.slice(0, routeIndex) : "";
+    url.pathname = `${basePath}/${String(pathname).replace(/^\/+/, "")}`.replace(/\/{2,}/g, "/");
+    url.search = search;
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return pathname;
   }
 }
 

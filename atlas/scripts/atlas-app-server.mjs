@@ -103,6 +103,16 @@ createServer((request, response) => {
     return;
   }
 
+  if (
+    routePath === "/api/admin-connection"
+    || routePath === "/api/admin-device"
+    || routePath === "/api/card-translation"
+    || routePath === "/api/homeassistant/lovelace-resources"
+  ) {
+    void proxyAdminApiRequest(request, response, requestUrl, routePath);
+    return;
+  }
+
   if (routePath === "/api/file-studio/tree") {
     void writeFileStudioTreeResponse(response, requestUrl, request.headers.cookie);
     return;
@@ -235,28 +245,41 @@ createServer((request, response) => {
     return;
   }
 
+  if (routePath.startsWith("/examples/admin-demo/")) {
+    serveStaticPath(response, routePath, resolve(root, "examples/admin-demo"));
+    return;
+  }
+
+  if (routePath.startsWith("/examples/status-demo/")) {
+    serveStaticPath(response, routePath, resolve(root, "examples/status-demo"));
+    return;
+  }
+
+  if (routePath.startsWith("/packages/")) {
+    serveStaticPath(response, routePath, resolve(root, "packages"));
+    return;
+  }
+
   if (routePath.startsWith("/plugin-assets/")) {
     servePluginAsset(response, routePath);
     return;
   }
 
   if (routePath === "/admin" || routePath === "/admin/") {
-    response.writeHead(302, { location: createPublicSurfaceUrl(requestUrl, adminPort) });
-    response.end();
+    serveStaticFile(response, resolve(root, "examples/admin-demo/index.html"));
     return;
   }
 
   if (routePath === "/editor" || routePath === "/editor/") {
-    response.writeHead(302, { location: createPublicSurfaceUrl(requestUrl, editorPort) });
-    response.end();
+    serveStaticFile(response, resolve(root, "examples/status-demo/index.html"));
     return;
   }
 
   writeJson(response, 404, {
     error: "not found",
     links: {
-      admin: createPublicSurfaceUrl(requestUrl, adminPort),
-      editor: createPublicSurfaceUrl(requestUrl, editorPort),
+      admin: createPublicAppRouteUrl(requestUrl, "/admin"),
+      editor: createPublicAppRouteUrl(requestUrl, "/editor"),
       hub: new URL("/hub", requestUrl).toString(),
       app: new URL("/app", requestUrl).toString(),
       health: new URL("/health", requestUrl).toString(),
@@ -271,6 +294,10 @@ createServer((request, response) => {
 
 function createRoutePath(pathname) {
   const knownPrefixes = [
+    "/api/admin-connection",
+    "/api/admin-device",
+    "/api/card-translation",
+    "/api/homeassistant/lovelace-resources",
     "/api/plugins",
     "/api/file-studio/tree",
     "/api/file-studio/file",
@@ -295,6 +322,9 @@ function createRoutePath(pathname) {
     "/api/file-studio/search",
     "/api/file-studio/extract",
     "/examples/plugin-hub/",
+    "/examples/admin-demo/",
+    "/examples/status-demo/",
+    "/packages/",
     "/plugin-assets/",
   ];
   for (const prefix of knownPrefixes) {
@@ -385,8 +415,8 @@ async function writeHealthResponse(response) {
 }
 
 async function writeAppResponse(response, requestUrl, cookieHeader) {
-  const publicAdminUrl = createPublicSurfaceUrl(requestUrl, adminPort);
-  const publicEditorUrl = createPublicSurfaceUrl(requestUrl, editorPort);
+  const publicAdminUrl = createPublicAppRouteUrl(requestUrl, "/admin");
+  const publicEditorUrl = createPublicAppRouteUrl(requestUrl, "/editor");
   const surfaces = {
     administration: {
       url: publicAdminUrl,
@@ -440,6 +470,35 @@ async function writePluginCatalogResponse(response, requestUrl, cookieHeader) {
     kind: "atlas.plugin.catalog",
     plugins: readPluginCatalog(requestUrl, cookieHeader),
   });
+}
+
+async function proxyAdminApiRequest(request, response, requestUrl, routePath) {
+  try {
+    const targetUrl = new URL(routePath, adminUrl);
+    targetUrl.search = requestUrl.search;
+    const body = await readRequestBody(request);
+    const headers = {};
+    if (request.headers["content-type"]) {
+      headers["content-type"] = request.headers["content-type"];
+    }
+
+    const adminResponse = await fetch(targetUrl, {
+      method: request.method,
+      headers,
+      body: body.length ? body : undefined,
+    });
+    const responseBody = await adminResponse.text();
+    response.writeHead(adminResponse.status, {
+      "content-type": adminResponse.headers.get("content-type") ?? "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    });
+    response.end(responseBody);
+  } catch (error) {
+    writeJson(response, 502, {
+      error: "admin api unavailable",
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 async function writeFileStudioTreeResponse(response, requestUrl, cookieHeader) {
@@ -1664,6 +1723,15 @@ function writeEmptyResponse(response, statusCode) {
   response.end();
 }
 
+function readRequestBody(request) {
+  return new Promise((resolveBody, rejectBody) => {
+    const chunks = [];
+    request.on("data", chunk => chunks.push(chunk));
+    request.on("end", () => resolveBody(Buffer.concat(chunks)));
+    request.on("error", rejectBody);
+  });
+}
+
 function clampNumber(value, minimum, maximum) {
   if (!Number.isFinite(value)) {
     return minimum;
@@ -1674,6 +1742,17 @@ function clampNumber(value, minimum, maximum) {
 function createPublicSurfaceUrl(requestUrl, port) {
   const url = new URL("/", requestUrl);
   url.port = String(port);
+  return url.toString();
+}
+
+function createPublicAppRouteUrl(requestUrl, pathname) {
+  const url = new URL(requestUrl);
+  const routePath = createRoutePath(url.pathname);
+  const routeIndex = url.pathname.lastIndexOf(routePath);
+  const basePath = routeIndex >= 0 ? url.pathname.slice(0, routeIndex) : "";
+  url.pathname = `${basePath}/${String(pathname).replace(/^\/+/, "")}`.replace(/\/{2,}/g, "/");
+  url.search = "";
+  url.hash = "";
   return url.toString();
 }
 
@@ -2348,12 +2427,15 @@ function readCookie(cookieHeader, name) {
 
 function createPluginEntryUrl(entry, requestUrl, fallbackEntryUrl = "") {
   if (entry === "admin") {
-    return createPublicSurfaceUrl(requestUrl, adminPort);
+    return createPublicAppRouteUrl(requestUrl, "/admin");
   }
   if (entry === "editor") {
-    return createPublicSurfaceUrl(requestUrl, editorPort);
+    return createPublicAppRouteUrl(requestUrl, "/editor");
   }
   if (typeof entry === "string" && entry.trim()) {
+    if (entry.trim().startsWith("/")) {
+      return createPublicAppRouteUrl(requestUrl, entry.trim());
+    }
     return new URL(entry, requestUrl).toString();
   }
   return fallbackEntryUrl;
@@ -2371,7 +2453,7 @@ function createPluginSlug(value, fallback = "plugin") {
 
 function createLocalPluginEntryUrl(directoryName, requestUrl) {
   return hasLocalPluginIndex(directoryName)
-    ? new URL(`/plugin-assets/${encodeURIComponent(directoryName)}/index.html`, requestUrl).toString()
+    ? createPublicAppRouteUrl(requestUrl, `/plugin-assets/${encodeURIComponent(directoryName)}/index.html`)
     : "";
 }
 
@@ -2404,7 +2486,7 @@ function createPluginAssetUrl(directoryName, assetPath, requestUrl) {
   if (typeof assetPath !== "string" || !assetPath.trim()) {
     return "";
   }
-  return new URL(`/plugin-assets/${encodeURIComponent(directoryName)}/${assetPath}`, requestUrl).toString();
+  return createPublicAppRouteUrl(requestUrl, `/plugin-assets/${encodeURIComponent(directoryName)}/${assetPath}`);
 }
 
 function servePluginAsset(response, pathname) {

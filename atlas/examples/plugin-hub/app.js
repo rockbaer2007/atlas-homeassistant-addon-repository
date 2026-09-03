@@ -240,7 +240,7 @@ function createPluginActionUrl(entryUrl) {
   try {
     const url = new URL(entryUrl, window.location.href);
     if (url.origin === window.location.origin) {
-      return createAppUrl(`${url.pathname.replace(/^\/+/, "")}${url.search}${url.hash}`);
+      return url.toString();
     }
   } catch {
     // Relative URLs are normalized against the current ATLAS app path below.
@@ -256,7 +256,7 @@ function createPluginMediaUrl(mediaUrl) {
   try {
     const url = new URL(mediaUrl, window.location.href);
     if (url.origin === window.location.origin) {
-      return createAppUrl(`${url.pathname.replace(/^\/+/, "")}${url.search}${url.hash}`);
+      return url.toString();
     }
     return url.toString();
   } catch {
