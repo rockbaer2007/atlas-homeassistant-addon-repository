@@ -528,21 +528,22 @@ async function exportSelected() {
     setStatus("Keine Automation für den Export ausgewählt.");
     return;
   }
-  const timestamp = createTimestamp(new Date());
+  const runFolderName = createExportRunFolderName(new Date());
   const folder = normalizeExportFolder(elements.exportFolder.value);
+  const runFolder = `${folder}/${runFolderName}`;
   elements.exportSelected.disabled = true;
-  setStatus(`Exportiere ${selected.length} Automation(en) nach ${folder} ...`);
+  setStatus(`Exportiere ${selected.length} Automation(en) nach ${runFolder} ...`);
   try {
-    await ensureExportFolder(folder);
+    await ensureExportFolder(runFolder);
     const usedFilenames = new Set();
     const exported = [];
     for (const automation of selected) {
-      const filename = createExportFilename(automation.alias, timestamp, usedFilenames);
-      const result = await writeExportFile(folder, filename, automation.yaml);
+      const filename = createExportFilename(automation.alias, usedFilenames);
+      const result = await writeExportFile(runFolder, filename, automation.yaml);
       exported.push({
         filename,
-        path: result.path || `${folder}/${filename}`,
-        folder,
+        path: result.path || `${runFolder}/${filename}`,
+        folder: runFolder,
         sourceName: state.sourceName,
         status: "gespeichert",
         yaml: automation.yaml,
@@ -555,13 +556,13 @@ async function exportSelected() {
     }
     state.exports.unshift(...exported);
     state.exports = state.exports.slice(0, 50);
-    setStatus(`${exported.length} Automation(en) in ${folder} gespeichert.`);
+    setStatus(`${exported.length} Automation(en) in ${runFolder} gespeichert.`);
     renderHistory();
   } catch (error) {
     setStatus(`Export fehlgeschlagen: ${describeExportError(error)} Browser-Download wird als Rückfall genutzt.`);
     const usedFilenames = new Set();
     for (const automation of selected) {
-      const filename = createExportFilename(automation.alias, timestamp, usedFilenames);
+      const filename = createExportFilename(automation.alias, usedFilenames);
       downloadText(filename, automation.yaml);
       state.exports.unshift({
         filename,
@@ -836,8 +837,8 @@ function normalizeExportFolder(value) {
   return `/${normalized.replace(/^\/+/, "")}`;
 }
 
-function createExportFilename(alias, timestamp, usedFilenames) {
-  const baseName = `${slugify(alias)}_${timestamp}`;
+function createExportFilename(alias, usedFilenames) {
+  const baseName = slugify(alias);
   let filename = `${baseName}.yaml`;
   let index = 2;
   while (usedFilenames.has(filename)) {
@@ -873,6 +874,11 @@ function describeExportError(error) {
 function createTimestamp(date) {
   const two = value => String(value).padStart(2, "0");
   return `${two(date.getDate())}_${two(date.getMonth() + 1)}_${String(date.getFullYear()).slice(-2)}-${two(date.getHours())}_${two(date.getMinutes())}_${two(date.getSeconds())}`;
+}
+
+function createExportRunFolderName(date) {
+  const two = value => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}_${two(date.getHours())}-${two(date.getMinutes())}-${two(date.getSeconds())}`;
 }
 
 function slugify(value) {

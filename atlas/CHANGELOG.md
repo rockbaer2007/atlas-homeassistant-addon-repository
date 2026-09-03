@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.145
+
+- Store Automation Exporter / Editor exports in timestamped run folders.
+- Keep exported automation filenames clean and add numeric suffixes only for
+  duplicate aliases within the same export run.
+- Bump Automation Exporter / Editor to `0.1.13`.
+
 ## 0.1.144
 
 - Move Automation Exporter / Editor actions into the tools panel.
