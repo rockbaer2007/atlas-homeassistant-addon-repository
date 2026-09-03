@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.134
+
+- Keep Administration to Plugin Hub navigation on the current Home Assistant
+  Ingress base path so the Hub link no longer opens a 404 route.
+
 ## 0.1.133
 
 - Serve extensionless browser module imports with a `.js` fallback so package

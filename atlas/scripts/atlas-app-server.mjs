@@ -440,9 +440,9 @@ async function writeAppResponse(response, requestUrl, cookieHeader) {
     status: ready ? "ok" : "degraded",
     startedAt,
     urls: {
-      app: new URL("/", requestUrl).toString(),
-      hub: new URL("/hub", requestUrl).toString(),
-      health: new URL("/health", requestUrl).toString(),
+      app: createPublicAppRouteUrl(requestUrl, "/"),
+      hub: createPublicAppRouteUrl(requestUrl, "/hub"),
+      health: createPublicAppRouteUrl(requestUrl, "/health"),
       admin: publicAdminUrl,
       editor: publicEditorUrl,
     },

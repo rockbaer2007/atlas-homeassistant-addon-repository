@@ -2812,6 +2812,9 @@ function createEditorNavigationUrl() {
 }
 
 function createHubNavigationUrl() {
+  if (isAppRouteSurface()) {
+    return createAppRouteNavigationUrl("/hub", createThemeSearch());
+  }
   return appendThemeSearch(lastAppRuntime?.urls?.hub) || createPortNavigationUrl(4176, "/hub", createThemeSearch());
 }
 
