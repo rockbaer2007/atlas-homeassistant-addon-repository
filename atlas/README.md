@@ -13,7 +13,10 @@ Home Assistant Ingress ist für den ATLAS-App-Port aktiviert. ATLAS öffnet ein
 einzelnes aktives Plugin direkt oder zeigt den Plugin-Hub, wenn mehrere Plugins
 aktiv sind. Im Plugin-Hub bleiben Fähigkeitslisten und Seitenleisten-URLs
 standardmäßig eingeklappt. Der Seitenleisten-Dialog kann wahlweise eine reine
-Plugin-URL oder einen fertigen `panel_iframe`-Block kopieren.
+Plugin-URL oder einen fertigen `panel_iframe`-Block kopieren. Administration
+und Card Editor sind zusätzlich über App-Routen erreichbar, damit Hub- und
+Seitenleisten-Links auch über Home Assistant Ingress und von anderen Rechnern
+funktionieren.
 
 ## Add-on-Verbindungsoptionen
 
@@ -34,7 +37,7 @@ Card Editor speichert den Token nicht dauerhaft.
 
 Home Assistant zeigt bei Add-on-Updates manchmal zwei Versionen: `old` ist die
 installierte Version, `target` ist die neue Version aus diesem Repository. Wenn
-ATLAS hier aktualisiert wurde, sollte `target` mindestens `0.1.128` anzeigen.
+ATLAS hier aktualisiert wurde, sollte `target` mindestens `0.1.129` anzeigen.
 Falls Home Assistant weiter eine alte Zielversion zeigt, lade im Add-on Store
 die Repository-Informationen neu und starte danach das ATLAS Add-on neu.
 
@@ -55,7 +58,9 @@ Home Assistant Ingress is enabled for the ATLAS app port. ATLAS opens the only
 active plugin directly or shows the Plugin Hub when multiple plugins are active.
 The Plugin Hub keeps capability lists and sidebar URLs collapsed by default. The
 sidebar dialog can copy either a plain plugin URL or a ready-to-use
-`panel_iframe` block.
+`panel_iframe` block. Administration and Card Editor are also available through
+app routes so Hub and sidebar links work through Home Assistant Ingress and from
+other client devices.
 
 ## Add-on connection options
 
@@ -76,6 +81,6 @@ stored permanently by the Card Editor.
 
 Home Assistant may show two versions during Add-on updates: `old` is the
 installed version, `target` is the new version from this repository. After this
-ATLAS update, `target` should be at least `0.1.128`. If Home Assistant still
+ATLAS update, `target` should be at least `0.1.129`. If Home Assistant still
 shows an older target version, reload the repository information in the Add-on
 Store and then restart the ATLAS Add-on.

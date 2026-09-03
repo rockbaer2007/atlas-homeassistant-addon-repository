@@ -16,7 +16,9 @@ editing.
 The Plugin Hub keeps long capability lists and sidebar URLs collapsed by
 default so plugin cards stay compact. Its sidebar helper can copy a direct URL
 for Home Assistant Webpage dashboards or a ready-to-use `panel_iframe` YAML
-block for `configuration.yaml`.
+block for `configuration.yaml`. Administration and Card Editor are also served
+through app-local routes so Home Assistant Ingress and remote browsers do not
+need direct access to the separate local development ports.
 
 The Home Assistant token and translation provider keys stay in ATLAS
 Administration. The Card Editor receives only the current browser session
@@ -80,7 +82,7 @@ gespeichert. Administration bleibt der Besitzer der Verbindungseinstellungen.
 Nach jedem sichtbaren ATLAS-Update wird die Add-on-Version in diesem Repository
 erhoeht. Home Assistant vergleicht die installierte Version (`old`) mit der
 Repository-Version (`target`). Fuer diesen Stand ist `target` mindestens
-`0.1.128`.
+`0.1.129`.
 
 Wenn Home Assistant weiterhin eine alte Zielversion zeigt:
 
@@ -119,7 +121,7 @@ of the connection settings.
 
 Every visible ATLAS update bumps the Add-on version in this repository. Home
 Assistant compares the installed version (`old`) with the repository version
-(`target`). For this build, `target` should be at least `0.1.128`.
+(`target`). For this build, `target` should be at least `0.1.129`.
 
 If Home Assistant still shows an older target version:
 

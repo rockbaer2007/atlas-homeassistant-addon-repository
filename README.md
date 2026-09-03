@@ -16,9 +16,11 @@ Aktuelles Add-on:
 
 - Name: ATLAS
 - Slug: `atlas`
-- Version: `0.1.128`
+- Version: `0.1.129`
 
 Der Plugin-Hub kann aktive Plugins direkt öffnen, bei mehreren Plugins eine
 Auswahl anzeigen und Seitenleisten-URLs beziehungsweise `panel_iframe`-YAML
 für Home Assistant kopieren. Lange Fähigkeitslisten und Seitenleisten-URLs sind
-in den Plugin-Karten standardmäßig eingeklappt.
+in den Plugin-Karten standardmäßig eingeklappt. Administration, Card Editor und
+Plugin-Assets laufen über ATLAS-App-Routen, damit Hub- und Seitenleisten-Links
+auch über Home Assistant Ingress und von anderen Rechnern funktionieren.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.129
+
+- Serve Administration and Card Editor through ATLAS app routes so Hub and
+  sidebar links also work from Home Assistant Ingress or another client device.
+- Preserve Home Assistant Ingress base paths for Plugin Hub, File Studio and
+  local plugin asset URLs.
+- Make the Expert Card Editor control area a compact three-column form.
+
 ## 0.1.128
 
 - Refresh public GitHub and open-source documentation for the compact Plugin
