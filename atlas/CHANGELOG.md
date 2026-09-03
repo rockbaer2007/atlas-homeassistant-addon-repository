@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.144
+
+- Move Automation Exporter / Editor actions into the tools panel.
+- Reorder the top layout to compact Status, Source and Export folder columns.
+- Bump Automation Exporter / Editor to `0.1.12`.
+
 ## 0.1.143
 
 - Add Automation Exporter / Editor write-back for selected automations into

@@ -29,6 +29,16 @@
       </header>
 
       <section class="source-grid" aria-label="Quellen und Export">
+        <article class="panel summary-panel">
+          <h2>Status</h2>
+          <dl class="summary-list">
+            <div><dt>Automationen</dt><dd id="count-automations">0</dd></div>
+            <div><dt>Entitäten</dt><dd id="count-entities">0</dd></div>
+            <div><dt>Services</dt><dd id="count-services">0</dd></div>
+            <div><dt>Hinweise</dt><dd id="count-warnings">0</dd></div>
+          </dl>
+        </article>
+
         <article class="panel source-panel">
           <h2>Quelle</h2>
           <div class="button-row">
@@ -46,21 +56,6 @@
           <label class="field-label" for="export-folder">Export-Ordner</label>
           <input id="export-folder" type="text" value="/config/atlas_exports/automations">
           <p class="field-hint">Ausgewählte Automationen werden als einzelne YAML-Dateien gespeichert. Existierende Dateien werden nicht überschrieben.</p>
-          <div class="export-tools">
-            <button id="copy-return-plan" type="button">Rückführungs-YAML kopieren</button>
-            <button id="write-back-selected" type="button" class="primary">Auswahl zurückschreiben</button>
-            <button id="preview-conflicts" type="button">Konflikte prüfen</button>
-          </div>
-        </article>
-
-        <article class="panel summary-panel">
-          <h2>Status</h2>
-          <dl class="summary-list">
-            <div><dt>Automationen</dt><dd id="count-automations">0</dd></div>
-            <div><dt>Entitäten</dt><dd id="count-entities">0</dd></div>
-            <div><dt>Services</dt><dd id="count-services">0</dd></div>
-            <div><dt>Hinweise</dt><dd id="count-warnings">0</dd></div>
-          </dl>
         </article>
       </section>
 
@@ -76,6 +71,9 @@
             <button id="select-all" type="button">Alle markieren</button>
             <button id="select-none" type="button">Auswahl leeren</button>
             <button id="export-selected" type="button" class="primary">Auswahl exportieren</button>
+            <button id="copy-return-plan" type="button">Rückführungs-YAML kopieren</button>
+            <button id="write-back-selected" type="button" class="primary">Auswahl zurückschreiben</button>
+            <button id="preview-conflicts" type="button">Konflikte prüfen</button>
           </div>
           <h3>Nächste Ausbaustufe</h3>
           <ul class="roadmap">
