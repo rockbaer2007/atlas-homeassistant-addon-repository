@@ -41,7 +41,7 @@ rebuilds or container recreation on the same Home Assistant installation.
 ## Editor als Dashboard/Webseite einbinden
 
 Der bevorzugte Add-on-Weg ist **Einstellungen -> Add-ons -> ATLAS -> In
-Seitenleiste anzeigen**. Home Assistant oeffnet dann ATLAS ueber Ingress.
+Seitenleiste anzeigen**. Home Assistant öffnet dann ATLAS über Ingress.
 Wenn nur ein Plugin aktiv ist, startet ATLAS dieses Plugin direkt; ab zwei
 aktiven Plugins erscheint die optische Plugin-Auswahl.
 
@@ -49,16 +49,16 @@ Alternativ kannst du den ATLAS Card Editor wie ioBroker, FHEM oder andere
 lokale Web-UIs als Webseiten-Dashboard anzeigen:
 
 1. Gehe zu **Einstellungen -> Dashboards**.
-2. Waehle **Dashboard hinzufuegen**.
-3. Waehle den Typ **Webseite**.
+2. Wähle **Dashboard hinzufügen**.
+3. Wähle den Typ **Webseite**.
 4. Name: `Atlas Card Editor`.
 5. URL: nutze die ATLAS-App-URL, zum Beispiel
    `http://<home-assistant-host>:4176/`.
 6. Aktiviere **In Seitenleiste anzeigen** und speichere das Dashboard.
 
-ATLAS oeffnet sich dann direkt im Home-Assistant-Inhalt. Bei einem aktiven
+ATLAS öffnet sich dann direkt im Home-Assistant-Inhalt. Bei einem aktiven
 Plugin wird der Editor direkt geladen; bei mehreren aktiven Plugins zeigt ATLAS
-den Plugin Hub. ATLAS Administration bleibt ueber den Link im Editor erreichbar.
+den Plugin Hub. ATLAS Administration bleibt über den Link im Editor erreichbar.
 Home-Assistant-Token und Provider-API-Keys bleiben in ATLAS Administration
 beziehungsweise in den Add-on-Optionen und werden nicht dauerhaft im Editor
 gespeichert.
@@ -67,31 +67,31 @@ gespeichert.
 
 Trage in der Add-on-Konfiguration die Home-Assistant-URL und optional einen
 Long-Lived Access Token ein. Aktiviere **Token in ATLAS Administration
-uebernehmen**, wenn ATLAS den Token beim Start an die Administration uebergeben
+übernehmen**, wenn ATLAS den Token beim Start an die Administration übergeben
 soll. Aktiviere **Card Editor automatisch verbinden**, wenn der Editor nach dem
 Handoff direkt verbinden soll.
 
 Der Token wird bewusst als Textfeld angezeigt. Home Assistant kann lokale
-Password-Felder beim Wiederladen maskieren und dann nur einen gekuerzten
-Platzhalter an das Add-on uebergeben. ATLAS ignoriert solche zu kurzen oder
+Password-Felder beim Wiederladen maskieren und dann nur einen gekürzten
+Platzhalter an das Add-on übergeben. ATLAS ignoriert solche zu kurzen oder
 maskierten Werte beim Start. Der Token wird nicht dauerhaft im Card Editor
 gespeichert. Administration bleibt der Besitzer der Verbindungseinstellungen.
 
 ## Home-Assistant-Update-Ablauf
 
 Nach jedem sichtbaren ATLAS-Update wird die Add-on-Version in diesem Repository
-erhoeht. Home Assistant vergleicht die installierte Version (`old`) mit der
-Repository-Version (`target`). Fuer diesen Stand ist `target` mindestens
+erhöht. Home Assistant vergleicht die installierte Version (`old`) mit der
+Repository-Version (`target`). Für diesen Stand ist `target` mindestens
 `0.1.129`.
 
 Wenn Home Assistant weiterhin eine alte Zielversion zeigt:
 
-1. Oeffne **Einstellungen -> Add-ons -> Add-on Store**.
-2. Lade die Repositories neu oder entferne/fuege das ATLAS Repository erneut
+1. Öffne **Einstellungen -> Add-ons -> Add-on Store**.
+2. Lade die Repositories neu oder entferne/füge das ATLAS Repository erneut
    hinzu.
-3. Oeffne das ATLAS Add-on, installiere/aktualisiere die neue Version und
+3. Öffne das ATLAS Add-on, installiere/aktualisiere die neue Version und
    starte ATLAS neu.
-4. Pruefe danach `/app` oder `/health`, ob die neue Laufzeit aktiv ist.
+4. Prüfe danach `/app` oder `/health`, ob die neue Laufzeit aktiv ist.
 
 ## Add Editor as Dashboard/Webpage
 

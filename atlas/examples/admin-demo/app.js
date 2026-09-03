@@ -184,10 +184,10 @@ pluginCatalog.register({
       de: "ATLAS Automation Exporter / Editor",
       en: "ATLAS Automation Exporter / Editor",
     },
-    version: "0.1.8",
+    version: "0.1.9",
     description: "Analyze Home Assistant automations, export selected entries and continue editing them through File Studio.",
     descriptionI18n: {
-      de: "Home-Assistant-Automationen analysieren, ausgewaehlte Eintraege exportieren und ueber File Studio weiter bearbeiten.",
+      de: "Home-Assistant-Automationen analysieren, ausgewählte Einträge exportieren und über File Studio weiter bearbeiten.",
       en: "Analyze Home Assistant automations, export selected entries and continue editing them through File Studio.",
     },
     icon: "icon.svg",

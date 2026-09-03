@@ -9,7 +9,7 @@ import {
 
 const printer = {
   id: "office",
-  name: "Canon TS700 series - Buro",
+  name: "Canon TS700 series - Büro",
   ippEntityId: "sensor.canon_ts700_series",
 };
 
@@ -29,12 +29,12 @@ const baseSettings: NotifyArchiveSettings = {
 
 const heatingRule: NotifyArchiveRule = {
   id: "heating-fault",
-  name: "Heizungsstorung",
+  name: "Heizungsstörung",
   kind: "alarm",
   priority: "alarm",
   entityIds: ["binary_sensor.heizung_stoerung"],
   fixedTextEnabled: true,
-  fixedText: "Heizungsstorung erkannt. Bitte Anlage pruefen.",
+  fixedText: "Heizungsstörung erkannt. Bitte Anlage prüfen.",
   acknowledgementRequired: true,
   escalation: {
     enabled: true,
@@ -52,7 +52,7 @@ describe("NotifyArchive", () => {
       createdAt: new Date("2026-08-21T10:00:00.000Z"),
     });
 
-    expect(message.text).toBe("Heizungsstorung erkannt. Bitte Anlage pruefen.");
+    expect(message.text).toBe("Heizungsstörung erkannt. Bitte Anlage prüfen.");
     expect(message.acknowledgementRequired).toBe(true);
   });
 
@@ -60,7 +60,7 @@ describe("NotifyArchive", () => {
     const message = createNotifyArchiveMessage(heatingRule, {
       ruleId: heatingRule.id,
       entityId: "binary_sensor.heizung_stoerung",
-      text: "Heizung meldet Stoerung",
+      text: "Heizung meldet Störung",
       createdAt: new Date("2026-08-21T10:00:00.000Z"),
     });
 
@@ -85,7 +85,7 @@ describe("NotifyArchive", () => {
     const message = createNotifyArchiveMessage(heatingRule, {
       ruleId: heatingRule.id,
       entityId: "binary_sensor.heizung_stoerung",
-      text: "Heizung meldet Stoerung",
+      text: "Heizung meldet Störung",
       createdAt: new Date("2026-08-21T10:00:00.000Z"),
     });
 
@@ -113,7 +113,7 @@ describe("NotifyArchive", () => {
     const message = createNotifyArchiveMessage(heatingRule, {
       ruleId: heatingRule.id,
       entityId: "binary_sensor.heizung_stoerung",
-      text: "Heizung meldet Stoerung",
+      text: "Heizung meldet Störung",
       createdAt: new Date("2026-08-21T10:00:00.000Z"),
     });
     const acknowledgedMessage = acknowledgeNotifyArchiveMessage(message, new Date("2026-08-21T10:03:00.000Z"));

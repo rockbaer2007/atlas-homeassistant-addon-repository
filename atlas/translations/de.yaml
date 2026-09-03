@@ -1,31 +1,31 @@
 configuration:
   atlas_instance_id:
     name: "Atlas-Instanz-ID"
-    description: "Stabile lokale Identitaet fuer verschluesselte Administration-Secrets."
+    description: "Stabile lokale Identität für verschlüsselte Administration-Secrets."
   home_assistant_url:
     name: "Home-Assistant-URL"
-    description: "URL deiner Home-Assistant-Instanz fuer Entity-, Status- und Ressourcenabfragen."
+    description: "URL deiner Home-Assistant-Instanz für Entity-, Status- und Ressourcenabfragen."
   home_assistant_token:
     name: "Home-Assistant-Token"
-    description: "Long-Lived Access Token fuer ATLAS Administration. Home Assistant zeigt den Token maskiert an; ueber das Auge kann er bei Bedarf sichtbar gemacht werden."
+    description: "Long-Lived Access Token für ATLAS Administration. Home Assistant zeigt den Token maskiert an; über das Auge kann er bei Bedarf sichtbar gemacht werden."
   remember_home_assistant_token:
-    name: "Token in ATLAS Administration uebernehmen"
-    description: "Uebergibt den Token beim Start an ATLAS Administration, damit der Editor ihn nur als Session-Handoff erhalten kann."
+    name: "Token in ATLAS Administration übernehmen"
+    description: "Übergibt den Token beim Start an ATLAS Administration, damit der Editor ihn nur als Session-Handoff erhalten kann."
   auto_connect_editor:
     name: "Card Editor automatisch verbinden"
     description: "Der Editor verbindet sich nach dem Administration-Handoff automatisch mit Home Assistant."
   allow_addons_path:
     name: "File Studio: /addons freigeben"
-    description: "Erlaubt ATLAS File Studio Zugriff auf lokale Home-Assistant-Add-on-Ordner unter /addons. Standardmaessig aus Sicherheitsgruenden deaktiviert."
+    description: "Erlaubt ATLAS File Studio Zugriff auf lokale Home-Assistant-Add-on-Ordner unter /addons. Standardmäßig aus Sicherheitsgründen deaktiviert."
   allow_www_path:
     name: "File Studio: /config/www anzeigen"
-    description: "Zeigt den Home-Assistant-www-Ordner als eigene File-Studio-Faehigkeit."
+    description: "Zeigt den Home-Assistant-www-Ordner als eigene File-Studio-Fähigkeit."
   allow_custom_components_path:
     name: "File Studio: /config/custom_components anzeigen"
-    description: "Zeigt custom_components als eigene File-Studio-Faehigkeit fuer Integrationen und benutzerdefinierte Dateien."
+    description: "Zeigt custom_components als eigene File-Studio-Fähigkeit für Integrationen und benutzerdefinierte Dateien."
   allow_parent_of_config_path:
     name: "File Studio: Parent von /config freigeben"
-    description: "Erlaubt File Studio Zugriff auf den uebergeordneten Ordner von /config. Nur fuer administrativen Dateizugriff aktivieren."
+    description: "Erlaubt File Studio Zugriff auf den übergeordneten Ordner von /config. Nur für administrativen Dateizugriff aktivieren."
 network:
   4176/tcp: "ATLAS App-Laufzeit"
   4175/tcp: "ATLAS Administration"

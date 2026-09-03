@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.140
+
+- Use proper German umlauts in current Atlas, plugin and Home Assistant package
+  user-facing German text.
+- Add the German umlaut rule to the repository working guidelines.
+- Bump ATLAS File Studio to `0.1.37`, the Card Editor to `0.2.0-alpha.48` and
+  the Automation Exporter / Editor to `0.1.9`.
+
 ## 0.1.139
 
 - Write Automation Exporter / Editor exports into the selected File Studio
@@ -863,10 +871,10 @@
 
 ## 0.1.19
 
-- Rename the entity picker section to "Entities for the card" / "Entitaeten
-  fuer die Card".
+- Rename the entity picker section to "Entities for the card" / "Entitäten
+  für die Card".
 - Rename the lower entity list to "Entities detected in HA" / "In HA erkannte
-  Entitaeten".
+  Entitäten".
 - Show detected Home Assistant entities as a compact table with a separate
   action column.
 

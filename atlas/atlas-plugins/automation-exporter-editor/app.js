@@ -170,7 +170,7 @@ async function loadSystemAutomations() {
     }
     analyzeSource(payload.path || "/config/automations.yaml", content);
   } catch {
-    setStatus("/config/automations.yaml konnte nicht geladen werden. Bitte File-Studio-Zugriff pruefen oder YAML hochladen.");
+    setStatus("/config/automations.yaml konnte nicht geladen werden. Bitte File-Studio-Zugriff prüfen oder YAML hochladen.");
   }
 }
 
@@ -337,7 +337,7 @@ function createAutomationRow(automation) {
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
   checkbox.checked = state.selectedIds.has(automation.localId);
-  checkbox.setAttribute("aria-label", `${automation.alias} auswaehlen`);
+  checkbox.setAttribute("aria-label", `${automation.alias} auswählen`);
   checkbox.addEventListener("change", () => {
     if (checkbox.checked) {
       state.selectedIds.add(automation.localId);
@@ -356,18 +356,18 @@ function renderDetails() {
   elements.details.classList.toggle("empty-state", !automation);
   elements.details.innerHTML = "";
   if (!automation) {
-    elements.details.textContent = "Waehle eine Automation aus.";
+    elements.details.textContent = "Wähle eine Automation aus.";
     return;
   }
   const title = document.createElement("strong");
   title.textContent = automation.alias;
   const meta = document.createElement("p");
   meta.className = "muted";
-  meta.textContent = `${automation.triggerCount} Trigger, ${automation.conditionCount} Conditions, ${automation.actionCount} Actions, ${automation.entities.length} Entitaeten, ${automation.services.length} Services`;
+  meta.textContent = `${automation.triggerCount} Trigger, ${automation.conditionCount} Conditions, ${automation.actionCount} Actions, ${automation.entities.length} Entitäten, ${automation.services.length} Services`;
   const pre = document.createElement("pre");
   pre.className = "yaml-preview";
   pre.innerHTML = highlightYaml(automation.yaml);
-  elements.details.append(title, meta, createTagBlock("Hinweise", automation.warnings, "warning"), createTagBlock("Entitaeten", automation.entities), createTagBlock("Services", automation.services), pre);
+  elements.details.append(title, meta, createTagBlock("Hinweise", automation.warnings, "warning"), createTagBlock("Entitäten", automation.entities), createTagBlock("Services", automation.services), pre);
 }
 
 function createTagBlock(label, values, variant = "") {
@@ -394,7 +394,7 @@ function renderSummary() {
   elements.countEntities.textContent = String(allEntities.size);
   elements.countServices.textContent = String(allServices.size);
   elements.countWarnings.textContent = String(countWarnings(state.automations));
-  elements.selectionCount.textContent = `${state.selectedIds.size} ausgewaehlt`;
+  elements.selectionCount.textContent = `${state.selectedIds.size} ausgewählt`;
 }
 
 function renderHistory() {
@@ -456,7 +456,7 @@ function selectVisible() {
 async function exportSelected() {
   const selected = state.automations.filter(item => state.selectedIds.has(item.localId));
   if (selected.length === 0) {
-    setStatus("Keine Automation fuer den Export ausgewaehlt.");
+    setStatus("Keine Automation für den Export ausgewählt.");
     return;
   }
   const timestamp = createTimestamp(new Date());
@@ -483,7 +483,7 @@ async function exportSelected() {
     setStatus(`${exported.length} Automation(en) in ${folder} gespeichert.`);
     renderHistory();
   } catch (error) {
-    setStatus(`Export fehlgeschlagen: ${describeExportError(error)} Browser-Download wird als Rueckfall genutzt.`);
+    setStatus(`Export fehlgeschlagen: ${describeExportError(error)} Browser-Download wird als Rückfall genutzt.`);
     const usedFilenames = new Set();
     for (const automation of selected) {
       const filename = createExportFilename(automation.alias, timestamp, usedFilenames);
@@ -522,7 +522,7 @@ async function ensureExportFolder(folder) {
   }
   for (const part of parts.slice(1)) {
     if (!isSafeFileStudioName(part)) {
-      throw new Error("Exportordner enthaelt ungueltige Pfadteile.");
+      throw new Error("Exportordner enthält ungültige Pfadteile.");
     }
   }
   let current = "/config";
@@ -608,10 +608,10 @@ function encodeBase64Utf8(value) {
 
 function describeExportError(error) {
   const message = error instanceof Error ? error.message : String(error ?? "unbekannter Fehler");
-  if (/outside configured root/i.test(message)) return "Pfad liegt ausserhalb der freigegebenen Bereiche.";
+  if (/outside configured root/i.test(message)) return "Pfad liegt außerhalb der freigegebenen Bereiche.";
   if (/not found|parent directory/i.test(message)) return "Zielordner wurde nicht gefunden oder konnte nicht erstellt werden.";
   if (/already exists/i.test(message)) return "Eine Zieldatei existiert bereits.";
-  if (/path separators|relative path/i.test(message)) return "Exportordner oder Dateiname ist ungueltig.";
+  if (/path separators|relative path/i.test(message)) return "Exportordner oder Dateiname ist ungültig.";
   return message;
 }
 

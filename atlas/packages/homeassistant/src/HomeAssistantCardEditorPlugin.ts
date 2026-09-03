@@ -70,7 +70,7 @@ export function createHomeAssistantCardEditorPlugin(): RuntimePlugin {
       version: "0.2.0-alpha.30",
       description: "Reference plugin for Home Assistant card editing, entity selection and HACS-oriented exports.",
       descriptionI18n: {
-        de: "Referenz-Plugin fuer Home-Assistant-Kartenbearbeitung, Entitaetsauswahl und HACS-orientierte Exporte.",
+        de: "Referenz-Plugin für Home-Assistant-Kartenbearbeitung, Entitätsauswahl und HACS-orientierte Exporte.",
         en: "Reference plugin for Home Assistant card editing, entity selection and HACS-oriented exports.",
       },
       icon: "icon.svg",

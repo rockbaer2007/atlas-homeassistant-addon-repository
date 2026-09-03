@@ -595,11 +595,11 @@
 
       function describeFileStudioError(error) {
         const message = error instanceof Error ? error.message : String(error ?? "unbekannter Fehler");
-        if (/outside configured root/i.test(message)) return "Pfad liegt ausserhalb der freigegebenen File-Studio-Bereiche.";
+        if (/outside configured root/i.test(message)) return "Pfad liegt außerhalb der freigegebenen File-Studio-Bereiche.";
         if (/not found/i.test(message)) return "Datei oder Ordner wurde nicht gefunden.";
         if (/already exists/i.test(message)) return "Am Ziel existiert bereits eine Datei oder ein Ordner mit diesem Namen.";
-        if (/too large/i.test(message)) return "Die Anfrage ist zu gross fuer File Studio.";
-        if (/path separators|relative path/i.test(message)) return "Name ungueltig: keine Pfadtrenner und keine relativen Pfade verwenden.";
+        if (/too large/i.test(message)) return "Die Anfrage ist zu groß für File Studio.";
+        if (/path separators|relative path/i.test(message)) return "Name ungültig: keine Pfadtrenner und keine relativen Pfade verwenden.";
         return message;
       }
 
@@ -969,7 +969,7 @@
           return;
         }
         if (!validateFileStudioName(trimmedName)) {
-          setStatus("Name ungueltig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
+          setStatus("Name ungültig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
           return;
         }
 
@@ -1200,7 +1200,7 @@
         if (truncated) {
           const note = document.createElement("p");
           note.className = "folder-empty";
-          note.textContent = "Trefferliste gekuerzt.";
+          note.textContent = "Trefferliste gekürzt.";
           list.replaceChildren(...rows, note);
           return;
         }
@@ -1406,11 +1406,11 @@
           const warnings = Array.isArray(validation.warnings) && validation.warnings.length
             ? ` Hinweise: ${validation.warnings.join(" ")}`
             : "";
-          status.textContent = `${validation.message ?? "HA-Pruefung abgeschlossen."}${warnings}`;
+          status.textContent = `${validation.message ?? "HA-Prüfung abgeschlossen."}${warnings}`;
           status.classList.toggle("ok", validation.ok === true);
           status.classList.toggle("warning", validation.ok !== true || warnings.length > 0);
         } catch (error) {
-          status.textContent = `HA-Pruefung fehlgeschlagen: ${describeFileStudioError(error)}`;
+          status.textContent = `HA-Prüfung fehlgeschlagen: ${describeFileStudioError(error)}`;
           status.classList.remove("ok");
           status.classList.add("warning");
         }
@@ -1562,7 +1562,7 @@
         if (!name) return;
         const trimmedName = name.trim();
         if (!validateFileStudioName(trimmedName)) {
-          setStatus("Name ungueltig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
+          setStatus("Name ungültig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
           return;
         }
         try {
@@ -1735,7 +1735,7 @@
           if (!name) return;
           trimmedName = name.trim();
           if (!validateFileStudioName(trimmedName)) {
-            setStatus("Name ungueltig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
+            setStatus("Name ungültig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
             return;
           }
         }
@@ -1776,7 +1776,7 @@
         if (!name) return;
         const trimmedName = name.trim();
         if (!validateFileStudioName(trimmedName)) {
-          setStatus("Name ungueltig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
+          setStatus("Name ungültig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
           return;
         }
         try {
@@ -1790,7 +1790,7 @@
           });
           await loadDirectoryTree({ preserveSelection: false });
           selectFolder(extracted.path);
-          setStatus(`Archiv entpackt: ${extracted.path} (${extracted.extracted} Eintraege)`, "ok");
+          setStatus(`Archiv entpackt: ${extracted.path} (${extracted.extracted} Einträge)`, "ok");
         } catch (error) {
           setStatus(`Entpacken fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
         }
@@ -1862,7 +1862,7 @@
           const selectedIndex = Number.parseInt(form.querySelector("input[name='history-version']:checked")?.value ?? "0", 10);
           const selected = versions[selectedIndex];
           if (!selected) {
-            setStatus("Verlauf: ungueltige Auswahl.", "warning");
+            setStatus("Verlauf: ungültige Auswahl.", "warning");
             return;
           }
           if (action === "compare") {
@@ -1981,7 +1981,7 @@
         if (!name) return;
         const trimmedName = name.trim();
         if (!validateFileStudioName(trimmedName)) {
-          setStatus("Name ungueltig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
+          setStatus("Name ungültig: keine leeren Namen, keine /, \\\\ oder ..", "warning");
           return;
         }
         try {

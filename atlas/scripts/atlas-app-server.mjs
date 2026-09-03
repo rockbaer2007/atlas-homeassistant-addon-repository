@@ -752,7 +752,7 @@ async function writeFileStudioDiagnosticsResponse(request, response, cookieHeade
       },
       secretsIncluded: false,
       issueUrl: createFileStudioIssueUrl(path, validation),
-      note: "Debugbericht enthaelt keine Home-Assistant-Token, Provider-API-Keys oder Dateiinhalte.",
+      note: "Debugbericht enthält keine Home-Assistant-Token, Provider-API-Keys oder Dateiinhalte.",
     },
   });
 }
@@ -885,14 +885,14 @@ function inspectZipArchive(targetPath) {
   const centralDirectoryOffset = buffer.readUInt32LE(eocdOffset + 16);
   const centralDirectoryEnd = centralDirectoryOffset + centralDirectorySize;
   if (centralDirectoryEnd > buffer.length) {
-    throw new Error("ZIP-Zentralverzeichnis ist unvollstaendig.");
+    throw new Error("ZIP-Zentralverzeichnis ist unvollständig.");
   }
 
   const entries = [];
   let offset = centralDirectoryOffset;
   while (offset + 46 <= centralDirectoryEnd && entries.length < Math.min(totalEntries, 500)) {
     if (buffer.readUInt32LE(offset) !== 0x02014b50) {
-      throw new Error("ZIP-Zentralverzeichnis enthaelt einen ungueltigen Eintrag.");
+      throw new Error("ZIP-Zentralverzeichnis enthält einen ungültigen Eintrag.");
     }
     const compressionMethod = buffer.readUInt16LE(offset + 10);
     const compressedSize = buffer.readUInt32LE(offset + 20);
@@ -903,7 +903,7 @@ function inspectZipArchive(targetPath) {
     const nameStart = offset + 46;
     const nameEnd = nameStart + nameLength;
     if (nameEnd > centralDirectoryEnd) {
-      throw new Error("ZIP-Eintragsname ist unvollstaendig.");
+      throw new Error("ZIP-Eintragsname ist unvollständig.");
     }
     const path = buffer.toString("utf8", nameStart, nameEnd);
     entries.push({
@@ -1544,7 +1544,7 @@ function createFileStudioReloadHint(filename) {
   if (name === "configuration.yaml") {
     return {
       level: "restart",
-      message: "Home Assistant Konfiguration pruefen; fuer configuration.yaml ist meistens ein Neustart sinnvoll.",
+      message: "Home Assistant Konfiguration prüfen; für configuration.yaml ist meistens ein Neustart sinnvoll.",
     };
   }
   if (name === "automations.yaml") {
@@ -1562,7 +1562,7 @@ function createFileStudioReloadHint(filename) {
   if (displayPath.includes("/packages/") && [".yaml", ".yml"].includes(extname(displayPath).toLowerCase())) {
     return {
       level: "restart",
-      message: "Package-Datei geaendert; Home Assistant Konfiguration pruefen und meist neu starten.",
+      message: "Package-Datei geändert; Home Assistant Konfiguration prüfen und meist neu starten.",
     };
   }
   return {
@@ -1603,7 +1603,7 @@ function extractZipArchive(sourcePath, targetDirectory, targetScope) {
   const centralDirectoryOffset = buffer.readUInt32LE(eocdOffset + 16);
   const centralDirectoryEnd = centralDirectoryOffset + centralDirectorySize;
   if (centralDirectoryEnd > buffer.length) {
-    throw new Error("ZIP-Zentralverzeichnis ist unvollstaendig.");
+    throw new Error("ZIP-Zentralverzeichnis ist unvollständig.");
   }
 
   mkdirSync(targetDirectory, { recursive: true });
@@ -1611,7 +1611,7 @@ function extractZipArchive(sourcePath, targetDirectory, targetScope) {
   let offset = centralDirectoryOffset;
   while (offset + 46 <= centralDirectoryEnd && extracted < Math.min(totalEntries, 500)) {
     if (buffer.readUInt32LE(offset) !== 0x02014b50) {
-      throw new Error("ZIP-Zentralverzeichnis enthaelt einen ungueltigen Eintrag.");
+      throw new Error("ZIP-Zentralverzeichnis enthält einen ungültigen Eintrag.");
     }
     const compressionMethod = buffer.readUInt16LE(offset + 10);
     const compressedSize = buffer.readUInt32LE(offset + 20);
@@ -1623,7 +1623,7 @@ function extractZipArchive(sourcePath, targetDirectory, targetScope) {
     const nameStart = offset + 46;
     const nameEnd = nameStart + nameLength;
     if (nameEnd > centralDirectoryEnd) {
-      throw new Error("ZIP-Eintragsname ist unvollstaendig.");
+      throw new Error("ZIP-Eintragsname ist unvollständig.");
     }
     const archivePath = buffer.toString("utf8", nameStart, nameEnd);
     extractZipEntry(buffer, archivePath, localHeaderOffset, compressedSize, uncompressedSize, compressionMethod, targetDirectory, targetScope);
@@ -1644,7 +1644,7 @@ function extractZipEntry(buffer, archivePath, localHeaderOffset, compressedSize,
 
   const targetPath = resolve(targetDirectory, normalizedArchivePath);
   if (!isInsideFileStudioDirectory(targetDirectory, targetPath) || !isInsideFileStudioRootScope(targetScope, targetPath)) {
-    throw new Error(`ZIP-Eintrag liegt ausserhalb des Zielordners: ${archivePath}`);
+    throw new Error(`ZIP-Eintrag liegt außerhalb des Zielordners: ${archivePath}`);
   }
 
   if (archivePath.endsWith("/")) {
@@ -1653,14 +1653,14 @@ function extractZipEntry(buffer, archivePath, localHeaderOffset, compressedSize,
   }
 
   if (buffer.readUInt32LE(localHeaderOffset) !== 0x04034b50) {
-    throw new Error(`ZIP-Lokalkopf ungueltig: ${archivePath}`);
+    throw new Error(`ZIP-Lokalkopf ungültig: ${archivePath}`);
   }
   const localNameLength = buffer.readUInt16LE(localHeaderOffset + 26);
   const localExtraLength = buffer.readUInt16LE(localHeaderOffset + 28);
   const dataStart = localHeaderOffset + 30 + localNameLength + localExtraLength;
   const dataEnd = dataStart + compressedSize;
   if (dataEnd > buffer.length) {
-    throw new Error(`ZIP-Daten unvollstaendig: ${archivePath}`);
+    throw new Error(`ZIP-Daten unvollständig: ${archivePath}`);
   }
 
   const compressed = buffer.subarray(dataStart, dataEnd);
@@ -2060,22 +2060,22 @@ function validateFileStudioContent(content, filename) {
   const warnings = [];
   const duplicateKey = findDuplicateYamlKey(lines);
   if (duplicateKey) {
-    warnings.push(`Moeglicher doppelter YAML-Key "${duplicateKey.key}" in Zeile ${duplicateKey.line}.`);
+    warnings.push(`Möglicher doppelter YAML-Key "${duplicateKey.key}" in Zeile ${duplicateKey.line}.`);
   }
   const includeLine = lines.findIndex(line => /!\s*include(?!(_dir_|$|\s))/i.test(line));
   if (includeLine >= 0) {
-    warnings.push(`Include in Zeile ${includeLine + 1} pruefen: Home Assistant erwartet z. B. !include, !include_dir_merge_list oder !include_dir_named.`);
+    warnings.push(`Include in Zeile ${includeLine + 1} prüfen: Home Assistant erwartet z. B. !include, !include_dir_merge_list oder !include_dir_named.`);
   }
   const displayPath = normalizeFileStudioDisplayInput(filename);
   const baseName = basename(displayPath).toLowerCase();
   if (["configuration.yaml", "automations.yaml", "scripts.yaml"].includes(baseName) && !content.trim()) {
-    warnings.push(`${baseName} ist leer; Home Assistant kann dadurch Konfiguration verlieren oder Reloads ohne Wirkung ausfuehren.`);
+    warnings.push(`${baseName} ist leer; Home Assistant kann dadurch Konfiguration verlieren oder Reloads ohne Wirkung ausführen.`);
   }
   warnings.push(...findHomeAssistantYamlWarnings(lines, baseName, displayPath));
   const reload = createFileStudioReloadHint(filename);
   const message = warnings.length
-    ? `YAML-Basispruefung bestanden, ${warnings.length} Hinweis(e). ${reload.message}`
-    : `YAML-Basispruefung bestanden. ${reload.message}`;
+    ? `YAML-Basisprüfung bestanden, ${warnings.length} Hinweis(e). ${reload.message}`
+    : `YAML-Basisprüfung bestanden. ${reload.message}`;
   return {
     ok: true,
     blocking: false,
@@ -2095,7 +2095,7 @@ function findHomeAssistantYamlWarnings(lines, baseName, displayPath) {
     return indent % 2 !== 0;
   });
   if (oddIndent) {
-    warnings.push(`Zeile ${oddIndent.index + 1} nutzt eine ungerade Einrueckung; Home-Assistant-YAML ist meist mit 2 Leerzeichen lesbarer.`);
+    warnings.push(`Zeile ${oddIndent.index + 1} nutzt eine ungerade Einrückung; Home-Assistant-YAML ist meist mit 2 Leerzeichen lesbarer.`);
   }
   if (baseName === "automations.yaml" && meaningfulLines.length && !meaningfulLines[0].line.trimStart().startsWith("-")) {
     warnings.push("automations.yaml beginnt normalerweise mit einer Liste von Automationen (`- id:` oder `- alias:`).");
@@ -2113,14 +2113,14 @@ function findHomeAssistantYamlWarnings(lines, baseName, displayPath) {
       "mqtt", "notify", "scene", "script", "sensor", "switch", "template", "timer", "zone",
     ]);
     if (!rootKeys.has("default_config") && !rootKeys.has("homeassistant")) {
-      warnings.push("configuration.yaml enthaelt weder `default_config:` noch `homeassistant:`; bitte pruefen, ob das beabsichtigt ist.");
+      warnings.push("configuration.yaml enthält weder `default_config:` noch `homeassistant:`; bitte prüfen, ob das beabsichtigt ist.");
     }
     if (rootKeys.has("automation") && !meaningfulLines.some(entry => entry.line.includes("!include"))) {
-      warnings.push("Automationen direkt in configuration.yaml erkannt; oft ist `automation: !include automations.yaml` uebersichtlicher.");
+      warnings.push("Automationen direkt in configuration.yaml erkannt; oft ist `automation: !include automations.yaml` übersichtlicher.");
     }
     const unusualRootKey = [...rootKeys].find(key => !commonRootKeys.has(key));
     if (unusualRootKey) {
-      warnings.push(`Root-Key \`${unusualRootKey}:\` ist kein typischer Home-Assistant-Top-Level-Key; Schreibweise pruefen.`);
+      warnings.push(`Root-Key \`${unusualRootKey}:\` ist kein typischer Home-Assistant-Top-Level-Key; Schreibweise prüfen.`);
     }
   }
   if (baseName === "automations.yaml") {
@@ -2161,7 +2161,7 @@ function findScriptYamlWarnings(meaningfulLines) {
   const rootScript = meaningfulLines.find(entry => /^[A-Za-z0-9_]+:\s*$/.test(entry.line));
   if (rootScript) {
     const hasSequence = meaningfulLines.some(entry => /^\s+sequence:\s*/.test(entry.line));
-    if (!hasSequence) warnings.push("scripts.yaml enthaelt Script-Keys, aber keine `sequence:`-Definition erkannt.");
+    if (!hasSequence) warnings.push("scripts.yaml enthält Script-Keys, aber keine `sequence:`-Definition erkannt.");
   }
   const serviceLine = meaningfulLines.find(entry => /^\s+service:\s+\S+/.test(entry.line));
   if (serviceLine && !/^\s+service:\s+[A-Za-z0-9_]+\.[A-Za-z0-9_]+/.test(serviceLine.line)) {
