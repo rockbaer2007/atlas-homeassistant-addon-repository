@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.141
+
+- Clarify the Administration update panel as external plugin repository
+  updates, separate from installed bundled plugins.
+
 ## 0.1.140
 
 - Use proper German umlauts in current Atlas, plugin and Home Assistant package
