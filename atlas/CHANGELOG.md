@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.138
+
+- Add an Administration header link to the public ATLAS verified plugin list.
+- Document the verified and new/unreviewed ATLAS plugin tables in the
+  open-source documentation.
+
 ## 0.1.137
 
 - Load the Automation Exporter / Editor system source from the real

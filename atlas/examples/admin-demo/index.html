@@ -120,6 +120,7 @@
         flex-wrap: wrap;
         gap: 8px;
         justify-content: flex-end;
+        align-items: center;
       }
 
       .language-toggle,
@@ -151,6 +152,28 @@
       .theme-toggle button[aria-pressed="true"] {
         background: var(--atlas-accent);
         color: var(--atlas-on-accent);
+      }
+
+      .header-doc-link {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--atlas-border-strong);
+        border-radius: 6px;
+        background: var(--atlas-panel);
+        color: var(--atlas-accent);
+        padding: 6px 10px;
+        font-size: 13px;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .header-doc-link:hover,
+      .header-doc-link:focus-visible {
+        border-color: var(--atlas-accent);
+        background: var(--atlas-panel-soft);
+        outline: 0;
       }
 
       .admin-grid {
@@ -1010,6 +1033,13 @@
           <p data-i18n="page.subtitle">Manage plugins, install packages and central Home Assistant access.</p>
         </div>
         <div class="header-controls">
+          <a
+            class="header-doc-link"
+            href="https://opensource.ugso-software.de/projects/atlas-plugins/gepruefte-plugins"
+            target="_blank"
+            rel="noreferrer"
+            data-i18n="button.verifiedPlugins"
+          >Verified Plugins</a>
           <div class="theme-toggle" role="group" aria-label="Theme" data-i18n-aria-label="aria.theme">
             <button type="button" data-theme-mode="auto" aria-pressed="true" data-i18n="theme.auto">Auto</button>
             <button type="button" data-theme-mode="light" aria-pressed="false" data-i18n="theme.light">Light</button>
