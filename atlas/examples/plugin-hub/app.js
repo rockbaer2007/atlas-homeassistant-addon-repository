@@ -248,6 +248,13 @@ function createPluginActionUrl(entryUrl) {
   return createAppUrl(entryUrl);
 }
 
+function createPluginLaunchUrl(plugin) {
+  if (plugin?.id === HomeAssistantCardEditorPluginId) {
+    return createAppUrl("editor");
+  }
+  return createPluginActionUrl(plugin?.entryUrl);
+}
+
 function createPluginMediaUrl(mediaUrl) {
   if (typeof mediaUrl !== "string" || !mediaUrl.trim()) {
     return "";
@@ -381,7 +388,7 @@ function createPluginCard(plugin) {
 
   const action = document.createElement("a");
   action.className = "plugin-action";
-  const sidebarActionUrl = createPluginSidebarUrl(plugin);
+  const sidebarActionUrl = createPluginLaunchUrl(plugin);
   const launchable = plugin.status === "active" && sidebarActionUrl;
   action.textContent = launchable
     ? t("button.open")
@@ -524,6 +531,9 @@ function translatePluginStatus(status) {
 }
 
 function createPluginSidebarUrl(plugin) {
+  if (plugin?.id === HomeAssistantCardEditorPluginId) {
+    return createAppUrl("editor");
+  }
   if (plugin?.id === FileStudioPluginId && (!plugin.entryUrl || !String(plugin.entryUrl).trim())) {
     return createPluginActionUrl("/plugin-assets/file-studio/index.html");
   }

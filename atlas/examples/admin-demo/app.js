@@ -90,8 +90,8 @@ const sharedPluginCatalogCookieName = "atlas_plugin_catalog";
 const adminSecretsKeyStorageKey = "atlas.administration.secretsCookieKey";
 const legacyAdminTranslationApiKeysCookieName = "atlas_admin_translation_api_keys";
 const legacyAdminTranslationApiKeysKeyStorageKey = "atlas.administration.translationApiKeysCookieKey";
-const adminConnectionApiPath = "/api/admin-connection";
-const adminDeviceApiPath = "/api/admin-device";
+const adminConnectionApiPath = createAdminApiUrl("api/admin-connection");
+const adminDeviceApiPath = createAdminApiUrl("api/admin-device");
 const defaultTranslationApiEndpoint = "https://api.deepl.com/v2/translate";
 const translationProviderValues = ["none", "chatgpt", "gemini", "deepl-free", "deepl-pro", "custom-ai"];
 const pluginRepositoryTypeValues = ["plugin", "card", "integration", "tool", "theme"];
@@ -3022,6 +3022,12 @@ function createAppRuntimeApiUrl() {
     return createAppRouteNavigationUrl("/app");
   }
   return createPortNavigationUrl(4176, "/app");
+}
+
+function createAdminApiUrl(path) {
+  return isAppRouteSurface()
+    ? createAppRouteNavigationUrl(path)
+    : createPortNavigationUrl(4176, `/${String(path).replace(/^\/+/, "")}`);
 }
 
 function isAppRouteSurface() {

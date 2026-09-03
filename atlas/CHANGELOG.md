@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.131
+
+- Make Administration and Card Editor import maps plus module scripts relative
+  so they load correctly through Home Assistant Ingress.
+- Normalize the Plugin Hub launch URL for the Home Assistant Card Editor to
+  the `/editor` app route instead of a plugin asset URL.
+
 ## 0.1.130
 
 - Add a Plugin Hub button to the ATLAS Automation Exporter / Editor header.
