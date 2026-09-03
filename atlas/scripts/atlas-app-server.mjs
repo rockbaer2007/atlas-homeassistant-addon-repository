@@ -280,9 +280,9 @@ createServer((request, response) => {
     links: {
       admin: createPublicAppRouteUrl(requestUrl, "/admin"),
       editor: createPublicAppRouteUrl(requestUrl, "/editor"),
-      hub: new URL("/hub", requestUrl).toString(),
-      app: new URL("/app", requestUrl).toString(),
-      health: new URL("/health", requestUrl).toString(),
+      hub: createPublicAppRouteUrl(requestUrl, "/hub"),
+      app: createPublicAppRouteUrl(requestUrl, "/app"),
+      health: createPublicAppRouteUrl(requestUrl, "/health"),
     },
   });
 }).listen(appPort, host, () => {

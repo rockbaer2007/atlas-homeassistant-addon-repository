@@ -10,6 +10,7 @@ const atlasThemeStorageKey = "atlas.themePreference";
 const hubLanguageStorageKey = "atlas.pluginHub.language";
 const FileStudioPluginId = "atlas.plugin.file-studio";
 const HomeAssistantCardEditorPluginId = "atlas.plugin.homeassistant-card-editor";
+const AutomationExporterPluginId = "atlas.plugin.automation-exporter-editor";
 const translations = {
   en: {
     "heading.hub": "Plugin Hub",
@@ -232,43 +233,52 @@ function createAppUrl(path) {
   }
 }
 
-function createPluginActionUrl(entryUrl) {
-  if (typeof entryUrl !== "string" || !entryUrl.trim()) {
+function normalizeAtlasAppUrl(value) {
+  if (typeof value !== "string" || !value.trim()) {
     return "";
   }
 
   try {
-    const url = new URL(entryUrl, window.location.href);
+    const url = new URL(value, window.location.href);
+    const routePrefixes = ["/plugin-assets/", "/editor", "/admin", "/hub"];
+    const routePrefix = routePrefixes.find(prefix => url.pathname.includes(prefix));
+    if (routePrefix) {
+      const routeIndex = url.pathname.indexOf(routePrefix);
+      const routePath = url.pathname.slice(routeIndex);
+      return createAppUrl(`${routePath}${url.search}`);
+    }
     if (url.origin === window.location.origin) {
       return url.toString();
     }
   } catch {
     // Relative URLs are normalized against the current ATLAS app path below.
   }
-  return createAppUrl(entryUrl);
+
+  return "";
+}
+
+function createPluginActionUrl(entryUrl, fallbackPath = "") {
+  if (typeof entryUrl !== "string" || !entryUrl.trim()) {
+    return fallbackPath ? createAppUrl(fallbackPath) : "";
+  }
+
+  return normalizeAtlasAppUrl(entryUrl) || createAppUrl(entryUrl);
 }
 
 function createPluginLaunchUrl(plugin) {
   if (plugin?.id === HomeAssistantCardEditorPluginId) {
     return createAppUrl("editor");
   }
-  return createPluginActionUrl(plugin?.entryUrl);
+  return createPluginActionUrl(plugin?.entryUrl, createKnownPluginEntryPath(plugin));
 }
 
-function createPluginMediaUrl(mediaUrl) {
+function createPluginMediaUrl(plugin) {
+  const mediaUrl = plugin?.iconUrl || plugin?.logoUrl || plugin?.previewUrl;
   if (typeof mediaUrl !== "string" || !mediaUrl.trim()) {
-    return "";
+    return createKnownPluginAssetPath(plugin, "icon.svg");
   }
 
-  try {
-    const url = new URL(mediaUrl, window.location.href);
-    if (url.origin === window.location.origin) {
-      return url.toString();
-    }
-    return url.toString();
-  } catch {
-    return createAppUrl(mediaUrl);
-  }
+  return normalizeAtlasAppUrl(mediaUrl) || createAppUrl(mediaUrl);
 }
 
 async function loadPlugins() {
@@ -350,7 +360,7 @@ function createPluginCard(plugin) {
   const titleRow = document.createElement("div");
   titleRow.className = "plugin-title-row";
 
-  const imageUrl = createPluginMediaUrl(plugin.iconUrl || plugin.logoUrl || plugin.previewUrl);
+  const imageUrl = createPluginMediaUrl(plugin);
   const pluginName = localizedPluginText(plugin, "name", plugin.id);
   let icon;
   if (imageUrl) {
@@ -534,10 +544,30 @@ function createPluginSidebarUrl(plugin) {
   if (plugin?.id === HomeAssistantCardEditorPluginId) {
     return createAppUrl("editor");
   }
-  if (plugin?.id === FileStudioPluginId && (!plugin.entryUrl || !String(plugin.entryUrl).trim())) {
-    return createPluginActionUrl("/plugin-assets/file-studio/index.html");
+  return createPluginActionUrl(plugin?.entryUrl, createKnownPluginEntryPath(plugin));
+}
+
+function createKnownPluginEntryPath(plugin) {
+  if (plugin?.id === FileStudioPluginId) {
+    return "/plugin-assets/file-studio/index.html";
   }
-  return createPluginActionUrl(plugin?.entryUrl);
+  if (plugin?.id === AutomationExporterPluginId) {
+    return "/plugin-assets/automation-exporter-editor/index.html";
+  }
+  return "";
+}
+
+function createKnownPluginAssetPath(plugin, assetName) {
+  if (plugin?.id === HomeAssistantCardEditorPluginId) {
+    return createAppUrl(`/plugin-assets/homeassistant-card-editor/${assetName}`);
+  }
+  if (plugin?.id === FileStudioPluginId) {
+    return createAppUrl(`/plugin-assets/file-studio/${assetName}`);
+  }
+  if (plugin?.id === AutomationExporterPluginId) {
+    return createAppUrl(`/plugin-assets/automation-exporter-editor/${assetName}`);
+  }
+  return "";
 }
 
 function createPluginSidebarIcon(plugin) {

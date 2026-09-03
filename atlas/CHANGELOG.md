@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.135
+
+- Rewrite Hub plugin icons and launch URLs onto the active ATLAS/Ingress base
+  path so File Studio and Automation Exporter no longer open stale 404 routes.
+
 ## 0.1.134
 
 - Keep Administration to Plugin Hub navigation on the current Home Assistant
