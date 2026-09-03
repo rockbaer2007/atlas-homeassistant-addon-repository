@@ -194,6 +194,13 @@ h3 {
   flex-wrap: wrap;
 }
 
+.export-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
 .status-line,
 .field-hint,
 .muted {
@@ -357,6 +364,27 @@ h3 {
 .tag.warning {
   border-color: color-mix(in srgb, var(--orange), var(--line) 30%);
   color: var(--orange);
+}
+
+.tag.group {
+  border-color: color-mix(in srgb, var(--teal), var(--line) 34%);
+  color: var(--teal-soft);
+}
+
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.copy-fallback {
+  position: fixed;
+  left: -1000px;
+  top: -1000px;
+  width: 1px;
+  height: 1px;
 }
 
 .details pre {

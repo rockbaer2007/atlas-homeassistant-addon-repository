@@ -45,7 +45,11 @@
           <h2>Export</h2>
           <label class="field-label" for="export-folder">Export-Ordner</label>
           <input id="export-folder" type="text" value="/config/atlas_exports/automations">
-          <p class="field-hint">Der Browser lädt Dateien lokal herunter. Der Ordner ist die Zielvorgabe für den späteren File-Studio-Schreibpfad.</p>
+          <p class="field-hint">Ausgewählte Automationen werden als einzelne YAML-Dateien gespeichert. Existierende Dateien werden nicht überschrieben.</p>
+          <div class="export-tools">
+            <button id="copy-return-plan" type="button">Rückführungs-YAML kopieren</button>
+            <button id="preview-conflicts" type="button">Konflikte prüfen</button>
+          </div>
         </article>
 
         <article class="panel summary-panel">
@@ -74,10 +78,10 @@
           </div>
           <h3>Nächste Ausbaustufe</h3>
           <ul class="roadmap">
-            <li>System-Export direkt in freigegebenen Ordner schreiben</li>
-            <li>Vergleich mit File-Studio-Versionen</li>
-            <li>Rückführungsplan für automations.yaml</li>
-            <li>Gruppierung nach Bereich, Gerät und Domain</li>
+            <li>Direkt aus der Exportliste in File Studio öffnen</li>
+            <li>Rückführungs-YAML als sichere Vorschau kopieren</li>
+            <li>Konflikte anhand von ID und Alias vorab markieren</li>
+            <li>Gruppierung nach Domain, Bereich und Gerät</li>
           </ul>
         </aside>
 

@@ -16,6 +16,8 @@ const elements = {
   selectAll: document.querySelector("#select-all"),
   selectNone: document.querySelector("#select-none"),
   exportSelected: document.querySelector("#export-selected"),
+  copyReturnPlan: document.querySelector("#copy-return-plan"),
+  previewConflicts: document.querySelector("#preview-conflicts"),
   clearHistory: document.querySelector("#clear-history"),
   list: document.querySelector("#automation-list"),
   details: document.querySelector("#details"),
@@ -131,6 +133,8 @@ elements.selectNone.addEventListener("click", () => {
   render();
 });
 elements.exportSelected.addEventListener("click", () => void exportSelected());
+elements.copyReturnPlan.addEventListener("click", () => void copyReturnPlan());
+elements.previewConflicts.addEventListener("click", previewConflicts);
 elements.clearHistory.addEventListener("click", () => {
   state.exports = [];
   renderHistory();
@@ -211,6 +215,9 @@ function parseAutomations(content) {
       id,
       entities,
       services,
+      domains: extractDomains(entities, services),
+      areas: extractAreas(entities),
+      devices: extractDevices(entities),
       triggerCount,
       conditionCount,
       actionCount,
@@ -288,6 +295,28 @@ function uniqueMatches(text, regex) {
   return Array.from(values).sort((a, b) => a.localeCompare(b));
 }
 
+function extractDomains(entities, services) {
+  return uniqueValues([...entities, ...services].map(value => value.split(".")[0]).filter(Boolean));
+}
+
+function extractAreas(entities) {
+  return uniqueValues(entities
+    .map(value => value.split(".")[1] ?? "")
+    .map(entityId => entityId.split("_")[0])
+    .filter(Boolean));
+}
+
+function extractDevices(entities) {
+  return uniqueValues(entities
+    .map(value => value.split(".")[1] ?? "")
+    .map(entityId => entityId.split("_").slice(0, 2).join("_"))
+    .filter(Boolean));
+}
+
+function uniqueValues(values) {
+  return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
+}
+
 function render() {
   const visible = getVisibleAutomations();
   elements.list.classList.toggle("empty-state", visible.length === 0);
@@ -313,13 +342,28 @@ function createAutomationRow(automation) {
   title.textContent = automation.alias;
   const meta = document.createElement("div");
   meta.className = "automation-meta";
-  meta.textContent = `#${automation.sourceIndex} · ID ${automation.id || "-"} · ${automation.triggerCount} Trigger · ${automation.conditionCount} Conditions · ${automation.actionCount} Actions`;
+  meta.textContent = [
+    `#${automation.sourceIndex}`,
+    `ID ${automation.id || "-"}`,
+    `${automation.triggerCount} Trigger`,
+    `${automation.conditionCount} Conditions`,
+    `${automation.actionCount} Actions`,
+    `Domain ${automation.domains.slice(0, 3).join(", ") || "-"}`,
+  ].join(" · ");
   const tags = document.createElement("div");
   tags.className = "tag-list";
-  for (const value of [...automation.warnings.map(warning => `Hinweis: ${warning}`), ...automation.entities.slice(0, 4), ...automation.services.slice(0, 3)]) {
+  for (const value of [
+    ...automation.warnings.map(warning => `Hinweis: ${warning}`),
+    ...automation.domains.slice(0, 3).map(domain => `Domain: ${domain}`),
+    ...automation.areas.slice(0, 2).map(area => `Bereich: ${area}`),
+    ...automation.devices.slice(0, 2).map(device => `Gerät: ${device}`),
+    ...automation.entities.slice(0, 4),
+    ...automation.services.slice(0, 3),
+  ]) {
     const tag = document.createElement("span");
     tag.className = "tag";
     if (value.startsWith("Hinweis: ")) tag.classList.add("warning");
+    if (value.startsWith("Domain: ") || value.startsWith("Bereich: ") || value.startsWith("Gerät: ")) tag.classList.add("group");
     tag.textContent = value;
     tags.append(tag);
   }
@@ -367,7 +411,17 @@ function renderDetails() {
   const pre = document.createElement("pre");
   pre.className = "yaml-preview";
   pre.innerHTML = highlightYaml(automation.yaml);
-  elements.details.append(title, meta, createTagBlock("Hinweise", automation.warnings, "warning"), createTagBlock("Entitäten", automation.entities), createTagBlock("Services", automation.services), pre);
+  elements.details.append(
+    title,
+    meta,
+    createTagBlock("Hinweise", automation.warnings, "warning"),
+    createTagBlock("Domains", automation.domains),
+    createTagBlock("Bereiche", automation.areas),
+    createTagBlock("Geräte", automation.devices),
+    createTagBlock("Entitäten", automation.entities),
+    createTagBlock("Services", automation.services),
+    pre,
+  );
 }
 
 function createTagBlock(label, values, variant = "") {
@@ -408,15 +462,24 @@ function renderHistory() {
     const row = document.createElement("div");
     row.className = "export-row";
     const name = document.createElement("div");
-    name.innerHTML = `<strong>${escapeHtml(item.filename)}</strong><div class="automation-meta">${escapeHtml(item.status ?? "gespeichert")} · ${escapeHtml(item.path ?? item.folder)} · ${escapeHtml(item.sourceName)}</div>`;
+    const groups = [
+      item.domains?.length ? `Domains: ${item.domains.join(", ")}` : "",
+      item.areas?.length ? `Bereiche: ${item.areas.join(", ")}` : "",
+      item.devices?.length ? `Geräte: ${item.devices.join(", ")}` : "",
+    ].filter(Boolean).join(" · ");
+    name.innerHTML = `<strong>${escapeHtml(item.filename)}</strong><div class="automation-meta">${escapeHtml(item.status ?? "gespeichert")} · ${escapeHtml(item.path ?? item.folder)} · ${escapeHtml(item.sourceName)}</div>${groups ? `<div class="automation-meta">${escapeHtml(groups)}</div>` : ""}`;
+    const actions = document.createElement("div");
+    actions.className = "export-actions";
     const open = document.createElement("a");
     open.className = "ghost-link";
-    const fileStudioUrl = new URL(createAppUrl("plugin-assets/file-studio/index.html"), window.location.href);
-    fileStudioUrl.searchParams.set("theme", currentThemePreference);
-    fileStudioUrl.searchParams.set("language", currentLanguage);
-    open.href = fileStudioUrl.toString();
+    open.href = createFileStudioFileUrl(item.path);
     open.textContent = "In File Studio bearbeiten";
-    row.append(name, open);
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.textContent = "YAML kopieren";
+    copy.addEventListener("click", () => void copyText(item.yaml, `${item.filename}: YAML kopiert.`));
+    actions.append(open, copy);
+    row.append(name, actions);
     elements.history.append(row);
   }
 }
@@ -476,6 +539,12 @@ async function exportSelected() {
         folder,
         sourceName: state.sourceName,
         status: "gespeichert",
+        yaml: automation.yaml,
+        id: automation.id,
+        alias: automation.alias,
+        domains: automation.domains,
+        areas: automation.areas,
+        devices: automation.devices,
       });
     }
     state.exports.unshift(...exported);
@@ -494,6 +563,12 @@ async function exportSelected() {
         folder: "Browser-Download",
         sourceName: state.sourceName,
         status: "download",
+        yaml: automation.yaml,
+        id: automation.id,
+        alias: automation.alias,
+        domains: automation.domains,
+        areas: automation.areas,
+        devices: automation.devices,
       });
     }
     state.exports = state.exports.slice(0, 50);
@@ -513,6 +588,79 @@ function downloadText(filename, content) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+async function copyReturnPlan() {
+  const selected = state.automations.filter(item => state.selectedIds.has(item.localId));
+  if (!selected.length) {
+    setStatus("Keine Automation für die Rückführungs-Vorschau ausgewählt.");
+    return;
+  }
+  const conflicts = findConflicts(selected);
+  const yaml = [
+    "# ATLAS Rückführungs-Vorschau",
+    "# In File Studio prüfen und erst danach in automations.yaml übernehmen.",
+    conflicts.length
+      ? `# Achtung: ${conflicts.length} mögliche Konflikte bei ID oder Alias.`
+      : "# Keine ID-/Alias-Konflikte innerhalb der aktuellen Auswahl erkannt.",
+    "",
+    ...selected.map(automation => automation.yaml.trimEnd().split("\n").map((line, index) => index === 0 ? `- ${line}` : `  ${line}`).join("\n")),
+    "",
+  ].join("\n");
+  await copyText(yaml, `${selected.length} Automation(en) als Rückführungs-YAML kopiert.`);
+}
+
+function previewConflicts() {
+  const selected = state.automations.filter(item => state.selectedIds.has(item.localId));
+  if (!selected.length) {
+    setStatus("Keine Automation für die Konfliktprüfung ausgewählt.");
+    return;
+  }
+  const conflicts = findConflicts(selected);
+  if (!conflicts.length) {
+    setStatus(`Konfliktprüfung: ${selected.length} Automation(en), keine doppelten IDs oder Aliase in der Auswahl.`);
+    return;
+  }
+  const summary = conflicts.slice(0, 5).map(conflict => `${conflict.kind} "${conflict.value}" (${conflict.count}x)`).join("; ");
+  setStatus(`Konfliktprüfung: ${conflicts.length} mögliche Konflikte. ${summary}`);
+}
+
+function findConflicts(automations) {
+  const conflicts = [];
+  const idCounts = countBy(automations.map(item => item.id).filter(Boolean));
+  const aliasCounts = countBy(automations.map(item => item.alias).filter(Boolean).map(value => value.toLowerCase()));
+  for (const [value, count] of idCounts) {
+    if (count > 1) conflicts.push({ kind: "ID", value, count });
+  }
+  for (const [value, count] of aliasCounts) {
+    if (count > 1) conflicts.push({ kind: "Alias", value, count });
+  }
+  return conflicts;
+}
+
+async function copyText(value, successMessage) {
+  try {
+    await navigator.clipboard.writeText(value);
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.className = "copy-fallback";
+    document.body.append(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
+  }
+  setStatus(successMessage);
+}
+
+function createFileStudioFileUrl(path) {
+  const fileStudioUrl = new URL(createAppUrl("plugin-assets/file-studio/index.html"), window.location.href);
+  fileStudioUrl.searchParams.set("theme", currentThemePreference);
+  fileStudioUrl.searchParams.set("language", currentLanguage);
+  if (path && path.startsWith("/config/")) {
+    fileStudioUrl.searchParams.set("path", path);
+  }
+  return fileStudioUrl.toString();
 }
 
 async function ensureExportFolder(folder) {

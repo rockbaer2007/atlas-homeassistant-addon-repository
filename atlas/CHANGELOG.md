@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.142
+
+- Extend the Automation Exporter / Editor export history with direct File
+  Studio file links, YAML copy actions, conflict preview and grouped
+  domain/area/device metadata.
+- Let File Studio open an initial file or folder from a `path` URL parameter.
+- Bump ATLAS File Studio to `0.1.38` and Automation Exporter / Editor to
+  `0.1.10`.
+
 ## 0.1.141
 
 - Clarify the Administration update panel as external plugin repository

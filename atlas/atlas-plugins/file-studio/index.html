@@ -238,6 +238,15 @@
         }
       }
 
+      function readInitialPathFromLocation() {
+        try {
+          const path = new URL(window.location.href).searchParams.get("path");
+          return path?.startsWith("/") ? path : undefined;
+        } catch {
+          return undefined;
+        }
+      }
+
       function applyThemePreference(overridePreference) {
         let preference = overridePreference ?? currentThemePreference;
         try {
@@ -1232,6 +1241,23 @@
           state.tree = catalog.tree;
           renderRootAccessNote(catalog);
           renderDirectoryTree();
+          if (options.initialPath) {
+            const initialNode = findNodeByPath(catalog.tree, options.initialPath);
+            if (initialNode?.type === "file") {
+              openTreePath(initialNode.path);
+              await selectFileFromList(initialNode);
+              status.textContent = `Geöffnet: ${initialNode.path}`;
+              status.classList.remove("warning");
+              return;
+            }
+            if (initialNode?.type === "directory") {
+              openTreePath(initialNode.path);
+              selectFolder(initialNode.path);
+              status.textContent = `Geöffnet: ${initialNode.path}`;
+              status.classList.remove("warning");
+              return;
+            }
+          }
           const nextFolderPath = options.preserveSelection === false
             ? catalog.tree.path
             : findNodeByPath(catalog.tree, previousFolderPath)?.path ?? catalog.tree.path;
@@ -2317,7 +2343,7 @@
       updateEditorActions();
       updateCursorStatus();
       void refreshTrashButton();
-      void loadDirectoryTree();
+      void loadDirectoryTree({ initialPath: readInitialPathFromLocation() });
       window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener("change", applyThemePreference);
     </script>
   </body>
