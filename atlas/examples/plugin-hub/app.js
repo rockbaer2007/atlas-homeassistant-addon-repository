@@ -7,7 +7,6 @@ const closeSidebarDialog = document.querySelector("#close-sidebar-dialog");
 const languageButtons = Array.from(document.querySelectorAll("[data-language]"));
 const surfaceLinks = Array.from(document.querySelectorAll(".hub-actions a[href]"));
 const atlasThemeStorageKey = "atlas.themePreference";
-const hubLanguageStorageKey = "atlas.pluginHub.language";
 const FileStudioPluginId = "atlas.plugin.file-studio";
 const HomeAssistantCardEditorPluginId = "atlas.plugin.homeassistant-card-editor";
 const AutomationExporterPluginId = "atlas.plugin.automation-exporter-editor";
@@ -108,7 +107,11 @@ loadPlugins();
 
 function readStoredLanguage() {
   try {
-    return localStorage.getItem(hubLanguageStorageKey) === "en" ? "en" : "de";
+    const urlLanguage = new URL(window.location.href).searchParams.get("language");
+    if (urlLanguage === "de" || urlLanguage === "en") {
+      return urlLanguage;
+    }
+    return sessionStorage.getItem("atlas.pluginHub.sessionLanguage") === "en" ? "en" : "de";
   } catch {
     return "de";
   }
@@ -151,7 +154,7 @@ function applyLanguage() {
 function setLanguage(language) {
   currentLanguage = language === "en" ? "en" : "de";
   try {
-    localStorage.setItem(hubLanguageStorageKey, currentLanguage);
+    sessionStorage.setItem("atlas.pluginHub.sessionLanguage", currentLanguage);
   } catch {
     // Ignore storage failures in restricted browser contexts.
   }
@@ -207,6 +210,7 @@ function bindSurfaceLinks(preference) {
     try {
       const url = new URL(createAppUrl(link.getAttribute("href")), window.location.href);
       url.searchParams.set("theme", preference);
+      url.searchParams.set("language", currentLanguage);
       link.href = url.toString();
     } catch {
       // Keep the static link if URL construction is unavailable.
@@ -259,15 +263,15 @@ function normalizeAtlasAppUrl(value) {
 
 function createPluginActionUrl(entryUrl, fallbackPath = "") {
   if (typeof entryUrl !== "string" || !entryUrl.trim()) {
-    return fallbackPath ? createAppUrl(fallbackPath) : "";
+    return fallbackPath ? appendHubStateSearch(createAppUrl(fallbackPath)) : "";
   }
 
-  return normalizeAtlasAppUrl(entryUrl) || createAppUrl(entryUrl);
+  return appendHubStateSearch(normalizeAtlasAppUrl(entryUrl) || createAppUrl(entryUrl));
 }
 
 function createPluginLaunchUrl(plugin) {
   if (plugin?.id === HomeAssistantCardEditorPluginId) {
-    return createAppUrl("editor");
+    return appendHubStateSearch(createAppUrl("editor"));
   }
   return createPluginActionUrl(plugin?.entryUrl, createKnownPluginEntryPath(plugin));
 }
@@ -275,10 +279,25 @@ function createPluginLaunchUrl(plugin) {
 function createPluginMediaUrl(plugin) {
   const mediaUrl = plugin?.iconUrl || plugin?.logoUrl || plugin?.previewUrl;
   if (typeof mediaUrl !== "string" || !mediaUrl.trim()) {
-    return createKnownPluginAssetPath(plugin, "icon.svg");
+    return appendHubStateSearch(createKnownPluginAssetPath(plugin, "icon.svg"));
   }
 
-  return normalizeAtlasAppUrl(mediaUrl) || createAppUrl(mediaUrl);
+  return appendHubStateSearch(normalizeAtlasAppUrl(mediaUrl) || createAppUrl(mediaUrl));
+}
+
+function appendHubStateSearch(value) {
+  if (!value) return "";
+  try {
+    const url = new URL(value, window.location.href);
+    const theme = new URL(window.location.href).searchParams.get("theme");
+    if (theme) {
+      url.searchParams.set("theme", theme);
+    }
+    url.searchParams.set("language", currentLanguage);
+    return url.toString();
+  } catch {
+    return value;
+  }
 }
 
 async function loadPlugins() {
@@ -542,7 +561,7 @@ function translatePluginStatus(status) {
 
 function createPluginSidebarUrl(plugin) {
   if (plugin?.id === HomeAssistantCardEditorPluginId) {
-    return createAppUrl("editor");
+    return appendHubStateSearch(createAppUrl("editor"));
   }
   return createPluginActionUrl(plugin?.entryUrl, createKnownPluginEntryPath(plugin));
 }

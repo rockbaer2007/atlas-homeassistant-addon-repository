@@ -218,6 +218,15 @@
         }
       }
 
+      function readLanguageFromLocation() {
+        try {
+          const language = new URL(window.location.href).searchParams.get("language");
+          return language === "de" || language === "en" ? language : "de";
+        } catch {
+          return "de";
+        }
+      }
+
       function applyThemePreference() {
         let preference = readThemePreferenceFromLocation() ?? "auto";
         try {
@@ -235,6 +244,7 @@
             : "light";
         document.documentElement.dataset.theme = resolvedTheme;
         document.documentElement.dataset.themePreference = preference;
+        document.documentElement.lang = readLanguageFromLocation();
         state.editor?.refreshTheme?.();
         bindHubLinks(preference);
       }
@@ -2234,6 +2244,7 @@
         for (const link of document.querySelectorAll("[data-open-hub]")) {
           const url = new URL(createAppUrl("hub"), window.location.href);
           url.searchParams.set("theme", preference);
+          url.searchParams.set("language", readLanguageFromLocation());
           link.href = url.toString();
         }
       }

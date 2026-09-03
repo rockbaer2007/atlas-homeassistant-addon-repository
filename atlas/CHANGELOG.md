@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.136
+
+- Pass the Administration language to the Hub, Card Editor and local plugins
+  while keeping plugin language changes temporary for the current surface.
+- Show the Automation Exporter / Editor in Administration as a bundled local
+  ATLAS plugin.
+
 ## 0.1.135
 
 - Rewrite Hub plugin icons and launch URLs onto the active ATLAS/Ingress base

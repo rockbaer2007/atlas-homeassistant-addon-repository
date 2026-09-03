@@ -173,18 +173,52 @@ const editorOrigin = createPortOrigin(4174);
 const appRuntimeApiUrl = createAppRuntimeApiUrl();
 const longTermCookieMaxAge = 31536000;
 const pluginCatalog = new RuntimePluginCatalog();
+const AutomationExporterPluginId = "atlas.plugin.automation-exporter-editor";
 pluginCatalog.register(createHomeAssistantCardEditorPlugin());
 pluginCatalog.register(createFileStudioPlugin());
+pluginCatalog.register({
+  manifest: {
+    id: AutomationExporterPluginId,
+    name: "ATLAS Automation Exporter / Editor",
+    nameI18n: {
+      de: "ATLAS Automation Exporter / Editor",
+      en: "ATLAS Automation Exporter / Editor",
+    },
+    version: "0.1.6",
+    description: "Analyze Home Assistant automations, export selected entries and continue editing them through File Studio.",
+    descriptionI18n: {
+      de: "Home-Assistant-Automationen analysieren, ausgewaehlte Eintraege exportieren und ueber File Studio weiter bearbeiten.",
+      en: "Analyze Home Assistant automations, export selected entries and continue editing them through File Studio.",
+    },
+    icon: "icon.svg",
+    preview: "preview.svg",
+    extensionPoints: ["homeassistant.automation"],
+    provides: [
+      "homeassistant.automation-analysis",
+      "homeassistant.automation-export",
+      "atlas.yaml-upload",
+      "atlas.file-studio-handoff",
+      "atlas.scoped-filesystem",
+    ],
+  },
+  async activate() {},
+});
 const bundledPluginIds = new Set(pluginCatalog.list().map(plugin => plugin.id));
 const localPluginAssetDirectories = {
   [HomeAssistantCardEditorPluginId]: "homeassistant-card-editor",
   [FileStudioPluginId]: "file-studio",
+  [AutomationExporterPluginId]: "automation-exporter-editor",
   "atlas.plugin.simple-editor": "simple-editor",
 };
+const defaultActivePluginIds = [
+  HomeAssistantCardEditorPluginId,
+  FileStudioPluginId,
+  AutomationExporterPluginId,
+];
 
 let currentLanguage = "en";
 let currentThemePreference = "auto";
-let activePluginIds = new Set([HomeAssistantCardEditorPluginId]);
+let activePluginIds = new Set(defaultActivePluginIds);
 let importedPluginDescriptors = [];
 let pluginRepositories = [];
 let repositoryPluginDescriptors = [];
@@ -674,6 +708,15 @@ function readThemePreferenceFromLocation() {
   try {
     const preference = new URL(window.location.href).searchParams.get("theme");
     return ["auto", "light", "dark"].includes(preference) ? preference : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function readLanguageFromLocation() {
+  try {
+    const language = new URL(window.location.href).searchParams.get("language");
+    return language === "de" || language === "en" ? language : undefined;
   } catch {
     return undefined;
   }
@@ -1319,7 +1362,10 @@ function restoreConfiguration() {
   try {
     const saved = JSON.parse(localStorage.getItem(adminStorageKey) ?? "null");
     let migratedConfiguration = false;
-    if (saved?.language === "de" || saved?.language === "en") {
+    const urlLanguage = readLanguageFromLocation();
+    if (urlLanguage) {
+      currentLanguage = urlLanguage;
+    } else if (saved?.language === "de" || saved?.language === "en") {
       currentLanguage = saved.language;
     }
     restoreThemePreference(saved?.themePreference);
@@ -2429,9 +2475,12 @@ function restorePluginState() {
     const savedPluginIds = Array.isArray(saved?.activePluginIds)
       ? saved.activePluginIds.filter(pluginId => typeof pluginId === "string")
       : undefined;
-    activePluginIds = new Set(savedPluginIds ?? [HomeAssistantCardEditorPluginId]);
+    activePluginIds = new Set(savedPluginIds ?? defaultActivePluginIds);
+    for (const pluginId of defaultActivePluginIds) {
+      activePluginIds.add(pluginId);
+    }
   } catch {
-    activePluginIds = new Set([HomeAssistantCardEditorPluginId]);
+    activePluginIds = new Set(defaultActivePluginIds);
     localStorage.removeItem(adminPluginStateStorageKey);
   }
 }
@@ -2808,6 +2857,7 @@ function createEditorNavigationUrl() {
   const search = new URLSearchParams();
   search.set("atlasAdminHandoff", "1");
   search.set("theme", currentThemePreference);
+  search.set("language", currentLanguage);
   return createPortNavigationUrl(4174, "/", search.toString(), `${editorOrigin}/?${search.toString()}`);
 }
 
@@ -2823,6 +2873,12 @@ function createPluginNavigationUrl(plugin) {
   if (plugin.id === HomeAssistantCardEditorPluginId || entry === "editor") {
     return createEditorNavigationUrl();
   }
+  if (plugin.id === FileStudioPluginId) {
+    return appendThemeSearch(createAppRouteNavigationUrl("/plugin-assets/file-studio/index.html"));
+  }
+  if (plugin.id === AutomationExporterPluginId) {
+    return appendThemeSearch(createAppRouteNavigationUrl("/plugin-assets/automation-exporter-editor/index.html"));
+  }
   if (entry === "admin") {
     return appendThemeSearch(lastAppRuntime?.urls?.admin) || createPortNavigationUrl(4175, "/", createThemeSearch());
   }
@@ -2837,6 +2893,7 @@ function createPluginNavigationUrl(plugin) {
     appUrl.hash = "";
     const pluginUrl = new URL(entry.replace(/^\/+/, ""), appUrl);
     pluginUrl.searchParams.set("theme", currentThemePreference);
+    pluginUrl.searchParams.set("language", currentLanguage);
     return pluginUrl.toString();
   } catch {
     return "";
@@ -2980,6 +3037,7 @@ function escapeYamlDoubleQuotedString(value) {
 function createThemeSearch() {
   const search = new URLSearchParams();
   search.set("theme", currentThemePreference);
+  search.set("language", currentLanguage);
   return search.toString();
 }
 
@@ -2988,6 +3046,7 @@ function appendThemeSearch(value) {
   try {
     const url = new URL(value, window.location.href);
     url.searchParams.set("theme", currentThemePreference);
+    url.searchParams.set("language", currentLanguage);
     return url.toString();
   } catch {
     return value;

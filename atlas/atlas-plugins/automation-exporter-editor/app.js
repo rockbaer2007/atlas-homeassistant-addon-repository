@@ -42,6 +42,15 @@ function createAppUrl(path) {
   }
 }
 
+function readLanguageFromLocation() {
+  try {
+    const language = new URL(window.location.href).searchParams.get("language");
+    return language === "de" || language === "en" ? language : "de";
+  } catch {
+    return "de";
+  }
+}
+
 function bindHubLinks() {
   for (const link of document.querySelectorAll("[data-open-hub]")) {
     const url = new URL(createAppUrl("hub"), window.location.href);
@@ -49,9 +58,12 @@ function bindHubLinks() {
     if (theme) {
       url.searchParams.set("theme", theme);
     }
+    url.searchParams.set("language", readLanguageFromLocation());
     link.href = url.toString();
   }
 }
+
+document.documentElement.lang = readLanguageFromLocation();
 
 const demoYaml = `- id: atlas_demo_light
   alias: Licht Kueche Abend

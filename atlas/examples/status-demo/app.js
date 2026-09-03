@@ -1211,7 +1211,6 @@ function setLanguage(language) {
   renderConnectionReadiness();
   renderCardTranslationModuleStatus();
   renderTemporaryHaCardResourceList();
-  persistConfiguration();
 }
 
 function normalizeThemePreference(value) {
@@ -1222,6 +1221,15 @@ function readThemePreferenceFromLocation() {
   try {
     const preference = new URL(window.location.href).searchParams.get("theme");
     return ["auto", "light", "dark"].includes(preference) ? preference : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function readLanguageFromLocation() {
+  try {
+    const language = new URL(window.location.href).searchParams.get("language");
+    return language === "de" || language === "en" ? language : undefined;
   } catch {
     return undefined;
   }
@@ -1489,7 +1497,10 @@ restoreThemePreference();
 
 try {
   const savedConfiguration = JSON.parse(localStorage.getItem(configurationStorageKey) ?? "null");
-  if (savedConfiguration?.language === "de" || savedConfiguration?.language === "en") {
+  const urlLanguage = readLanguageFromLocation();
+  if (urlLanguage) {
+    currentLanguage = urlLanguage;
+  } else if (savedConfiguration?.language === "de" || savedConfiguration?.language === "en") {
     currentLanguage = savedConfiguration.language;
   }
   restoreThemePreference(savedConfiguration?.themePreference);
@@ -1991,6 +2002,7 @@ function createHubNavigationUrl() {
 function createThemeSearch() {
   const search = new URLSearchParams();
   search.set("theme", currentThemePreference);
+  search.set("language", currentLanguage);
   return search.toString();
 }
 
@@ -2140,7 +2152,6 @@ function scheduleReconnect() {
 function persistConfiguration() {
   try {
     localStorage.setItem(configurationStorageKey, JSON.stringify({
-      language: currentLanguage,
       themePreference: currentThemePreference,
       url: homeAssistantUrl.value,
       entities: homeAssistantEntity.value,
