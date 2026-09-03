@@ -17,6 +17,7 @@ const elements = {
   selectNone: document.querySelector("#select-none"),
   exportSelected: document.querySelector("#export-selected"),
   copyReturnPlan: document.querySelector("#copy-return-plan"),
+  writeBackSelected: document.querySelector("#write-back-selected"),
   previewConflicts: document.querySelector("#preview-conflicts"),
   clearHistory: document.querySelector("#clear-history"),
   list: document.querySelector("#automation-list"),
@@ -134,6 +135,7 @@ elements.selectNone.addEventListener("click", () => {
 });
 elements.exportSelected.addEventListener("click", () => void exportSelected());
 elements.copyReturnPlan.addEventListener("click", () => void copyReturnPlan());
+elements.writeBackSelected.addEventListener("click", () => void writeBackSelected());
 elements.previewConflicts.addEventListener("click", previewConflicts);
 elements.clearHistory.addEventListener("click", () => {
   state.exports = [];
@@ -284,7 +286,11 @@ function countBy(values) {
 }
 
 function normalizeAutomationYaml(block) {
-  return block.replace(/^\s*-\s*/, "").replace(/^\s*id:\s*.*\n?/m, "").trimStart() + "\n";
+  const lines = block.replace(/\r\n/g, "\n").replace(/^\s*-\s*/, "").split("\n");
+  return lines
+    .map((line, index) => index === 0 ? line : line.replace(/^\s{2}/, ""))
+    .join("\n")
+    .trimStart() + "\n";
 }
 
 function uniqueMatches(text, regex) {
@@ -610,6 +616,41 @@ async function copyReturnPlan() {
   await copyText(yaml, `${selected.length} Automation(en) als Rückführungs-YAML kopiert.`);
 }
 
+async function writeBackSelected() {
+  const selected = state.automations.filter(item => state.selectedIds.has(item.localId));
+  if (!selected.length) {
+    setStatus("Keine Automation für die Rückschreibung ausgewählt.");
+    return;
+  }
+  const confirmed = window.confirm([
+    `${selected.length} Automation(en) nach /config/automations.yaml zurückschreiben?`,
+    "",
+    "ATLAS erstellt vorher automatisch ein Backup unter /config/atlas_backups/automations.",
+  ].join("\n"));
+  if (!confirmed) {
+    setStatus("Rückschreibung abgebrochen.");
+    return;
+  }
+
+  const timestamp = createTimestamp(new Date());
+  elements.writeBackSelected.disabled = true;
+  setStatus("Lese /config/automations.yaml für Rückschreibung ...");
+  try {
+    const current = await readFileContent("/config/automations.yaml");
+    await ensureExportFolder("/config/atlas_backups/automations");
+    const backupName = `automations_${timestamp}.yaml`;
+    await writeFile("/config/atlas_backups/automations", backupName, current.content, false);
+
+    const merged = mergeAutomationYaml(current.content, selected);
+    await writeFile("/config", "automations.yaml", merged.content, true);
+    setStatus(`${selected.length} Automation(en) zurückgeschrieben. Backup: /config/atlas_backups/automations/${backupName}. Ersetzt: ${merged.replaced}, neu: ${merged.added}.`);
+  } catch (error) {
+    setStatus(`Rückschreibung fehlgeschlagen: ${describeExportError(error)}`);
+  } finally {
+    elements.writeBackSelected.disabled = false;
+  }
+}
+
 function previewConflicts() {
   const selected = state.automations.filter(item => state.selectedIds.has(item.localId));
   if (!selected.length) {
@@ -691,15 +732,81 @@ async function ensureExportFolder(folder) {
 }
 
 async function writeExportFile(folder, filename, content) {
+  return writeFile(folder, filename, content, false);
+}
+
+async function writeFile(folder, filename, content, overwrite) {
   return apiJson("api/file-studio/upload", {
     method: "POST",
     body: JSON.stringify({
       parentPath: folder,
       name: filename,
       contentBase64: encodeBase64Utf8(content),
-      overwrite: false,
+      overwrite,
     }),
   });
+}
+
+async function readFileContent(path) {
+  const url = new URL(createAppUrl("api/file-studio/file"), window.location.href);
+  url.searchParams.set("path", path);
+  const response = await fetch(url.toString(), { cache: "no-store" });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(body.error ?? body.message ?? `HTTP ${response.status}`);
+  }
+  return {
+    path: body.path || path,
+    content: typeof body.content === "string" ? body.content : "",
+  };
+}
+
+function mergeAutomationYaml(currentContent, selectedAutomations) {
+  const existingBlocks = splitAutomationBlocks(currentContent);
+  const entries = existingBlocks.map(block => ({
+    block: normalizeAutomationYaml(block).trimEnd(),
+    id: readYamlValue(block, "id"),
+    alias: readYamlValue(block, "alias").toLowerCase(),
+    replaced: false,
+  }));
+  let replaced = 0;
+  let added = 0;
+
+  for (const automation of selectedAutomations) {
+    const nextBlock = automation.yaml.trimEnd();
+    const matchIndex = entries.findIndex(entry => {
+      if (automation.id && entry.id === automation.id) return true;
+      return Boolean(automation.alias && entry.alias === automation.alias.toLowerCase());
+    });
+    if (matchIndex >= 0) {
+      entries[matchIndex] = {
+        block: nextBlock,
+        id: automation.id,
+        alias: automation.alias.toLowerCase(),
+        replaced: true,
+      };
+      replaced += 1;
+    } else {
+      entries.push({
+        block: nextBlock,
+        id: automation.id,
+        alias: automation.alias.toLowerCase(),
+        replaced: false,
+      });
+      added += 1;
+    }
+  }
+
+  return {
+    content: `${entries.map(entry => formatAutomationListItem(entry.block)).join("\n\n")}\n`,
+    replaced,
+    added,
+  };
+}
+
+function formatAutomationListItem(block) {
+  const lines = block.trimEnd().split("\n");
+  return lines.map((line, index) => index === 0 ? `- ${line}` : `  ${line}`).join("\n");
 }
 
 async function apiJson(path, options = {}) {

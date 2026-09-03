@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.143
+
+- Add Automation Exporter / Editor write-back for selected automations into
+  `/config/automations.yaml`.
+- Create a timestamped backup under `/config/atlas_backups/automations` before
+  every write-back.
+- Merge selected automations by ID or alias instead of blindly appending them.
+- Bump Automation Exporter / Editor to `0.1.11`.
+
 ## 0.1.142
 
 - Extend the Automation Exporter / Editor export history with direct File
