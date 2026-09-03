@@ -2506,7 +2506,7 @@ function resolvePluginDisplayAssetUrl(plugin, kind) {
     return "";
   }
 
-  return `/atlas-plugins/${encodeURIComponent(directory)}/${assetPath}`;
+  return createAppRouteNavigationUrl(`/plugin-assets/${encodeURIComponent(directory)}/${assetPath}`);
 }
 
 function isImportedPlugin(pluginId) {

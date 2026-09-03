@@ -6,7 +6,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "build": "node scripts/build-file-studio-editor.mjs && pnpm -r build",
+    "build": "pnpm -r build && node scripts/build-file-studio-editor.mjs",
     "check": "pnpm -r check",
     "test": "pnpm -r test",
     "start:app": "node scripts/atlas-app-server.mjs",

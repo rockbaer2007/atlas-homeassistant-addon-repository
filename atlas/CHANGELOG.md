@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.133
+
+- Serve extensionless browser module imports with a `.js` fallback so package
+  re-exports load in Administration, Card Editor and Home Assistant Ingress.
+- Ship Administration and Card Editor as browser bundles to avoid raw package
+  re-export resolution issues in Home Assistant browsers.
+
+## 0.1.132
+
+- Prefix Admin and Card Editor import-map module paths with `./` so browsers
+  accept them under light, dark and Home Assistant Ingress routes.
+
 ## 0.1.131
 
 - Make Administration and Card Editor import maps plus module scripts relative

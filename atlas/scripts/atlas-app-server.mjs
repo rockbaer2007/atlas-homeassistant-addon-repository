@@ -2506,14 +2506,41 @@ function serveStaticPath(response, pathname, baseDirectory = root) {
 }
 
 function serveStaticFile(response, filePath, baseDirectory = root) {
-  if (!filePath.startsWith(baseDirectory) || !existsSync(filePath) || statSync(filePath).isDirectory()) {
+  const resolvedFilePath = resolveBrowserModuleFilePath(filePath, baseDirectory);
+  if (!resolvedFilePath) {
     writeEmptyResponse(response, 404);
     return;
   }
 
   response.writeHead(200, {
-    "content-type": mimeTypes[extname(filePath)] ?? "application/octet-stream",
+    "content-type": mimeTypes[extname(resolvedFilePath)] ?? "application/octet-stream",
     "cache-control": "no-store",
   });
-  createReadStream(filePath).pipe(response);
+  createReadStream(resolvedFilePath).pipe(response);
+}
+
+function resolveBrowserModuleFilePath(filePath, baseDirectory) {
+  if (!filePath.startsWith(baseDirectory)) {
+    return "";
+  }
+  if (existsSync(filePath) && !statSync(filePath).isDirectory()) {
+    return filePath;
+  }
+  if (extname(filePath)) {
+    return "";
+  }
+  const javascriptFilePath = `${filePath}.js`;
+  if (
+    javascriptFilePath.startsWith(baseDirectory)
+    && existsSync(javascriptFilePath)
+    && !statSync(javascriptFilePath).isDirectory()
+  ) {
+    return javascriptFilePath;
+  }
+  const indexFilePath = resolve(filePath, "index.js");
+  return indexFilePath.startsWith(baseDirectory)
+    && existsSync(indexFilePath)
+    && !statSync(indexFilePath).isDirectory()
+    ? indexFilePath
+    : "";
 }
