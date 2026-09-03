@@ -14,7 +14,16 @@
           <h1>Automation Exporter / Editor</h1>
         </div>
         <div class="header-actions">
-          <a class="ghost-link" href="/plugin-assets/file-studio/index.html">File Studio</a>
+          <div class="segmented-control theme-toggle" aria-label="Theme">
+            <button type="button" data-theme-mode="auto">Auto</button>
+            <button type="button" data-theme-mode="light">Light</button>
+            <button type="button" data-theme-mode="dark">Dark</button>
+          </div>
+          <div class="segmented-control language-toggle" aria-label="Sprache">
+            <button type="button" data-language="de">DE</button>
+            <button type="button" data-language="en">EN</button>
+          </div>
+          <a class="ghost-link" href="/plugin-assets/file-studio/index.html" data-open-file-studio>File Studio</a>
           <a class="ghost-link" href="hub" data-open-hub>Plugin Hub</a>
         </div>
       </header>

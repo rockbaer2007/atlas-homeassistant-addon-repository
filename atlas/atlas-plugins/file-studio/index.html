@@ -15,6 +15,15 @@
           <p>Dateibaum, Editor, YAML-Prüfung und Transfer für freigegebene Home-Assistant-Pfade.</p>
         </div>
         <div class="header-actions">
+          <div class="segmented-control theme-toggle" aria-label="Theme">
+            <button type="button" data-theme-mode="auto">Auto</button>
+            <button type="button" data-theme-mode="light">Light</button>
+            <button type="button" data-theme-mode="dark">Dark</button>
+          </div>
+          <div class="segmented-control language-toggle" aria-label="Sprache">
+            <button type="button" data-language="de">DE</button>
+            <button type="button" data-language="en">EN</button>
+          </div>
           <button id="height-limit-toggle" class="button toggle-button" type="button" aria-pressed="true">
             Max. Höhe begrenzen
           </button>
@@ -208,6 +217,8 @@
       };
       const imagePreviewExtensions = new Set(["png", "jpg", "jpeg", "svg", "gif", "webp", "bmp", "ico"]);
       const archivePreviewExtensions = new Set(["zip"]);
+      let currentLanguage = readLanguageFromLocation();
+      let currentThemePreference = readThemePreferenceFromLocation() ?? "auto";
 
       function readThemePreferenceFromLocation() {
         try {
@@ -227,16 +238,17 @@
         }
       }
 
-      function applyThemePreference() {
-        let preference = readThemePreferenceFromLocation() ?? "auto";
+      function applyThemePreference(overridePreference) {
+        let preference = overridePreference ?? currentThemePreference;
         try {
-          preference = readThemePreferenceFromLocation() ?? localStorage.getItem(atlasThemeStorageKey) ?? "auto";
+          preference = overridePreference ?? readThemePreferenceFromLocation() ?? currentThemePreference ?? localStorage.getItem(atlasThemeStorageKey) ?? "auto";
         } catch {
-          preference = readThemePreferenceFromLocation() ?? "auto";
+          preference = overridePreference ?? readThemePreferenceFromLocation() ?? currentThemePreference ?? "auto";
         }
         if (!["auto", "light", "dark"].includes(preference)) {
           preference = "auto";
         }
+        currentThemePreference = preference;
         const resolvedTheme = preference === "auto" && window.matchMedia?.("(prefers-color-scheme: dark)").matches
           ? "dark"
           : preference === "dark"
@@ -244,9 +256,39 @@
             : "light";
         document.documentElement.dataset.theme = resolvedTheme;
         document.documentElement.dataset.themePreference = preference;
-        document.documentElement.lang = readLanguageFromLocation();
+        document.documentElement.lang = currentLanguage;
+        updateChromeControls();
+        updateLocationState();
         state.editor?.refreshTheme?.();
         bindHubLinks(preference);
+      }
+
+      function applyLanguagePreference(language = currentLanguage) {
+        currentLanguage = language === "en" ? "en" : "de";
+        document.documentElement.lang = currentLanguage;
+        updateChromeControls();
+        updateLocationState();
+        bindHubLinks(currentThemePreference);
+      }
+
+      function updateChromeControls() {
+        for (const button of document.querySelectorAll("[data-theme-mode]")) {
+          button.setAttribute("aria-pressed", String(button.dataset.themeMode === currentThemePreference));
+        }
+        for (const button of document.querySelectorAll("[data-language]")) {
+          button.setAttribute("aria-pressed", String(button.dataset.language === currentLanguage));
+        }
+      }
+
+      function updateLocationState() {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set("theme", currentThemePreference);
+          url.searchParams.set("language", currentLanguage);
+          window.history.replaceState(null, "", url.toString());
+        } catch {
+          // Embedded Home Assistant URLs cannot always be rewritten.
+        }
       }
 
       function extensionLabel(node) {
@@ -2244,7 +2286,7 @@
         for (const link of document.querySelectorAll("[data-open-hub]")) {
           const url = new URL(createAppUrl("hub"), window.location.href);
           url.searchParams.set("theme", preference);
-          url.searchParams.set("language", readLanguageFromLocation());
+          url.searchParams.set("language", currentLanguage);
           link.href = url.toString();
         }
       }
@@ -2264,6 +2306,14 @@
       bindTreeActions();
       bindDropUpload();
       bindSplitters();
+      for (const button of document.querySelectorAll("[data-theme-mode]")) {
+        button.addEventListener("click", () => {
+          applyThemePreference(button.dataset.themeMode);
+        });
+      }
+      for (const button of document.querySelectorAll("[data-language]")) {
+        button.addEventListener("click", () => applyLanguagePreference(button.dataset.language));
+      }
       updateEditorActions();
       updateCursorStatus();
       void refreshTrashButton();

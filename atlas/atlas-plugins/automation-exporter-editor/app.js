@@ -27,6 +27,9 @@ const elements = {
   countWarnings: document.querySelector("#count-warnings"),
 };
 
+let currentLanguage = readLanguageFromLocation();
+let currentThemePreference = readThemePreferenceFromLocation() ?? "auto";
+
 function createAppUrl(path) {
   try {
     const baseUrl = new URL(window.location.href);
@@ -42,6 +45,15 @@ function createAppUrl(path) {
   }
 }
 
+function readThemePreferenceFromLocation() {
+  try {
+    const preference = new URL(window.location.href).searchParams.get("theme");
+    return ["auto", "light", "dark"].includes(preference) ? preference : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function readLanguageFromLocation() {
   try {
     const language = new URL(window.location.href).searchParams.get("language");
@@ -54,40 +66,60 @@ function readLanguageFromLocation() {
 function bindHubLinks() {
   for (const link of document.querySelectorAll("[data-open-hub]")) {
     const url = new URL(createAppUrl("hub"), window.location.href);
-    const theme = new URL(window.location.href).searchParams.get("theme");
-    if (theme) {
-      url.searchParams.set("theme", theme);
-    }
-    url.searchParams.set("language", readLanguageFromLocation());
+    url.searchParams.set("theme", currentThemePreference);
+    url.searchParams.set("language", currentLanguage);
+    link.href = url.toString();
+  }
+
+  for (const link of document.querySelectorAll("[data-open-file-studio]")) {
+    const url = new URL(createAppUrl("plugin-assets/file-studio/index.html"), window.location.href);
+    url.searchParams.set("theme", currentThemePreference);
+    url.searchParams.set("language", currentLanguage);
     link.href = url.toString();
   }
 }
 
-document.documentElement.lang = readLanguageFromLocation();
+function applyThemePreference(preference = currentThemePreference) {
+  currentThemePreference = ["auto", "light", "dark"].includes(preference) ? preference : "auto";
+  const resolvedTheme = currentThemePreference === "auto" && window.matchMedia?.("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : currentThemePreference === "dark"
+      ? "dark"
+      : "light";
+  document.documentElement.dataset.theme = resolvedTheme;
+  document.documentElement.dataset.themePreference = currentThemePreference;
+  updateChromeControls();
+  updateLocationState();
+  bindHubLinks();
+}
 
-const demoYaml = `- id: atlas_demo_light
-  alias: Licht Kueche Abend
-  trigger:
-    - platform: state
-      entity_id: binary_sensor.kueche_bewegung
-      to: "on"
-  action:
-    - service: light.turn_on
-      target:
-        entity_id: light.kueche
+function applyLanguage(language = currentLanguage) {
+  currentLanguage = language === "en" ? "en" : "de";
+  document.documentElement.lang = currentLanguage;
+  updateChromeControls();
+  updateLocationState();
+  bindHubLinks();
+}
 
-- id: atlas_demo_heating
-  alias: Heizung Eco Nacht
-  trigger:
-    - platform: time
-      at: "22:30:00"
-  action:
-    - service: climate.set_preset_mode
-      target:
-        entity_id: climate.wohnzimmer
-      data:
-        preset_mode: eco
-`;
+function updateChromeControls() {
+  for (const button of document.querySelectorAll("[data-theme-mode]")) {
+    button.setAttribute("aria-pressed", String(button.dataset.themeMode === currentThemePreference));
+  }
+  for (const button of document.querySelectorAll("[data-language]")) {
+    button.setAttribute("aria-pressed", String(button.dataset.language === currentLanguage));
+  }
+}
+
+function updateLocationState() {
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set("theme", currentThemePreference);
+    url.searchParams.set("language", currentLanguage);
+    window.history.replaceState(null, "", url.toString());
+  } catch {
+    // The current URL cannot be rewritten in every embedded browser mode.
+  }
+}
 
 elements.loadSystem.addEventListener("click", loadSystemAutomations);
 elements.upload.addEventListener("change", handleUpload);
@@ -104,29 +136,42 @@ elements.clearHistory.addEventListener("click", () => {
   renderHistory();
 });
 
-bindHubLinks();
-analyzeSource("Beispiel", demoYaml);
+for (const button of document.querySelectorAll("[data-theme-mode]")) {
+  button.addEventListener("click", () => applyThemePreference(button.dataset.themeMode));
+}
+for (const button of document.querySelectorAll("[data-language]")) {
+  button.addEventListener("click", () => applyLanguage(button.dataset.language));
+}
+window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener("change", () => {
+  if (currentThemePreference === "auto") {
+    applyThemePreference("auto");
+  }
+});
+
+applyLanguage(currentLanguage);
+applyThemePreference(currentThemePreference);
+setStatus("Bereit. Lade die echte /config/automations.yaml oder lade eine fremde YAML hoch.");
 
 async function loadSystemAutomations() {
   setStatus("Lese /config/automations.yaml ...");
-  const candidates = ["/automations.yaml", "/config/automations.yaml"];
-  for (const path of candidates) {
-    try {
-      const response = await fetch(`/api/file-studio/file?path=${encodeURIComponent(path)}`);
-      if (!response.ok) {
-        continue;
-      }
-      const payload = await response.json();
-      const content = typeof payload.content === "string" ? payload.content : "";
-      if (content.trim()) {
-        analyzeSource("/config/automations.yaml", content);
-        return;
-      }
-    } catch {
-      // Try the next candidate, then fall back to the visible message below.
+  try {
+    const url = new URL(createAppUrl("api/file-studio/file"), window.location.href);
+    url.searchParams.set("path", "/config/automations.yaml");
+    const response = await fetch(url.toString(), { cache: "no-store" });
+    if (!response.ok) {
+      setStatus("/config/automations.yaml ist nicht lesbar. Bitte /config freigeben oder YAML hochladen.");
+      return;
     }
+    const payload = await response.json();
+    const content = typeof payload.content === "string" ? payload.content : "";
+    if (!content.trim()) {
+      setStatus("/config/automations.yaml ist leer.");
+      return;
+    }
+    analyzeSource(payload.path || "/config/automations.yaml", content);
+  } catch {
+    setStatus("/config/automations.yaml konnte nicht geladen werden. Bitte File-Studio-Zugriff pruefen oder YAML hochladen.");
   }
-  setStatus("Systemdatei nicht lesbar. Bitte ueber File Studio /config freigeben oder YAML hochladen.");
 }
 
 async function handleUpload(event) {
@@ -366,7 +411,10 @@ function renderHistory() {
     name.innerHTML = `<strong>${escapeHtml(item.filename)}</strong><div class="automation-meta">${escapeHtml(item.folder)} · ${escapeHtml(item.sourceName)}</div>`;
     const open = document.createElement("a");
     open.className = "ghost-link";
-    open.href = "/plugin-assets/file-studio/index.html";
+    const fileStudioUrl = new URL(createAppUrl("plugin-assets/file-studio/index.html"), window.location.href);
+    fileStudioUrl.searchParams.set("theme", currentThemePreference);
+    fileStudioUrl.searchParams.set("language", currentLanguage);
+    open.href = fileStudioUrl.toString();
     open.textContent = "In File Studio bearbeiten";
     row.append(name, open);
     elements.history.append(row);

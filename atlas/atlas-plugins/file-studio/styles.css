@@ -102,7 +102,41 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
   gap: 8px;
+}
+
+.segmented-control {
+  display: inline-flex;
+  min-height: 34px;
+  overflow: hidden;
+  border: 1px solid var(--atlas-border);
+  border-radius: 4px;
+  background: var(--atlas-panel-soft);
+}
+
+.segmented-control button {
+  min-height: 32px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--atlas-muted);
+  padding: 0 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.segmented-control button:hover,
+.segmented-control button:focus-visible {
+  color: var(--atlas-link);
+  outline: 0;
+}
+
+.segmented-control button[aria-pressed="true"] {
+  background: var(--atlas-accent);
+  color: var(--atlas-on-accent);
 }
 
 .eyebrow,

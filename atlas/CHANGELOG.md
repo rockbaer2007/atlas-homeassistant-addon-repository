@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.137
+
+- Load the Automation Exporter / Editor system source from the real
+  `/config/automations.yaml` through the File Studio API.
+- Add Card-Editor-style theme and language controls to File Studio and the
+  Automation Exporter / Editor.
+- Bump the bundled Automation Exporter / Editor plugin to `0.1.7`.
+
 ## 0.1.136
 
 - Pass the Administration language to the Hub, Card Editor and local plugins
