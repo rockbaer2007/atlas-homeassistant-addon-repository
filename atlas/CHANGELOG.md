@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.146
+
+- Make Automation Exporter / Editor folder exports more robust by falling back
+  to explicit File Studio create-and-write when direct upload fails.
+- Update the Automation Exporter / Editor README to describe timestamped export
+  folders and write-back backups.
+- Bump Automation Exporter / Editor to `0.1.14`.
+
 ## 0.1.145
 
 - Store Automation Exporter / Editor exports in timestamped run folders.

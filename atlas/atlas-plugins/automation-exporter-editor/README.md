@@ -15,9 +15,11 @@ by the existing Windows Automation Exporter.
 - show the selected automation YAML with Studio-like highlighting
 - keep the automation list internally scrollable with roughly 15 visible rows
 - configure a target export folder label
-- export selected automations as separate YAML files
-- name exports as `name_dd_mm_yy-hh_mm_ss.yaml`
+- export selected automations as separate YAML files in timestamped run folders
+- keep automation filenames clean, for example
+  `/config/atlas_exports/automations/2026-09-03_15-23-37/kitchen_light.yaml`
 - keep an overview of exported automations
 - open File Studio for further editing
 
-The first version does not write back into Home Assistant automatically.
+Write-back creates a timestamped backup before merging selected automations
+into `/config/automations.yaml` by `id` or `alias`.

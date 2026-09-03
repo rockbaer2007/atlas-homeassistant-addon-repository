@@ -733,11 +733,15 @@ async function ensureExportFolder(folder) {
 }
 
 async function writeExportFile(folder, filename, content) {
-  return writeFile(folder, filename, content, false);
+  try {
+    return await writeFile(folder, filename, content, false);
+  } catch (uploadError) {
+    return await createAndWriteExportFile(folder, filename, content, uploadError);
+  }
 }
 
 async function writeFile(folder, filename, content, overwrite) {
-  return apiJson("api/file-studio/upload", {
+  const result = await apiJson("api/file-studio/upload", {
     method: "POST",
     body: JSON.stringify({
       parentPath: folder,
@@ -746,6 +750,44 @@ async function writeFile(folder, filename, content, overwrite) {
       overwrite,
     }),
   });
+  if (result.ok === false) {
+    throw new Error(result.error ?? "upload failed");
+  }
+  return result;
+}
+
+async function createAndWriteExportFile(folder, filename, content, uploadError) {
+  const path = `${folder}/${filename}`;
+  try {
+    await apiJson("api/file-studio/create-file", {
+      method: "POST",
+      body: JSON.stringify({
+        parentPath: folder,
+        name: filename,
+      }),
+    });
+    const result = await apiJson("api/file-studio/write", {
+      method: "POST",
+      body: JSON.stringify({
+        path,
+        content,
+      }),
+    });
+    if (result.ok === false) {
+      throw new Error(result.error ?? "write failed");
+    }
+    return {
+      ...result,
+      kind: "atlas.file-studio.export-write",
+      path: result.path || path,
+      name: filename,
+      replaced: false,
+    };
+  } catch (writeError) {
+    const firstMessage = uploadError instanceof Error ? uploadError.message : String(uploadError ?? "");
+    const secondMessage = writeError instanceof Error ? writeError.message : String(writeError ?? "");
+    throw new Error([firstMessage, secondMessage].filter(Boolean).join(" / "));
+  }
 }
 
 async function readFileContent(path) {
