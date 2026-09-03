@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.139
+
+- Write Automation Exporter / Editor exports into the selected File Studio
+  `/config` export folder, creating missing folders when needed.
+- Keep browser downloads as fallback when the File Studio write path is not
+  available.
+- Bump the bundled Automation Exporter / Editor plugin to `0.1.8`.
+
 ## 0.1.138
 
 - Add an Administration header link to the public ATLAS verified plugin list.

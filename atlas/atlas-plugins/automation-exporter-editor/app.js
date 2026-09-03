@@ -130,7 +130,7 @@ elements.selectNone.addEventListener("click", () => {
   state.selectedIds.clear();
   render();
 });
-elements.exportSelected.addEventListener("click", exportSelected);
+elements.exportSelected.addEventListener("click", () => void exportSelected());
 elements.clearHistory.addEventListener("click", () => {
   state.exports = [];
   renderHistory();
@@ -408,7 +408,7 @@ function renderHistory() {
     const row = document.createElement("div");
     row.className = "export-row";
     const name = document.createElement("div");
-    name.innerHTML = `<strong>${escapeHtml(item.filename)}</strong><div class="automation-meta">${escapeHtml(item.folder)} · ${escapeHtml(item.sourceName)}</div>`;
+    name.innerHTML = `<strong>${escapeHtml(item.filename)}</strong><div class="automation-meta">${escapeHtml(item.status ?? "gespeichert")} · ${escapeHtml(item.path ?? item.folder)} · ${escapeHtml(item.sourceName)}</div>`;
     const open = document.createElement("a");
     open.className = "ghost-link";
     const fileStudioUrl = new URL(createAppUrl("plugin-assets/file-studio/index.html"), window.location.href);
@@ -453,22 +453,54 @@ function selectVisible() {
   render();
 }
 
-function exportSelected() {
+async function exportSelected() {
   const selected = state.automations.filter(item => state.selectedIds.has(item.localId));
   if (selected.length === 0) {
     setStatus("Keine Automation fuer den Export ausgewaehlt.");
     return;
   }
   const timestamp = createTimestamp(new Date());
-  const folder = elements.exportFolder.value.trim() || "/config/atlas_exports/automations";
-  for (const automation of selected) {
-    const filename = `${slugify(automation.alias)}_${timestamp}.yaml`;
-    downloadText(filename, automation.yaml);
-    state.exports.unshift({ filename, folder, sourceName: state.sourceName });
+  const folder = normalizeExportFolder(elements.exportFolder.value);
+  elements.exportSelected.disabled = true;
+  setStatus(`Exportiere ${selected.length} Automation(en) nach ${folder} ...`);
+  try {
+    await ensureExportFolder(folder);
+    const usedFilenames = new Set();
+    const exported = [];
+    for (const automation of selected) {
+      const filename = createExportFilename(automation.alias, timestamp, usedFilenames);
+      const result = await writeExportFile(folder, filename, automation.yaml);
+      exported.push({
+        filename,
+        path: result.path || `${folder}/${filename}`,
+        folder,
+        sourceName: state.sourceName,
+        status: "gespeichert",
+      });
+    }
+    state.exports.unshift(...exported);
+    state.exports = state.exports.slice(0, 50);
+    setStatus(`${exported.length} Automation(en) in ${folder} gespeichert.`);
+    renderHistory();
+  } catch (error) {
+    setStatus(`Export fehlgeschlagen: ${describeExportError(error)} Browser-Download wird als Rueckfall genutzt.`);
+    const usedFilenames = new Set();
+    for (const automation of selected) {
+      const filename = createExportFilename(automation.alias, timestamp, usedFilenames);
+      downloadText(filename, automation.yaml);
+      state.exports.unshift({
+        filename,
+        path: filename,
+        folder: "Browser-Download",
+        sourceName: state.sourceName,
+        status: "download",
+      });
+    }
+    state.exports = state.exports.slice(0, 50);
+    renderHistory();
+  } finally {
+    elements.exportSelected.disabled = false;
   }
-  state.exports = state.exports.slice(0, 50);
-  setStatus(`${selected.length} Automation(en) als YAML vorbereitet.`);
-  renderHistory();
 }
 
 function downloadText(filename, content) {
@@ -481,6 +513,106 @@ function downloadText(filename, content) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+async function ensureExportFolder(folder) {
+  const parts = folder.split("/").filter(Boolean);
+  if (parts[0] !== "config") {
+    throw new Error("Exportordner muss unter /config liegen.");
+  }
+  for (const part of parts.slice(1)) {
+    if (!isSafeFileStudioName(part)) {
+      throw new Error("Exportordner enthaelt ungueltige Pfadteile.");
+    }
+  }
+  let current = "/config";
+  for (const part of parts.slice(1)) {
+    const parentPath = current;
+    current = `${current}/${part}`;
+    try {
+      await apiJson("api/file-studio/create-directory", {
+        method: "POST",
+        body: JSON.stringify({ parentPath, name: part }),
+      });
+    } catch (error) {
+      if (!/already exists/i.test(error instanceof Error ? error.message : String(error))) {
+        throw error;
+      }
+    }
+  }
+}
+
+async function writeExportFile(folder, filename, content) {
+  return apiJson("api/file-studio/upload", {
+    method: "POST",
+    body: JSON.stringify({
+      parentPath: folder,
+      name: filename,
+      contentBase64: encodeBase64Utf8(content),
+      overwrite: false,
+    }),
+  });
+}
+
+async function apiJson(path, options = {}) {
+  const response = await fetch(createAppUrl(path), {
+    cache: "no-store",
+    headers: {
+      "content-type": "application/json",
+      ...(options.headers ?? {}),
+    },
+    ...options,
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(body.error ?? body.message ?? `HTTP ${response.status}`);
+  }
+  return body;
+}
+
+function normalizeExportFolder(value) {
+  const normalized = String(value || "/config/atlas_exports/automations")
+    .replace(/\\/g, "/")
+    .trim()
+    .replace(/\/+$/g, "");
+  if (!normalized || normalized === "/") {
+    return "/config/atlas_exports/automations";
+  }
+  return `/${normalized.replace(/^\/+/, "")}`;
+}
+
+function createExportFilename(alias, timestamp, usedFilenames) {
+  const baseName = `${slugify(alias)}_${timestamp}`;
+  let filename = `${baseName}.yaml`;
+  let index = 2;
+  while (usedFilenames.has(filename)) {
+    filename = `${baseName}-${index}.yaml`;
+    index += 1;
+  }
+  usedFilenames.add(filename);
+  return filename;
+}
+
+function isSafeFileStudioName(value) {
+  return Boolean(value) && value !== "." && value !== ".." && !value.includes("..") && !/[\\/]/.test(value);
+}
+
+function encodeBase64Utf8(value) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += 0x8000) {
+    binary += String.fromCharCode(...bytes.slice(index, index + 0x8000));
+  }
+  return btoa(binary);
+}
+
+function describeExportError(error) {
+  const message = error instanceof Error ? error.message : String(error ?? "unbekannter Fehler");
+  if (/outside configured root/i.test(message)) return "Pfad liegt ausserhalb der freigegebenen Bereiche.";
+  if (/not found|parent directory/i.test(message)) return "Zielordner wurde nicht gefunden oder konnte nicht erstellt werden.";
+  if (/already exists/i.test(message)) return "Eine Zieldatei existiert bereits.";
+  if (/path separators|relative path/i.test(message)) return "Exportordner oder Dateiname ist ungueltig.";
+  return message;
 }
 
 function createTimestamp(date) {
