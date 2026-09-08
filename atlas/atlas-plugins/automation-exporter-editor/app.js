@@ -4,6 +4,8 @@ const state = {
   selectedIds: new Set(),
   exports: [],
   activeId: "",
+  groupBy: "none",
+  groupFilter: "",
 };
 
 const elements = {
@@ -12,6 +14,8 @@ const elements = {
   sourceStatus: document.querySelector("#source-status"),
   exportFolder: document.querySelector("#export-folder"),
   search: document.querySelector("#search"),
+  groupBy: document.querySelector("#group-by"),
+  groupFilter: document.querySelector("#group-filter"),
   filterWarnings: document.querySelector("#filter-warnings"),
   selectAll: document.querySelector("#select-all"),
   selectNone: document.querySelector("#select-none"),
@@ -126,6 +130,16 @@ function updateLocationState() {
 elements.loadSystem.addEventListener("click", loadSystemAutomations);
 elements.upload.addEventListener("change", handleUpload);
 elements.search.addEventListener("input", render);
+elements.groupBy.addEventListener("change", () => {
+  state.groupBy = elements.groupBy.value;
+  state.groupFilter = "";
+  updateGroupFilterOptions();
+  render();
+});
+elements.groupFilter.addEventListener("change", () => {
+  state.groupFilter = elements.groupFilter.value;
+  render();
+});
 elements.filterWarnings.addEventListener("change", render);
 elements.selectAll.addEventListener("click", selectVisible);
 elements.selectNone.addEventListener("click", () => {
@@ -194,6 +208,7 @@ function analyzeSource(sourceName, content) {
   state.automations = parseAutomations(content);
   state.selectedIds = new Set();
   state.activeId = state.automations[0]?.localId ?? "";
+  state.groupFilter = "";
   const warningCount = countWarnings(state.automations);
   const warningText = warningCount > 0 ? `, ${warningCount} Hinweis(e)` : ", keine Hinweise";
   setStatus(`${sourceName}: ${state.automations.length} Automationen erkannt${warningText}.`);
@@ -348,18 +363,77 @@ function uniqueValues(values) {
 }
 
 function render() {
+  updateGroupFilterOptions();
   const visible = getVisibleAutomations();
   elements.list.classList.toggle("empty-state", visible.length === 0);
   elements.list.innerHTML = "";
   if (visible.length === 0) {
     elements.list.textContent = "Keine passende Automation gefunden.";
-  } else {
+  } else if (state.groupBy === "none") {
     for (const automation of visible) {
       elements.list.append(createAutomationRow(automation));
+    }
+  } else {
+    for (const group of groupAutomations(visible)) {
+      elements.list.append(createGroupHeader(group.label, group.items.length));
+      for (const automation of group.items) {
+        elements.list.append(createAutomationRow(automation));
+      }
     }
   }
   renderDetails();
   renderSummary();
+}
+
+function updateGroupFilterOptions() {
+  if (!elements.groupBy || !elements.groupFilter) {
+    return;
+  }
+  elements.groupBy.value = state.groupBy;
+  const values = getAllGroupValues(state.automations, state.groupBy);
+  const current = values.includes(state.groupFilter) ? state.groupFilter : "";
+  elements.groupFilter.replaceChildren();
+  const allOption = document.createElement("option");
+  allOption.value = "";
+  allOption.textContent = state.groupBy === "none" ? "Alle Gruppen" : `Alle ${getGroupLabelPlural(state.groupBy)}`;
+  elements.groupFilter.append(allOption);
+  for (const value of values) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    elements.groupFilter.append(option);
+  }
+  state.groupFilter = current;
+  elements.groupFilter.value = current;
+  elements.groupFilter.disabled = state.groupBy === "none";
+}
+
+function groupAutomations(automations) {
+  const groups = new Map();
+  for (const automation of automations) {
+    const values = getAutomationGroupValues(automation, state.groupBy);
+    const groupValues = values.length ? values : [getEmptyGroupLabel(state.groupBy)];
+    for (const value of groupValues) {
+      if (!groups.has(value)) {
+        groups.set(value, []);
+      }
+      groups.get(value).push(automation);
+    }
+  }
+  return [...groups.entries()]
+    .sort(([left], [right]) => left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" }))
+    .map(([label, items]) => ({ label, items }));
+}
+
+function createGroupHeader(label, count) {
+  const header = document.createElement("div");
+  header.className = "group-header";
+  const title = document.createElement("span");
+  title.textContent = label;
+  const amount = document.createElement("span");
+  amount.textContent = `${count} Automation${count === 1 ? "" : "en"}`;
+  header.append(title, amount);
+  return header;
 }
 
 function createAutomationRow(automation) {
@@ -540,6 +614,9 @@ function getVisibleAutomations() {
     if (warningOnly && item.warnings.length === 0) {
       return false;
     }
+    if (state.groupFilter && !getAutomationGroupValues(item, state.groupBy).includes(state.groupFilter)) {
+      return false;
+    }
     if (!query) {
       return true;
     }
@@ -552,6 +629,34 @@ function getVisibleAutomations() {
     item.yaml,
     ].join(" ").toLowerCase().includes(query);
   });
+}
+
+function getAllGroupValues(automations, groupBy) {
+  if (groupBy === "none") {
+    return [];
+  }
+  return uniqueValues(automations.flatMap(item => getAutomationGroupValues(item, groupBy)));
+}
+
+function getAutomationGroupValues(automation, groupBy) {
+  if (groupBy === "domain") return automation.domains;
+  if (groupBy === "area") return automation.areas;
+  if (groupBy === "device") return automation.devices;
+  return [];
+}
+
+function getGroupLabelPlural(groupBy) {
+  if (groupBy === "domain") return "Domains";
+  if (groupBy === "area") return "Bereiche";
+  if (groupBy === "device") return "Geräte";
+  return "Gruppen";
+}
+
+function getEmptyGroupLabel(groupBy) {
+  if (groupBy === "domain") return "Ohne Domain";
+  if (groupBy === "area") return "Ohne Bereich";
+  if (groupBy === "device") return "Ohne Gerät";
+  return "Ohne Gruppe";
 }
 
 function countWarnings(automations) {

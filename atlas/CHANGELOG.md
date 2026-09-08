@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.174
+
+- Add Automation Exporter / Editor grouping by domain, area and device.
+- Add a matching group filter for the grouped automation list.
+- Bump the Automation Exporter / Editor package to `0.1.21`.
+
 ## 0.1.173
 
 - Mark Automation Exporter / Editor ID and alias conflicts directly in the

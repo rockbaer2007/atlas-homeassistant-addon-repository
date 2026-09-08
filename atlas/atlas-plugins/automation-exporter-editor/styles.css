@@ -43,6 +43,7 @@ body {
 
 button,
 input,
+select,
 .file-button,
 .ghost-link {
   border: 1px solid var(--line);
@@ -79,6 +80,12 @@ button.primary {
 }
 
 input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+select {
   width: 100%;
   min-height: 38px;
   padding: 0 12px;
@@ -211,6 +218,12 @@ h3 {
   font-weight: 700;
 }
 
+.compact-label {
+  margin-top: 12px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
 .field-hint {
   margin: 8px 0 0;
   font-size: 13px;
@@ -304,6 +317,27 @@ h3 {
 }
 
 .automation-row.has-conflict + .automation-row {
+  border-top: 0;
+}
+
+.group-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--teal), var(--line) 45%);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  color: var(--teal-soft);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.group-header + .automation-row {
   border-top: 0;
 }
 

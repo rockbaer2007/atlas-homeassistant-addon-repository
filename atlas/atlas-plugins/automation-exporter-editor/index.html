@@ -64,6 +64,17 @@
         <aside class="panel tools-panel">
           <h2>Werkzeuge</h2>
           <input id="search" type="search" placeholder="Alias, ID, Entität oder Service suchen">
+          <label class="field-label compact-label" for="group-by">Gruppieren nach</label>
+          <select id="group-by">
+            <option value="none">Keine Gruppierung</option>
+            <option value="domain">Domain</option>
+            <option value="area">Bereich</option>
+            <option value="device">Gerät</option>
+          </select>
+          <label class="field-label compact-label" for="group-filter">Gruppe filtern</label>
+          <select id="group-filter">
+            <option value="">Alle Gruppen</option>
+          </select>
           <label class="checkbox-row">
             <input id="filter-warnings" type="checkbox">
             <span>Nur Hinweise anzeigen</span>
@@ -74,10 +85,6 @@
             <button id="export-selected" type="button" class="primary">Auswahl exportieren</button>
             <button id="preview-conflicts" type="button">Konflikte prüfen</button>
           </div>
-          <h3>Nächste Ausbaustufe</h3>
-          <ul class="roadmap">
-            <li>Gruppierung nach Domain, Bereich und Gerät</li>
-          </ul>
         </aside>
 
         <section class="panel table-panel" aria-label="Automationen">
