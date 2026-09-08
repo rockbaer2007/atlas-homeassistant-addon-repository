@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.175
+
+- Keep Automation Exporter / Editor duplicate IDs and aliases as red conflicts
+  only.
+- Keep rows with conflicts visible when filtering to hints.
+- Bump the Automation Exporter / Editor package to `0.1.22`.
+
 ## 0.1.174
 
 - Add Automation Exporter / Editor grouping by domain, area and device.

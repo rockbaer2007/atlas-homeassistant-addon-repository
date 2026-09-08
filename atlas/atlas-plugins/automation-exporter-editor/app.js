@@ -284,11 +284,9 @@ function addAutomationWarnings(automations) {
     if (!automation.id) warnings.push("Keine ID gefunden");
     if (!automation.alias || /^automation-\d+$/.test(automation.alias)) warnings.push("Kein Alias gefunden");
     if (automation.id && idCounts.get(automation.id) > 1) {
-      warnings.push("Doppelte ID");
       conflicts.push(`Doppelte ID: ${automation.id}`);
     }
     if (automation.alias && aliasCounts.get(automation.alias.toLowerCase()) > 1) {
-      warnings.push("Doppelter Alias");
       conflicts.push(`Doppelter Alias: ${automation.alias}`);
     }
     if (automation.triggerCount === 0) warnings.push("Kein Trigger erkannt");
@@ -611,7 +609,7 @@ function getVisibleAutomations() {
   const query = elements.search.value.trim().toLowerCase();
   const warningOnly = elements.filterWarnings.checked;
   return state.automations.filter(item => {
-    if (warningOnly && item.warnings.length === 0) {
+    if (warningOnly && item.warnings.length === 0 && item.conflicts.length === 0) {
       return false;
     }
     if (state.groupFilter && !getAutomationGroupValues(item, state.groupBy).includes(state.groupFilter)) {
