@@ -25,6 +25,7 @@ const elements = {
   countAutomations: document.querySelector("#count-automations"),
   countEntities: document.querySelector("#count-entities"),
   countServices: document.querySelector("#count-services"),
+  countConflicts: document.querySelector("#count-conflicts"),
   countWarnings: document.querySelector("#count-warnings"),
 };
 
@@ -264,14 +265,21 @@ function addAutomationWarnings(automations) {
   const aliasCounts = countBy(automations.map(item => item.alias).filter(Boolean).map(value => value.toLowerCase()));
   return automations.map(automation => {
     const warnings = [];
+    const conflicts = [];
     if (!automation.id) warnings.push("Keine ID gefunden");
     if (!automation.alias || /^automation-\d+$/.test(automation.alias)) warnings.push("Kein Alias gefunden");
-    if (automation.id && idCounts.get(automation.id) > 1) warnings.push("Doppelte ID");
-    if (automation.alias && aliasCounts.get(automation.alias.toLowerCase()) > 1) warnings.push("Doppelter Alias");
+    if (automation.id && idCounts.get(automation.id) > 1) {
+      warnings.push("Doppelte ID");
+      conflicts.push(`Doppelte ID: ${automation.id}`);
+    }
+    if (automation.alias && aliasCounts.get(automation.alias.toLowerCase()) > 1) {
+      warnings.push("Doppelter Alias");
+      conflicts.push(`Doppelter Alias: ${automation.alias}`);
+    }
     if (automation.triggerCount === 0) warnings.push("Kein Trigger erkannt");
     if (automation.actionCount === 0) warnings.push("Keine Action erkannt");
     if (automation.disabled) warnings.push("Deaktiviert");
-    return { ...automation, warnings };
+    return { ...automation, warnings, conflicts };
   });
 }
 
@@ -357,6 +365,7 @@ function render() {
 function createAutomationRow(automation) {
   const row = document.createElement("article");
   row.className = "automation-row";
+  row.classList.toggle("has-conflict", automation.conflicts.length > 0);
   const main = document.createElement("div");
   main.className = "automation-main";
   const title = document.createElement("div");
@@ -375,6 +384,7 @@ function createAutomationRow(automation) {
   const tags = document.createElement("div");
   tags.className = "tag-list";
   for (const value of [
+    ...automation.conflicts.map(conflict => `Konflikt: ${conflict}`),
     ...automation.warnings.map(warning => `Hinweis: ${warning}`),
     ...automation.domains.slice(0, 3).map(domain => `Domain: ${domain}`),
     ...automation.areas.slice(0, 2).map(area => `Bereich: ${area}`),
@@ -384,6 +394,7 @@ function createAutomationRow(automation) {
   ]) {
     const tag = document.createElement("span");
     tag.className = "tag";
+    if (value.startsWith("Konflikt: ")) tag.classList.add("conflict");
     if (value.startsWith("Hinweis: ")) tag.classList.add("warning");
     if (value.startsWith("Domain: ") || value.startsWith("Bereich: ") || value.startsWith("Gerät: ")) tag.classList.add("group");
     tag.textContent = value;
@@ -436,6 +447,7 @@ function renderDetails() {
   elements.details.append(
     title,
     meta,
+    createTagBlock("Konflikte", automation.conflicts, "conflict"),
     createTagBlock("Hinweise", automation.warnings, "warning"),
     createTagBlock("Domains", automation.domains),
     createTagBlock("Bereiche", automation.areas),
@@ -469,6 +481,7 @@ function renderSummary() {
   elements.countAutomations.textContent = String(state.automations.length);
   elements.countEntities.textContent = String(allEntities.size);
   elements.countServices.textContent = String(allServices.size);
+  elements.countConflicts.textContent = String(state.automations.filter(item => item.conflicts.length > 0).length);
   elements.countWarnings.textContent = String(countWarnings(state.automations));
   elements.selectionCount.textContent = `${state.selectedIds.size} ausgewählt`;
 }

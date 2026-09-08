@@ -295,6 +295,18 @@ h3 {
   border-top: 0;
 }
 
+.automation-row.has-conflict {
+  margin: 0 -8px;
+  padding: 12px 8px;
+  border: 1px solid color-mix(in srgb, var(--danger), var(--line) 35%);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger), transparent 88%);
+}
+
+.automation-row.has-conflict + .automation-row {
+  border-top: 0;
+}
+
 .automation-main {
   min-width: 0;
 }
@@ -357,6 +369,13 @@ h3 {
 .tag.warning {
   border-color: color-mix(in srgb, var(--orange), var(--line) 30%);
   color: var(--orange);
+}
+
+.tag.conflict {
+  border-color: color-mix(in srgb, var(--danger), var(--line) 22%);
+  background: color-mix(in srgb, var(--danger), transparent 86%);
+  color: var(--danger);
+  font-weight: 800;
 }
 
 .tag.group {

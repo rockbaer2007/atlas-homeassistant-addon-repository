@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.173
+
+- Mark Automation Exporter / Editor ID and alias conflicts directly in the
+  automation list.
+- Show a separate conflict count in the Automation Exporter / Editor status
+  panel.
+- Bump the Automation Exporter / Editor package to `0.1.20`.
+
 ## 0.1.172
 
 - Remove completed Automation Exporter / Editor roadmap entries.
