@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.157
+
+- Fix inserting additional horizontal and vertical stacks into Expert Card
+  Editor containers.
+- Keep nested stack containers in the exported Expert YAML.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.56`.
+
 ## 0.1.156
 
 - Add a temporary Card Editor loading notice below the page title.

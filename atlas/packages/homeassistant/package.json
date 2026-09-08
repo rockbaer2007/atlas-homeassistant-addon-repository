@@ -1,6 +1,6 @@
 {
   "name": "@atlas/homeassistant",
-  "version": "0.2.0-alpha.55",
+  "version": "0.2.0-alpha.56",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

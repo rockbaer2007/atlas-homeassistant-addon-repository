@@ -4053,6 +4053,11 @@ function isEditableContainerField(field) {
   return isTabbedCardField(field) || isStackContainerField(field);
 }
 
+function isContainerTemplateId(templateId) {
+  const template = cardEditorTemplates.find(candidate => candidate.id === templateId);
+  return template?.layout === "horizontal-stack" || template?.layout === "vertical-stack" || template?.layout === "grid";
+}
+
 function selectedTabbedCardField() {
   const field = expertEditorFields[selectedExpertFieldIndex];
   return isTabbedCardField(field) ? field : undefined;
@@ -4103,7 +4108,8 @@ function updateSelectedStackContainerField(updater) {
 }
 
 function createTabbedCardEntry(input = {}) {
-  const entityId = input.entityId?.trim() || expertEntity.value.trim() || currentEntityId();
+  const isContainerEntry = input.layout === "horizontal-stack" || input.layout === "vertical-stack" || input.layout === "grid";
+  const entityId = isContainerEntry ? "" : input.entityId?.trim() || expertEntity.value.trim() || currentEntityId();
   const target = input.target && input.target !== "tabbed-card-v2" ? input.target : "entity";
   const title = expertTitleForNewCardEntry(target, input.title);
   return {
@@ -4115,6 +4121,19 @@ function createTabbedCardEntry(input = {}) {
     icon: input.icon?.trim() || "mdi:tab",
     ...(Array.isArray(input.cards) && input.cards.length ? { cards: input.cards } : {}),
   };
+}
+
+function createExpertContainerEntryFromTemplate(templateId, input = {}) {
+  const template = cardEditorTemplates.find(candidate => candidate.id === templateId);
+  if (!template) return createTabbedCardEntry(input);
+  return createTabbedCardEntry({
+    ...input,
+    target: template.target === "tabbed-card-v2" ? "entity" : template.target,
+    layout: template.layout === "horizontal-stack" || template.layout === "vertical-stack" || template.layout === "grid"
+      ? template.layout
+      : undefined,
+    title: input.title || translateTemplateLabel(template.id, template.label),
+  });
 }
 
 function createContainerEntryFromExpertField(field) {
@@ -4193,7 +4212,7 @@ function addCurrentExpertSelectionToActiveTabbedCard(input = {}) {
     statusMessage.textContent = t("message.selectTabbedCardFirst");
     return false;
   }
-  const entry = createTabbedCardEntry(input);
+  const entry = input.entry ?? createTabbedCardEntry(input);
   const tab = field.entries?.[normalizeTabbedCardTabIndex(field)] ?? entry;
   addCardToTabbedCardFieldAt(selectedExpertFieldIndex, entry);
   expertEntity.value = "";
@@ -4235,9 +4254,11 @@ function addEntryToStackContainerFieldAt(fieldIndex, entry) {
 function addCardEntryToSelectedContainer(input = {}) {
   const field = selectedEditableContainerField();
   if (!field) return false;
-  const entry = createTabbedCardEntry(input);
+  const entry = input.templateId
+    ? createExpertContainerEntryFromTemplate(input.templateId, input)
+    : createTabbedCardEntry(input);
   if (isTabbedCardField(field)) {
-    return addCurrentExpertSelectionToActiveTabbedCard(input);
+    return addCurrentExpertSelectionToActiveTabbedCard(input.templateId ? { ...input, entry } : input);
   }
   return addEntryToStackContainerFieldAt(selectedExpertFieldIndex, entry);
 }
@@ -4478,7 +4499,7 @@ function addPaletteCardToTabbedCardField(fieldIndex, paletteCardId) {
   const template = cardEditorTemplates.find(candidate => candidate.id === card?.templateId);
   if (!card || !template || card.disabled === true || card.target === "tabbed-card-v2") return false;
   const entityId = expertEntity.value.trim() || currentEntityId();
-  const entry = createTabbedCardEntry({
+  const entry = createExpertContainerEntryFromTemplate(template.id, {
     entityId,
     target: card.target,
     bubbleButtonType: card.bubbleButtonType,
@@ -6238,8 +6259,7 @@ function handleDropIntoTabbedCard(event, fieldIndex) {
   const templateId = event.dataTransfer?.getData("application/x-atlas-template") || event.dataTransfer?.getData("text/plain");
   const template = cardEditorTemplates.find(candidate => candidate.id === templateId);
   if (!template || template.id === "tabbed-card-v2") return false;
-  return addCardToTabbedCardFieldAt(fieldIndex, createTabbedCardEntry({
-    target: template.target === "tabbed-card-v2" ? "entity" : template.target,
+  return addCardToTabbedCardFieldAt(fieldIndex, createExpertContainerEntryFromTemplate(template.id, {
     entityId: expertEntity.value.trim() || currentEntityId(),
   }));
 }
@@ -6268,7 +6288,7 @@ function handleDropIntoStackContainer(event, fieldIndex) {
   if (paletteCardId) {
     const card = expertPaletteCards.find(candidate => candidate.id === paletteCardId);
     if (card && card.disabled !== true && card.target !== "tabbed-card-v2") {
-      return addEntryToStackContainerFieldAt(fieldIndex, createTabbedCardEntry({
+      return addEntryToStackContainerFieldAt(fieldIndex, createExpertContainerEntryFromTemplate(card.templateId, {
         target: card.target,
         bubbleButtonType: card.bubbleButtonType,
         entityId: expertEntity.value.trim() || currentEntityId(),
@@ -6278,8 +6298,7 @@ function handleDropIntoStackContainer(event, fieldIndex) {
   const templateId = event.dataTransfer?.getData("application/x-atlas-template") || event.dataTransfer?.getData("text/plain");
   const template = cardEditorTemplates.find(candidate => candidate.id === templateId);
   if (!template || template.id === "tabbed-card-v2") return false;
-  return addEntryToStackContainerFieldAt(fieldIndex, createTabbedCardEntry({
-    target: template.target === "tabbed-card-v2" ? "entity" : template.target,
+  return addEntryToStackContainerFieldAt(fieldIndex, createExpertContainerEntryFromTemplate(template.id, {
     entityId: expertEntity.value.trim() || currentEntityId(),
   }));
 }
@@ -6604,6 +6623,22 @@ function indentImportedStyleBlock(code, indent) {
 }
 
 function addExpertEditorField() {
+  if (selectedContainerCardRef && isContainerTemplateId(expertTemplate.value)) {
+    if (isTabbedCardField(expertEditorFields[selectedContainerCardRef.fieldIndex]) && Number.isInteger(selectedContainerCardRef.tabIndex)) {
+      expertEditorFields[selectedContainerCardRef.fieldIndex] = {
+        ...expertEditorFields[selectedContainerCardRef.fieldIndex],
+        activeTabIndex: selectedContainerCardRef.tabIndex,
+      };
+    }
+    addCardEntryToSelectedContainer({
+      title: expertTitle.value.trim() || undefined,
+      templateId: expertTemplate.value,
+      target: expertTarget.value,
+      bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+    });
+    return;
+  }
+
   if (selectedContainerCardRef) {
     const updated = updateSelectedContainerCard(card => ({
       ...card,
@@ -6739,6 +6774,7 @@ function addExpertEditorFieldFromTemplate(templateId, placement = calculateExper
     const template = cardEditorTemplates.find(candidate => candidate.id === templateId);
     addCurrentExpertSelectionToActiveTabbedCard({
       title: expertTitle.value.trim() || (template ? translateTemplateLabel(template.id, template.label) : undefined),
+      templateId,
       target: expertTarget.value,
       bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
     });
@@ -6749,6 +6785,7 @@ function addExpertEditorFieldFromTemplate(templateId, placement = calculateExper
     const template = cardEditorTemplates.find(candidate => candidate.id === templateId);
     addCardEntryToSelectedContainer({
       title: expertTitle.value.trim() || (template ? translateTemplateLabel(template.id, template.label) : undefined),
+      templateId,
       target: expertTarget.value,
       bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
     });
