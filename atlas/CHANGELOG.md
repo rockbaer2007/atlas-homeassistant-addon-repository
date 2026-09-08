@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.172
+
+- Remove completed Automation Exporter / Editor roadmap entries.
+- Leave conflict pre-marking by ID and alias as the next visible roadmap step.
+- Bump the Automation Exporter / Editor package to `0.1.19`.
+
 ## 0.1.171
 
 - Open File Studio deep linked files directly when they are deeper than the
