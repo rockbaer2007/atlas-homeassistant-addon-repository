@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.155
+
+- Render imported stack containers as pure containers without synthetic entity
+  placeholders.
+- Keep nested horizontal preview columns aligned to the top instead of stretching
+  every vertical stack to the tallest neighboring card.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.54`.
+
 ## 0.1.154
 
 - Preserve `grid_options.columns: full` during Home Assistant card import

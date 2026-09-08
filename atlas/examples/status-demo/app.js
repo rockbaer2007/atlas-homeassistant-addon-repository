@@ -3275,7 +3275,7 @@ function createImportedContainerEntryFromCard(card, index = 0) {
       id: title,
       target,
       layout: getImportedContainerLayout(card),
-      entityId: entityIds[0] ?? "",
+      entityId: "",
       cards: card.cards.map((child, childIndex) => createImportedContainerEntryFromCard(child, childIndex)),
     };
   }
@@ -6126,6 +6126,9 @@ function createContainerPreviewCard(card, options = {}) {
 }
 
 function getExpertPreviewVariant(card) {
+  if (card?.layout === "horizontal-stack" || card?.layout === "vertical-stack" || card?.layout === "grid") {
+    return { kind: "core", detail: card.layout, label: card.layout };
+  }
   const target = card?.target ?? "entity";
   if (target === "bubble") {
     const detail = bubbleButtonTypes.includes(card.bubbleButtonType) ? card.bubbleButtonType : "state";
