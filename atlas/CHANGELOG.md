@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.150
+
+- Report the bundled Home Assistant Card Editor version consistently as
+  `0.2.0-alpha.49` in Administration and release readiness views.
+
 ## 0.1.149
 
 - Restore drag-and-drop placement on the Expert Card Editor grid surface.
