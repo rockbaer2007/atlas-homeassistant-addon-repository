@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.166
+
+- Add an opt-in automatic Card type mapping switch below the Card Editor import
+  tools.
+- Show the automatic mapping safety warning in red.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.65`.
+
 ## 0.1.165
 
 - Keep the Card Editor loading notice visible for at least 12 seconds and no

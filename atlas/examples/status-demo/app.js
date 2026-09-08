@@ -141,6 +141,7 @@ const haCardVisualPreview = document.querySelector("#ha-card-visual-preview");
 const resetSimplePreview = document.querySelector("#reset-simple-preview");
 const haCardDependency = document.querySelector("#ha-card-dependency");
 const toggleTemporaryResourceDebug = document.querySelector("#toggle-temporary-resource-debug");
+const toggleAutomaticCardTypeMapping = document.querySelector("#toggle-automatic-card-type-mapping");
 const temporaryResourceDebug = document.querySelector("#temporary-resource-debug");
 const temporaryHaCardResourceList = document.querySelector("#temporary-ha-card-resource-list");
 const haCardImportReview = document.querySelector("#ha-card-import-review");
@@ -257,6 +258,7 @@ const translations = {
     "label.entitySearch": "Entity search",
     "label.entityPicker": "Entity picker",
     "label.showTemporaryResourceDebug": "Show resource debug",
+    "label.automaticCardTypeMapping": "Automatic card type mapping",
     "label.haCardPreview": "HA card preview",
     "label.haCardCode": "HA card code",
     "label.expertHaCardCode": "Expert HA card code",
@@ -439,6 +441,7 @@ const translations = {
     "message.mapCustomCardPrompt": "Enter the Lovelace card type for {label}. Example: custom:mini-graph-card",
     "message.mapCustomCardInvalid": "Mapping cancelled: enter a valid custom:* card type.",
     "message.mapCustomCardSaved": "{label} mapped to {type}. The card is now available in the palette.",
+    "message.autoCustomCardMappingsCreated": "{count} unknown resources were automatically mapped to custom card types.",
     "message.refreshingResources": "{message} Refreshing Lovelace resources from Home Assistant.",
     "message.connectAndScanAgain": "{message} Connect to Home Assistant and scan again to refresh the list.",
     "message.templateSizeSet": "{template} size set to {columns} columns and {rows} rows.",
@@ -579,6 +582,7 @@ const translations = {
     "text.all": "All",
     "text.favorite": "Favorite",
     "text.hiddenCard": "Hidden",
+    "text.automaticCardTypeMappingWarning": "Safety notice: only use this option if you know what you are doing. ATLAS will try to map unknown registered resources automatically to a custom:* card type.",
     "text.scannedOnly": "Scanned only",
     "text.builtIn": "Built-in",
     "text.resourceUnchecked": "Resource unchecked",
@@ -731,6 +735,7 @@ const translations = {
     "label.entitySearch": "Entität suchen",
     "label.entityPicker": "Entitätsauswahl",
     "label.showTemporaryResourceDebug": "Ressourcen-Debug anzeigen",
+    "label.automaticCardTypeMapping": "Automatische Cardtypzuordnung",
     "label.haCardPreview": "HA-Card-Vorschau",
     "label.haCardCode": "HA-Card-Code",
     "label.expertHaCardCode": "Expert-HA-Card-Code",
@@ -913,6 +918,7 @@ const translations = {
     "message.mapCustomCardPrompt": "Gib den Lovelace-Card-Typ für {label} ein. Beispiel: custom:mini-graph-card",
     "message.mapCustomCardInvalid": "Mapping abgebrochen: Bitte einen gültigen custom:*-Card-Typ eingeben.",
     "message.mapCustomCardSaved": "{label} wurde {type} zugeordnet. Die Card ist jetzt in der Palette nutzbar.",
+    "message.autoCustomCardMappingsCreated": "{count} unbekannte Ressourcen wurden automatisch Custom-Card-Typen zugeordnet.",
     "message.refreshingResources": "{message} Lovelace-Ressourcen werden von Home Assistant aktualisiert.",
     "message.connectAndScanAgain": "{message} Verbinde Home Assistant und scanne erneut, um die Liste zu aktualisieren.",
     "message.templateSizeSet": "{template} Größe auf {columns} Spalten und {rows} Zeilen gesetzt.",
@@ -1053,6 +1059,7 @@ const translations = {
     "text.all": "Alle",
     "text.favorite": "Favorit",
     "text.hiddenCard": "Versteckt",
+    "text.automaticCardTypeMappingWarning": "Sicherheitshinweis: Nutze diese Option nur, wenn du weißt, was du tust. ATLAS versucht dann, unbekannte registrierte Ressourcen automatisch einem custom:* Card-Typ zuzuordnen.",
     "text.scannedOnly": "Nur Scan",
     "text.builtIn": "Eingebaut",
     "text.resourceUnchecked": "Ressource ungeprüft",
@@ -1565,6 +1572,9 @@ try {
   }
   if (typeof savedConfiguration?.entitySearch === "string") {
     homeAssistantEntitySearch.value = savedConfiguration.entitySearch;
+  }
+  if (typeof savedConfiguration?.automaticCardTypeMapping === "boolean" && toggleAutomaticCardTypeMapping) {
+    toggleAutomaticCardTypeMapping.checked = savedConfiguration.automaticCardTypeMapping;
   }
   if (Array.isArray(savedConfiguration?.stackEntityIds)) {
     for (const entityId of savedConfiguration.stackEntityIds) {
@@ -2234,6 +2244,7 @@ function persistConfiguration() {
       adminTranslationApiKeyConfigured,
       adminTranslationApiKeyConfiguredByProvider,
       stackEntityIds: selectedStackEntityIds(),
+      automaticCardTypeMapping: toggleAutomaticCardTypeMapping?.checked === true,
       expertPaletteFavoriteIds: [...expertPaletteFavoriteIds],
       expertPaletteHiddenIds: [...expertPaletteHiddenIds],
       expertCustomCardMappings: serializedExpertCustomCardMappings(),
@@ -2793,6 +2804,25 @@ function suggestCustomCardTypeFromResourceUrl(url) {
   return baseName ? `custom:${baseName}` : "custom:my-card";
 }
 
+function applyAutomaticCustomCardMappings(resources) {
+  if (toggleAutomaticCardTypeMapping?.checked !== true) return 0;
+  let mappedCount = 0;
+  const urls = [...new Set(resources.map(normalizeLovelaceResourceUrl).filter(Boolean))]
+    .filter(url => !shouldIgnoreLovelaceResourceUrl(url))
+    .filter(url => !url.includes("/atlas/") && !url.includes("atlas-card") && !isMappedLovelaceResourceUrl(url));
+  for (const url of urls) {
+    if (expertCustomCardMappings.has(url)) continue;
+    const customType = normalizeCustomCardType(suggestCustomCardTypeFromResourceUrl(url));
+    if (!customType || customType === "custom:my-card") continue;
+    expertCustomCardMappings.set(url, customType);
+    mappedCount += 1;
+  }
+  if (mappedCount > 0) {
+    persistConfiguration();
+  }
+  return mappedCount;
+}
+
 function serializedExpertCustomCardMappings() {
   return [...expertCustomCardMappings.entries()].map(([resourceUrl, customType]) => ({
     resourceUrl,
@@ -3008,11 +3038,13 @@ function dedupeExpertPaletteCards(cards) {
 
 function refreshScannedExpertPaletteCards() {
   const staticCards = expertPaletteCards.filter(card => !card.scanned);
+  const autoMapped = applyAutomaticCustomCardMappings(lovelaceResources);
   const scannedCards = createScannedExpertPaletteCards(lovelaceResources);
   expertPaletteCards = dedupeExpertPaletteCards([...staticCards, ...scannedCards]);
   return {
     total: scannedCards.length,
     hacs: scannedCards.filter(card => card.resourceUrl && isHacsLovelaceResourceUrl(card.resourceUrl)).length,
+    autoMapped,
   };
 }
 
@@ -3027,9 +3059,12 @@ function scanExpertPaletteCardsFromHomeAssistant() {
   const scanMessage = detectedCards.total
     ? t("message.paletteEntriesDetected", { total: detectedCards.total, hacs: detectedCards.hacs })
     : t("message.noPaletteEntriesDetected");
+  const mappingMessage = detectedCards.autoMapped
+    ? ` ${t("message.autoCustomCardMappingsCreated", { count: detectedCards.autoMapped })}`
+    : "";
   statusMessage.textContent = clientReady
-    ? t("message.refreshingResources", { message: scanMessage })
-    : t("message.connectAndScanAgain", { message: scanMessage });
+    ? t("message.refreshingResources", { message: `${scanMessage}${mappingMessage}` })
+    : t("message.connectAndScanAgain", { message: `${scanMessage}${mappingMessage}` });
 }
 
 function createHaCardConfig({ useExportFallback = false } = {}) {
@@ -8411,6 +8446,16 @@ toggleTemporaryResourceDebug.addEventListener("change", () => {
   syncTemporaryResourceDebugVisibility();
   renderTemporaryHaCardResourceList();
 });
+toggleAutomaticCardTypeMapping?.addEventListener("change", () => {
+  persistConfiguration();
+  if (!toggleAutomaticCardTypeMapping.checked) return;
+  const mappedCount = applyAutomaticCustomCardMappings(lovelaceResources);
+  if (mappedCount > 0) {
+    refreshScannedExpertPaletteCards();
+    renderExpertTemplatePalette();
+    statusMessage.textContent = t("message.autoCustomCardMappingsCreated", { count: mappedCount });
+  }
+});
 homeAssistantGroup.addEventListener("change", () => {
   clearImportedSimplePreviewState();
   const group = panelGroups.find(candidate => candidate.id === homeAssistantGroup.value);
@@ -8588,6 +8633,7 @@ exportHomeAssistantConfig.addEventListener("click", () => {
     cardStyleExport: haCardStyleExport.value,
     cardScriptFilename: haCardScriptFilename.value,
     stackEntityIds: selectedStackEntityIds(),
+    automaticCardTypeMapping: toggleAutomaticCardTypeMapping?.checked === true,
     expertPaletteFavoriteIds: [...expertPaletteFavoriteIds],
     expertPaletteHiddenIds: [...expertPaletteHiddenIds],
     expertCustomCardMappings: serializedExpertCustomCardMappings(),
@@ -8774,6 +8820,9 @@ importHomeAssistantConfig.addEventListener("change", async () => {
     }
     if (typeof pendingImport.entitySearch === "string") {
       homeAssistantEntitySearch.value = pendingImport.entitySearch;
+    }
+    if (typeof pendingImport.automaticCardTypeMapping === "boolean" && toggleAutomaticCardTypeMapping) {
+      toggleAutomaticCardTypeMapping.checked = pendingImport.automaticCardTypeMapping;
     }
     panelGroups = pendingImport.groups.map(createHomeAssistantPanelGroup);
     if (typeof pendingImport.cardTarget === "string" && cardTargets.some(descriptor => descriptor.target === pendingImport.cardTarget)) {

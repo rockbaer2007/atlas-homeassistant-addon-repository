@@ -961,6 +961,37 @@
         margin: 0;
       }
 
+      .automatic-card-type-mapping {
+        display: grid;
+        gap: 4px;
+        margin: 2px 0 0;
+        color: #b91c1c;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .automatic-card-type-mapping label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: fit-content;
+        cursor: pointer;
+      }
+
+      .automatic-card-type-mapping input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: #dc2626;
+      }
+
+      .automatic-card-type-mapping small {
+        max-width: 780px;
+        color: #b91c1c;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
       #temporary-ha-card-resource-list {
         max-height: 220px;
         margin: 2px 0 0;
@@ -2965,6 +2996,11 @@
         color: #fecaca;
       }
 
+      :root[data-theme="dark"] .automatic-card-type-mapping,
+      :root[data-theme="dark"] .automatic-card-type-mapping small {
+        color: #fca5a5;
+      }
+
       :root[data-theme="dark"] .connection-config.compact-panel[data-connection-state="failed"] summary,
       :root[data-theme="dark"] .connection-config.compact-panel[data-connection-state="closed"] summary {
         color: #fca5a5;
@@ -3514,6 +3550,13 @@
                 <label class="import-button action-import" for="import-ha-card-config" data-i18n="button.importHaCard">Import HA card</label>
                 <input id="import-ha-card-config" type="file" accept="application/json,application/zip,.json,.yaml,.yml,.zip" hidden>
                 <button id="open-ha-card-paste-import" class="action-import" type="button" data-i18n="button.pasteHaCard">Paste YAML</button>
+              </div>
+              <div class="automatic-card-type-mapping">
+                <label for="toggle-automatic-card-type-mapping">
+                  <input id="toggle-automatic-card-type-mapping" type="checkbox">
+                  <span data-i18n="label.automaticCardTypeMapping">Automatic card type mapping</span>
+                </label>
+                <small data-i18n="text.automaticCardTypeMappingWarning">Safety notice: only use this option if you know what you are doing. ATLAS will try to map unknown registered resources automatically to a custom:* card type.</small>
               </div>
               <output id="ha-card-import-review" aria-live="polite"></output>
               <pre id="ha-card-style-review" class="ha-card-style-review" hidden></pre>
