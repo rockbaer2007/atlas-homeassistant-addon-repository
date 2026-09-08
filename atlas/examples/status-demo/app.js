@@ -5299,6 +5299,8 @@ function renderExpertEditorSurface() {
   const grid = document.createElement("div");
   grid.className = "expert-surface-grid";
   applyExpertSurfaceGridGeometry(grid);
+  grid.addEventListener("dragover", handleExpertEditorSurfaceDragOver);
+  grid.addEventListener("drop", handleExpertEditorSurfaceDrop);
   renderExpertSurfaceCells(grid);
   const surfaceAnalysis = analyzeHomeAssistantCardEditorSurface(expertEditorFields);
   const overlappingFieldIds = new Set(surfaceAnalysis.overlappingFieldIds);
@@ -5413,6 +5415,44 @@ function createExpertSurfaceFieldHeader(field) {
   title.className = "expert-surface-field-title";
   title.textContent = field.id;
   return title;
+}
+
+function handleExpertEditorSurfaceDragOver(event) {
+  event.preventDefault();
+  expertEditorDropzone.classList.add("drag-over");
+}
+
+function handleExpertEditorSurfaceDrop(event) {
+  event.preventDefault();
+  if (event.currentTarget !== expertEditorDropzone) {
+    event.stopPropagation();
+  }
+  expertEditorDropzone.classList.remove("drag-over");
+  const containerCard = event.dataTransfer?.getData("application/x-atlas-container-card");
+  if (containerCard) {
+    try {
+      moveContainerCardToSurface(JSON.parse(containerCard), calculateExpertDropPlacement(event));
+    } catch {
+      statusMessage.textContent = t("message.invalidDragPayload");
+    }
+    expertDragFieldOffset = { column: 0, row: 0 };
+    return;
+  }
+  const fieldIndex = event.dataTransfer?.getData("application/x-atlas-field-index");
+  if (fieldIndex) {
+    moveExpertEditorField(Number(fieldIndex), calculateExpertDropPlacement(event));
+    expertDragFieldOffset = { column: 0, row: 0 };
+    return;
+  }
+  const paletteCardId = event.dataTransfer?.getData("application/x-atlas-palette-card");
+  if (paletteCardId) {
+    addExpertEditorFieldFromPaletteCard(paletteCardId, calculateExpertDropPlacement(event));
+    return;
+  }
+  const templateId = event.dataTransfer?.getData("application/x-atlas-template")
+    || event.dataTransfer?.getData("text/plain")
+    || expertTemplate.value;
+  addExpertEditorFieldFromTemplate(templateId, calculateExpertDropPlacement(event));
 }
 
 function getExpertFieldStyleBlocks(field) {
@@ -7863,8 +7903,7 @@ resetSimplePreview.addEventListener("click", resetSimplePreviewState);
 resetExpertPreview.addEventListener("click", resetExpertPreviewState);
 clearExpertFields.addEventListener("click", resetExpertPreviewState);
 expertEditorDropzone.addEventListener("dragover", event => {
-  event.preventDefault();
-  expertEditorDropzone.classList.add("drag-over");
+  handleExpertEditorSurfaceDragOver(event);
 });
 expertEditorDropzone.addEventListener("dragleave", event => {
   if (!(event.relatedTarget instanceof Node) || !expertEditorDropzone.contains(event.relatedTarget)) {
@@ -7872,33 +7911,7 @@ expertEditorDropzone.addEventListener("dragleave", event => {
   }
 });
 expertEditorDropzone.addEventListener("drop", event => {
-  event.preventDefault();
-  expertEditorDropzone.classList.remove("drag-over");
-  const containerCard = event.dataTransfer?.getData("application/x-atlas-container-card");
-  if (containerCard) {
-    try {
-      moveContainerCardToSurface(JSON.parse(containerCard), calculateExpertDropPlacement(event));
-    } catch {
-      statusMessage.textContent = t("message.invalidDragPayload");
-    }
-    expertDragFieldOffset = { column: 0, row: 0 };
-    return;
-  }
-  const fieldIndex = event.dataTransfer?.getData("application/x-atlas-field-index");
-  if (fieldIndex) {
-    moveExpertEditorField(Number(fieldIndex), calculateExpertDropPlacement(event));
-    expertDragFieldOffset = { column: 0, row: 0 };
-    return;
-  }
-  const paletteCardId = event.dataTransfer?.getData("application/x-atlas-palette-card");
-  if (paletteCardId) {
-    addExpertEditorFieldFromPaletteCard(paletteCardId, calculateExpertDropPlacement(event));
-    return;
-  }
-  const templateId = event.dataTransfer?.getData("application/x-atlas-template")
-    || event.dataTransfer?.getData("text/plain")
-    || expertTemplate.value;
-  addExpertEditorFieldFromTemplate(templateId, calculateExpertDropPlacement(event));
+  handleExpertEditorSurfaceDrop(event);
 });
 saveHomeAssistantGroup.addEventListener("click", () => {
   const title = homeAssistantGroupName.value.trim();

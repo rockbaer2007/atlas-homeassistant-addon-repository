@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.149
+
+- Restore drag-and-drop placement on the Expert Card Editor grid surface.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.49`.
+
 ## 0.1.148
 
 - Keep nested `horizontal-stack` and `vertical-stack` containers intact when
