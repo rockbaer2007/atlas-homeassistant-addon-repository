@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.148
+
+- Keep nested `horizontal-stack` and `vertical-stack` containers intact when
+  exporting from the Expert Card Editor.
+- Allow explicit stack containers to be nested inside opposite stack containers.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.48`.
+
 ## 0.1.147
 
 - Do not preselect automations after loading or uploading an automation YAML

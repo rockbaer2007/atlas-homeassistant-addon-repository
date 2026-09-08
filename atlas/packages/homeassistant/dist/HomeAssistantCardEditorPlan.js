@@ -381,6 +381,7 @@ function normalizeSurfaceFieldEntry(entry) {
         id: entry.id.trim() || (entityId ? `${target}-${entityId}` : "Tab"),
         ...(entry.target ? { target } : {}),
         ...(target === "bubble" ? { bubbleButtonType: normalizeBubbleButtonType(entry.bubbleButtonType) } : {}),
+        ...(entry.layout === "horizontal-stack" || entry.layout === "vertical-stack" || entry.layout === "grid" ? { layout: entry.layout } : {}),
         ...(entityId ? { entityId } : {}),
         ...(entry.icon?.trim() ? { icon: entry.icon.trim() } : {}),
         ...(typeof entry.show_last_changed === "boolean" ? { show_last_changed: entry.show_last_changed } : {}),
@@ -406,7 +407,13 @@ function hasSurfaceFieldContent(field) {
         return true;
     if (field.target === "link" || field.target === "webpage")
         return true;
-    return (field.entries ?? []).some(entry => Boolean(entry.entityId) || (entry.cards ?? []).some(card => Boolean(card.entityId)));
+    return (field.entries ?? []).some(hasSurfaceFieldEntryContent);
+}
+function hasSurfaceFieldEntryContent(entry) {
+    return Boolean(entry.entityId)
+        || entry.target === "link"
+        || entry.target === "webpage"
+        || (entry.cards ?? []).some(hasSurfaceFieldEntryContent);
 }
 function listSurfaceFieldOverlaps(fields) {
     const overlaps = [];
@@ -503,31 +510,27 @@ function createSurfaceFieldCardConfiguration(field) {
                 }] : []),
         };
     }
-    const populatedEntries = entries.filter(entry => entry.entityId);
+    const populatedEntries = entries.filter(hasSurfaceFieldEntryContent);
     if (layout !== "card" && populatedEntries.length > 0) {
         if (layout === "grid") {
             return {
                 type: "grid",
                 columns: Math.min(4, Math.max(1, populatedEntries.length)),
                 square: false,
-                cards: populatedEntries.map(entry => createHomeAssistantCardConfiguration({
-                    target: entry.target ?? "entity",
-                    bubbleButtonType: entry.bubbleButtonType,
-                    title: entry.id,
-                    entityIds: [entry.entityId ?? ""],
-                })),
+                cards: populatedEntries.flatMap(entry => {
+                    const card = createSurfaceFieldEntryCardConfiguration(entry);
+                    return card ? [card] : [];
+                }),
             };
         }
         return {
             type: layout,
             ...(field.columns === "full" || typeof field.columns === "number" ? { columns: field.columns } : {}),
             ...(field.rows === "auto" ? { rows: "auto" } : {}),
-            cards: populatedEntries.map(entry => createHomeAssistantCardConfiguration({
-                target: entry.target ?? "entity",
-                bubbleButtonType: entry.bubbleButtonType,
-                title: entry.id,
-                entityIds: [entry.entityId ?? ""],
-            })),
+            cards: populatedEntries.flatMap(entry => {
+                const card = createSurfaceFieldEntryCardConfiguration(entry);
+                return card ? [card] : [];
+            }),
         };
     }
     if (!field.entityId && field.target !== "link" && field.target !== "webpage")
@@ -539,15 +542,44 @@ function createSurfaceFieldCardConfiguration(field) {
         entityIds: [field.entityId || defaultEntityForTarget(field.target)],
     });
 }
+function createSurfaceFieldEntryCardConfiguration(entry) {
+    const layout = entry.layout ?? "card";
+    const childCards = (entry.cards ?? [])
+        .filter(hasSurfaceFieldEntryContent)
+        .flatMap(cardEntry => {
+        const card = createSurfaceFieldEntryCardConfiguration(cardEntry);
+        return card ? [card] : [];
+    });
+    if ((layout === "horizontal-stack" || layout === "vertical-stack") && childCards.length > 0) {
+        return {
+            type: layout,
+            cards: childCards,
+        };
+    }
+    if (layout === "grid" && childCards.length > 0) {
+        return {
+            type: "grid",
+            columns: Math.min(4, Math.max(1, childCards.length)),
+            square: false,
+            cards: childCards,
+        };
+    }
+    if (!entry.entityId && entry.target !== "link" && entry.target !== "webpage")
+        return undefined;
+    return createHomeAssistantCardConfiguration({
+        target: entry.target ?? "entity",
+        bubbleButtonType: entry.bubbleButtonType,
+        title: entry.id,
+        entityIds: [entry.entityId ?? ""],
+    });
+}
 function createTabbedCardTabContent(entry) {
     const cards = (entry.cards?.length ? entry.cards : [entry])
-        .filter(cardEntry => cardEntry.entityId)
-        .map(cardEntry => createHomeAssistantCardConfiguration({
-        target: cardEntry.target === "tabbed-card-v2" ? "entity" : cardEntry.target ?? "entity",
-        bubbleButtonType: cardEntry.bubbleButtonType,
-        title: cardEntry.id,
-        entityIds: [cardEntry.entityId ?? ""],
-    }));
+        .filter(hasSurfaceFieldEntryContent)
+        .flatMap(cardEntry => {
+        const card = createSurfaceFieldEntryCardConfiguration(cardEntry);
+        return card ? [card] : [];
+    });
     if (cards.length === 0) {
         return undefined;
     }

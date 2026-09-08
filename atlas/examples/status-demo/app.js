@@ -3983,9 +3983,30 @@ function createTabbedCardEntry(input = {}) {
     id: title,
     target,
     ...(target === "bubble" ? { bubbleButtonType: input.bubbleButtonType ?? expertBubbleButtonType.value ?? "state" } : {}),
+    ...((input.layout === "horizontal-stack" || input.layout === "vertical-stack" || input.layout === "grid") ? { layout: input.layout } : {}),
     entityId,
     icon: input.icon?.trim() || "mdi:tab",
+    ...(Array.isArray(input.cards) && input.cards.length ? { cards: input.cards } : {}),
   };
+}
+
+function createContainerEntryFromExpertField(field) {
+  const entries = field.entries ?? [];
+  if (isStackContainerField(field)) {
+    return createTabbedCardEntry({
+      title: field.id,
+      target: field.target,
+      layout: field.layout,
+      entityId: field.entityId || entries.find(entry => entry.entityId)?.entityId || currentEntityId(),
+      cards: entries,
+    });
+  }
+  return createTabbedCardEntry({
+    title: field.id,
+    entityId: field.entityId || entries.find(entry => entry.entityId)?.entityId || currentEntityId(),
+    target: field.target,
+    bubbleButtonType: field.bubbleButtonType,
+  });
 }
 
 function createTabbedCardTab(input = {}) {
@@ -4347,12 +4368,7 @@ function moveExpertFieldIntoTabbedCard(fieldIndex, tabbedFieldIndex) {
   const field = expertEditorFields[fieldIndex];
   const container = expertEditorFields[tabbedFieldIndex];
   if (!field || !isTabbedCardField(container) || fieldIndex === tabbedFieldIndex || field.target === "tabbed-card-v2") return false;
-  const entry = createTabbedCardEntry({
-    title: field.id,
-    entityId: field.entityId || field.entries?.[0]?.entityId || currentEntityId(),
-    target: field.target,
-    bubbleButtonType: field.bubbleButtonType,
-  });
+  const entry = createContainerEntryFromExpertField(field);
   const tab = container.entries?.[normalizeTabbedCardTabIndex(container)] ?? entry;
   expertEditorFields[tabbedFieldIndex] = addCardEntryToActiveTabInField(container, entry);
   expertEditorFields.splice(fieldIndex, 1);
@@ -5975,13 +5991,8 @@ function handleDropIntoStackContainer(event, fieldIndex) {
   const draggedFieldIndex = event.dataTransfer?.getData("application/x-atlas-field-index");
   if (draggedFieldIndex) {
     const field = expertEditorFields[Number(draggedFieldIndex)];
-    if (field && Number(draggedFieldIndex) !== fieldIndex && !isEditableContainerField(field)) {
-      const entry = createTabbedCardEntry({
-        title: field.id,
-        entityId: field.entityId || field.entries?.[0]?.entityId || currentEntityId(),
-        target: field.target,
-        bubbleButtonType: field.bubbleButtonType,
-      });
+    if (field && Number(draggedFieldIndex) !== fieldIndex && !isTabbedCardField(field)) {
+      const entry = createContainerEntryFromExpertField(field);
       addEntryToStackContainerFieldAt(fieldIndex, entry);
       expertEditorFields.splice(Number(draggedFieldIndex), 1);
       const nextFieldIndex = Number(draggedFieldIndex) < fieldIndex ? fieldIndex - 1 : fieldIndex;

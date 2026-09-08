@@ -1115,6 +1115,144 @@ describe("Home Assistant frontend integration planning", () => {
     });
   });
 
+  it("keeps explicit stack containers nested inside opposite stack containers", () => {
+    expect(createHomeAssistantCardEditorConfiguration({
+      editorMode: "expert",
+      fields: [
+        {
+          id: "Outer horizontal",
+          target: "entities",
+          entityId: "",
+          layout: "horizontal-stack",
+          entries: [
+            {
+              id: "Nested vertical",
+              target: "entities",
+              layout: "vertical-stack",
+              cards: [
+                {
+                  id: "Top",
+                  target: "entity",
+                  entityId: "sensor.top",
+                },
+                {
+                  id: "Bottom",
+                  target: "button",
+                  entityId: "light.bottom",
+                },
+              ],
+            },
+            {
+              id: "Right",
+              target: "sensor",
+              entityId: "sensor.right",
+            },
+          ],
+          column: 0,
+          row: 0,
+          width: 8,
+          height: 3,
+        },
+        {
+          id: "Outer vertical",
+          target: "entities",
+          entityId: "",
+          layout: "vertical-stack",
+          entries: [
+            {
+              id: "Nested horizontal",
+              target: "entities",
+              layout: "horizontal-stack",
+              cards: [
+                {
+                  id: "Left",
+                  target: "entity",
+                  entityId: "sensor.left",
+                },
+                {
+                  id: "Middle",
+                  target: "bubble",
+                  bubbleButtonType: "switch",
+                  entityId: "switch.middle",
+                },
+              ],
+            },
+            {
+              id: "Footer",
+              target: "mushroom-template",
+              entityId: "sensor.footer",
+            },
+          ],
+          column: 0,
+          row: 4,
+          width: 8,
+          height: 3,
+        },
+      ],
+    })).toEqual({
+      type: "vertical-stack",
+      cards: [
+        {
+          type: "horizontal-stack",
+          cards: [
+            {
+              type: "vertical-stack",
+              cards: [
+                {
+                  type: "entity",
+                  name: "Top",
+                  entity: "sensor.top",
+                },
+                {
+                  type: "button",
+                  name: "Bottom",
+                  entity: "light.bottom",
+                  tap_action: {
+                    action: "toggle",
+                  },
+                },
+              ],
+            },
+            {
+              type: "sensor",
+              name: "Right",
+              entity: "sensor.right",
+            },
+          ],
+        },
+        {
+          type: "vertical-stack",
+          cards: [
+            {
+              type: "horizontal-stack",
+              cards: [
+                {
+                  type: "entity",
+                  name: "Left",
+                  entity: "sensor.left",
+                },
+                {
+                  type: "custom:bubble-card",
+                  card_type: "button",
+                  button_type: "switch",
+                  name: "Middle",
+                  entity: "switch.middle",
+                  show_state: true,
+                },
+              ],
+            },
+            {
+              type: "custom:mushroom-template-card",
+              primary: "Footer",
+              secondary: "sensor.footer",
+              entity: "sensor.footer",
+            },
+          ],
+        },
+      ],
+    });
+  });
+
   it("falls back to demo entities when an expert editor plan has no populated fields", () => {
     expect(createHomeAssistantCardEditorConfiguration({
       cardName: "Empty Expert",
