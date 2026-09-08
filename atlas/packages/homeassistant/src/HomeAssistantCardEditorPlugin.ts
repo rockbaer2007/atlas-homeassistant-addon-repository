@@ -25,7 +25,6 @@ export type HomeAssistantCardEditorExtensionPoint =
   typeof HomeAssistantCardEditorExtensionPoints[keyof typeof HomeAssistantCardEditorExtensionPoints];
 
 export const HomeAssistantCardEditorPluginCapabilities = [
-  "homeassistant.simple-editor",
   "homeassistant.expert-editor",
   "homeassistant.entity-picker",
   "homeassistant.card-export",
@@ -67,11 +66,11 @@ export function createHomeAssistantCardEditorPlugin(): RuntimePlugin {
         de: "ATLAS Home Assistant Karten-Editor",
         en: "ATLAS Home Assistant Card Editor",
       },
-      version: "0.2.0-alpha.61",
-      description: "Reference plugin for Home Assistant card editing, entity selection and HACS-oriented exports.",
+      version: "0.2.0-alpha.62",
+      description: "Reference plugin for Expert Home Assistant card editing, entity selection and HACS-oriented exports.",
       descriptionI18n: {
-        de: "Referenz-Plugin für Home-Assistant-Kartenbearbeitung, Entitätsauswahl und HACS-orientierte Exporte.",
-        en: "Reference plugin for Home Assistant card editing, entity selection and HACS-oriented exports.",
+        de: "Referenz-Plugin für Expert-Home-Assistant-Kartenbearbeitung, Entitätsauswahl und HACS-orientierte Exporte.",
+        en: "Reference plugin for Expert Home Assistant card editing, entity selection and HACS-oriented exports.",
       },
       icon: "icon.svg",
       logo: "logo.svg",
@@ -99,7 +98,7 @@ export function createHomeAssistantCardEditorPluginInstallPackage(): RuntimePlug
       "",
       "This package describes the first official ATLAS reference plugin.",
       "",
-      "It provides Simple and Expert Home Assistant card editing, entity picker",
+      "It provides Expert Home Assistant card editing, entity picker",
       "integration, card export and HACS-oriented package export capabilities.",
       "",
     ].join("\n"),

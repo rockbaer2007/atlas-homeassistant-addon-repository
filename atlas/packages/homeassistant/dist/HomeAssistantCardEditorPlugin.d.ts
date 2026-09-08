@@ -10,7 +10,7 @@ export declare const HomeAssistantCardEditorExtensionPoints: {
     readonly packageBuilder: "atlas.plugin.package-builder";
 };
 export type HomeAssistantCardEditorExtensionPoint = typeof HomeAssistantCardEditorExtensionPoints[keyof typeof HomeAssistantCardEditorExtensionPoints];
-export declare const HomeAssistantCardEditorPluginCapabilities: readonly ["homeassistant.simple-editor", "homeassistant.expert-editor", "homeassistant.entity-picker", "homeassistant.card-export", "homeassistant.hacs-package-export"];
+export declare const HomeAssistantCardEditorPluginCapabilities: readonly ["homeassistant.expert-editor", "homeassistant.entity-picker", "homeassistant.card-export", "homeassistant.hacs-package-export"];
 export type HomeAssistantCardEditorPluginCapability = typeof HomeAssistantCardEditorPluginCapabilities[number];
 export type HomeAssistantCardEditorPluginService = Readonly<{
     pluginId: typeof HomeAssistantCardEditorPluginId;

@@ -238,7 +238,7 @@ let currentThemePreference = "auto";
 const translations = {
   en: {
     "page.title": "ATLAS Home Assistant Card Editor",
-    "page.subtitle": "Build Simple or Expert Home Assistant cards from live or local entities.",
+    "page.subtitle": "Build Expert Home Assistant cards from live or local entities.",
     "message.editorLoading": "Please wait, the editor is loading. This can take 5-10 seconds.",
     "heading.resourceHint": "Resource hint",
     "heading.temporaryResourceDebug": "Temporary HA card resource check",
@@ -702,7 +702,7 @@ const translations = {
   },
   de: {
     "page.title": "ATLAS Home Assistant Card Editor",
-    "page.subtitle": "Erstelle Simple- oder Expert-Home-Assistant-Cards aus Live- oder lokalen Entitäten.",
+    "page.subtitle": "Erstelle Expert-Home-Assistant-Cards aus Live- oder lokalen Entitäten.",
     "message.editorLoading": "Bitte warten, der Editor wird geladen. Das kann 5-10 Sekunden dauern.",
     "heading.resourceHint": "Ressourcen-Hinweis",
     "heading.temporaryResourceDebug": "Temporärer HA-Card-Ressourcencheck",
@@ -1473,7 +1473,7 @@ let lovelaceResourcesChecked = false;
 let lovelaceResourceRequestTimer;
 let activeLovelaceResourceRequestId;
 const lovelaceResourceDebugEvents = [];
-let activeEditorMode = "simple";
+let activeEditorMode = "expert";
 let importedSimpleCard;
 let importedSimpleCodePreview;
 let importedSimpleStyleInspection;
@@ -1497,7 +1497,7 @@ let entityCatalogSyncStatus = { state: "idle", count: 0, added: 0, removed: 0, r
 const stackSelectedEntityIds = new Set();
 let statusPreviewEntityId;
 let pendingImport;
-let initialEditorMode = "simple";
+let initialEditorMode = "expert";
 let initialGroupSelection = "overview";
 let initialCardTarget = "entities";
 let panelGroups = [
@@ -1573,9 +1573,7 @@ try {
   if (Number.isInteger(savedConfiguration?.selectedExpertFieldIndex)) {
     selectedExpertFieldIndex = Math.max(-1, Math.min(expertEditorFields.length - 1, savedConfiguration.selectedExpertFieldIndex));
   }
-  if (savedConfiguration?.editorMode === "expert") {
-    initialEditorMode = "expert";
-  }
+  initialEditorMode = "expert";
   if (typeof savedConfiguration?.expertCardName === "string") {
     expertCardName.value = savedConfiguration.expertCardName;
   }
@@ -1667,27 +1665,25 @@ function renderCardTargetOptions(selectedTarget = haCardTarget.value || "entitie
   syncCardLayoutState();
 }
 
-function renderEditorMode(mode = "simple") {
-  const expert = mode === "expert";
-  activeEditorMode = expert ? "expert" : "simple";
-  panelGroupControl.hidden = expert;
-  groupNameControl.hidden = expert;
-  cardTargetControl.hidden = expert;
-  cardLayoutControl.hidden = expert;
-  cardStyleExportControl.hidden = !expert;
-  saveHomeAssistantGroup.hidden = expert;
-  deleteHomeAssistantGroup.hidden = expert;
-  duplicateHomeAssistantGroup.hidden = expert;
+function renderEditorMode() {
+  activeEditorMode = "expert";
+  panelGroupControl.hidden = true;
+  groupNameControl.hidden = true;
+  cardTargetControl.hidden = true;
+  cardLayoutControl.hidden = true;
+  cardStyleExportControl.hidden = false;
+  saveHomeAssistantGroup.hidden = true;
+  deleteHomeAssistantGroup.hidden = true;
+  duplicateHomeAssistantGroup.hidden = true;
   simpleEntityControls.hidden = false;
-  simpleCardSection.hidden = expert;
-  expertEditorSection.hidden = !expert;
+  simpleCardSection.hidden = true;
+  expertEditorSection.hidden = false;
   for (const button of editorModeButtons) {
-    button.setAttribute("aria-pressed", String(button.dataset.editorMode === activeEditorMode));
+    button.setAttribute("aria-pressed", String(button.dataset.editorMode === "expert"));
   }
-  exportHaCardConfig.textContent = expert ? t("button.exportExpertHaCard") : t("button.exportHaCard");
-  copyHaCardConfig.textContent = expert ? t("button.copyExpertHaCard") : t("button.copyHaCard");
-  copyHaCardResources.textContent = expert ? t("button.copyExpertResources") : t("button.copyResources");
-  renderHaCardPreview();
+  exportHaCardConfig.textContent = t("button.exportExpertHaCard");
+  copyHaCardConfig.textContent = t("button.copyExpertHaCard");
+  copyHaCardResources.textContent = t("button.copyExpertResources");
   renderExpertEditorPreview();
 }
 

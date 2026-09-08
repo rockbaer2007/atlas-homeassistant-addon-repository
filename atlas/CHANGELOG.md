@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.163
+
+- Start the Card Editor directly in Expert mode.
+- Remove the visible Simple mode switch and the entity-section heading.
+- Keep import, HA-card import, YAML paste and resource-debug tools available.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.62`.
+
 ## 0.1.162
 
 - Keep empty nested Expert Card Editor stacks in exported YAML instead of

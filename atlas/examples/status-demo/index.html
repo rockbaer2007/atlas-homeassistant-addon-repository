@@ -3301,7 +3301,7 @@
       <div class="app-header">
         <div>
           <h1 data-i18n="page.title">ATLAS Home Assistant Card Editor</h1>
-          <p data-i18n="page.subtitle">Build Simple or Expert Home Assistant cards from live or local entities.</p>
+          <p data-i18n="page.subtitle">Build Expert Home Assistant cards from live or local entities.</p>
         </div>
         <div class="header-actions">
           <button id="open-problem-report" class="problem-report-button" type="button" data-i18n="button.reportProblem">Report problem</button>
@@ -3444,8 +3444,7 @@
             </div>
           </section>
         </div>
-        <details id="simple-entity-controls" class="entity-picker-panel">
-          <summary data-i18n="heading.entitySelection">Entities for the card</summary>
+        <section id="simple-entity-controls" class="entity-picker-panel">
           <div class="card-import-entity-layout">
             <section class="entity-picker-column import-debug-column">
               <label class="temporary-resource-debug-toggle">
@@ -3498,12 +3497,8 @@
               <div id="card-entity-overview" class="card-entity-overview" aria-live="polite"></div>
             </section>
           </div>
-        </details>
-        <div class="editor-mode-toggle" role="group" aria-label="Card editor mode" data-i18n-aria-label="aria.cardEditorMode">
-          <button type="button" data-editor-mode="simple" aria-pressed="true" data-i18n="button.simpleMode">Simple</button>
-          <button type="button" data-editor-mode="expert" aria-pressed="false" data-i18n="button.expertMode">Expert</button>
-        </div>
-        <div id="simple-card-section" class="ha-card-preview">
+        </section>
+        <div id="simple-card-section" class="ha-card-preview" hidden>
           <div class="preview-heading-row">
             <label for="ha-card-visual-preview" data-i18n="label.haCardPreview">HA card preview</label>
             <button id="reset-simple-preview" class="preview-reset-button" type="button" data-i18n="button.resetPreview">Reset preview</button>
@@ -3512,7 +3507,7 @@
           <label for="ha-card-preview" data-i18n="label.haCardCode">HA card code</label>
           <pre id="ha-card-preview" aria-live="polite"></pre>
         </div>
-        <div id="expert-editor-section" hidden>
+        <div id="expert-editor-section">
           <h2 class="entity-section-title" data-i18n="heading.expertEditor">Expert editor preview</h2>
           <div class="expert-editor-workbench">
           <aside class="expert-editor-sidebar" aria-label="Available Home Assistant cards" data-i18n-aria-label="aria.availableCards">
