@@ -1472,6 +1472,92 @@ describe("Home Assistant entities card configuration", () => {
     });
   });
 
+  it("imports hand-written Tabbed Card V2 YAML with nested stack cards", () => {
+    const text = [
+      "type: custom:tabbed-card-v2",
+      "styles:",
+      "  --mdc-theme-primary: yellow",
+      "  --mdc-tab-text-label-color-default: lightblue",
+      "card_mod:",
+      "  style: |",
+      "    ha-card {",
+      "      background: transparent !important;",
+      "    }",
+      "options:",
+      "  defaultTabIndex: 0",
+      "rows: auto",
+      "tabs:",
+      "  - attributes:",
+      "      label: Keller",
+      "      icon: mdi:home-floor-negative-1",
+      "    card:",
+      "      type: horizontal-stack",
+      "      cards:",
+      "        - type: vertical-stack",
+      "          cards:",
+      "            - type: custom:mushroom-entity-card",
+      "              entity: switch.trockner_1_2",
+      "              tap_action:",
+      "                action: toggle",
+      "              icon: mdi:tumble-dryer",
+      "              icon_color: blue",
+      "              name: TR 1",
+      "            - type: custom:vertical-stack-in-card",
+      "              cards:",
+      "                - type: custom:mushroom-entity-card",
+      "                  entity: switch.waschmaschine_1_2",
+      "                  tap_action:",
+      "                    action: toggle",
+      "                  name: Waschmaschine 1",
+      "                - type: custom:mushroom-chips-card",
+      "                  chips:",
+      "                    - type: template",
+      "                      entity: switch.waschmaschine_1_child_lock_2",
+      "                      icon: |",
+      "                        {% if is_state(entity, 'on') %}",
+      "                          mdi:lock",
+      "                        {% else %}",
+      "                          mdi:lock-open-variant",
+      "                        {% endif %}",
+      "          title: Kellergeräte",
+      "  - attributes:",
+      "      label: Erdgeschoss",
+      "      icon: mdi:home-floor-0",
+      "    card:",
+      "      type: vertical-stack",
+      "      cards:",
+      "        - type: entities",
+      "          title: Entities 7",
+      "          entities:",
+      "            - entity: switch.trockner_1_2",
+      "grid_options:",
+      "  columns: full",
+      "  rows: auto",
+    ].join("\n");
+
+    expect(decideHomeAssistantCardArtifactImport(text)).toMatchObject({
+      action: "import",
+      inspection: {
+        kind: "home-assistant-card",
+        importable: true,
+      },
+    });
+    const summary = summarizeHomeAssistantCardImport(text);
+    expect(summary).toMatchObject({
+      target: "tabbed-card-v2",
+      title: "Keller",
+      entityIds: [
+        "switch.trockner_1_2",
+        "switch.waschmaschine_1_2",
+        "switch.waschmaschine_1_child_lock_2",
+      ],
+      card: {
+        type: "custom:tabbed-card-v2",
+        rows: "auto",
+      },
+    });
+  });
+
   it("summarizes imported cards for host editors", () => {
     const summary = summarizeHomeAssistantCardImport([
       "type: horizontal-stack",

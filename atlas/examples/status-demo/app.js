@@ -3180,6 +3180,12 @@ function collectImportedSimpleEntityNames(card) {
 
 function createExpertFieldsFromImportedCard(card) {
   const entities = getSimplePreviewCardEntities(card);
+  if (card?.type === "custom:tabbed-card-v2") {
+    return [createImportedTabbedCardExpertField(card)];
+  }
+  if (card?.type === "horizontal-stack" || card?.type === "vertical-stack") {
+    return [createImportedStackExpertField(card)];
+  }
   if (card?.type === "glance") {
     return [createImportedOverviewExpertField(card, entities)];
   }
@@ -3193,6 +3199,92 @@ function createExpertFieldsFromImportedCard(card) {
     width: 4,
     height: 2,
   }));
+}
+
+function createImportedTabbedCardExpertField(card) {
+  const tabs = Array.isArray(card.tabs) ? card.tabs : [];
+  const entries = tabs.map((tab, index) => {
+    const attributes = tab?.attributes && typeof tab.attributes === "object" ? tab.attributes : {};
+    const tabCard = tab?.card && typeof tab.card === "object" ? tab.card : undefined;
+    return createTabbedCardTab({
+      id: typeof attributes.label === "string" && attributes.label.trim() ? attributes.label.trim() : `Tab ${index + 1}`,
+      title: typeof attributes.label === "string" && attributes.label.trim() ? attributes.label.trim() : `Tab ${index + 1}`,
+      icon: typeof attributes.icon === "string" && attributes.icon.trim() ? attributes.icon.trim() : index === 0 ? "mdi:tab" : "mdi:tab-plus",
+      cards: tabCard ? [createImportedContainerEntryFromCard(tabCard, index)] : [],
+    });
+  });
+  return {
+    id: getSimplePreviewCardTitle(card) || "Tabbed Card V2",
+    target: "tabbed-card-v2",
+    templateId: "tabbed-card-v2",
+    entityId: "",
+    layout: "vertical-stack",
+    entries,
+    activeTabIndex: Math.max(0, Math.min(Math.max(0, entries.length - 1), Number(card.options?.defaultTabIndex) || 0)),
+    ...(card.columns === "full" ? { columns: "full" } : {}),
+    ...(card.rows === "auto" ? { rows: "auto" } : {}),
+    column: 0,
+    row: 0,
+    width: 8,
+    height: Math.max(3, Math.min(8, entries.length + 2)),
+  };
+}
+
+function createImportedStackExpertField(card) {
+  const entries = Array.isArray(card.cards)
+    ? card.cards.map((child, index) => createImportedContainerEntryFromCard(child, index))
+    : [];
+  return normalizeStackContainerLayout({
+    id: getSimplePreviewCardTitle(card) || (card.type === "horizontal-stack" ? "Horizontal stack" : "Vertical stack"),
+    target: getImportedCardTarget(card),
+    templateId: card.type === "horizontal-stack" ? "horizontal-stack" : "vertical-stack",
+    entityId: entries.find(entry => entry.entityId)?.entityId ?? "",
+    layout: card.type,
+    entries,
+    ...(card.columns === "full" || typeof card.columns === "number" ? { columns: card.columns } : {}),
+    ...(card.rows === "auto" ? { rows: "auto" } : {}),
+    column: 0,
+    row: 0,
+    width: card.type === "horizontal-stack" ? 8 : 4,
+    height: Math.max(2, Math.min(8, entries.length || 2)),
+  });
+}
+
+function createImportedContainerEntryFromCard(card, index = 0) {
+  const title = getSimplePreviewCardTitle(card) || `Card ${index + 1}`;
+  const entityIds = getSimplePreviewCardEntities(card).map(entity => entity.entity);
+  const target = getImportedCardTarget(card);
+  if ((card?.type === "horizontal-stack" || card?.type === "vertical-stack" || card?.type === "grid") && Array.isArray(card.cards)) {
+    return {
+      id: title,
+      target,
+      layout: card.type,
+      entityId: entityIds[0] ?? "",
+      cards: card.cards.map((child, childIndex) => createImportedContainerEntryFromCard(child, childIndex)),
+    };
+  }
+  return {
+    id: title,
+    target,
+    ...(target === "bubble" ? { bubbleButtonType: card.button_type ?? "state" } : {}),
+    entityId: entityIds[0] ?? (typeof card?.entity === "string" ? card.entity : ""),
+    ...(typeof card?.icon === "string" ? { icon: card.icon } : {}),
+  };
+}
+
+function getImportedCardTarget(card) {
+  if (!card || typeof card !== "object") return "entity";
+  if (card.type === "entities") return "entities";
+  if (card.type === "glance") return "glance";
+  if (card.type === "custom:mushroom-template-card" || card.type === "custom:mushroom-entity-card") return "mushroom-template";
+  if (card.type === "custom:bubble-card") return "bubble";
+  if (card.type === "custom:tabbed-card-v2") return "tabbed-card-v2";
+  if (card.type === "button") return card.tap_action?.action === "navigate" ? "link" : "button";
+  if (card.type === "sensor") return "sensor";
+  if (card.type === "thermostat") return "thermostat";
+  if (card.type === "iframe") return "webpage";
+  if (typeof card.type === "string" && card.type.startsWith("custom:")) return "custom-card";
+  return "entity";
 }
 
 function createImportedOverviewExpertField(card, entities) {
@@ -8364,7 +8456,7 @@ function applyHomeAssistantCardImportSummary(summary) {
     selectedExpertFieldIndex = expertEditorFields.length ? 0 : -1;
     expertCardName.value = "";
     expertFieldEditing = false;
-    renderEditorMode("simple");
+    renderEditorMode(shouldOpenImportedCardInExpertMode(summary.card) ? "expert" : "simple");
   }
   persistConfiguration();
   applyingImportedSimpleSummary = true;
@@ -8379,6 +8471,12 @@ function applyHomeAssistantCardImportSummary(summary) {
     title,
     entities: entityIds.length,
   });
+}
+
+function shouldOpenImportedCardInExpertMode(card) {
+  return card?.type === "custom:tabbed-card-v2"
+    || card?.type === "horizontal-stack"
+    || card?.type === "vertical-stack";
 }
 connectButton?.addEventListener("click", connectHomeAssistant);
 disconnectButton?.addEventListener("click", disconnectHomeAssistant);

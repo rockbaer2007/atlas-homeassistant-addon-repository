@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.151
+
+- Accept hand-written Tabbed Card V2 YAML with nested stack cards in the Card
+  Editor import flow.
+- Open imported Tabbed Card V2 and root stack cards directly in Expert mode.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.50`.
+
 ## 0.1.150
 
 - Report the bundled Home Assistant Card Editor version consistently as
