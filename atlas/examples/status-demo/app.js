@@ -4479,28 +4479,35 @@ function moveContainerCardToSurface(reference, placementOverride) {
   const card = getContainerCard(reference);
   if (!field || !card) return false;
   const preferredPlacement = placementOverride ?? {};
+  const isContainerCard = card.layout === "horizontal-stack" || card.layout === "vertical-stack" || card.layout === "grid";
   const placement = findAvailableExpertSurfacePlacement(
-    preferredPlacement.width ?? 3,
-    preferredPlacement.height ?? 1,
+    preferredPlacement.width ?? (isContainerCard ? Math.max(4, Math.min(expertGridColumns, card.cards?.length || 4)) : 3),
+    preferredPlacement.height ?? (isContainerCard ? 2 : 1),
     preferredPlacement,
   );
   if (!removeContainerCard(reference)) return false;
   const templateId = templateIdForCardTarget(card.target);
   const target = card.target ?? "entity";
+  const width = placement.width ?? (isContainerCard ? Math.max(4, Math.min(expertGridColumns, card.cards?.length || 4)) : 3);
+  const height = placement.height ?? (isContainerCard ? 2 : 1);
   expertEditorFields.push({
     id: card.id,
     target,
     ...(card.bubbleButtonType ? { bubbleButtonType: card.bubbleButtonType } : {}),
-    entityId: card.entityId ?? currentEntityId(),
-    layout: "card",
+    entityId: isContainerCard ? "" : card.entityId ?? currentEntityId(),
+    layout: isContainerCard ? card.layout : "card",
+    ...(isContainerCard ? { entries: card.cards ?? [], columns: width, rows: "auto" } : {}),
     column: placement.column,
     row: placement.row,
-    width: placement.width ?? 3,
-    height: placement.height ?? 1,
-    resizeBaseWidth: placement.width ?? 3,
-    resizeBaseHeight: placement.height ?? 1,
-    templateId,
+    width,
+    height,
+    resizeBaseWidth: width,
+    resizeBaseHeight: height,
+    templateId: isContainerCard && card.layout ? card.layout : templateId,
   });
+  if (isStackContainerField(expertEditorFields[expertEditorFields.length - 1])) {
+    expertEditorFields[expertEditorFields.length - 1] = normalizeStackContainerLayout(expertEditorFields[expertEditorFields.length - 1]);
+  }
   selectedExpertFieldIndex = expertEditorFields.length - 1;
   selectedContainerCardRef = undefined;
   persistConfiguration();

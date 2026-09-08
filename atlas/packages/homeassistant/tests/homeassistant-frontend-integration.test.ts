@@ -1149,6 +1149,12 @@ describe("Home Assistant frontend integration planning", () => {
               target: "sensor",
               entityId: "sensor.right",
             },
+            {
+              id: "Empty vertical",
+              target: "entities",
+              layout: "vertical-stack",
+              cards: [],
+            },
           ],
           column: 0,
           row: 0,
@@ -1219,6 +1225,10 @@ describe("Home Assistant frontend integration planning", () => {
               type: "sensor",
               name: "Right",
               entity: "sensor.right",
+            },
+            {
+              type: "vertical-stack",
+              cards: [],
             },
           ],
         },

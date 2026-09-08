@@ -410,6 +410,8 @@ function hasSurfaceFieldContent(field) {
     return (field.entries ?? []).some(hasSurfaceFieldEntryContent);
 }
 function hasSurfaceFieldEntryContent(entry) {
+    if (entry.layout === "horizontal-stack" || entry.layout === "vertical-stack" || entry.layout === "grid")
+        return true;
     return Boolean(entry.entityId)
         || entry.target === "link"
         || entry.target === "webpage"
@@ -548,13 +550,13 @@ function createSurfaceFieldEntryCardConfiguration(entry) {
         const card = createSurfaceFieldEntryCardConfiguration(cardEntry);
         return card ? [card] : [];
     });
-    if ((layout === "horizontal-stack" || layout === "vertical-stack") && childCards.length > 0) {
+    if (layout === "horizontal-stack" || layout === "vertical-stack") {
         return {
             type: layout,
             cards: childCards,
         };
     }
-    if (layout === "grid" && childCards.length > 0) {
+    if (layout === "grid") {
         return {
             type: "grid",
             columns: Math.min(4, Math.max(1, childCards.length)),

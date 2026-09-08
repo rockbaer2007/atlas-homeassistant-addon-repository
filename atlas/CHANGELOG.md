@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.162
+
+- Keep empty nested Expert Card Editor stacks in exported YAML instead of
+  dropping the stack structure.
+- Preserve stack layout and child cards when using `Out` to move a nested stack
+  back to the editor surface.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.61`.
+
 ## 0.1.161
 
 - Route new cards into the selected nested Expert Card Editor stack instead of
