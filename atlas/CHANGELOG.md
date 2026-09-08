@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.164
+
+- Map registered but unknown Lovelace resources to local `custom:*` card types.
+- Enable mapped resources as draggable Expert Card Editor palette cards.
+- Include mapped custom-card resource paths when copying Lovelace resources.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.63`.
+
 ## 0.1.163
 
 - Start the Card Editor directly in Expert mode.

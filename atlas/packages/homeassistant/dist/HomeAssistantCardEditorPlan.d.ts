@@ -20,6 +20,8 @@ export interface HomeAssistantCardEditorTemplatePlacementInput {
     readonly template: HomeAssistantCardEditorTemplate | HomeAssistantCardEditorTemplateId;
     readonly target?: HomeAssistantCardTarget;
     readonly bubbleButtonType?: HomeAssistantBubbleButtonType;
+    readonly customType?: `custom:${string}`;
+    readonly resourceUrl?: string;
     readonly entityId?: string;
     readonly id?: string;
     readonly column: number;
@@ -32,6 +34,8 @@ export interface HomeAssistantCardEditorSurfaceFieldEntry {
     readonly id: string;
     readonly target?: HomeAssistantCardTarget;
     readonly bubbleButtonType?: HomeAssistantBubbleButtonType;
+    readonly customType?: `custom:${string}`;
+    readonly resourceUrl?: string;
     readonly layout?: HomeAssistantCardEditorSurfaceFieldLayout;
     readonly entityId?: string;
     readonly icon?: string;
@@ -43,6 +47,8 @@ export interface HomeAssistantCardEditorSurfaceField {
     readonly id: string;
     readonly target: HomeAssistantCardTarget;
     readonly bubbleButtonType?: HomeAssistantBubbleButtonType;
+    readonly customType?: `custom:${string}`;
+    readonly resourceUrl?: string;
     readonly entityId: string;
     readonly layout?: HomeAssistantCardEditorSurfaceFieldLayout;
     readonly entries?: readonly HomeAssistantCardEditorSurfaceFieldEntry[];

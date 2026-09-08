@@ -207,6 +207,7 @@ describe("Home Assistant frontend integration planning", () => {
         "webpage",
         "bubble",
         "mushroom-template",
+        "custom-card",
         "tabbed-card-v2",
       ],
       fields: [],

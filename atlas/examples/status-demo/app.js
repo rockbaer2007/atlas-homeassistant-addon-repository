@@ -436,6 +436,9 @@ const translations = {
     "message.invalidConnectionUrl": "Home Assistant URL is invalid.",
     "message.paletteEntriesDetected": "{total} palette entries detected from loaded HA resources, including {hacs} /hacsfiles resources.",
     "message.noPaletteEntriesDetected": "No additional scan-only palette entries detected from loaded HA resources.",
+    "message.mapCustomCardPrompt": "Enter the Lovelace card type for {label}. Example: custom:mini-graph-card",
+    "message.mapCustomCardInvalid": "Mapping cancelled: enter a valid custom:* card type.",
+    "message.mapCustomCardSaved": "{label} mapped to {type}. The card is now available in the palette.",
     "message.refreshingResources": "{message} Refreshing Lovelace resources from Home Assistant.",
     "message.connectAndScanAgain": "{message} Connect to Home Assistant and scan again to refresh the list.",
     "message.templateSizeSet": "{template} size set to {columns} columns and {rows} rows.",
@@ -620,7 +623,11 @@ const translations = {
     "text.auto": "auto",
     "text.categoryCore": "Core",
     "text.categoryCommunity": "Community",
+    "text.categoryMappedHacs": "Mapped HACS card",
+    "text.categoryMappedHa": "Mapped HA card",
     "text.registeredNotMapped": "{category} registered, not mapped yet",
+    "text.mappedCustomCard": "Mapped as {type}",
+    "text.mapCardType": "Map card type",
     "text.paletteDetail": "{layout}, {size}, {target}",
     "text.scannedCardUnavailable": "{label} is registered in Home Assistant, but ATLAS does not map this custom card yet.",
     "text.paletteCardSelected": "{label} selected from the card list.",
@@ -682,6 +689,7 @@ const translations = {
     "target.thermostat": "Thermostat",
     "target.link": "Link",
     "target.webpage": "Webpage",
+    "target.custom-card": "Custom card",
     "target.mushroom-template": "Mushroom template",
     "target.bubble": "Bubble",
     "target.tabbed-card-v2": "Tabbed Card V2",
@@ -900,6 +908,9 @@ const translations = {
     "message.invalidConnectionUrl": "Home-Assistant-URL ist ungültig.",
     "message.paletteEntriesDetected": "{total} Palette-Einträge aus geladenen HA-Ressourcen erkannt, davon {hacs} /hacsfiles-Ressourcen.",
     "message.noPaletteEntriesDetected": "Keine zusätzlichen Scan-only-Palette-Einträge aus geladenen HA-Ressourcen erkannt.",
+    "message.mapCustomCardPrompt": "Gib den Lovelace-Card-Typ für {label} ein. Beispiel: custom:mini-graph-card",
+    "message.mapCustomCardInvalid": "Mapping abgebrochen: Bitte einen gültigen custom:*-Card-Typ eingeben.",
+    "message.mapCustomCardSaved": "{label} wurde {type} zugeordnet. Die Card ist jetzt in der Palette nutzbar.",
     "message.refreshingResources": "{message} Lovelace-Ressourcen werden von Home Assistant aktualisiert.",
     "message.connectAndScanAgain": "{message} Verbinde Home Assistant und scanne erneut, um die Liste zu aktualisieren.",
     "message.templateSizeSet": "{template} Größe auf {columns} Spalten und {rows} Zeilen gesetzt.",
@@ -1084,7 +1095,11 @@ const translations = {
     "text.auto": "auto",
     "text.categoryCore": "Core",
     "text.categoryCommunity": "Community",
+    "text.categoryMappedHacs": "Gemappte HACS-Card",
+    "text.categoryMappedHa": "Gemappte HA-Card",
     "text.registeredNotMapped": "{category} registriert, noch nicht gemappt",
+    "text.mappedCustomCard": "Gemappt als {type}",
+    "text.mapCardType": "Card-Typ zuordnen",
     "text.paletteDetail": "{layout}, {size}, {target}",
     "text.scannedCardUnavailable": "{label} ist in Home Assistant registriert, aber ATLAS mappt diese Custom Card noch nicht.",
     "text.paletteCardSelected": "{label} aus der Card-Liste ausgewählt.",
@@ -1146,6 +1161,7 @@ const translations = {
     "target.thermostat": "Thermostat",
     "target.link": "Verknüpfung",
     "target.webpage": "Webseite",
+    "target.custom-card": "Custom Card",
     "target.mushroom-template": "Mushroom Template",
     "target.bubble": "Bubble",
     "target.tabbed-card-v2": "Tabbed Card V2",
@@ -1327,6 +1343,8 @@ function translatePaletteCardLabel(card) {
 function translatePaletteCategory(category) {
   if (category === "Core") return t("text.categoryCore");
   if (category === "Community") return t("text.categoryCommunity");
+  if (category === "Mapped HACS card") return t("text.categoryMappedHacs");
+  if (category === "Mapped HA card") return t("text.categoryMappedHa");
   return category;
 }
 
@@ -1426,6 +1444,7 @@ let expertPaletteCards = [
 const expertEditorFields = [];
 const expertPaletteFavoriteIds = new Set();
 const expertPaletteDraftFavoriteIds = new Set();
+const expertCustomCardMappings = new Map();
 const expertTemplateSizing = new Map(cardEditorTemplates.map(template => [
   template.id,
   {
@@ -2728,6 +2747,45 @@ function createLovelaceResourcePaletteId(url, index) {
   return `ha-resource-${slug || index}`;
 }
 
+function normalizeCustomCardType(value) {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  return /^custom:[A-Za-z0-9_-]+$/.test(trimmed) ? trimmed : "";
+}
+
+function suggestCustomCardTypeFromResourceUrl(url) {
+  const fileName = url.split("/").filter(Boolean).pop() ?? "";
+  const baseName = fileName
+    .replace(/\.js$/i, "")
+    .replace(/[^a-z0-9_-]+/gi, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
+  return baseName ? `custom:${baseName}` : "custom:my-card";
+}
+
+function serializedExpertCustomCardMappings() {
+  return [...expertCustomCardMappings.entries()].map(([resourceUrl, customType]) => ({
+    resourceUrl,
+    customType,
+  }));
+}
+
+function mapScannedExpertPaletteCard(card) {
+  if (!card?.resourceUrl) return false;
+  const suggestedType = expertCustomCardMappings.get(card.resourceUrl) ?? suggestCustomCardTypeFromResourceUrl(card.resourceUrl);
+  const customType = normalizeCustomCardType(window.prompt(t("message.mapCustomCardPrompt", { label: card.label }), suggestedType));
+  if (!customType) {
+    statusMessage.textContent = t("message.mapCustomCardInvalid");
+    return false;
+  }
+  expertCustomCardMappings.set(card.resourceUrl, customType);
+  refreshScannedExpertPaletteCards();
+  persistConfiguration();
+  renderExpertTemplatePalette();
+  statusMessage.textContent = t("message.mapCustomCardSaved", { label: card.label, type: customType });
+  return true;
+}
+
 function isHacsLovelaceResourceUrl(url) {
   return url.includes("/hacsfiles/");
 }
@@ -2792,6 +2850,15 @@ function analyzeTemporaryHaCardResources(resources) {
       ignored.push(url);
     } else {
       scanOnly.push(url);
+    }
+  }
+  if (Array.isArray(savedConfiguration?.expertCustomCardMappings)) {
+    for (const entry of savedConfiguration.expertCustomCardMappings) {
+      const resourceUrl = normalizeLovelaceResourceUrl(entry?.resourceUrl);
+      const customType = normalizeCustomCardType(entry?.customType);
+      if (resourceUrl && customType) {
+        expertCustomCardMappings.set(resourceUrl, customType);
+      }
     }
   }
   return {
@@ -2885,17 +2952,23 @@ function createScannedExpertPaletteCards(resources) {
 
   const resourceCards = urls
     .filter(url => !url.includes("/atlas/") && !url.includes("atlas-card") && !isMappedLovelaceResourceUrl(url))
-    .map((url, index) => ({
-      id: createLovelaceResourcePaletteId(url, index),
-      category: isHacsLovelaceResourceUrl(url) ? "HACS resource" : "HA resource",
-      label: formatLovelaceResourceLabel(url),
-      templateId: "entity-list",
-      target: "entities",
-      preview: [url],
-      resourceUrl: url,
-      disabled: true,
-      scanned: true,
-    }));
+    .map((url, index) => {
+      const customType = expertCustomCardMappings.get(url);
+      return {
+        id: createLovelaceResourcePaletteId(url, index),
+        category: customType
+          ? (isHacsLovelaceResourceUrl(url) ? "Mapped HACS card" : "Mapped HA card")
+          : (isHacsLovelaceResourceUrl(url) ? "HACS resource" : "HA resource"),
+        label: formatLovelaceResourceLabel(url),
+        templateId: "entity-card",
+        target: customType ? "custom-card" : "entities",
+        ...(customType ? { customType } : {}),
+        preview: customType ? [customType, url] : [url],
+        resourceUrl: url,
+        disabled: !customType,
+        scanned: true,
+      };
+    });
 
   return dedupeExpertPaletteCards(resourceCards);
 }
@@ -3673,6 +3746,8 @@ function renderExpertTemplatePalette() {
     const bubbleType = card.target === "bubble" ? `, ${card.bubbleButtonType}` : "";
     detail.textContent = card.disabled === true
       ? t("text.registeredNotMapped", { category: cardCategory })
+      : card.customType
+        ? t("text.mappedCustomCard", { type: card.customType })
       : t("text.paletteDetail", {
         layout: translateTemplateLabel(template.id, template.layout),
         size: `${template.defaultWidth}x${template.defaultHeight}`,
@@ -3701,6 +3776,16 @@ function renderExpertTemplatePalette() {
     if (card.disabled !== true) {
       const sizing = createExpertTemplateSizingControls(template);
       meta.append(sizing);
+    } else if (card.resourceUrl) {
+      const mapButton = document.createElement("button");
+      mapButton.type = "button";
+      mapButton.className = "palette-map-button";
+      mapButton.textContent = t("text.mapCardType");
+      mapButton.addEventListener("click", event => {
+        event.stopPropagation();
+        mapScannedExpertPaletteCard(card);
+      });
+      meta.append(mapButton);
     }
     item.append(main, meta);
 
@@ -3912,6 +3997,8 @@ function selectExpertTemplate(templateId) {
   expertTemplate.value = template.id;
   syncExpertInputsFromTemplateSizing(template.id);
   expertTarget.value = template.target;
+  expertTarget.dataset.customType = "";
+  expertTarget.dataset.resourceUrl = "";
   syncExpertBubbleTypeControl();
   renderExpertTemplatePalette();
 }
@@ -3928,6 +4015,8 @@ function selectExpertPaletteCard(cardId) {
   syncExpertInputsFromTemplateSizing(template.id);
   expertTarget.value = card.target;
   expertBubbleButtonType.value = card.bubbleButtonType ?? "state";
+  expertTarget.dataset.customType = card.customType ?? "";
+  expertTarget.dataset.resourceUrl = card.resourceUrl ?? "";
   syncExpertBubbleTypeControl();
   renderExpertTemplatePalette();
   statusMessage.textContent = t("text.paletteCardSelected", { label: translatePaletteCardLabel(card) });
@@ -4123,6 +4212,8 @@ function createTabbedCardEntry(input = {}) {
     id: title,
     target,
     ...(target === "bubble" ? { bubbleButtonType: input.bubbleButtonType ?? expertBubbleButtonType.value ?? "state" } : {}),
+    ...(target === "custom-card" && normalizeCustomCardType(input.customType) ? { customType: normalizeCustomCardType(input.customType) } : {}),
+    ...(target === "custom-card" && input.resourceUrl?.trim() ? { resourceUrl: input.resourceUrl.trim() } : {}),
     ...((input.layout === "horizontal-stack" || input.layout === "vertical-stack" || input.layout === "grid") ? { layout: input.layout } : {}),
     entityId,
     icon: input.icon?.trim() || "mdi:tab",
@@ -4139,6 +4230,8 @@ function createExpertContainerEntryFromTemplate(templateId, input = {}) {
   return createTabbedCardEntry({
     ...input,
     target: template.target === "tabbed-card-v2" ? "entity" : template.target,
+    customType: input.customType,
+    resourceUrl: input.resourceUrl,
     layout,
     title: layout ? expertTitleForNewContainerEntry(template.id, input.title) : input.title || translateTemplateLabel(template.id, template.label),
   });
@@ -4160,6 +4253,8 @@ function createContainerEntryFromExpertField(field) {
     entityId: field.entityId || entries.find(entry => entry.entityId)?.entityId || currentEntityId(),
     target: field.target,
     bubbleButtonType: field.bubbleButtonType,
+    customType: field.customType,
+    resourceUrl: field.resourceUrl,
   });
 }
 
@@ -4322,6 +4417,8 @@ function selectContainerCard(reference) {
   expertEntity.value = card.entityId ?? "";
   expertTarget.value = card.target;
   expertBubbleButtonType.value = card.bubbleButtonType ?? "state";
+  expertTarget.dataset.customType = card.customType ?? "";
+  expertTarget.dataset.resourceUrl = card.resourceUrl ?? "";
   syncExpertBubbleTypeControl();
   persistConfiguration();
   renderExpertFieldList();
@@ -4582,8 +4679,10 @@ function addPaletteCardToTabbedCardField(fieldIndex, paletteCardId) {
   const entityId = expertEntity.value.trim() || currentEntityId();
   const entry = createExpertContainerEntryFromTemplate(template.id, {
     entityId,
-    target: card.target,
-    bubbleButtonType: card.bubbleButtonType,
+      target: card.target,
+      bubbleButtonType: card.bubbleButtonType,
+      customType: card.customType,
+      resourceUrl: card.resourceUrl,
   });
   const tab = expertEditorFields[fieldIndex]?.entries?.[normalizeTabbedCardTabIndex(expertEditorFields[fieldIndex])] ?? entry;
   const added = addCardToTabbedCardFieldAt(fieldIndex, entry);
@@ -5161,10 +5260,14 @@ function updateSelectedExpertFieldTarget() {
   if (selectedContainerCardRef) {
     const nextTarget = expertTarget.value === "tabbed-card-v2" ? "entity" : expertTarget.value;
     const nextBubbleButtonType = nextTarget === "bubble" ? expertBubbleButtonType.value : undefined;
+    const nextCustomType = nextTarget === "custom-card" ? normalizeCustomCardType(expertTarget.dataset.customType) : "";
+    const nextResourceUrl = nextTarget === "custom-card" ? expertTarget.dataset.resourceUrl : "";
     return updateSelectedContainerCard(card => ({
       ...card,
       target: nextTarget,
       ...(nextBubbleButtonType ? { bubbleButtonType: nextBubbleButtonType } : { bubbleButtonType: undefined }),
+      ...(nextCustomType ? { customType: nextCustomType } : { customType: undefined }),
+      ...(nextResourceUrl ? { resourceUrl: nextResourceUrl } : { resourceUrl: undefined }),
     }));
   }
 
@@ -5172,14 +5275,20 @@ function updateSelectedExpertFieldTarget() {
   if (!field) return;
   const nextTarget = expertTarget.value;
   const nextBubbleButtonType = nextTarget === "bubble" ? expertBubbleButtonType.value : undefined;
+  const nextCustomType = nextTarget === "custom-card" ? normalizeCustomCardType(expertTarget.dataset.customType) : "";
+  const nextResourceUrl = nextTarget === "custom-card" ? expertTarget.dataset.resourceUrl : "";
   expertEditorFields[selectedExpertFieldIndex] = {
     ...field,
     target: nextTarget,
     ...(nextBubbleButtonType ? { bubbleButtonType: nextBubbleButtonType } : { bubbleButtonType: undefined }),
+    ...(nextCustomType ? { customType: nextCustomType } : { customType: undefined }),
+    ...(nextResourceUrl ? { resourceUrl: nextResourceUrl } : { resourceUrl: undefined }),
     entries: (field.entries ?? []).map(entry => ({
       ...entry,
       target: nextTarget,
       ...(nextBubbleButtonType ? { bubbleButtonType: nextBubbleButtonType } : { bubbleButtonType: undefined }),
+      ...(nextCustomType ? { customType: nextCustomType } : { customType: undefined }),
+      ...(nextResourceUrl ? { resourceUrl: nextResourceUrl } : { resourceUrl: undefined }),
     })),
   };
   persistConfiguration();
@@ -6406,6 +6515,8 @@ function handleDropIntoStackContainer(event, fieldIndex) {
       return addEntryToStackContainerFieldAt(fieldIndex, createExpertContainerEntryFromTemplate(card.templateId, {
         target: card.target,
         bubbleButtonType: card.bubbleButtonType,
+        customType: card.customType,
+        resourceUrl: card.resourceUrl,
         entityId: expertEntity.value.trim() || currentEntityId(),
       }));
     }
@@ -6426,6 +6537,8 @@ function handleDropIntoNestedContainerCard(event, reference) {
       return addEntryToNestedContainerCard(reference, createExpertContainerEntryFromTemplate(card.templateId, {
         target: card.target,
         bubbleButtonType: card.bubbleButtonType,
+        customType: card.customType,
+        resourceUrl: card.resourceUrl,
         entityId: expertEntity.value.trim() || currentEntityId(),
       }));
     }
@@ -6769,11 +6882,15 @@ function addExpertEditorField() {
           title: undefined,
           target: expertTarget.value,
           bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+          customType: expertTarget.value === "custom-card" ? expertTarget.dataset.customType : undefined,
+          resourceUrl: expertTarget.value === "custom-card" ? expertTarget.dataset.resourceUrl : undefined,
         })
       : createTabbedCardEntry({
           title: expertTitle.value.trim() || undefined,
           target: expertTarget.value,
           bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+          customType: expertTarget.value === "custom-card" ? expertTarget.dataset.customType : undefined,
+          resourceUrl: expertTarget.value === "custom-card" ? expertTarget.dataset.resourceUrl : undefined,
           entityId: expertEntity.value.trim() || currentEntityId(),
         });
     addEntryToNestedContainerCard(selectedContainerCardRef, entry);
@@ -6792,6 +6909,8 @@ function addExpertEditorField() {
       templateId: expertTemplate.value,
       target: expertTarget.value,
       bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+      customType: expertTarget.value === "custom-card" ? expertTarget.dataset.customType : undefined,
+      resourceUrl: expertTarget.value === "custom-card" ? expertTarget.dataset.resourceUrl : undefined,
     });
     return;
   }
@@ -6802,6 +6921,7 @@ function addExpertEditorField() {
       id: expertTitle.value.trim() || card.id,
       target: expertTarget.value === "tabbed-card-v2" ? "entity" : expertTarget.value,
       ...(expertTarget.value === "bubble" ? { bubbleButtonType: expertBubbleButtonType.value } : { bubbleButtonType: undefined }),
+      ...(expertTarget.value === "custom-card" ? { customType: expertTarget.dataset.customType, resourceUrl: expertTarget.dataset.resourceUrl } : { customType: undefined, resourceUrl: undefined }),
       entityId: expertEntity.value.trim() || card.entityId || currentEntityId(),
     }));
     if (updated) return;
@@ -6812,6 +6932,8 @@ function addExpertEditorField() {
       title: expertTitle.value.trim() || undefined,
       target: expertTarget.value,
       bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+      customType: expertTarget.value === "custom-card" ? expertTarget.dataset.customType : undefined,
+      resourceUrl: expertTarget.value === "custom-card" ? expertTarget.dataset.resourceUrl : undefined,
     });
     return;
   }
@@ -6822,6 +6944,8 @@ function addExpertEditorField() {
       title: expertTitle.value.trim() || undefined,
       target: expertTarget.value,
       bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+      customType: expertTarget.value === "custom-card" ? expertTarget.dataset.customType : undefined,
+      resourceUrl: expertTarget.value === "custom-card" ? expertTarget.dataset.resourceUrl : undefined,
     });
     return;
   }
@@ -6837,6 +6961,8 @@ function addExpertEditorField() {
     templateId: expertTemplate.value,
     entityId,
     title: fieldTitle,
+    customType: expertTarget.value === "custom-card" ? expertTarget.dataset.customType : undefined,
+    resourceUrl: expertTarget.value === "custom-card" ? expertTarget.dataset.resourceUrl : undefined,
     column: placement.column,
     row: placement.row,
     width: sizing.width,
@@ -6872,6 +6998,8 @@ function createExpertEditorField(input) {
     template: input.templateId,
     target: expertTarget.value,
     bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+    customType: expertTarget.value === "custom-card" ? normalizeCustomCardType(input.customType ?? expertTarget.dataset.customType) : undefined,
+    resourceUrl: expertTarget.value === "custom-card" ? input.resourceUrl ?? expertTarget.dataset.resourceUrl : undefined,
     entityId: isContainerTemplate ? "" : input.entityId,
     id: expertTitleForNewField(input.templateId, input.title),
     column: input.column,
@@ -6897,8 +7025,10 @@ function createExpertEditorField(input) {
         : {
             id: `${field.id} ${index + 1}`,
             target: entryTarget,
-            ...(expertTarget.value === "bubble" ? { bubbleButtonType: expertBubbleButtonType.value } : {}),
-            entityId,
+      ...(expertTarget.value === "bubble" ? { bubbleButtonType: expertBubbleButtonType.value } : {}),
+      ...(expertTarget.value === "custom-card" && normalizeCustomCardType(input.customType ?? expertTarget.dataset.customType) ? { customType: normalizeCustomCardType(input.customType ?? expertTarget.dataset.customType) } : {}),
+      ...(expertTarget.value === "custom-card" && (input.resourceUrl ?? expertTarget.dataset.resourceUrl) ? { resourceUrl: input.resourceUrl ?? expertTarget.dataset.resourceUrl } : {}),
+      entityId,
           }),
       ...(isTabbedTemplate ? { activeTabIndex: 0 } : {}),
     };
@@ -6938,6 +7068,8 @@ function addExpertEditorFieldFromTemplate(templateId, placement = calculateExper
       title: isContainerTemplate ? undefined : expertTitle.value.trim() || (template ? translateTemplateLabel(template.id, template.label) : undefined),
       target: expertTarget.value,
       bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+      customType: expertTarget.value === "custom-card" ? expertTarget.dataset.customType : undefined,
+      resourceUrl: expertTarget.value === "custom-card" ? expertTarget.dataset.resourceUrl : undefined,
       entityId: expertEntity.value.trim() || currentEntityId(),
     });
     addEntryToNestedContainerCard(selectedContainerCardRef, entry);
@@ -6951,6 +7083,8 @@ function addExpertEditorFieldFromTemplate(templateId, placement = calculateExper
       templateId,
       target: expertTarget.value,
       bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+      customType: expertTarget.value === "custom-card" ? expertTarget.dataset.customType : undefined,
+      resourceUrl: expertTarget.value === "custom-card" ? expertTarget.dataset.resourceUrl : undefined,
     });
     return;
   }
@@ -6963,6 +7097,8 @@ function addExpertEditorFieldFromTemplate(templateId, placement = calculateExper
       templateId,
       target: expertTarget.value,
       bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+      customType: expertTarget.value === "custom-card" ? expertTarget.dataset.customType : undefined,
+      resourceUrl: expertTarget.value === "custom-card" ? expertTarget.dataset.resourceUrl : undefined,
     });
     return;
   }
@@ -6974,6 +7110,8 @@ function addExpertEditorFieldFromTemplate(templateId, placement = calculateExper
     templateId,
     entityId: expertEntity.value.trim() || currentEntityId(),
     title: fieldTitle,
+    customType: options.customType,
+    resourceUrl: options.resourceUrl,
     column: freePlacement.column,
     row: freePlacement.row,
     width: sizing.width,
@@ -6992,7 +7130,11 @@ function addExpertEditorFieldFromTemplate(templateId, placement = calculateExper
 function addExpertEditorFieldFromPaletteCard(cardId, placement = calculateExpertDropPlacement()) {
   const card = selectExpertPaletteCard(cardId);
   if (!card) return;
-  addExpertEditorFieldFromTemplate(card.templateId, placement, { preserveSelection: true });
+  addExpertEditorFieldFromTemplate(card.templateId, placement, {
+    preserveSelection: true,
+    customType: card.customType,
+    resourceUrl: card.resourceUrl,
+  });
 }
 
 function resolveExpertTemplateSizing(templateId) {
@@ -8397,8 +8539,9 @@ exportHomeAssistantConfig.addEventListener("click", () => {
     cardStyleExport: haCardStyleExport.value,
     cardScriptFilename: haCardScriptFilename.value,
     stackEntityIds: selectedStackEntityIds(),
-    expertPaletteFavoriteIds: [...expertPaletteFavoriteIds],
-    expertTemplateSizing: serializedExpertTemplateSizing(),
+      expertPaletteFavoriteIds: [...expertPaletteFavoriteIds],
+      expertCustomCardMappings: serializedExpertCustomCardMappings(),
+      expertTemplateSizing: serializedExpertTemplateSizing(),
     expertEditorSurfaceSize,
     expertGridCellSize,
     expertEditorFields,

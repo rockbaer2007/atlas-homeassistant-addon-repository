@@ -19,6 +19,7 @@ const defaultSupportedFieldTargets = [
     "webpage",
     "bubble",
     "mushroom-template",
+    "custom-card",
     "tabbed-card-v2",
 ];
 const defaultGridBounds = {
@@ -171,6 +172,8 @@ export function createHomeAssistantCardEditorFieldFromTemplate(input) {
     }
     const target = input.target ?? template.target;
     const bubbleButtonType = target === "bubble" ? input.bubbleButtonType ?? "state" : undefined;
+    const customType = normalizeCustomCardType(input.customType);
+    const resourceUrl = input.resourceUrl?.trim();
     const isContainer = target === "tabbed-card-v2"
         || template.layout === "horizontal-stack"
         || template.layout === "vertical-stack"
@@ -179,6 +182,8 @@ export function createHomeAssistantCardEditorFieldFromTemplate(input) {
         id: input.id ?? template.label,
         target,
         ...(bubbleButtonType ? { bubbleButtonType } : {}),
+        ...(target === "custom-card" && customType ? { customType } : {}),
+        ...(target === "custom-card" && resourceUrl ? { resourceUrl } : {}),
         entityId: isContainer ? "" : input.entityId ?? "",
         layout: template.layout,
         entries: isContainer ? [] : template.layout === "card" ? [] : [
@@ -186,6 +191,8 @@ export function createHomeAssistantCardEditorFieldFromTemplate(input) {
                 id: `${input.id ?? template.label} item`,
                 target,
                 ...(bubbleButtonType ? { bubbleButtonType } : {}),
+                ...(target === "custom-card" && customType ? { customType } : {}),
+                ...(target === "custom-card" && resourceUrl ? { resourceUrl } : {}),
                 entityId: input.entityId ?? "",
             },
         ],
@@ -224,12 +231,21 @@ export function createHomeAssistantCardEditorDependencyPlan(input = {}) {
         ? editorPlan.fields.flatMap(field => listSurfaceFieldTargets(field))
         : [editorPlan.simpleTarget]);
     const dependencies = usedTargets.map(inspectHomeAssistantCardDependency);
+    const mappedResourcePaths = editorPlan.editorMode === "expert"
+        ? editorPlan.fields.flatMap(listSurfaceFieldResourcePaths)
+        : [];
     return {
         editorPlan,
         usedTargets,
         dependencies,
-        requiredResourcePaths: dedupeStrings(dependencies.flatMap(dependency => dependency.resourcePaths)),
-        installSteps: dedupeStrings(dependencies.flatMap(dependency => dependency.installPaths)),
+        requiredResourcePaths: dedupeStrings([
+            ...dependencies.flatMap(dependency => dependency.resourcePaths),
+            ...mappedResourcePaths,
+        ]),
+        installSteps: dedupeStrings([
+            ...dependencies.flatMap(dependency => dependency.installPaths),
+            ...mappedResourcePaths,
+        ]),
     };
 }
 export function createHomeAssistantCardEditorScriptExport(input = {}) {
@@ -357,10 +373,14 @@ function dedupeSurfaceFieldLayouts(values) {
     return [...new Set(values)];
 }
 function normalizeSurfaceField(field) {
+    const customType = normalizeCustomCardType(field.customType);
+    const resourceUrl = field.resourceUrl?.trim();
     return {
         id: field.id.trim() || `${field.target}-${field.entityId}`,
         target: field.target,
         ...(field.target === "bubble" ? { bubbleButtonType: normalizeBubbleButtonType(field.bubbleButtonType) } : {}),
+        ...(field.target === "custom-card" && customType ? { customType } : {}),
+        ...(field.target === "custom-card" && resourceUrl ? { resourceUrl } : {}),
         entityId: field.entityId.trim(),
         layout: field.layout ?? "card",
         entries: (field.entries ?? []).map(normalizeSurfaceFieldEntry),
@@ -377,10 +397,14 @@ function normalizeSurfaceField(field) {
 function normalizeSurfaceFieldEntry(entry) {
     const target = entry.target ?? "entity";
     const entityId = entry.entityId?.trim() ?? "";
+    const customType = normalizeCustomCardType(entry.customType);
+    const resourceUrl = entry.resourceUrl?.trim();
     return {
         id: entry.id.trim() || (entityId ? `${target}-${entityId}` : "Tab"),
         ...(entry.target ? { target } : {}),
         ...(target === "bubble" ? { bubbleButtonType: normalizeBubbleButtonType(entry.bubbleButtonType) } : {}),
+        ...(target === "custom-card" && customType ? { customType } : {}),
+        ...(target === "custom-card" && resourceUrl ? { resourceUrl } : {}),
         ...(entry.layout === "horizontal-stack" || entry.layout === "vertical-stack" || entry.layout === "grid" ? { layout: entry.layout } : {}),
         ...(entityId ? { entityId } : {}),
         ...(entry.icon?.trim() ? { icon: entry.icon.trim() } : {}),
@@ -392,6 +416,12 @@ function normalizeSurfaceFieldEntry(entry) {
 function normalizeBubbleButtonType(value) {
     return value === "name" || value === "slider" || value === "switch" ? value : "state";
 }
+function normalizeCustomCardType(value) {
+    if (typeof value !== "string")
+        return undefined;
+    const trimmed = value.trim();
+    return /^custom:[A-Za-z0-9_-]+$/.test(trimmed) ? trimmed : undefined;
+}
 function normalizeStackColumns(value) {
     return Math.max(4, Math.min(10, Math.floor(Number(value) || 4)));
 }
@@ -401,6 +431,18 @@ function compareSurfaceFields(first, second) {
 function listSurfaceFieldTargets(field) {
     const entryTargets = (field.entries ?? []).flatMap(entry => entry.target ? [entry.target] : []);
     return entryTargets.length > 0 ? entryTargets : [field.target];
+}
+function listSurfaceFieldResourcePaths(field) {
+    return [
+        field.target === "custom-card" ? field.resourceUrl ?? "" : "",
+        ...(field.entries ?? []).flatMap(listSurfaceFieldEntryResourcePaths),
+    ];
+}
+function listSurfaceFieldEntryResourcePaths(entry) {
+    return [
+        entry.target === "custom-card" ? entry.resourceUrl ?? "" : "",
+        ...(entry.cards ?? []).flatMap(listSurfaceFieldEntryResourcePaths),
+    ];
 }
 function hasSurfaceFieldContent(field) {
     if (field.entityId)
@@ -533,8 +575,11 @@ function createSurfaceFieldCardConfiguration(field) {
             }),
         };
     }
-    if (!field.entityId && field.target !== "link" && field.target !== "webpage")
+    if (!field.entityId && field.target !== "link" && field.target !== "webpage" && field.target !== "custom-card")
         return undefined;
+    if (field.target === "custom-card") {
+        return createRawCustomCardConfiguration(field.customType, field.id, field.entityId);
+    }
     return createHomeAssistantCardConfiguration({
         target: field.target,
         bubbleButtonType: field.bubbleButtonType,
@@ -564,14 +609,24 @@ function createSurfaceFieldEntryCardConfiguration(entry) {
             cards: childCards,
         };
     }
-    if (!entry.entityId && entry.target !== "link" && entry.target !== "webpage")
+    if (!entry.entityId && entry.target !== "link" && entry.target !== "webpage" && entry.target !== "custom-card")
         return undefined;
+    if (entry.target === "custom-card") {
+        return createRawCustomCardConfiguration(entry.customType, entry.id, entry.entityId ?? "");
+    }
     return createHomeAssistantCardConfiguration({
         target: entry.target ?? "entity",
         bubbleButtonType: entry.bubbleButtonType,
         title: entry.id,
         entityIds: [entry.entityId ?? ""],
     });
+}
+function createRawCustomCardConfiguration(customType, title, entityId) {
+    return {
+        type: customType ?? "custom:atlas-raw-card",
+        name: title,
+        ...(entityId ? { entity: entityId } : {}),
+    };
 }
 function createSurfaceFieldGridOptions(field) {
     const columns = field.columns === "full" || typeof field.columns === "number" ? field.columns : undefined;

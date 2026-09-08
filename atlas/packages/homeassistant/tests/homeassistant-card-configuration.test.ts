@@ -11,6 +11,8 @@ import {
   createHomeAssistantLovelaceResourceReferences,
   createHomeAssistantCardArtifactReview,
   createHomeAssistantCardEditorPackagePlan,
+  createHomeAssistantCardEditorConfiguration,
+  createHomeAssistantCardEditorDependencyPlan,
   createHomeAssistantCardEditorScriptExport,
   createHomeAssistantCardLocaleFiles,
   convertHomeAssistantCardModStylesToUixStyle,
@@ -1764,6 +1766,70 @@ describe("Home Assistant entities card configuration", () => {
     expect(styleInspection.globalStyles).toHaveLength(1);
     expect(styleInspection.cardStyles).toHaveLength(0);
     expect(serializeHomeAssistantEntitiesCardConfiguration(summary.card, "yaml")).toContain("type: \"custom:gauge-card-pro\"");
+  });
+
+  it("exports locally mapped custom cards from expert editor fields", () => {
+    const card = createHomeAssistantCardEditorConfiguration({
+      editorMode: "expert",
+      cardName: "Mapped cards",
+      fields: [
+        {
+          id: "Mini Graph",
+          target: "custom-card",
+          customType: "custom:mini-graph-card",
+          resourceUrl: "/hacsfiles/mini-graph-card/mini-graph-card-bundle.js",
+          entityId: "sensor.office_temperature",
+          layout: "card",
+          column: 0,
+          row: 0,
+          width: 4,
+          height: 2,
+        },
+        {
+          id: "Gauge Row",
+          target: "entities",
+          entityId: "",
+          layout: "horizontal-stack",
+          entries: [
+            {
+              id: "Gauge Pro",
+              target: "custom-card",
+              customType: "custom:gauge-card-pro",
+              resourceUrl: "/hacsfiles/gauge-card-pro/gauge-card-pro.js",
+              entityId: "sensor.total_power",
+            },
+          ],
+          column: 0,
+          row: 2,
+          width: 6,
+          height: 2,
+        },
+      ],
+    });
+
+    const yaml = serializeHomeAssistantEntitiesCardConfiguration(card, "yaml");
+    expect(yaml).toContain("type: \"custom:mini-graph-card\"");
+    expect(yaml).toContain("type: \"custom:gauge-card-pro\"");
+    expect(yaml).not.toContain("custom:atlas-raw-card");
+
+    const dependencies = createHomeAssistantCardEditorDependencyPlan({
+      editorMode: "expert",
+      fields: [
+        {
+          id: "Mini Graph",
+          target: "custom-card",
+          customType: "custom:mini-graph-card",
+          resourceUrl: "/hacsfiles/mini-graph-card/mini-graph-card-bundle.js",
+          entityId: "sensor.office_temperature",
+          layout: "card",
+          column: 0,
+          row: 0,
+          width: 4,
+          height: 2,
+        },
+      ],
+    });
+    expect(dependencies.requiredResourcePaths).toContain("/hacsfiles/mini-graph-card/mini-graph-card-bundle.js");
   });
 
   it("rejects cards without supported entities", () => {
