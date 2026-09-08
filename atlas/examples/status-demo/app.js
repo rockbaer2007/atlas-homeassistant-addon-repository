@@ -3203,6 +3203,8 @@ function createExpertFieldsFromImportedCard(card) {
 
 function createImportedTabbedCardExpertField(card) {
   const tabs = Array.isArray(card.tabs) ? card.tabs : [];
+  const columns = getImportedCardColumns(card);
+  const rows = getImportedCardRows(card);
   const entries = tabs.map((tab, index) => {
     const attributes = tab?.attributes && typeof tab.attributes === "object" ? tab.attributes : {};
     const tabCard = tab?.card && typeof tab.card === "object" ? tab.card : undefined;
@@ -3221,16 +3223,18 @@ function createImportedTabbedCardExpertField(card) {
     layout: "vertical-stack",
     entries,
     activeTabIndex: Math.max(0, Math.min(Math.max(0, entries.length - 1), Number(card.options?.defaultTabIndex) || 0)),
-    ...(card.columns === "full" ? { columns: "full" } : {}),
-    ...(card.rows === "auto" ? { rows: "auto" } : {}),
+    ...(columns === "full" ? { columns: "full" } : {}),
+    ...(rows === "auto" ? { rows: "auto" } : {}),
     column: 0,
     row: 0,
-    width: 8,
+    width: columns === "full" ? expertGridColumns : 8,
     height: Math.max(3, Math.min(8, entries.length + 2)),
   };
 }
 
 function createImportedStackExpertField(card) {
+  const columns = getImportedCardColumns(card);
+  const rows = getImportedCardRows(card);
   const entries = Array.isArray(card.cards)
     ? card.cards.map((child, index) => createImportedContainerEntryFromCard(child, index))
     : [];
@@ -3241,13 +3245,25 @@ function createImportedStackExpertField(card) {
     entityId: entries.find(entry => entry.entityId)?.entityId ?? "",
     layout: card.type,
     entries,
-    ...(card.columns === "full" || typeof card.columns === "number" ? { columns: card.columns } : {}),
-    ...(card.rows === "auto" ? { rows: "auto" } : {}),
+    ...(columns === "full" || typeof columns === "number" ? { columns } : {}),
+    ...(rows === "auto" ? { rows: "auto" } : {}),
     column: 0,
     row: 0,
-    width: card.type === "horizontal-stack" ? 8 : 4,
+    width: columns === "full" ? expertGridColumns : card.type === "horizontal-stack" ? 8 : 4,
     height: Math.max(2, Math.min(8, entries.length || 2)),
   });
+}
+
+function getImportedCardColumns(card) {
+  const directColumns = card?.columns;
+  const gridColumns = card?.grid_options?.columns;
+  if (directColumns === "full" || gridColumns === "full") return "full";
+  const numericColumns = typeof directColumns === "number" ? directColumns : typeof gridColumns === "number" ? gridColumns : undefined;
+  return numericColumns;
+}
+
+function getImportedCardRows(card) {
+  return card?.rows === "auto" || card?.grid_options?.rows === "auto" ? "auto" : undefined;
 }
 
 function createImportedContainerEntryFromCard(card, index = 0) {

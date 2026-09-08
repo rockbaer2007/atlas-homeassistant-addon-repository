@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.153
+
+- Apply imported `grid_options.columns: full` and `grid_options.rows: auto` to
+  Tabbed Card V2 and root stack fields in the Expert Card Editor surface.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.52`.
+
 ## 0.1.152
 
 - Show nested imported stack containers and cards inside the Expert Card Editor
