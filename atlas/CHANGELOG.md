@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.171
+
+- Open File Studio deep linked files directly when they are deeper than the
+  initially loaded tree.
+- Bump ATLAS File Studio to `0.1.39`.
+
 ## 0.1.170
 
 - Apply Automation Exporter / Editor time-trigger quoting at the final

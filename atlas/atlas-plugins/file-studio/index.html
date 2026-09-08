@@ -693,6 +693,20 @@
         };
       }
 
+      function createFileNodeFromPath(path) {
+        const name = String(path ?? "").split("/").filter(Boolean).at(-1) ?? "";
+        return createFileNode({
+          name,
+          path,
+          type: "file",
+          extension: name.includes(".") ? name.split(".").at(-1)?.toLowerCase() ?? "" : "",
+        });
+      }
+
+      function looksLikeFilePath(path) {
+        return Boolean(String(path ?? "").split("/").at(-1)?.includes("."));
+      }
+
       function editorValue() {
         return state.editor?.getValue?.() ?? "";
       }
@@ -1247,6 +1261,12 @@
               openTreePath(initialNode.path);
               await selectFileFromList(initialNode);
               status.textContent = `Geöffnet: ${initialNode.path}`;
+              status.classList.remove("warning");
+              return;
+            }
+            if (looksLikeFilePath(options.initialPath)) {
+              await openFile(createFileNodeFromPath(options.initialPath));
+              status.textContent = `Geöffnet: ${options.initialPath}`;
               status.classList.remove("warning");
               return;
             }
