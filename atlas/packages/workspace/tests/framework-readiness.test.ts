@@ -141,7 +141,7 @@ describe("Atlas framework readiness", () => {
 
     expect(manifest.framework).toEqual({
       name: "Atlas",
-      version: "0.2.0-alpha.56",
+      version: "0.2.0-alpha.57",
       channel: "alpha",
     });
     expect(manifest.packages).toEqual(activeDirectories);

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.158
+
+- Keep newly inserted Expert Card Editor stack containers empty instead of
+  filling them from the previous stack entity selection.
+- Keep stack Fullsize handling scoped to the edited stack field.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.57`.
+
 ## 0.1.157
 
 - Fix inserting additional horizontal and vertical stacks into Expert Card

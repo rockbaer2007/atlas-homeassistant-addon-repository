@@ -6705,7 +6705,7 @@ function createExpertEditorField(input) {
   const isTabbedTemplate = input.templateId === "tabbed-card-v2" || expertTarget.value === "tabbed-card-v2";
   const isContainerTemplate = isTabbedTemplate || supportsMultipleEntries;
   const entryTarget = isTabbedTemplate ? "entity" : expertTarget.value;
-  const stackEntityIds = supportsMultipleEntries
+  const stackEntityIds = isOverviewTemplate
     ? selectedStackEntityIds()
     : [];
   const width = template?.layout === "horizontal-stack"
