@@ -89,7 +89,12 @@ export interface HomeAssistantTabbedCardV2Configuration {
     };
     readonly columns?: "full";
     readonly rows?: "auto";
+    readonly grid_options?: HomeAssistantCardGridOptions;
     readonly tabs: readonly HomeAssistantTabbedCardV2Tab[];
+}
+export interface HomeAssistantCardGridOptions {
+    readonly columns?: "full" | number;
+    readonly rows?: "auto" | number;
 }
 export interface HomeAssistantGridCardConfiguration {
     readonly type: "grid";
@@ -111,6 +116,7 @@ export interface HomeAssistantStackCardConfiguration {
     readonly type: "horizontal-stack" | "vertical-stack";
     readonly columns?: "full" | number;
     readonly rows?: "auto";
+    readonly grid_options?: HomeAssistantCardGridOptions;
     readonly cards: readonly HomeAssistantCardConfiguration[];
 }
 export type HomeAssistantSingleCardConfiguration = HomeAssistantEntitiesCardConfiguration | HomeAssistantGlanceCardConfiguration | HomeAssistantEntityCardConfiguration | HomeAssistantButtonCardConfiguration | HomeAssistantSensorCardConfiguration | HomeAssistantThermostatCardConfiguration | HomeAssistantWebpageCardConfiguration | HomeAssistantMushroomTemplateCardConfiguration | HomeAssistantBubbleCardConfiguration | HomeAssistantTabbedCardV2Configuration | HomeAssistantRawCustomCardConfiguration | HomeAssistantGridCardConfiguration | HomeAssistantConditionalCardConfiguration;

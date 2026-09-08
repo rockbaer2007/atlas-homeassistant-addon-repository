@@ -388,8 +388,9 @@ describe("Home Assistant entities card configuration", () => {
       ],
     }, "yaml")).toBe([
       "type: horizontal-stack",
-      "columns: 8",
-      "rows: auto",
+      "grid_options:",
+      "  columns: 8",
+      "  rows: \"auto\"",
       "cards:",
       "  - type: \"entity\"",
       "    name: \"Status\"",

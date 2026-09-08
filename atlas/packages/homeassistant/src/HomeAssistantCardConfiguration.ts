@@ -120,7 +120,13 @@ export interface HomeAssistantTabbedCardV2Configuration {
   };
   readonly columns?: "full";
   readonly rows?: "auto";
+  readonly grid_options?: HomeAssistantCardGridOptions;
   readonly tabs: readonly HomeAssistantTabbedCardV2Tab[];
+}
+
+export interface HomeAssistantCardGridOptions {
+  readonly columns?: "full" | number;
+  readonly rows?: "auto" | number;
 }
 
 export interface HomeAssistantGridCardConfiguration {
@@ -146,6 +152,7 @@ export interface HomeAssistantStackCardConfiguration {
   readonly type: "horizontal-stack" | "vertical-stack";
   readonly columns?: "full" | number;
   readonly rows?: "auto";
+  readonly grid_options?: HomeAssistantCardGridOptions;
   readonly cards: readonly HomeAssistantCardConfiguration[];
 }
 
@@ -1253,8 +1260,7 @@ function serializeHomeAssistantTabbedCardV2Yaml(card: HomeAssistantTabbedCardV2C
     "options:",
     `  defaultTabIndex: ${serializeYamlScalar(card.options.defaultTabIndex)}`,
   ];
-  if (card.columns === "full") lines.push("columns: full");
-  if (card.rows === "auto") lines.push("rows: auto");
+  appendHomeAssistantGridOptionsYaml(lines, card);
   lines.push("tabs:");
   for (const tab of card.tabs) {
     lines.push("  - attributes:");
@@ -1267,6 +1273,18 @@ function serializeHomeAssistantTabbedCardV2Yaml(card: HomeAssistantTabbedCardV2C
     });
   }
   return lines.join("\n");
+}
+
+function appendHomeAssistantGridOptionsYaml(
+  lines: string[],
+  card: { readonly columns?: "full" | number; readonly rows?: "auto"; readonly grid_options?: HomeAssistantCardGridOptions },
+): void {
+  const columns = card.grid_options?.columns ?? card.columns;
+  const rows = card.grid_options?.rows ?? card.rows;
+  if (columns === undefined && rows === undefined) return;
+  lines.push("grid_options:");
+  if (columns !== undefined) lines.push(`  columns: ${serializeYamlScalar(columns)}`);
+  if (rows !== undefined) lines.push(`  rows: ${serializeYamlScalar(rows)}`);
 }
 
 function serializeHomeAssistantCoreCardYaml(
@@ -1307,8 +1325,7 @@ function serializeHomeAssistantStackCardYaml(card: HomeAssistantStackCardConfigu
   const lines = [
     `type: ${card.type}`,
   ];
-  if (card.columns !== undefined) lines.push(`columns: ${serializeYamlScalar(card.columns)}`);
-  if (card.rows === "auto") lines.push("rows: auto");
+  appendHomeAssistantGridOptionsYaml(lines, card);
   lines.push("cards:");
   for (const child of card.cards) {
     const childLines = serializeHomeAssistantEntitiesCardConfiguration(child, "yaml").split("\n");

@@ -490,8 +490,7 @@ function createSurfaceFieldCardConfiguration(field) {
             options: {
                 defaultTabIndex: normalizeTabIndex(field.activeTabIndex, tabs.length),
             },
-            ...(field.columns === "full" ? { columns: "full" } : {}),
-            ...(field.rows === "auto" ? { rows: "auto" } : {}),
+            ...createSurfaceFieldGridOptions(field),
             tabs,
         };
     }
@@ -525,8 +524,7 @@ function createSurfaceFieldCardConfiguration(field) {
         }
         return {
             type: layout,
-            ...(field.columns === "full" || typeof field.columns === "number" ? { columns: field.columns } : {}),
-            ...(field.rows === "auto" ? { rows: "auto" } : {}),
+            ...createSurfaceFieldGridOptions(field),
             cards: populatedEntries.flatMap(entry => {
                 const card = createSurfaceFieldEntryCardConfiguration(entry);
                 return card ? [card] : [];
@@ -572,6 +570,18 @@ function createSurfaceFieldEntryCardConfiguration(entry) {
         title: entry.id,
         entityIds: [entry.entityId ?? ""],
     });
+}
+function createSurfaceFieldGridOptions(field) {
+    const columns = field.columns === "full" || typeof field.columns === "number" ? field.columns : undefined;
+    const rows = field.rows === "auto" ? "auto" : undefined;
+    if (columns === undefined && rows === undefined)
+        return {};
+    return {
+        grid_options: {
+            ...(columns !== undefined ? { columns } : {}),
+            ...(rows !== undefined ? { rows } : {}),
+        },
+    };
 }
 function createTabbedCardTabContent(entry) {
     const cards = (entry.cards?.length ? entry.cards : [entry])

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.161
+
+- Route new cards into the selected nested Expert Card Editor stack instead of
+  the outer stack.
+- Export stack layout hints as Home Assistant `grid_options` instead of direct
+  `columns` and `rows` properties.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.60`.
+
 ## 0.1.160
 
 - Let nested Expert Card Editor stack preview cards act as drop targets.

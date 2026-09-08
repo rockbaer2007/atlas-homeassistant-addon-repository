@@ -722,8 +722,7 @@ function createSurfaceFieldCardConfiguration(
       options: {
         defaultTabIndex: normalizeTabIndex(field.activeTabIndex, tabs.length),
       },
-      ...(field.columns === "full" ? { columns: "full" as const } : {}),
-      ...(field.rows === "auto" ? { rows: "auto" as const } : {}),
+      ...createSurfaceFieldGridOptions(field),
       tabs,
     };
   }
@@ -760,8 +759,7 @@ function createSurfaceFieldCardConfiguration(
 
     return {
       type: layout,
-      ...(field.columns === "full" || typeof field.columns === "number" ? { columns: field.columns } : {}),
-      ...(field.rows === "auto" ? { rows: "auto" as const } : {}),
+      ...createSurfaceFieldGridOptions(field),
       cards: populatedEntries.flatMap(entry => {
         const card = createSurfaceFieldEntryCardConfiguration(entry);
         return card ? [card] : [];
@@ -812,6 +810,23 @@ function createSurfaceFieldEntryCardConfiguration(
     title: entry.id,
     entityIds: [entry.entityId ?? ""],
   });
+}
+
+function createSurfaceFieldGridOptions(field: HomeAssistantCardEditorSurfaceField): {
+  readonly grid_options?: {
+    readonly columns?: "full" | number;
+    readonly rows?: "auto";
+  };
+} {
+  const columns = field.columns === "full" || typeof field.columns === "number" ? field.columns : undefined;
+  const rows = field.rows === "auto" ? "auto" as const : undefined;
+  if (columns === undefined && rows === undefined) return {};
+  return {
+    grid_options: {
+      ...(columns !== undefined ? { columns } : {}),
+      ...(rows !== undefined ? { rows } : {}),
+    },
+  };
 }
 
 function createTabbedCardTabContent(entry: HomeAssistantCardEditorSurfaceFieldEntry): HomeAssistantCardConfiguration | undefined {

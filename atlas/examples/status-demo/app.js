@@ -6756,6 +6756,27 @@ function indentImportedStyleBlock(code, indent) {
 }
 
 function addExpertEditorField() {
+  const selectedContainerCard = selectedContainerCardRef ? getContainerCard(selectedContainerCardRef) : undefined;
+  const selectedContainerCardIsContainer = selectedContainerCard?.layout === "horizontal-stack"
+    || selectedContainerCard?.layout === "vertical-stack"
+    || selectedContainerCard?.layout === "grid";
+  if (selectedContainerCardRef && selectedContainerCardIsContainer && expertTemplate.value !== "tabbed-card-v2") {
+    const entry = isContainerTemplateId(expertTemplate.value)
+      ? createExpertContainerEntryFromTemplate(expertTemplate.value, {
+          title: undefined,
+          target: expertTarget.value,
+          bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+        })
+      : createTabbedCardEntry({
+          title: expertTitle.value.trim() || undefined,
+          target: expertTarget.value,
+          bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+          entityId: expertEntity.value.trim() || currentEntityId(),
+        });
+    addEntryToNestedContainerCard(selectedContainerCardRef, entry);
+    return;
+  }
+
   if (selectedContainerCardRef && isContainerTemplateId(expertTemplate.value)) {
     if (isTabbedCardField(expertEditorFields[selectedContainerCardRef.fieldIndex]) && Number.isInteger(selectedContainerCardRef.tabIndex)) {
       expertEditorFields[selectedContainerCardRef.fieldIndex] = {
@@ -6902,6 +6923,22 @@ function createExpertEditorField(input) {
 function addExpertEditorFieldFromTemplate(templateId, placement = calculateExpertDropPlacement(), options = {}) {
   if (!options.preserveSelection) {
     selectExpertTemplate(templateId);
+  }
+  const selectedContainerCard = selectedContainerCardRef ? getContainerCard(selectedContainerCardRef) : undefined;
+  const selectedContainerCardIsContainer = selectedContainerCard?.layout === "horizontal-stack"
+    || selectedContainerCard?.layout === "vertical-stack"
+    || selectedContainerCard?.layout === "grid";
+  if (!options.forceSurface && selectedContainerCardRef && selectedContainerCardIsContainer && templateId !== "tabbed-card-v2") {
+    const template = cardEditorTemplates.find(candidate => candidate.id === templateId);
+    const isContainerTemplate = isContainerTemplateId(templateId);
+    const entry = createExpertContainerEntryFromTemplate(templateId, {
+      title: isContainerTemplate ? undefined : expertTitle.value.trim() || (template ? translateTemplateLabel(template.id, template.label) : undefined),
+      target: expertTarget.value,
+      bubbleButtonType: expertTarget.value === "bubble" ? expertBubbleButtonType.value : undefined,
+      entityId: expertEntity.value.trim() || currentEntityId(),
+    });
+    addEntryToNestedContainerCard(selectedContainerCardRef, entry);
+    return;
   }
   if (!options.forceSurface && selectedTabbedCardField() && templateId !== "tabbed-card-v2") {
     const template = cardEditorTemplates.find(candidate => candidate.id === templateId);

@@ -969,8 +969,10 @@ describe("Home Assistant frontend integration planning", () => {
       options: {
         defaultTabIndex: 0,
       },
-      columns: "full",
-      rows: "auto",
+      grid_options: {
+        columns: "full",
+        rows: "auto",
+      },
       tabs: [
         {
           attributes: {
