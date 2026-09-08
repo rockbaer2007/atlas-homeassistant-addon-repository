@@ -58,6 +58,7 @@ import {
 
 const statusRoot = document.querySelector("#atlas-status-root");
 const statusMessage = document.querySelector("#status-message");
+const editorLoadingNotice = document.querySelector("#editor-loading-notice");
 const selectedEntitiesPanel = document.querySelector("#selected-entities-panel");
 const buttons = Array.from(document.querySelectorAll("[data-entity-state]"));
 const languageButtons = Array.from(document.querySelectorAll("[data-language]"));
@@ -238,6 +239,7 @@ const translations = {
   en: {
     "page.title": "ATLAS Home Assistant Card Editor",
     "page.subtitle": "Build Simple or Expert Home Assistant cards from live or local entities.",
+    "message.editorLoading": "Please wait, the editor is loading. This can take 5-10 seconds.",
     "heading.resourceHint": "Resource hint",
     "heading.temporaryResourceDebug": "Temporary HA card resource check",
     "label.haUrl": "Home Assistant URL",
@@ -701,6 +703,7 @@ const translations = {
   de: {
     "page.title": "ATLAS Home Assistant Card Editor",
     "page.subtitle": "Erstelle Simple- oder Expert-Home-Assistant-Cards aus Live- oder lokalen Entitäten.",
+    "message.editorLoading": "Bitte warten, der Editor wird geladen. Das kann 5-10 Sekunden dauern.",
     "heading.resourceHint": "Ressourcen-Hinweis",
     "heading.temporaryResourceDebug": "Temporärer HA-Card-Ressourcencheck",
     "label.haUrl": "Home Assistant URL",
@@ -1170,6 +1173,14 @@ function t(key, values = {}) {
     text = text.replaceAll(`{${name}}`, String(value));
   }
   return text;
+}
+
+const editorLoadingNoticeTimeout = window.setTimeout(hideEditorLoadingNotice, 20000);
+
+function hideEditorLoadingNotice() {
+  if (!editorLoadingNotice || editorLoadingNotice.hidden) return;
+  editorLoadingNotice.hidden = true;
+  window.clearTimeout(editorLoadingNoticeTimeout);
 }
 
 function applyTranslations() {
@@ -3005,7 +3016,7 @@ function createActiveCardEditorPlan({ useExportFallback = false } = {}) {
 }
 
 function normalizedExpertEditorFields() {
-  return expertEditorFields.map(field => isStackContainerField(field) ? normalizeStackContainerLayout(field) : field);
+  return expertEditorFields.map(normalizeEditableContainerLayout);
 }
 
 function currentExpertCardName() {
@@ -4975,14 +4986,72 @@ function normalizeStackContainerLayout(field) {
   return next;
 }
 
+function normalizeTabbedCardContainerLayout(field) {
+  if (!isTabbedCardField(field)) return field;
+  const fullWidth = field.columns === "full" || field.fullWidth === true;
+  const width = fullWidth ? expertGridColumns : Math.max(4, Math.min(expertGridColumns, Math.floor(Number(field.width) || 8)));
+  const next = {
+    ...field,
+    ...(fullWidth ? { columns: "full" } : {}),
+    width,
+    column: fullWidth ? 0 : Math.min(field.column, expertGridColumns - width),
+  };
+  if (field.rows === "auto" || field.autoHeight === true) {
+    return {
+      ...next,
+      rows: "auto",
+      height: calculateTabbedCardAutoHeight(next),
+    };
+  }
+  return next;
+}
+
+function normalizeEditableContainerLayout(field) {
+  if (isTabbedCardField(field)) return normalizeTabbedCardContainerLayout(field);
+  if (isStackContainerField(field)) return normalizeStackContainerLayout(field);
+  return field;
+}
+
 function calculateStackContainerAutoHeight(field) {
-  const entries = field.entries?.length ?? 0;
-  if (entries === 0) return 2;
+  const entries = field.entries ?? [];
+  if (entries.length === 0) return 2;
   if ((field.layout ?? "vertical-stack") === "horizontal-stack") {
     const cardsPerRow = Math.max(1, Math.floor(Math.max(1, field.width) / 4));
-    return Math.max(2, 2 + Math.ceil(entries / cardsPerRow) * 2);
+    const rowHeights = [];
+    for (let index = 0; index < entries.length; index += cardsPerRow) {
+      rowHeights.push(Math.max(...entries.slice(index, index + cardsPerRow).map(calculateContainerEntryPreviewRows)));
+    }
+    return Math.max(2, 2 + rowHeights.reduce((sum, rows) => sum + rows, 0));
   }
-  return Math.max(2, 2 + entries * 2);
+  return Math.max(2, 2 + entries.reduce((sum, entry) => sum + calculateContainerEntryPreviewRows(entry), 0));
+}
+
+function calculateTabbedCardAutoHeight(field) {
+  const entries = field.entries ?? [];
+  if (entries.length === 0) return 3;
+  const tabContentRows = entries.map(entry => {
+    const cards = entry.cards?.length ? entry.cards : [entry];
+    return cards.reduce((sum, card) => sum + calculateContainerEntryPreviewRows(card), 0);
+  });
+  return Math.max(4, 4 + Math.max(...tabContentRows));
+}
+
+function calculateContainerEntryPreviewRows(entry) {
+  const children = entry.cards ?? [];
+  if (children.length === 0) return 3;
+  const layout = entry.layout ?? "vertical-stack";
+  if (layout === "horizontal-stack") {
+    return 1 + Math.max(...children.map(calculateContainerEntryPreviewRows));
+  }
+  if (layout === "grid") {
+    const columns = Math.min(4, Math.max(1, children.length));
+    const rowHeights = [];
+    for (let index = 0; index < children.length; index += columns) {
+      rowHeights.push(Math.max(...children.slice(index, index + columns).map(calculateContainerEntryPreviewRows)));
+    }
+    return 1 + rowHeights.reduce((sum, rows) => sum + rows, 0);
+  }
+  return 1 + children.reduce((sum, child) => sum + calculateContainerEntryPreviewRows(child), 0);
 }
 
 function updateSelectedExpertFieldTarget() {
@@ -5131,7 +5200,7 @@ function syncExpertGridControls() {
   if (expertGridRowsControl) {
     expertGridRowsControl.min = "0";
     expertGridRowsControl.max = String(expertGridMaxExtraRows);
-    expertGridRowsControl.value = String(expertGridRows - expertGridBaseRows);
+    expertGridRowsControl.value = String(Math.max(0, Math.min(expertGridMaxExtraRows, expertEditorSurfaceSize.rows)));
   }
   if (expertGridZoomControl) {
     expertGridZoomControl.min = String(expertGridMinZoomPercent);
@@ -5159,6 +5228,7 @@ function syncExpertGridControls() {
 
 function applyExpertEditorSurfaceSize() {
   syncExpertGridSizeFromSurfaceDelta();
+  expertGridRows = Math.max(expertGridRows, calculateRequiredExpertGridRows());
   syncExpertGridControls();
   const surfaceWidth = expertGridColumns * expertGridCellSize + Math.max(0, expertGridColumns - 1) * expertGridGap;
   const surfaceHeight = expertGridRows * expertGridCellSize + Math.max(0, expertGridRows - 1) * expertGridGap;
@@ -5168,6 +5238,13 @@ function applyExpertEditorSurfaceSize() {
   expertEditorDropzone.style.setProperty("--expert-editor-grid-gap", `${expertGridGap}px`);
   expertEditorDropzone.style.setProperty("--expert-editor-surface-width", `${surfaceWidth}px`);
   expertEditorDropzone.style.setProperty("--expert-editor-surface-height", `${surfaceHeight}px`);
+}
+
+function calculateRequiredExpertGridRows() {
+  const bottomRows = expertEditorFields
+    .map(normalizeEditableContainerLayout)
+    .map(field => Math.max(0, field.row) + Math.max(1, field.height));
+  return Math.max(expertGridBaseRows, ...bottomRows);
 }
 
 function applyExpertSurfaceGridGeometry(grid) {
@@ -5430,8 +5507,8 @@ function renderExpertEditorSurface() {
   }
 
   expertEditorFields.forEach((storedField, index) => {
-    const field = isStackContainerField(storedField) && (storedField.rows === "auto" || storedField.autoHeight === true)
-      ? normalizeStackContainerLayout(storedField)
+    const field = isEditableContainerField(storedField) && (storedField.rows === "auto" || storedField.autoHeight === true)
+      ? normalizeEditableContainerLayout(storedField)
       : storedField;
     const tile = document.createElement("div");
     tile.tabIndex = 0;
@@ -8545,6 +8622,7 @@ renderCardTranslationModuleStatus();
 renderEditorMode(initialEditorMode);
 syncTemporaryResourceDebugVisibility();
 renderTemporaryHaCardResourceList();
+hideEditorLoadingNotice();
 
 let adminHandoffRequestAttempts = 0;
 const adminHandoffRequestTimer = window.setInterval(() => {

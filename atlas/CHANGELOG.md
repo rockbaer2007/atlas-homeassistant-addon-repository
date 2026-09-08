@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.156
+
+- Add a temporary Card Editor loading notice below the page title.
+- Let the Expert Card Editor surface grow to fit large imported auto-height
+  container cards.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.55`.
+
 ## 0.1.155
 
 - Render imported stack containers as pure containers without synthetic entity

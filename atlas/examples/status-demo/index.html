@@ -87,6 +87,21 @@
         color: var(--atlas-text);
       }
 
+      .editor-loading-notice {
+        margin: -8px 0 16px;
+        padding: 10px 12px;
+        border: 1px solid #dc2626;
+        border-radius: 6px;
+        background: #fee2e2;
+        color: #991b1b;
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .editor-loading-notice[hidden] {
+        display: none;
+      }
+
       .language-toggle,
       .theme-toggle {
         display: inline-flex;
@@ -3201,6 +3216,12 @@
         color: #ddd6fe;
       }
 
+      :root[data-theme="dark"] .editor-loading-notice {
+        border-color: #f87171;
+        background: #3b0d0d;
+        color: #fecaca;
+      }
+
       :root[data-theme="dark"] .expert-tab-preview-card.nested-container-card {
         background: #122436;
         border-color: #3b82f6;
@@ -3285,6 +3306,7 @@
           </div>
         </div>
       </div>
+      <div id="editor-loading-notice" class="editor-loading-notice" role="status" aria-live="polite" data-i18n="message.editorLoading">Please wait, the editor is loading. This can take 5-10 seconds.</div>
       <div class="editor-navigation-actions" aria-label="ATLAS navigation" data-i18n-aria-label="aria.atlasNavigation">
         <a class="editor-nav-button" href="admin" data-open-admin data-i18n="link.openAdmin">Open Atlas Administration</a>
         <a class="editor-nav-button" href="/hub" data-open-hub data-i18n="link.openHub">Open Plugin Hub</a>
