@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.169
+
+- Keep Automation Exporter / Editor time triggers as quoted `HH:MM:SS` strings.
+- Repair numeric second-based `at:` values during export.
+- Bump the Automation Exporter / Editor package to `0.1.17`.
+
 ## 0.1.168
 
 - Remove Automation Exporter / Editor write-back controls.

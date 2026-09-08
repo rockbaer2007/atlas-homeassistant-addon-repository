@@ -285,10 +285,28 @@ function countBy(values) {
 
 function normalizeAutomationYaml(block) {
   const lines = block.replace(/\r\n/g, "\n").replace(/^\s*-\s*/, "").split("\n");
-  return lines
+  const yaml = lines
     .map((line, index) => index === 0 ? line : line.replace(/^\s{2}/, ""))
     .join("\n")
     .trimStart() + "\n";
+  return normalizeTimeTriggerValues(yaml);
+}
+
+function normalizeTimeTriggerValues(yaml) {
+  return yaml.replace(/^(\s*at:\s*)(?:["']?(\d{1,2}:\d{2}:\d{2})["']?|(\d{1,5}))\s*$/gm, (_line, prefix, clockValue, numericValue) => {
+    if (clockValue) {
+      return `${prefix}'${clockValue.padStart(8, "0")}'`;
+    }
+    const seconds = Number(numericValue);
+    if (!Number.isInteger(seconds) || seconds < 0 || seconds > 86399) {
+      return `${prefix}${numericValue}`;
+    }
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    const two = value => String(value).padStart(2, "0");
+    return `${prefix}'${two(hours)}:${two(minutes)}:${two(remainingSeconds)}'`;
+  });
 }
 
 function uniqueMatches(text, regex) {
@@ -621,7 +639,7 @@ function downloadText(filename, content) {
 }
 
 function createImportAutomationYaml(yaml) {
-  return yaml.replace(/^\s*id:\s*.*\n?/m, "").trimStart() + "\n";
+  return normalizeTimeTriggerValues(yaml.replace(/^\s*id:\s*.*\n?/m, "").trimStart() + "\n");
 }
 
 function previewConflicts() {
