@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.152
+
+- Show nested imported stack containers and cards inside the Expert Card Editor
+  surface.
+- Treat imported custom cards with `cards` children, such as
+  `custom:vertical-stack-in-card`, as visible nested containers.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.51`.
+
 ## 0.1.151
 
 - Accept hand-written Tabbed Card V2 YAML with nested stack cards in the Card

@@ -1919,6 +1919,25 @@
         box-shadow: inset 0 0 0 1px #2563eb;
       }
 
+      .expert-tab-preview-card.nested-container-card {
+        border-style: dashed;
+        background: #eef6ff;
+      }
+
+      .expert-tab-preview-children {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+        padding: 4px;
+        border: 1px solid #bfdbfe;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .expert-tab-preview-children.horizontal {
+        grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+      }
+
       .expert-tab-preview-card-actions {
         display: inline-flex;
         justify-content: flex-end;
@@ -3177,6 +3196,16 @@
       :root[data-theme="dark"] .card-type-badge[data-card-kind="bubble"][data-card-variant="name"] {
         background: #2e1f58;
         color: #ddd6fe;
+      }
+
+      :root[data-theme="dark"] .expert-tab-preview-card.nested-container-card {
+        background: #122436;
+        border-color: #3b82f6;
+      }
+
+      :root[data-theme="dark"] .expert-tab-preview-children {
+        border-color: #1d4ed8;
+        background: rgba(15, 23, 42, 0.72);
       }
 
       :root[data-theme="dark"] .atlas-status {

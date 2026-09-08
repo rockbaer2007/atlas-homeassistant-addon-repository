@@ -3254,11 +3254,11 @@ function createImportedContainerEntryFromCard(card, index = 0) {
   const title = getSimplePreviewCardTitle(card) || `Card ${index + 1}`;
   const entityIds = getSimplePreviewCardEntities(card).map(entity => entity.entity);
   const target = getImportedCardTarget(card);
-  if ((card?.type === "horizontal-stack" || card?.type === "vertical-stack" || card?.type === "grid") && Array.isArray(card.cards)) {
+  if (Array.isArray(card?.cards)) {
     return {
       id: title,
       target,
-      layout: card.type,
+      layout: getImportedContainerLayout(card),
       entityId: entityIds[0] ?? "",
       cards: card.cards.map((child, childIndex) => createImportedContainerEntryFromCard(child, childIndex)),
     };
@@ -3270,6 +3270,14 @@ function createImportedContainerEntryFromCard(card, index = 0) {
     entityId: entityIds[0] ?? (typeof card?.entity === "string" ? card.entity : ""),
     ...(typeof card?.icon === "string" ? { icon: card.icon } : {}),
   };
+}
+
+function getImportedContainerLayout(card) {
+  if (card?.type === "horizontal-stack" || card?.type === "vertical-stack" || card?.type === "grid") {
+    return card.type;
+  }
+  if (typeof card?.type === "string" && card.type.includes("horizontal")) return "horizontal-stack";
+  return "vertical-stack";
 }
 
 function getImportedCardTarget(card) {
@@ -5621,9 +5629,7 @@ function expertDetailSettingsText(field, card) {
     ].filter(Boolean).join(" · ");
   }
   const entries = field.entries ?? [];
-  const cardCount = isTabbedCardField(field)
-    ? entries.reduce((count, entry) => count + (entry.cards?.length ?? 0), 0)
-    : entries.length;
+  const cardCount = entries.reduce((count, entry) => count + countContainerEntryCards(entry), 0);
   return [
     `${field.layout ?? "card"}`,
     `grid c${field.column + 1}/r${field.row + 1}`,
@@ -5631,6 +5637,10 @@ function expertDetailSettingsText(field, card) {
     isTabbedCardField(field) ? `${entries.length} tabs` : "",
     isEditableContainerField(field) ? `${cardCount} cards` : "",
   ].filter(Boolean).join(" · ");
+}
+
+function countContainerEntryCards(entry) {
+  return 1 + (entry.cards ?? []).reduce((count, child) => count + countContainerEntryCards(child), 0);
 }
 
 function expertContainerColumnsText(field) {
@@ -5782,11 +5792,11 @@ function createExpertDetailContainedCards(field, fieldIndex) {
     const activeIndex = normalizeTabbedCardTabIndex(field);
     const activeTab = field.entries?.[activeIndex];
     for (const [cardIndex, card] of (activeTab?.cards ?? []).entries()) {
-      list.append(createExpertDetailCardItem(card, cardIndex));
+      appendExpertDetailCardItems(list, card, [cardIndex + 1]);
     }
   } else {
     for (const [cardIndex, card] of (field.entries ?? []).entries()) {
-      list.append(createExpertDetailCardItem(card, cardIndex));
+      appendExpertDetailCardItems(list, card, [cardIndex + 1]);
     }
   }
   if (list.children.length === 0) {
@@ -5797,11 +5807,19 @@ function createExpertDetailContainedCards(field, fieldIndex) {
   return section;
 }
 
-function createExpertDetailCardItem(card, index) {
+function appendExpertDetailCardItems(list, card, path) {
+  list.append(createExpertDetailCardItem(card, path));
+  for (const [index, child] of (card.cards ?? []).entries()) {
+    appendExpertDetailCardItems(list, child, [...path, index + 1]);
+  }
+}
+
+function createExpertDetailCardItem(card, path) {
   const item = document.createElement("li");
   const variant = getExpertPreviewVariant(card);
   item.className = "expert-detail-card-item";
-  item.textContent = `${index + 1}. ${card.id} · ${variant.label ?? card.target} · ${card.entityId || t("text.noEntity")}`;
+  const childCount = card.cards?.length ?? 0;
+  item.textContent = `${path.join(".")}. ${card.id} · ${card.layout ?? variant.label ?? card.target} · ${childCount ? `${childCount} ${t("text.containedCards")}` : card.entityId || t("text.noEntity")}`;
   return item;
 }
 
@@ -6016,6 +6034,8 @@ function createTabbedCardInlineView(field, fieldIndex) {
 function createContainerPreviewCard(card, options = {}) {
   const item = document.createElement("article");
   item.className = "expert-tab-preview-card";
+  const childCount = card.cards?.length ?? 0;
+  item.classList.toggle("nested-container-card", childCount > 0);
   const variant = getExpertPreviewVariant(card);
   if (variant.kind) {
     item.classList.add("card-kind-preview");
@@ -6036,7 +6056,9 @@ function createContainerPreviewCard(card, options = {}) {
   title.textContent = card.id;
   const detail = document.createElement("small");
   const bubbleType = card.target === "bubble" ? `, ${card.bubbleButtonType ?? "state"}` : "";
-  detail.textContent = `${translateCardTarget(card.target, card.target)}${bubbleType} - ${card.entityId || t("text.demoEntity")}`;
+  detail.textContent = childCount
+    ? `${card.layout ?? "vertical-stack"} - ${childCount} ${t("text.containedCards")}`
+    : `${translateCardTarget(card.target, card.target)}${bubbleType} - ${card.entityId || t("text.demoEntity")}`;
   const actions = document.createElement("span");
   actions.className = "expert-tab-preview-card-actions";
   const moveOut = document.createElement("button");
@@ -6059,6 +6081,14 @@ function createContainerPreviewCard(card, options = {}) {
   item.append(actions, title, detail);
   if (variant.label) {
     item.append(createCardTypeBadge(variant));
+  }
+  if (childCount > 0) {
+    const children = document.createElement("div");
+    children.className = `expert-tab-preview-children ${(card.layout ?? "vertical-stack") === "horizontal-stack" ? "horizontal" : "vertical"}`;
+    for (const child of card.cards ?? []) {
+      children.append(createContainerPreviewCard(child));
+    }
+    item.append(children);
   }
   item.addEventListener("click", event => {
     event.stopPropagation();
