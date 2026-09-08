@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.177
+
+- Allow repository-installed plugins to override bundled plugins with the same
+  ID when the repository version is newer.
+
 ## 0.1.176
 
 - Keep the Automation Exporter / Editor from splitting one automation into

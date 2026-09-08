@@ -2031,17 +2031,20 @@ function comparePluginVersions(left, right) {
 }
 
 function repositoryPluginInstallState(plugin) {
-  const installed = findInstalledPlugin(plugin.id);
-  const bundled = Boolean(installed && bundledPluginIds.has(plugin.id));
+  const imported = findImportedPlugin(plugin.id);
+  const installed = imported?.source === "repository"
+    ? imported
+    : findInstalledPlugin(plugin.id);
+  const bundled = Boolean(installed && bundledPluginIds.has(plugin.id) && imported?.source !== "repository");
   const installedVersion = installed?.version ?? "";
-  const updateAvailable = Boolean(installed && !bundled && comparePluginVersions(plugin.version, installedVersion) > 0);
+  const updateAvailable = Boolean(installed && comparePluginVersions(plugin.version, installedVersion) > 0);
 
   return {
     installed,
     bundled,
     installedVersion,
     updateAvailable,
-    removable: isRepositoryInstalledPlugin(plugin.id),
+    removable: imported?.source === "repository",
   };
 }
 
@@ -2225,7 +2228,7 @@ async function installRepositoryPluginPackage(plugin) {
   const existing = findInstalledPlugin(plugin.id);
   const imported = findImportedPlugin(plugin.id);
 
-  if (existing && imported?.source !== "repository") {
+  if (existing && !bundledPluginIds.has(plugin.id) && imported?.source !== "repository") {
     adminSaveState.textContent = t("message.pluginPackageDuplicate", { name: existing.name });
     return;
   }
@@ -2500,7 +2503,8 @@ function currentPluginDescriptors() {
     pluginsById.set(plugin.id, plugin);
   }
   for (const plugin of importedPluginDescriptors) {
-    if (!pluginsById.has(plugin.id)) {
+    const existing = pluginsById.get(plugin.id);
+    if (!existing || comparePluginVersions(plugin.version, existing.version) >= 0 || plugin.source === "repository") {
       pluginsById.set(plugin.id, plugin);
     }
   }
@@ -2510,7 +2514,10 @@ function currentPluginDescriptors() {
 function removeBundledImportedPlugins(plugins) {
   const seen = new Set();
   return plugins.filter(plugin => {
-    if (bundledPluginIds.has(plugin.id) || seen.has(plugin.id)) {
+    if (seen.has(plugin.id)) {
+      return false;
+    }
+    if (bundledPluginIds.has(plugin.id) && plugin.source !== "repository") {
       return false;
     }
     seen.add(plugin.id);
