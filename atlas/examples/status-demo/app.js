@@ -3833,6 +3833,7 @@ function renderExpertTemplatePalette() {
     });
     const hiddenToggle = document.createElement("label");
     hiddenToggle.className = "hidden-toggle";
+    hiddenToggle.hidden = favoriteCheckbox.checked;
     const hiddenCheckbox = document.createElement("input");
     hiddenCheckbox.type = "checkbox";
     hiddenCheckbox.checked = expertPaletteHiddenIds.has(card.id);
@@ -3920,9 +3921,11 @@ function isExpertPaletteCardSelected(card) {
 function setExpertPaletteFavoriteDraft(cardId, favorite) {
   if (favorite) {
     expertPaletteDraftFavoriteIds.add(cardId);
+    expertPaletteHiddenIds.delete(cardId);
   } else {
     expertPaletteDraftFavoriteIds.delete(cardId);
   }
+  persistConfiguration();
   renderExpertTemplatePalette();
   statusMessage.textContent = t("text.paletteSelectionChanged");
 }

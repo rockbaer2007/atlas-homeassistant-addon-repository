@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.167
+
+- Hide the red `Hidden` checkbox while a Card Editor palette entry is selected
+  as a favorite.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.66`.
+
 ## 0.1.166
 
 - Add an opt-in automatic Card type mapping switch below the Card Editor import
