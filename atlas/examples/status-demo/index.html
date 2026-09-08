@@ -1577,7 +1577,8 @@
         overflow-wrap: anywhere;
       }
 
-      .expert-template-card .favorite-toggle {
+      .expert-template-card .favorite-toggle,
+      .expert-template-card .hidden-toggle {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -1586,11 +1587,28 @@
         font-size: 12px;
       }
 
-      .expert-template-card .favorite-toggle input {
+      .expert-template-card .favorite-toggle input,
+      .expert-template-card .hidden-toggle input {
         width: 14px;
         height: 14px;
         margin: 0;
+      }
+
+      .expert-template-card .favorite-toggle input {
         accent-color: #0f766e;
+      }
+
+      .expert-template-card .hidden-toggle {
+        color: #b91c1c;
+      }
+
+      .expert-template-card .hidden-toggle input {
+        accent-color: #dc2626;
+      }
+
+      .expert-template-card.hidden-palette-card {
+        border-color: #fecaca;
+        background: #fff1f2;
       }
 
       .expert-template-card .palette-category {
@@ -3138,6 +3156,21 @@
         accent-color: #7ee6c9;
       }
 
+      :root[data-theme="dark"] .expert-template-card .hidden-toggle {
+        color: #fca5a5;
+      }
+
+      :root[data-theme="dark"] .expert-template-card .hidden-toggle input {
+        border: 1px solid #991b1b;
+        background-color: #351b1d;
+        accent-color: #ef4444;
+      }
+
+      :root[data-theme="dark"] .expert-template-card.hidden-palette-card {
+        border-color: #991b1b;
+        background: #351b1d;
+      }
+
       :root[data-theme="dark"] .expert-template-sizing select,
       :root[data-theme="dark"] .expert-editor-controls select,
       :root[data-theme="dark"] .expert-editor-controls input {
@@ -3336,7 +3369,7 @@
           </div>
         </div>
       </div>
-      <div id="editor-loading-notice" class="editor-loading-notice" role="status" aria-live="polite" data-i18n="message.editorLoading">Please wait, the editor is loading. This can take 5-10 seconds.</div>
+      <div id="editor-loading-notice" class="editor-loading-notice" role="status" aria-live="polite" data-i18n="message.editorLoading">Please wait, the editor is loading. This can take 5-10 seconds. The notice stays visible briefly so the editor can finish initializing.</div>
       <div class="editor-navigation-actions" aria-label="ATLAS navigation" data-i18n-aria-label="aria.atlasNavigation">
         <a class="editor-nav-button" href="admin" data-open-admin data-i18n="link.openAdmin">Open Atlas Administration</a>
         <a class="editor-nav-button" href="/hub" data-open-hub data-i18n="link.openHub">Open Plugin Hub</a>

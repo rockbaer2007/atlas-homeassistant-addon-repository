@@ -239,7 +239,7 @@ const translations = {
   en: {
     "page.title": "ATLAS Home Assistant Card Editor",
     "page.subtitle": "Build Expert Home Assistant cards from live or local entities.",
-    "message.editorLoading": "Please wait, the editor is loading. This can take 5-10 seconds.",
+    "message.editorLoading": "Please wait, the editor is loading. This can take 5-10 seconds. The notice stays visible briefly so the editor can finish initializing.",
     "heading.resourceHint": "Resource hint",
     "heading.temporaryResourceDebug": "Temporary HA card resource check",
     "label.haUrl": "Home Assistant URL",
@@ -578,6 +578,7 @@ const translations = {
     "text.allEntityTypes": "All entity types",
     "text.all": "All",
     "text.favorite": "Favorite",
+    "text.hiddenCard": "Hidden",
     "text.scannedOnly": "Scanned only",
     "text.builtIn": "Built-in",
     "text.resourceUnchecked": "Resource unchecked",
@@ -631,13 +632,14 @@ const translations = {
     "text.paletteDetail": "{layout}, {size}, {target}",
     "text.scannedCardUnavailable": "{label} is registered in Home Assistant, but ATLAS does not map this custom card yet.",
     "text.paletteCardSelected": "{label} selected from the card list.",
-    "text.paletteSelectionChanged": "Favorite selection changed. Use Save favorites to apply it.",
+    "text.paletteSelectionChanged": "Palette selection changed. Use Save favorites to apply it.",
     "text.noPaletteSearchResults": "No matching cards found.",
-    "text.fullCardListVisible": "Full Core and Community card list is visible for favorite selection.",
+    "text.fullCardListVisible": "Full Core and Community card list is visible, including hidden cards.",
     "text.savedFavoritesVisible": "Saved favorites are visible.",
     "text.favoritesSaved": "{count} favorite cards saved.",
-    "text.allCardsRemainVisible": "Favorite selection saved. All cards remain visible.",
-    "text.allCardsVisibleAgain": "All Core and Community cards are visible again.",
+    "text.allCardsRemainVisible": "Favorite selection saved. The normal card list stays visible without hidden cards.",
+    "text.allCardsVisibleAgain": "Favorite selection reset. The normal card list stays visible without hidden cards.",
+    "text.hiddenCardsUpdated": "Hidden cards updated.",
     "text.templateSizesReset": "Template sizes reset to their defaults.",
     "text.removeField": "Remove {field}",
     "text.fieldRemoved": "{field} removed from the Expert editor preview.",
@@ -711,7 +713,7 @@ const translations = {
   de: {
     "page.title": "ATLAS Home Assistant Card Editor",
     "page.subtitle": "Erstelle Expert-Home-Assistant-Cards aus Live- oder lokalen Entitäten.",
-    "message.editorLoading": "Bitte warten, der Editor wird geladen. Das kann 5-10 Sekunden dauern.",
+    "message.editorLoading": "Bitte warten, der Editor wird geladen. Das kann 5-10 Sekunden dauern. Der Hinweis bleibt kurz sichtbar, damit der Editor fertig initialisieren kann.",
     "heading.resourceHint": "Ressourcen-Hinweis",
     "heading.temporaryResourceDebug": "Temporärer HA-Card-Ressourcencheck",
     "label.haUrl": "Home Assistant URL",
@@ -1050,6 +1052,7 @@ const translations = {
     "text.allEntityTypes": "Alle Entitätstypen",
     "text.all": "Alle",
     "text.favorite": "Favorit",
+    "text.hiddenCard": "Versteckt",
     "text.scannedOnly": "Nur Scan",
     "text.builtIn": "Eingebaut",
     "text.resourceUnchecked": "Ressource ungeprüft",
@@ -1103,13 +1106,14 @@ const translations = {
     "text.paletteDetail": "{layout}, {size}, {target}",
     "text.scannedCardUnavailable": "{label} ist in Home Assistant registriert, aber ATLAS mappt diese Custom Card noch nicht.",
     "text.paletteCardSelected": "{label} aus der Card-Liste ausgewählt.",
-    "text.paletteSelectionChanged": "Favoritenauswahl geändert. Nutze Favoriten speichern, um sie anzuwenden.",
+    "text.paletteSelectionChanged": "Palettenauswahl geändert. Nutze Favoriten speichern, um sie anzuwenden.",
     "text.noPaletteSearchResults": "Keine passenden Cards gefunden.",
-    "text.fullCardListVisible": "Die volle Core- und Community-Card-Liste ist zur Favoritenauswahl sichtbar.",
+    "text.fullCardListVisible": "Die volle Core- und Community-Card-Liste ist sichtbar, inklusive versteckter Cards.",
     "text.savedFavoritesVisible": "Gespeicherte Favoriten sind sichtbar.",
     "text.favoritesSaved": "{count} Favoriten-Cards gespeichert.",
-    "text.allCardsRemainVisible": "Favoritenauswahl gespeichert. Alle Cards bleiben sichtbar.",
-    "text.allCardsVisibleAgain": "Alle Core- und Community-Cards sind wieder sichtbar.",
+    "text.allCardsRemainVisible": "Favoritenauswahl gespeichert. Die normale Card-Liste bleibt ohne versteckte Cards sichtbar.",
+    "text.allCardsVisibleAgain": "Favoritenauswahl zurückgesetzt. Die normale Card-Liste bleibt ohne versteckte Cards sichtbar.",
+    "text.hiddenCardsUpdated": "Versteckte Cards aktualisiert.",
     "text.templateSizesReset": "Template-Größen auf Standard zurückgesetzt.",
     "text.removeField": "{field} entfernen",
     "text.fieldRemoved": "{field} aus der Expert-Editor-Vorschau entfernt.",
@@ -1192,9 +1196,16 @@ function t(key, values = {}) {
 }
 
 const editorLoadingNoticeTimeout = window.setTimeout(hideEditorLoadingNotice, 20000);
+const editorLoadingNoticeMinimumVisibleMs = 12000;
+const editorLoadingNoticeStartedAt = Date.now();
 
 function hideEditorLoadingNotice() {
   if (!editorLoadingNotice || editorLoadingNotice.hidden) return;
+  const remainingMs = editorLoadingNoticeMinimumVisibleMs - (Date.now() - editorLoadingNoticeStartedAt);
+  if (remainingMs > 0) {
+    window.setTimeout(hideEditorLoadingNotice, remainingMs);
+    return;
+  }
   editorLoadingNotice.hidden = true;
   window.clearTimeout(editorLoadingNoticeTimeout);
 }
@@ -1444,6 +1455,7 @@ let expertPaletteCards = [
 const expertEditorFields = [];
 const expertPaletteFavoriteIds = new Set();
 const expertPaletteDraftFavoriteIds = new Set();
+const expertPaletteHiddenIds = new Set();
 const expertCustomCardMappings = new Map();
 const expertTemplateSizing = new Map(cardEditorTemplates.map(template => [
   template.id,
@@ -1566,6 +1578,22 @@ try {
       if (typeof paletteId === "string" && paletteId.trim()) {
         expertPaletteFavoriteIds.add(paletteId);
         expertPaletteDraftFavoriteIds.add(paletteId);
+      }
+    }
+  }
+  if (Array.isArray(savedConfiguration?.expertPaletteHiddenIds)) {
+    for (const paletteId of savedConfiguration.expertPaletteHiddenIds) {
+      if (typeof paletteId === "string" && paletteId.trim()) {
+        expertPaletteHiddenIds.add(paletteId);
+      }
+    }
+  }
+  if (Array.isArray(savedConfiguration?.expertCustomCardMappings)) {
+    for (const entry of savedConfiguration.expertCustomCardMappings) {
+      const resourceUrl = normalizeLovelaceResourceUrl(entry?.resourceUrl);
+      const customType = normalizeCustomCardType(entry?.customType);
+      if (resourceUrl && customType) {
+        expertCustomCardMappings.set(resourceUrl, customType);
       }
     }
   }
@@ -2207,6 +2235,8 @@ function persistConfiguration() {
       adminTranslationApiKeyConfiguredByProvider,
       stackEntityIds: selectedStackEntityIds(),
       expertPaletteFavoriteIds: [...expertPaletteFavoriteIds],
+      expertPaletteHiddenIds: [...expertPaletteHiddenIds],
+      expertCustomCardMappings: serializedExpertCustomCardMappings(),
       expertTemplateSizing: serializedExpertTemplateSizing(),
       expertEditorSurfaceSize,
       expertGridCellSize,
@@ -2850,15 +2880,6 @@ function analyzeTemporaryHaCardResources(resources) {
       ignored.push(url);
     } else {
       scanOnly.push(url);
-    }
-  }
-  if (Array.isArray(savedConfiguration?.expertCustomCardMappings)) {
-    for (const entry of savedConfiguration.expertCustomCardMappings) {
-      const resourceUrl = normalizeLovelaceResourceUrl(entry?.resourceUrl);
-      const customType = normalizeCustomCardType(entry?.customType);
-      if (resourceUrl && customType) {
-        expertCustomCardMappings.set(resourceUrl, customType);
-      }
     }
   }
   return {
@@ -3701,11 +3722,13 @@ function expertPaletteCardMatchesSearch(card, template, query) {
 function renderExpertTemplatePalette() {
   expertTemplatePalette.replaceChildren();
   const baseCards = expertPaletteFavoriteIds.size && !expertPaletteShowAllCards
-    ? expertPaletteCards.filter(card => expertPaletteFavoriteIds.has(card.id))
+    ? expertPaletteCards.filter(card => expertPaletteFavoriteIds.has(card.id) && !expertPaletteHiddenIds.has(card.id))
     : expertPaletteCards;
   const visibleCards = baseCards.filter(card => {
     const template = cardEditorTemplates.find(candidate => candidate.id === card.templateId);
-    return template ? expertPaletteCardMatchesSearch(card, template, expertPaletteSearchQuery.trim()) : false;
+    if (!template) return false;
+    if (!expertPaletteShowAllCards && expertPaletteHiddenIds.has(card.id)) return false;
+    return expertPaletteCardMatchesSearch(card, template, expertPaletteSearchQuery.trim());
   });
   saveExpertPaletteFavorites.disabled = !isExpertPaletteFavoriteDraftDirty();
   showAllExpertPaletteCards.disabled = false;
@@ -3727,6 +3750,7 @@ function renderExpertTemplatePalette() {
     item.className = "expert-template-card";
     item.classList.toggle("selected", isExpertPaletteCardSelected(card));
     item.classList.toggle("disabled", card.disabled === true);
+    item.classList.toggle("hidden-palette-card", expertPaletteHiddenIds.has(card.id));
     item.draggable = card.disabled !== true;
     item.tabIndex = 0;
     item.setAttribute("role", "button");
@@ -3771,6 +3795,18 @@ function renderExpertTemplatePalette() {
     favoriteCheckbox.addEventListener("change", event => {
       event.stopPropagation();
       setExpertPaletteFavoriteDraft(card.id, favoriteCheckbox.checked);
+    });
+    const hiddenToggle = document.createElement("label");
+    hiddenToggle.className = "hidden-toggle";
+    const hiddenCheckbox = document.createElement("input");
+    hiddenCheckbox.type = "checkbox";
+    hiddenCheckbox.checked = expertPaletteHiddenIds.has(card.id);
+    hiddenToggle.append(hiddenCheckbox, t("text.hiddenCard"));
+    main.append(hiddenToggle);
+    hiddenToggle.addEventListener("click", event => event.stopPropagation());
+    hiddenCheckbox.addEventListener("change", event => {
+      event.stopPropagation();
+      setExpertPaletteCardHidden(card.id, hiddenCheckbox.checked);
     });
 
     if (card.disabled !== true) {
@@ -3862,7 +3898,7 @@ function toggleExpertPaletteAllCards() {
     expertPaletteSearchQuery = "";
     expertPaletteSearch.value = "";
   } else {
-    expertPaletteShowAllCards = expertPaletteFavoriteIds.size === 0;
+    expertPaletteShowAllCards = false;
   }
   renderExpertTemplatePalette();
   statusMessage.textContent = expertPaletteShowAllCards
@@ -3870,12 +3906,25 @@ function toggleExpertPaletteAllCards() {
     : t("text.savedFavoritesVisible");
 }
 
+function setExpertPaletteCardHidden(cardId, hidden) {
+  if (hidden) {
+    expertPaletteHiddenIds.add(cardId);
+    expertPaletteFavoriteIds.delete(cardId);
+    expertPaletteDraftFavoriteIds.delete(cardId);
+  } else {
+    expertPaletteHiddenIds.delete(cardId);
+  }
+  persistConfiguration();
+  renderExpertTemplatePalette();
+  statusMessage.textContent = t("text.hiddenCardsUpdated");
+}
+
 function saveExpertPaletteFavoriteSelection() {
   expertPaletteFavoriteIds.clear();
   for (const cardId of expertPaletteDraftFavoriteIds) {
     expertPaletteFavoriteIds.add(cardId);
   }
-  expertPaletteShowAllCards = expertPaletteFavoriteIds.size === 0;
+  expertPaletteShowAllCards = false;
   persistConfiguration();
   renderExpertTemplatePalette();
   statusMessage.textContent = expertPaletteFavoriteIds.size
@@ -8539,9 +8588,10 @@ exportHomeAssistantConfig.addEventListener("click", () => {
     cardStyleExport: haCardStyleExport.value,
     cardScriptFilename: haCardScriptFilename.value,
     stackEntityIds: selectedStackEntityIds(),
-      expertPaletteFavoriteIds: [...expertPaletteFavoriteIds],
-      expertCustomCardMappings: serializedExpertCustomCardMappings(),
-      expertTemplateSizing: serializedExpertTemplateSizing(),
+    expertPaletteFavoriteIds: [...expertPaletteFavoriteIds],
+    expertPaletteHiddenIds: [...expertPaletteHiddenIds],
+    expertCustomCardMappings: serializedExpertCustomCardMappings(),
+    expertTemplateSizing: serializedExpertTemplateSizing(),
     expertEditorSurfaceSize,
     expertGridCellSize,
     expertEditorFields,
@@ -8779,6 +8829,35 @@ importHomeAssistantConfig.addEventListener("change", async () => {
         }
       }
     }
+    expertPaletteFavoriteIds.clear();
+    expertPaletteDraftFavoriteIds.clear();
+    if (Array.isArray(pendingImport.expertPaletteFavoriteIds)) {
+      for (const paletteId of pendingImport.expertPaletteFavoriteIds) {
+        if (typeof paletteId === "string" && paletteId.trim()) {
+          expertPaletteFavoriteIds.add(paletteId);
+          expertPaletteDraftFavoriteIds.add(paletteId);
+        }
+      }
+    }
+    expertPaletteHiddenIds.clear();
+    if (Array.isArray(pendingImport.expertPaletteHiddenIds)) {
+      for (const paletteId of pendingImport.expertPaletteHiddenIds) {
+        if (typeof paletteId === "string" && paletteId.trim()) {
+          expertPaletteHiddenIds.add(paletteId);
+        }
+      }
+    }
+    expertCustomCardMappings.clear();
+    if (Array.isArray(pendingImport.expertCustomCardMappings)) {
+      for (const entry of pendingImport.expertCustomCardMappings) {
+        const resourceUrl = normalizeLovelaceResourceUrl(entry?.resourceUrl);
+        const customType = normalizeCustomCardType(entry?.customType);
+        if (resourceUrl && customType) {
+          expertCustomCardMappings.set(resourceUrl, customType);
+        }
+      }
+    }
+    expertPaletteShowAllCards = false;
     syncCardLayoutState();
     renderGroupOptions(typeof pendingImport.selectedGroup === "string" ? pendingImport.selectedGroup : "custom");
     renderEditorMode(pendingImport.editorMode === "expert" ? "expert" : "simple");

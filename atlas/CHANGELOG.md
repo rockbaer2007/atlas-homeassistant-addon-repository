@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.165
+
+- Keep the Card Editor loading notice visible for at least 12 seconds and no
+  longer than 20 seconds.
+- Add hidden palette cards with a red checkbox, including local persistence and
+  full-list recovery.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.64`.
+
 ## 0.1.164
 
 - Map registered but unknown Lovelace resources to local `custom:*` card types.
