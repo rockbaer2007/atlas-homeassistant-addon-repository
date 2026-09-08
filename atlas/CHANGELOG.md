@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.160
+
+- Let nested Expert Card Editor stack preview cards act as drop targets.
+- Give inserted vertical and horizontal stack entries their own numbered stack
+  titles.
+- Show empty nested stack entries as containers instead of demo entities.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.59`.
+
 ## 0.1.159
 
 - Keep direct children of horizontal Expert Card Editor stack previews in fixed
