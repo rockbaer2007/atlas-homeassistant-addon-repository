@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.176
+
+- Keep the Automation Exporter / Editor from splitting one automation into
+  multiple rows at root-level trigger or action fragments.
+- Bump the Automation Exporter / Editor package to `0.1.23`.
+
 ## 0.1.175
 
 - Keep Automation Exporter / Editor duplicate IDs and aliases as red conflicts

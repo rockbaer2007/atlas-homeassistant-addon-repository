@@ -248,20 +248,26 @@ function parseAutomations(content) {
 
 function splitAutomationBlocks(content) {
   const lines = content.replace(/\r\n/g, "\n").split("\n");
+  const starts = lines
+    .map((line, index) => (/^-\s+(id|alias)\s*:/.test(line) ? index : -1))
+    .filter(index => index >= 0);
+
+  if (!starts.length) {
+    const block = lines.join("\n").trimEnd();
+    return isAutomationBlock(block) ? [block] : [];
+  }
+
   const blocks = [];
-  let current = [];
-  for (const line of lines) {
-    if (/^-\s+(id|alias|trigger|triggers|condition|conditions|action|actions)\s*:/.test(line) && current.length > 0) {
-      blocks.push(current.join("\n").trimEnd());
-      current = [line];
-      continue;
-    }
-    current.push(line);
+  for (let index = 0; index < starts.length; index += 1) {
+    const start = starts[index];
+    const end = starts[index + 1] ?? lines.length;
+    blocks.push(lines.slice(start, end).join("\n").trimEnd());
   }
-  if (current.join("\n").trim()) {
-    blocks.push(current.join("\n").trimEnd());
-  }
-  return blocks.filter(block => /(^|\n)\s*-?\s*(alias|trigger|triggers|action|actions)\s*:/.test(block));
+  return blocks.filter(isAutomationBlock);
+}
+
+function isAutomationBlock(block) {
+  return /(^|\n)\s*-?\s*(alias|trigger|triggers|action|actions)\s*:/.test(block);
 }
 
 function readYamlValue(block, key) {
