@@ -293,7 +293,7 @@ function normalizeAutomationYaml(block) {
 }
 
 function normalizeTimeTriggerValues(yaml) {
-  return yaml.replace(/^(\s*at:\s*)(?:["']?(\d{1,2}:\d{2}:\d{2})["']?|(\d{1,5}))\s*$/gm, (_line, prefix, clockValue, numericValue) => {
+  return yaml.replace(/^(\s*-?\s*at:\s*)(?:["']?(\d{1,2}:\d{2}:\d{2})["']?|(\d{1,5}))\s*$/gm, (_line, prefix, clockValue, numericValue) => {
     if (clockValue) {
       return `${prefix}'${clockValue.padStart(8, "0")}'`;
     }
@@ -572,8 +572,9 @@ async function exportSelected() {
     const exported = [];
     for (const automation of selected) {
       const filename = createExportFilename(automation.alias, usedFilenames);
-      const exportResult = await writeExportFile(exportFolder, filename, automation.yaml);
-      const importYaml = createImportAutomationYaml(automation.yaml);
+      const exportYaml = createExportAutomationYaml(automation.yaml);
+      const exportResult = await writeExportFile(exportFolder, filename, exportYaml);
+      const importYaml = createImportAutomationYaml(exportYaml);
       const importResult = await writeExportFile(importFolder, filename, importYaml);
       exported.push({
         filename,
@@ -582,7 +583,7 @@ async function exportSelected() {
         folder: runFolder,
         sourceName: state.sourceName,
         status: "Export und bereinigte Import-Version gespeichert",
-        yaml: automation.yaml,
+        yaml: exportYaml,
         importYaml,
         id: automation.id,
         alias: automation.alias,
@@ -600,8 +601,9 @@ async function exportSelected() {
     const usedFilenames = new Set();
     for (const automation of selected) {
       const filename = createExportFilename(automation.alias, usedFilenames);
-      const importYaml = createImportAutomationYaml(automation.yaml);
-      downloadText(filename, automation.yaml);
+      const exportYaml = createExportAutomationYaml(automation.yaml);
+      const importYaml = createImportAutomationYaml(exportYaml);
+      downloadText(filename, exportYaml);
       downloadText(`import-${filename}`, importYaml);
       state.exports.unshift({
         filename,
@@ -610,7 +612,7 @@ async function exportSelected() {
         folder: "Browser-Download",
         sourceName: state.sourceName,
         status: "download",
-        yaml: automation.yaml,
+        yaml: exportYaml,
         importYaml,
         id: automation.id,
         alias: automation.alias,
@@ -636,6 +638,10 @@ function downloadText(filename, content) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+function createExportAutomationYaml(yaml) {
+  return normalizeTimeTriggerValues(yaml);
 }
 
 function createImportAutomationYaml(yaml) {

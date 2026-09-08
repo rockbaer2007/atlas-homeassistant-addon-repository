@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.170
+
+- Apply Automation Exporter / Editor time-trigger quoting at the final
+  file-write step.
+- Quote list item lines such as `- at: 07:00:00`.
+- Bump the Automation Exporter / Editor package to `0.1.18`.
+
 ## 0.1.169
 
 - Keep Automation Exporter / Editor time triggers as quoted `HH:MM:SS` strings.
