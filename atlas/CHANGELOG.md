@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.168
+
+- Remove Automation Exporter / Editor write-back controls.
+- Create a timestamped safety backup when reading `/config/automations.yaml`.
+- Export selected automations into `export-version` with `id` and
+  `bereinigte-import-version` without `id`.
+- Bump the Automation Exporter / Editor package to `0.1.16`.
+
 ## 0.1.167
 
 - Hide the red `Hidden` checkbox while a Card Editor palette entry is selected

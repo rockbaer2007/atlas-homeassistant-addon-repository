@@ -15,11 +15,17 @@ by the existing Windows Automation Exporter.
 - show the selected automation YAML with Studio-like highlighting
 - keep the automation list internally scrollable with roughly 15 visible rows
 - configure a target export folder label
+- create a safety backup before reading the real `/config/automations.yaml`
+- store backups in timestamped folders while keeping the filename
+  `automations.yaml`
 - export selected automations as separate YAML files in timestamped run folders
+- write a normal `export-version` with `id` and a
+  `bereinigte-import-version` without `id` for the Home Assistant YAML editor
 - keep automation filenames clean, for example
-  `/config/atlas_exports/automations/2026-09-03_15-23-37/kitchen_light.yaml`
+  `/config/atlas_exports/automations/2026-09-08_19-30-12-125/export-version/kitchen_light.yaml`
 - keep an overview of exported automations
 - open File Studio for further editing
 
-Write-back creates a timestamped backup before merging selected automations
-into `/config/automations.yaml` by `id` or `alias`.
+The plugin does not write back into Home Assistant system files. Editing and
+manual restore workflows should continue through File Studio and Home
+Assistant's own YAML tools.

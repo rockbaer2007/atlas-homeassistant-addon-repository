@@ -16,8 +16,6 @@ const elements = {
   selectAll: document.querySelector("#select-all"),
   selectNone: document.querySelector("#select-none"),
   exportSelected: document.querySelector("#export-selected"),
-  copyReturnPlan: document.querySelector("#copy-return-plan"),
-  writeBackSelected: document.querySelector("#write-back-selected"),
   previewConflicts: document.querySelector("#preview-conflicts"),
   clearHistory: document.querySelector("#clear-history"),
   list: document.querySelector("#automation-list"),
@@ -134,8 +132,6 @@ elements.selectNone.addEventListener("click", () => {
   render();
 });
 elements.exportSelected.addEventListener("click", () => void exportSelected());
-elements.copyReturnPlan.addEventListener("click", () => void copyReturnPlan());
-elements.writeBackSelected.addEventListener("click", () => void writeBackSelected());
 elements.previewConflicts.addEventListener("click", previewConflicts);
 elements.clearHistory.addEventListener("click", () => {
   state.exports = [];
@@ -174,9 +170,11 @@ async function loadSystemAutomations() {
       setStatus("/config/automations.yaml ist leer.");
       return;
     }
+    const backup = await createSourceBackup(content);
     analyzeSource(payload.path || "/config/automations.yaml", content);
+    setStatus(`${payload.path || "/config/automations.yaml"}: ${state.automations.length} Automationen erkannt. Backup: ${backup.path}`);
   } catch {
-    setStatus("/config/automations.yaml konnte nicht geladen werden. Bitte File-Studio-Zugriff prüfen oder YAML hochladen.");
+    setStatus("/config/automations.yaml konnte nicht gesichert oder geladen werden. Bitte File-Studio-Zugriff prüfen oder YAML hochladen.");
   }
 }
 
@@ -473,18 +471,32 @@ function renderHistory() {
       item.areas?.length ? `Bereiche: ${item.areas.join(", ")}` : "",
       item.devices?.length ? `Geräte: ${item.devices.join(", ")}` : "",
     ].filter(Boolean).join(" · ");
-    name.innerHTML = `<strong>${escapeHtml(item.filename)}</strong><div class="automation-meta">${escapeHtml(item.status ?? "gespeichert")} · ${escapeHtml(item.path ?? item.folder)} · ${escapeHtml(item.sourceName)}</div>${groups ? `<div class="automation-meta">${escapeHtml(groups)}</div>` : ""}`;
+    name.innerHTML = `<strong>${escapeHtml(item.filename)}</strong><div class="automation-meta">${escapeHtml(item.status ?? "gespeichert")} · ${escapeHtml(item.folder)} · ${escapeHtml(item.sourceName)}</div>${groups ? `<div class="automation-meta">${escapeHtml(groups)}</div>` : ""}`;
     const actions = document.createElement("div");
     actions.className = "export-actions";
     const open = document.createElement("a");
     open.className = "ghost-link";
     open.href = createFileStudioFileUrl(item.path);
-    open.textContent = "In File Studio bearbeiten";
+    open.textContent = "Export öffnen";
+    const openImport = document.createElement("a");
+    openImport.className = "ghost-link";
+    openImport.href = createFileStudioFileUrl(item.importPath);
+    openImport.textContent = "Import-Version öffnen";
     const copy = document.createElement("button");
     copy.type = "button";
-    copy.textContent = "YAML kopieren";
+    copy.textContent = "Export-YAML kopieren";
     copy.addEventListener("click", () => void copyText(item.yaml, `${item.filename}: YAML kopiert.`));
+    const copyImport = document.createElement("button");
+    copyImport.type = "button";
+    copyImport.textContent = "Import-YAML kopieren";
+    copyImport.addEventListener("click", () => void copyText(item.importYaml ?? item.yaml, `${item.filename}: bereinigte Import-YAML kopiert.`));
     actions.append(open, copy);
+    if (item.importPath) {
+      actions.append(openImport);
+    }
+    if (item.importYaml) {
+      actions.append(copyImport);
+    }
     row.append(name, actions);
     elements.history.append(row);
   }
@@ -531,22 +543,29 @@ async function exportSelected() {
   const runFolderName = createExportRunFolderName(new Date());
   const folder = normalizeExportFolder(elements.exportFolder.value);
   const runFolder = `${folder}/${runFolderName}`;
+  const exportFolder = `${runFolder}/export-version`;
+  const importFolder = `${runFolder}/bereinigte-import-version`;
   elements.exportSelected.disabled = true;
   setStatus(`Exportiere ${selected.length} Automation(en) nach ${runFolder} ...`);
   try {
-    await ensureExportFolder(runFolder);
+    await ensureExportFolder(exportFolder);
+    await ensureExportFolder(importFolder);
     const usedFilenames = new Set();
     const exported = [];
     for (const automation of selected) {
       const filename = createExportFilename(automation.alias, usedFilenames);
-      const result = await writeExportFile(runFolder, filename, automation.yaml);
+      const exportResult = await writeExportFile(exportFolder, filename, automation.yaml);
+      const importYaml = createImportAutomationYaml(automation.yaml);
+      const importResult = await writeExportFile(importFolder, filename, importYaml);
       exported.push({
         filename,
-        path: result.path || `${runFolder}/${filename}`,
+        path: exportResult.path || `${exportFolder}/${filename}`,
+        importPath: importResult.path || `${importFolder}/${filename}`,
         folder: runFolder,
         sourceName: state.sourceName,
-        status: "gespeichert",
+        status: "Export und bereinigte Import-Version gespeichert",
         yaml: automation.yaml,
+        importYaml,
         id: automation.id,
         alias: automation.alias,
         domains: automation.domains,
@@ -556,21 +575,25 @@ async function exportSelected() {
     }
     state.exports.unshift(...exported);
     state.exports = state.exports.slice(0, 50);
-    setStatus(`${exported.length} Automation(en) in ${runFolder} gespeichert.`);
+    setStatus(`${exported.length} Automation(en) in ${runFolder} gespeichert: export-version mit ID, bereinigte-import-version ohne ID.`);
     renderHistory();
   } catch (error) {
     setStatus(`Export fehlgeschlagen: ${describeExportError(error)} Browser-Download wird als Rückfall genutzt.`);
     const usedFilenames = new Set();
     for (const automation of selected) {
       const filename = createExportFilename(automation.alias, usedFilenames);
+      const importYaml = createImportAutomationYaml(automation.yaml);
       downloadText(filename, automation.yaml);
+      downloadText(`import-${filename}`, importYaml);
       state.exports.unshift({
         filename,
         path: filename,
+        importPath: "",
         folder: "Browser-Download",
         sourceName: state.sourceName,
         status: "download",
         yaml: automation.yaml,
+        importYaml,
         id: automation.id,
         alias: automation.alias,
         domains: automation.domains,
@@ -597,59 +620,8 @@ function downloadText(filename, content) {
   URL.revokeObjectURL(url);
 }
 
-async function copyReturnPlan() {
-  const selected = state.automations.filter(item => state.selectedIds.has(item.localId));
-  if (!selected.length) {
-    setStatus("Keine Automation für die Rückführungs-Vorschau ausgewählt.");
-    return;
-  }
-  const conflicts = findConflicts(selected);
-  const yaml = [
-    "# ATLAS Rückführungs-Vorschau",
-    "# In File Studio prüfen und erst danach in automations.yaml übernehmen.",
-    conflicts.length
-      ? `# Achtung: ${conflicts.length} mögliche Konflikte bei ID oder Alias.`
-      : "# Keine ID-/Alias-Konflikte innerhalb der aktuellen Auswahl erkannt.",
-    "",
-    ...selected.map(automation => automation.yaml.trimEnd().split("\n").map((line, index) => index === 0 ? `- ${line}` : `  ${line}`).join("\n")),
-    "",
-  ].join("\n");
-  await copyText(yaml, `${selected.length} Automation(en) als Rückführungs-YAML kopiert.`);
-}
-
-async function writeBackSelected() {
-  const selected = state.automations.filter(item => state.selectedIds.has(item.localId));
-  if (!selected.length) {
-    setStatus("Keine Automation für die Rückschreibung ausgewählt.");
-    return;
-  }
-  const confirmed = window.confirm([
-    `${selected.length} Automation(en) nach /config/automations.yaml zurückschreiben?`,
-    "",
-    "ATLAS erstellt vorher automatisch ein Backup unter /config/atlas_backups/automations.",
-  ].join("\n"));
-  if (!confirmed) {
-    setStatus("Rückschreibung abgebrochen.");
-    return;
-  }
-
-  const timestamp = createTimestamp(new Date());
-  elements.writeBackSelected.disabled = true;
-  setStatus("Lese /config/automations.yaml für Rückschreibung ...");
-  try {
-    const current = await readFileContent("/config/automations.yaml");
-    await ensureExportFolder("/config/atlas_backups/automations");
-    const backupName = `automations_${timestamp}.yaml`;
-    await writeFile("/config/atlas_backups/automations", backupName, current.content, false);
-
-    const merged = mergeAutomationYaml(current.content, selected);
-    await writeFile("/config", "automations.yaml", merged.content, true);
-    setStatus(`${selected.length} Automation(en) zurückgeschrieben. Backup: /config/atlas_backups/automations/${backupName}. Ersetzt: ${merged.replaced}, neu: ${merged.added}.`);
-  } catch (error) {
-    setStatus(`Rückschreibung fehlgeschlagen: ${describeExportError(error)}`);
-  } finally {
-    elements.writeBackSelected.disabled = false;
-  }
+function createImportAutomationYaml(yaml) {
+  return yaml.replace(/^\s*id:\s*.*\n?/m, "").trimStart() + "\n";
 }
 
 function previewConflicts() {
@@ -703,6 +675,16 @@ function createFileStudioFileUrl(path) {
     fileStudioUrl.searchParams.set("path", path);
   }
   return fileStudioUrl.toString();
+}
+
+async function createSourceBackup(content) {
+  const backupFolder = `/config/atlas_backups/automations/${createExportRunFolderName(new Date())}`;
+  await ensureExportFolder(backupFolder);
+  const result = await writeExportFile(backupFolder, "automations.yaml", content);
+  return {
+    folder: backupFolder,
+    path: result.path || `${backupFolder}/automations.yaml`,
+  };
 }
 
 async function ensureExportFolder(folder) {
@@ -804,54 +786,6 @@ async function readFileContent(path) {
   };
 }
 
-function mergeAutomationYaml(currentContent, selectedAutomations) {
-  const existingBlocks = splitAutomationBlocks(currentContent);
-  const entries = existingBlocks.map(block => ({
-    block: normalizeAutomationYaml(block).trimEnd(),
-    id: readYamlValue(block, "id"),
-    alias: readYamlValue(block, "alias").toLowerCase(),
-    replaced: false,
-  }));
-  let replaced = 0;
-  let added = 0;
-
-  for (const automation of selectedAutomations) {
-    const nextBlock = automation.yaml.trimEnd();
-    const matchIndex = entries.findIndex(entry => {
-      if (automation.id && entry.id === automation.id) return true;
-      return Boolean(automation.alias && entry.alias === automation.alias.toLowerCase());
-    });
-    if (matchIndex >= 0) {
-      entries[matchIndex] = {
-        block: nextBlock,
-        id: automation.id,
-        alias: automation.alias.toLowerCase(),
-        replaced: true,
-      };
-      replaced += 1;
-    } else {
-      entries.push({
-        block: nextBlock,
-        id: automation.id,
-        alias: automation.alias.toLowerCase(),
-        replaced: false,
-      });
-      added += 1;
-    }
-  }
-
-  return {
-    content: `${entries.map(entry => formatAutomationListItem(entry.block)).join("\n\n")}\n`,
-    replaced,
-    added,
-  };
-}
-
-function formatAutomationListItem(block) {
-  const lines = block.trimEnd().split("\n");
-  return lines.map((line, index) => index === 0 ? `- ${line}` : `  ${line}`).join("\n");
-}
-
 async function apiJson(path, options = {}) {
   const response = await fetch(createAppUrl(path), {
     cache: "no-store",
@@ -913,14 +847,10 @@ function describeExportError(error) {
   return message;
 }
 
-function createTimestamp(date) {
-  const two = value => String(value).padStart(2, "0");
-  return `${two(date.getDate())}_${two(date.getMonth() + 1)}_${String(date.getFullYear()).slice(-2)}-${two(date.getHours())}_${two(date.getMinutes())}_${two(date.getSeconds())}`;
-}
-
 function createExportRunFolderName(date) {
   const two = value => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}_${two(date.getHours())}-${two(date.getMinutes())}-${two(date.getSeconds())}`;
+  const three = value => String(value).padStart(3, "0");
+  return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}_${two(date.getHours())}-${two(date.getMinutes())}-${two(date.getSeconds())}-${three(date.getMilliseconds())}`;
 }
 
 function slugify(value) {
