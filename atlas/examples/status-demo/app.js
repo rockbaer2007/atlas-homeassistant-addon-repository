@@ -6023,13 +6023,13 @@ function listImportedStyleTypes(styles) {
 function createStackContainerInlineView(field, fieldIndex) {
   const wrapper = document.createElement("div");
   wrapper.className = "expert-tab-inline";
+  const entries = field.entries ?? [];
   const count = document.createElement("small");
-  count.textContent = t("text.tabbedCardContainer", { count: field.entries?.length ?? 0 });
+  count.textContent = t("text.tabbedCardContainer", { count: entries.length });
   const preview = document.createElement("div");
   preview.className = `expert-tab-preview ${(field.layout ?? "vertical-stack") === "horizontal-stack" ? "horizontal" : "vertical"}`;
   if ((field.layout ?? "vertical-stack") === "horizontal-stack") {
-    const minimumWidth = Math.max(33, Math.round((4 / Math.max(4, field.width)) * 100));
-    preview.style.gridTemplateColumns = `repeat(auto-fit, minmax(min(100%, ${minimumWidth}%), 1fr))`;
+    preview.style.gridTemplateColumns = `repeat(${Math.max(1, entries.length)}, minmax(0, 1fr))`;
   }
   preview.addEventListener("dragover", event => {
     event.preventDefault();
@@ -6047,7 +6047,6 @@ function createStackContainerInlineView(field, fieldIndex) {
     handleDropIntoStackContainer(event, fieldIndex);
   });
 
-  const entries = field.entries ?? [];
   if (entries.length === 0) {
     const empty = document.createElement("small");
     empty.textContent = t("message.dragCard");
@@ -6199,6 +6198,9 @@ function createContainerPreviewCard(card, options = {}) {
   if (childCount > 0) {
     const children = document.createElement("div");
     children.className = `expert-tab-preview-children ${(card.layout ?? "vertical-stack") === "horizontal-stack" ? "horizontal" : "vertical"}`;
+    if ((card.layout ?? "vertical-stack") === "horizontal-stack") {
+      children.style.gridTemplateColumns = `repeat(${Math.max(1, childCount)}, minmax(0, 1fr))`;
+    }
     for (const child of card.cards ?? []) {
       children.append(createContainerPreviewCard(child));
     }

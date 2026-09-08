@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.159
+
+- Keep direct children of horizontal Expert Card Editor stack previews in fixed
+  side-by-side columns.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.58`.
+
 ## 0.1.158
 
 - Keep newly inserted Expert Card Editor stack containers empty instead of
