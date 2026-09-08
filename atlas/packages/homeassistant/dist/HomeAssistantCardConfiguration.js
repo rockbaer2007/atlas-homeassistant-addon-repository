@@ -539,13 +539,15 @@ function normalizeHomeAssistantCardConfiguration(card) {
     }
     if ((card.type === "horizontal-stack" || card.type === "vertical-stack") && Array.isArray(card.cards)) {
         const normalizedCards = card.cards.map(candidate => normalizeHomeAssistantCardConfiguration(candidate).card);
+        const columns = normalizeHomeAssistantCardColumns(card);
+        const rows = normalizeHomeAssistantCardRows(card);
         if (normalizedCards.length === 0) {
             throw new Error("Home Assistant stack card has no supported cards.");
         }
         const normalizedCard = {
             type: card.type,
-            ...(card.columns === "full" || typeof card.columns === "number" ? { columns: card.columns } : {}),
-            ...(card.rows === "auto" ? { rows: "auto" } : {}),
+            ...(columns === "full" || typeof columns === "number" ? { columns } : {}),
+            ...(rows === "auto" ? { rows } : {}),
             cards: normalizedCards,
         };
         return {
@@ -628,6 +630,8 @@ function normalizeHomeAssistantCardConfiguration(card) {
         };
     }
     if (card.type === "custom:tabbed-card-v2" && Array.isArray(card.tabs)) {
+        const columns = normalizeHomeAssistantCardColumns(card);
+        const rows = normalizeHomeAssistantCardRows(card);
         const tabs = card.tabs
             .filter(isRecord)
             .map((tab, index) => {
@@ -658,8 +662,8 @@ function normalizeHomeAssistantCardConfiguration(card) {
                         ? Math.max(0, Math.floor(card.options.defaultTabIndex))
                         : 0,
                 },
-                ...(card.columns === "full" || (isRecord(card.options) && card.options.fullWidth === true) ? { columns: "full" } : {}),
-                ...(card.rows === "auto" || (isRecord(card.options) && card.options.autoHeight === true) ? { rows: "auto" } : {}),
+                ...(columns === "full" ? { columns } : {}),
+                ...(rows === "auto" ? { rows } : {}),
                 tabs,
             },
             target: "tabbed-card-v2",
@@ -755,6 +759,25 @@ function normalizeHomeAssistantCardConfiguration(card) {
         };
     }
     throw new Error("Unsupported Home Assistant card.");
+}
+function normalizeHomeAssistantCardColumns(card) {
+    const gridOptions = isRecord(card.grid_options) ? card.grid_options : undefined;
+    const directColumns = card.columns;
+    const gridColumns = gridOptions?.columns;
+    if (directColumns === "full" || gridColumns === "full" || (isRecord(card.options) && card.options.fullWidth === true)) {
+        return "full";
+    }
+    if (typeof directColumns === "number")
+        return directColumns;
+    if (typeof gridColumns === "number")
+        return gridColumns;
+    return undefined;
+}
+function normalizeHomeAssistantCardRows(card) {
+    const gridOptions = isRecord(card.grid_options) ? card.grid_options : undefined;
+    return card.rows === "auto" || gridOptions?.rows === "auto" || (isRecord(card.options) && card.options.autoHeight === true)
+        ? "auto"
+        : undefined;
 }
 function serializeHomeAssistantEntitiesCardYaml(card) {
     const lines = [

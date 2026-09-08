@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.154
+
+- Preserve `grid_options.columns: full` during Home Assistant card import
+  normalization, so Tabbed Card V2 fills the Expert Card Editor surface width.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.53`.
+
 ## 0.1.153
 
 - Apply imported `grid_options.columns: full` and `grid_options.rows: auto` to

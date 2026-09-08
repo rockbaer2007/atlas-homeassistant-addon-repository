@@ -1553,6 +1553,7 @@ describe("Home Assistant entities card configuration", () => {
       ],
       card: {
         type: "custom:tabbed-card-v2",
+        columns: "full",
         rows: "auto",
       },
     });
