@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.201
+
+- Make the Expert Card Editor title controls two-column so longer German labels
+  fit without squeezing.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.90`.
+
 ## 0.1.200
 
 - Fix the Card Editor palette scroll layout so card entries keep their natural
