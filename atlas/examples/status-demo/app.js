@@ -3886,6 +3886,10 @@ function renderExpertTemplatePalette() {
     favorite.addEventListener("click", event => event.stopPropagation());
     favoriteCheckbox.addEventListener("change", event => {
       event.stopPropagation();
+      hiddenToggle.hidden = favoriteCheckbox.checked;
+      if (favoriteCheckbox.checked) {
+        hiddenCheckbox.checked = false;
+      }
       setExpertPaletteFavoriteDraft(card.id, favoriteCheckbox.checked);
     });
     const hiddenToggle = document.createElement("label");

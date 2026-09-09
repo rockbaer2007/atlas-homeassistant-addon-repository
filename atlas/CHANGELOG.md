@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.202
+
+- Hide the Expert Card Editor palette hidden-checkbox immediately when a card is
+  marked as favorite.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.91`.
+
 ## 0.1.201
 
 - Make the Expert Card Editor title controls two-column so longer German labels
