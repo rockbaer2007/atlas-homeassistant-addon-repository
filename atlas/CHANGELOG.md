@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.194
+
+- Put the entity domain shortcut grid into its own groupbox-style panel.
+- Keep the shortcut columns and button heights visually consistent.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.83`.
+
 ## 0.1.193
 
 - Move the Expert Card Editor information, controls and generated HA card code

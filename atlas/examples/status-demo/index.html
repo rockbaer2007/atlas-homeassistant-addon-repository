@@ -513,9 +513,13 @@
 
       .entity-domain-shortcuts {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
-        gap: 4px;
+        grid-template-columns: repeat(auto-fit, minmax(142px, 1fr));
+        gap: 6px;
         min-height: 32px;
+        padding: 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #f8fbff;
       }
 
       .entity-domain-shortcuts button {
@@ -530,6 +534,7 @@
         line-height: 1.2;
         text-align: left;
         overflow-wrap: anywhere;
+        min-height: 34px;
         cursor: pointer;
       }
 
@@ -2998,6 +3003,7 @@
       :root[data-theme="dark"] .connection-config.compact-panel,
       :root[data-theme="dark"] .card-export-column,
       :root[data-theme="dark"] .card-export-language-panel,
+      :root[data-theme="dark"] .entity-domain-shortcuts,
       :root[data-theme="dark"] .entity-picker-column,
       :root[data-theme="dark"] .diagnostics-panel,
       :root[data-theme="dark"] .selected-entities-panel,
