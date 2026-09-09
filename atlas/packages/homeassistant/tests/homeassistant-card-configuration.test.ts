@@ -1077,6 +1077,64 @@ describe("Home Assistant entities card configuration", () => {
     ].join("\n"));
   });
 
+  it("preserves imported raw custom cards in Expert stack entries", () => {
+    const card = createHomeAssistantCardEditorConfiguration({
+      editorMode: "expert",
+      fields: [
+        {
+          id: "Tabbed",
+          target: "tabbed-card-v2",
+          entityId: "",
+          layout: "vertical-stack",
+          activeTabIndex: 0,
+          column: 0,
+          row: 0,
+          width: 12,
+          height: 4,
+          entries: [
+            {
+              id: "Keller",
+              icon: "mdi:home-floor-negative-1",
+              cards: [
+                {
+                  id: "Spalte 1",
+                  target: "entity",
+                  layout: "vertical-stack",
+                  rawCard: {
+                    type: "custom:vertical-stack-in-card",
+                    cards: [],
+                  },
+                  cards: [
+                    {
+                      id: "Template chip",
+                      target: "custom-card",
+                      customType: "custom:mushroom-chips-card",
+                      rawCard: {
+                        type: "custom:mushroom-chips-card",
+                        chips: [
+                          {
+                            type: "template",
+                            entity: "switch.waschmaschine_1_child_lock_2",
+                            icon: "{% if is_state(entity, 'on') %}\n  mdi:lock\n{% else %}\n  mdi:lock-open-variant\n{% endif %}",
+                            content: "LOCK",
+                          },
+                        ],
+                        alignment: "end",
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(serializeHomeAssistantEntitiesCardConfiguration(card, "yaml")).toContain("type: \"custom:mushroom-chips-card\"");
+    expect(serializeHomeAssistantEntitiesCardConfiguration(card, "yaml")).toContain("mdi:lock-open-variant");
+  });
+
   it("parses nested stack cards from Home Assistant YAML examples", () => {
     expect(parseHomeAssistantEntitiesCardConfiguration([
       "type: vertical-stack",

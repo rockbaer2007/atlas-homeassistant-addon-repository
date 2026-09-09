@@ -3417,11 +3417,13 @@ function createImportedContainerEntryFromCard(card, index = 0) {
   const title = getSimplePreviewCardTitle(card) || `Card ${index + 1}`;
   const entityIds = getSimplePreviewCardEntities(card).map(entity => entity.entity);
   const target = getImportedCardTarget(card);
+  const rawCard = cloneImportedCard(card);
   if (Array.isArray(card?.cards)) {
     return {
       id: title,
       target,
       layout: getImportedContainerLayout(card),
+      rawCard,
       entityId: "",
       cards: card.cards.map((child, childIndex) => createImportedContainerEntryFromCard(child, childIndex)),
     };
@@ -3430,9 +3432,15 @@ function createImportedContainerEntryFromCard(card, index = 0) {
     id: title,
     target,
     ...(target === "bubble" ? { bubbleButtonType: card.button_type ?? "state" } : {}),
+    ...(rawCard ? { rawCard } : {}),
     entityId: entityIds[0] ?? (typeof card?.entity === "string" ? card.entity : ""),
     ...(typeof card?.icon === "string" ? { icon: card.icon } : {}),
   };
+}
+
+function cloneImportedCard(card) {
+  if (!card || typeof card !== "object") return undefined;
+  return JSON.parse(JSON.stringify(card));
 }
 
 function getImportedContainerLayout(card) {
@@ -6853,9 +6861,7 @@ function renderExpertEditorPreview() {
 }
 
 function formatExpertHaCardCodePreview(card) {
-  return activeEditorMode === "expert" && haCardFormat.value === "yaml" && importedSimpleCodePreview
-    ? formatImportedYamlForStyleExport(importedSimpleCodePreview)
-    : formatExpertYamlForStyleExport(serializeHomeAssistantEntitiesCardConfiguration(card, haCardFormat.value));
+  return formatExpertYamlForStyleExport(serializeHomeAssistantEntitiesCardConfiguration(card, haCardFormat.value));
 }
 
 function formatExpertYamlForStyleExport(text) {
@@ -7277,9 +7283,6 @@ function createHaCardExportPayload() {
   if (activeEditorMode === "simple" && haCardFormat.value === "yaml" && importedSimpleCodePreview) {
     return { ...payload, content: importedSimpleCodePreview };
   }
-  if (activeEditorMode === "expert" && haCardFormat.value === "yaml" && importedSimpleCodePreview) {
-    return { ...payload, content: formatImportedYamlForStyleExport(importedSimpleCodePreview) };
-  }
   if (activeEditorMode === "expert") {
     return { ...payload, content: formatExpertYamlForStyleExport(payload.content) };
   }
@@ -7545,9 +7548,6 @@ function createHaCardExportPackage() {
   });
   if (activeEditorMode === "simple" && haCardFormat.value === "yaml" && importedSimpleCodePreview) {
     return { ...cardPackage, content: importedSimpleCodePreview };
-  }
-  if (activeEditorMode === "expert" && haCardFormat.value === "yaml" && importedSimpleCodePreview) {
-    return { ...cardPackage, content: formatImportedYamlForStyleExport(importedSimpleCodePreview) };
   }
   if (activeEditorMode === "expert") {
     return { ...cardPackage, content: formatExpertYamlForStyleExport(cardPackage.content) };

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.178
+
+- Rebuild the Card Editor Expert export from the current editor plan after
+  importing YAML, so added tabs, stacks and entities appear in the generated
+  code.
+- Preserve imported raw custom cards inside Tabbed Card V2 and stack entries.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.67`.
+
 ## 0.1.177
 
 - Allow repository-installed plugins to override bundled plugins with the same

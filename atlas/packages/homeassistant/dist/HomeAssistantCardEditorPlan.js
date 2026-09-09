@@ -406,6 +406,7 @@ function normalizeSurfaceFieldEntry(entry) {
         ...(target === "custom-card" && customType ? { customType } : {}),
         ...(target === "custom-card" && resourceUrl ? { resourceUrl } : {}),
         ...(entry.layout === "horizontal-stack" || entry.layout === "vertical-stack" || entry.layout === "grid" ? { layout: entry.layout } : {}),
+        ...(entry.rawCard ? { rawCard: entry.rawCard } : {}),
         ...(entityId ? { entityId } : {}),
         ...(entry.icon?.trim() ? { icon: entry.icon.trim() } : {}),
         ...(typeof entry.show_last_changed === "boolean" ? { show_last_changed: entry.show_last_changed } : {}),
@@ -452,6 +453,8 @@ function hasSurfaceFieldContent(field) {
     return (field.entries ?? []).some(hasSurfaceFieldEntryContent);
 }
 function hasSurfaceFieldEntryContent(entry) {
+    if (entry.rawCard)
+        return true;
     if (entry.layout === "horizontal-stack" || entry.layout === "vertical-stack" || entry.layout === "grid")
         return true;
     return Boolean(entry.entityId)
@@ -596,12 +599,24 @@ function createSurfaceFieldEntryCardConfiguration(entry) {
         return card ? [card] : [];
     });
     if (layout === "horizontal-stack" || layout === "vertical-stack") {
+        if (entry.rawCard) {
+            return {
+                ...entry.rawCard,
+                cards: childCards,
+            };
+        }
         return {
             type: layout,
             cards: childCards,
         };
     }
     if (layout === "grid") {
+        if (entry.rawCard) {
+            return {
+                ...entry.rawCard,
+                cards: childCards,
+            };
+        }
         return {
             type: "grid",
             columns: Math.min(4, Math.max(1, childCards.length)),
@@ -609,6 +624,8 @@ function createSurfaceFieldEntryCardConfiguration(entry) {
             cards: childCards,
         };
     }
+    if (entry.rawCard)
+        return entry.rawCard;
     if (!entry.entityId && entry.target !== "link" && entry.target !== "webpage" && entry.target !== "custom-card")
         return undefined;
     if (entry.target === "custom-card") {

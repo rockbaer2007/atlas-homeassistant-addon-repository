@@ -5,7 +5,7 @@
     "de": "Home Assistant Karten-Editor",
     "en": "Home Assistant Card Editor"
   },
-  "version": "0.2.0-alpha.66",
+  "version": "0.2.0-alpha.67",
   "description": "Visual Expert card editor with Home Assistant entity selection and HACS-oriented export.",
   "descriptionI18n": {
     "de": "Visueller Expert-Editor für Home-Assistant-Karten mit Entitätsauswahl und HACS-orientiertem Export.",
