@@ -1251,8 +1251,7 @@
         align-items: end;
       }
 
-      .expert-control-panel,
-      .expert-palette-panel {
+      .expert-control-panel {
         display: grid;
         gap: 10px;
         min-width: 0;
@@ -1260,12 +1259,6 @@
         border: 1px solid #d7dee8;
         border-radius: 6px;
         background: #ffffff;
-      }
-
-      .expert-palette-panel {
-        align-content: start;
-        grid-template-rows: auto auto minmax(560px, 1fr);
-        min-height: min(1180px, calc(100vh - 80px));
       }
 
       .expert-palette-actions {
@@ -1343,6 +1336,13 @@
         grid-template-columns: minmax(260px, 340px) minmax(640px, 1fr);
         gap: 12px;
         align-items: start;
+      }
+
+      .expert-editor-sidebar {
+        display: grid;
+        gap: 10px;
+        align-content: start;
+        min-width: 0;
       }
 
       .expert-editor-canvas-row {
@@ -1552,8 +1552,8 @@
 
       .expert-editor-sidebar .expert-template-palette {
         grid-template-columns: 1fr;
-        min-height: min(760px, calc(100vh - 260px));
-        max-height: min(1120px, calc(100vh - 170px));
+        min-height: min(760px, calc(100vh - 210px));
+        max-height: min(1120px, calc(100vh - 120px));
         overflow-y: auto;
         overscroll-behavior: contain;
         scrollbar-gutter: stable;
@@ -3034,7 +3034,6 @@
       :root[data-theme="dark"] .entity-picker-column,
       :root[data-theme="dark"] .diagnostics-panel,
       :root[data-theme="dark"] .expert-control-panel,
-      :root[data-theme="dark"] .expert-palette-panel,
       :root[data-theme="dark"] .selected-entities-panel,
       :root[data-theme="dark"] .entity-picker-panel,
       :root[data-theme="dark"] .tabbed-card-dialog,
@@ -3704,22 +3703,20 @@
           <h2 class="entity-section-title" data-i18n="heading.expertEditor">Expert editor preview</h2>
           <div class="expert-editor-workbench">
           <aside class="expert-editor-sidebar" aria-label="Available Home Assistant cards" data-i18n-aria-label="aria.availableCards">
-            <div class="expert-palette-panel">
-              <div class="expert-palette-toolbar">
-                <strong data-i18n="heading.cardList">Card list</strong>
-                <div class="expert-palette-actions">
-                  <button id="save-expert-palette-favorites" type="button" data-i18n="button.saveFavorites">Save favorites</button>
-                  <button id="show-all-expert-palette-cards" type="button" data-i18n="button.showAllCards">Show all cards</button>
-                  <button id="scan-expert-palette-cards" type="button" data-i18n="button.scanHaCards">Scan HA cards</button>
-                  <button id="reset-expert-template-sizing" type="button" data-i18n="button.resetSizes">Reset sizes</button>
-                  <button id="reset-expert-palette-favorites" type="button" data-i18n="button.resetFavorites">Reset favorites</button>
-                </div>
+            <div class="expert-palette-toolbar">
+              <strong data-i18n="heading.cardList">Card list</strong>
+              <div class="expert-palette-actions">
+                <button id="save-expert-palette-favorites" type="button" data-i18n="button.saveFavorites">Save favorites</button>
+                <button id="show-all-expert-palette-cards" type="button" data-i18n="button.showAllCards">Show all cards</button>
+                <button id="scan-expert-palette-cards" type="button" data-i18n="button.scanHaCards">Scan HA cards</button>
+                <button id="reset-expert-template-sizing" type="button" data-i18n="button.resetSizes">Reset sizes</button>
+                <button id="reset-expert-palette-favorites" type="button" data-i18n="button.resetFavorites">Reset favorites</button>
               </div>
-              <div class="expert-palette-search">
-                <input id="expert-palette-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search cards" data-i18n-placeholder="placeholder.cardSearch">
-              </div>
-              <div id="expert-template-palette" class="expert-template-palette" aria-label="Expert editor templates" data-i18n-aria-label="aria.expertTemplates"></div>
             </div>
+            <div class="expert-palette-search">
+              <input id="expert-palette-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search cards" data-i18n-placeholder="placeholder.cardSearch">
+            </div>
+            <div id="expert-template-palette" class="expert-template-palette" aria-label="Expert editor templates" data-i18n-aria-label="aria.expertTemplates"></div>
           </aside>
           <section class="expert-editor-surface" aria-label="Expert editor surface" data-i18n-aria-label="aria.expertSurface">
             <div class="expert-output-grid">

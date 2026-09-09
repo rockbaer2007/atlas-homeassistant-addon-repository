@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.198
+
+- Remove the extra Card Editor palette groupbox so the card list can use the
+  sidebar height without the wrapping panel constraining entries.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.87`.
+
 ## 0.1.197
 
 - Give the Expert Card Editor card palette more vertical room.
