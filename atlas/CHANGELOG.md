@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.200
+
+- Fix the Card Editor palette scroll layout so card entries keep their natural
+  height instead of being squeezed into the visible list area.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.89`.
+
 ## 0.1.199
 
 - Widen the Card Editor palette sidebar again and restore a two-column palette

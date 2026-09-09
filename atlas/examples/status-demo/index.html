@@ -1547,12 +1547,15 @@
       .expert-template-palette {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        grid-auto-rows: max-content;
+        align-content: start;
+        align-items: start;
         gap: 8px;
       }
 
       .expert-editor-sidebar .expert-template-palette {
         grid-template-columns: 1fr;
-        min-height: min(760px, calc(100vh - 210px));
+        height: min(760px, calc(100vh - 210px));
         max-height: min(1120px, calc(100vh - 120px));
         overflow-y: auto;
         overscroll-behavior: contain;
@@ -1605,7 +1608,8 @@
         align-items: start;
         gap: 6px;
         max-width: 100%;
-        min-height: 0;
+        min-height: max-content;
+        height: auto;
         box-sizing: border-box;
         padding: 9px 10px;
         border: 1px solid #cbd5e1;
