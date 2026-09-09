@@ -1241,26 +1241,27 @@
 
       .expert-editor-controls {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 244px));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
         align-items: end;
       }
 
       .expert-output-toolbar {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 14px;
+        display: none;
       }
 
       .expert-output-grid {
         display: grid;
-        grid-template-columns: minmax(420px, 0.9fr) minmax(320px, 0.72fr) minmax(460px, 1.18fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 12px;
         align-items: start;
-        margin-top: 8px;
+        margin-bottom: 10px;
       }
 
       .expert-output-column {
+        display: grid;
+        gap: 8px;
+        align-content: start;
         min-width: 0;
       }
 
@@ -1269,7 +1270,9 @@
       }
 
       .expert-output-column.ha-card-preview pre {
-        min-height: 188px;
+        min-height: 0;
+        max-height: 220px;
+        overflow: auto;
       }
 
       .expert-output-column.expert-detail-column {
@@ -1324,10 +1327,13 @@
 
       .expert-grid-top-controls {
         display: grid;
-        grid-template-columns: repeat(2, minmax(88px, 128px)) minmax(132px, 192px);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
         align-items: end;
-        justify-content: start;
+      }
+
+      .expert-grid-zoom-control {
+        grid-column: 1 / -1;
       }
 
       .expert-grid-axis-control {
@@ -1366,11 +1372,11 @@
       }
 
       .expert-editor-controls .wide {
-        grid-column: span 2;
+        grid-column: 1 / -1;
       }
 
       .expert-editor-controls .span-2 {
-        grid-column: span 2;
+        grid-column: 1 / -1;
       }
 
       .expert-editor-controls .field-pair {
@@ -1393,7 +1399,7 @@
 
       .expert-number-controls {
         display: grid;
-        grid-template-columns: repeat(4, 72px);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 8px;
         align-items: end;
       }
@@ -1411,7 +1417,7 @@
       }
 
       .expert-number-controls input {
-        width: 72px;
+        width: 100%;
         min-height: 34px;
         padding: 6px 4px;
         text-align: center;
@@ -1443,7 +1449,14 @@
       }
 
       .expert-output-grid .expert-editor-actions button {
-        flex: 0 0 184px;
+        flex: 1 1 calc(50% - 6px);
+        min-width: 0;
+      }
+
+      .expert-editor-status {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
       }
 
       @media (max-width: 720px) {
@@ -3672,35 +3685,28 @@
             <div id="expert-template-palette" class="expert-template-palette" aria-label="Expert editor templates" data-i18n-aria-label="aria.expertTemplates"></div>
           </aside>
           <section class="expert-editor-surface" aria-label="Expert editor surface" data-i18n-aria-label="aria.expertSurface">
-            <div class="expert-grid-frame">
-              <div class="expert-grid-top-controls">
-                <div class="expert-grid-axis-control expert-grid-columns-control">
-                  <label for="expert-grid-columns" data-i18n="label.gridColumns">X</label>
-                  <input id="expert-grid-columns" type="range" min="0" max="5" value="0">
-                  <output id="expert-grid-columns-output" for="expert-grid-columns">0</output>
-                </div>
-                <div class="expert-grid-axis-control expert-grid-rows-control">
-                  <label for="expert-grid-rows" data-i18n="label.gridRows">Y</label>
-                  <input id="expert-grid-rows" type="range" min="0" max="5" value="0">
-                  <output id="expert-grid-rows-output" for="expert-grid-rows">0</output>
-                </div>
-                <div class="expert-grid-axis-control expert-grid-zoom-control">
-                  <label for="expert-grid-zoom" data-i18n="label.gridZoom">Zoom</label>
-                  <input id="expert-grid-zoom" type="range" min="75" max="150" step="5" value="100">
-                  <output id="expert-grid-zoom-output" for="expert-grid-zoom">100%</output>
-                </div>
-              </div>
-              <div class="expert-grid-body">
-                <div class="expert-editor-canvas-row">
-                  <div id="expert-editor-dropzone" class="expert-editor-dropzone"></div>
-                </div>
-              </div>
-            </div>
-            <div class="expert-output-toolbar">
-              <button id="reset-expert-preview" class="preview-reset-button" type="button" data-i18n="button.resetPreview">Reset preview</button>
-            </div>
             <div class="expert-output-grid">
+              <div class="expert-output-column expert-detail-column">
+                <aside id="expert-selected-card-details" class="expert-selected-card-details" aria-live="polite"></aside>
+              </div>
               <div class="expert-output-column">
+                <div class="expert-grid-top-controls">
+                  <div class="expert-grid-axis-control expert-grid-columns-control">
+                    <label for="expert-grid-columns" data-i18n="label.gridColumns">X</label>
+                    <input id="expert-grid-columns" type="range" min="0" max="5" value="0">
+                    <output id="expert-grid-columns-output" for="expert-grid-columns">0</output>
+                  </div>
+                  <div class="expert-grid-axis-control expert-grid-rows-control">
+                    <label for="expert-grid-rows" data-i18n="label.gridRows">Y</label>
+                    <input id="expert-grid-rows" type="range" min="0" max="5" value="0">
+                    <output id="expert-grid-rows-output" for="expert-grid-rows">0</output>
+                  </div>
+                  <div class="expert-grid-axis-control expert-grid-zoom-control">
+                    <label for="expert-grid-zoom" data-i18n="label.gridZoom">Zoom</label>
+                    <input id="expert-grid-zoom" type="range" min="75" max="150" step="5" value="100">
+                    <output id="expert-grid-zoom-output" for="expert-grid-zoom">100%</output>
+                  </div>
+                </div>
                 <div class="expert-editor-controls">
                   <div class="field-pair">
                     <label for="expert-card-name" data-i18n="label.expertCardName">Expert card name</label>
@@ -3754,18 +3760,25 @@
                   <button id="edit-expert-field" type="button" data-i18n="button.editSelected">Edit selected</button>
                   <button id="arrange-expert-fields" type="button" data-i18n="button.autoArrange">Auto arrange</button>
                   <button id="reset-expert-surface-size" type="button" data-i18n="button.resetSize">Reset size</button>
+                  <button id="reset-expert-preview" class="preview-reset-button" type="button" data-i18n="button.resetPreview">Reset preview</button>
                   <button id="clear-expert-fields" type="button" data-i18n="button.clearPreview">Clear preview</button>
                 </div>
-              </div>
-              <div class="expert-output-column expert-detail-column">
-                <aside id="expert-selected-card-details" class="expert-selected-card-details" aria-live="polite"></aside>
-                <output id="expert-editor-summary" aria-live="polite"></output>
-                <div id="expert-field-list" class="expert-field-list" aria-live="polite"></div>
               </div>
               <div class="expert-output-column ha-card-preview">
                 <label for="expert-editor-preview" data-i18n="label.expertHaCardCode">Expert HA card code</label>
                 <pre id="expert-editor-preview" aria-live="polite"></pre>
               </div>
+            </div>
+            <div class="expert-grid-frame">
+              <div class="expert-grid-body">
+                <div class="expert-editor-canvas-row">
+                  <div id="expert-editor-dropzone" class="expert-editor-dropzone"></div>
+                </div>
+              </div>
+            </div>
+            <div class="expert-editor-status">
+              <output id="expert-editor-summary" aria-live="polite"></output>
+              <div id="expert-field-list" class="expert-field-list" aria-live="polite"></div>
             </div>
           </section>
           </div>
