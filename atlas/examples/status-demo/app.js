@@ -310,7 +310,7 @@ const translations = {
     "button.addEntity": "Add entity",
     "button.save": "Save",
     "button.cancel": "Cancel",
-    "button.refreshEntities": "Refresh entities",
+    "button.refreshEntities": "Synchronize entities",
     "button.saveFavorites": "Save favorites",
     "button.showAllCards": "Show all cards",
     "button.showFavorites": "Show favorites",
@@ -493,9 +493,9 @@ const translations = {
     "message.loadedEntities": "Loaded {count} entities from Home Assistant.",
     "message.loadedEntitiesWithChanges": "Loaded {count} entities from Home Assistant. Cache: +{added}, -{removed}.",
     "message.entitySyncIdle": "Entities: no Home Assistant catalog loaded yet.",
-    "message.entitySyncCached": "Entities: cache ready · {count} entries.",
-    "message.entitySyncing": "Entities: synchronizing with Home Assistant...",
-    "message.entitySyncDone": "Entities: done · {count} loaded · +{added} / -{removed}.",
+    "message.entitySyncCached": "Entities: local cache ready · {count} entries.",
+    "message.entitySyncing": "Entity synchronization with Home Assistant is running...",
+    "message.entitySyncDone": "Scan complete · {count} entities · +{added} new · -{removed} removed.",
     "message.entitySyncFailed": "Entities: failed · {reason}",
     "message.entityListFailed": "Entity list failed: {reason}",
     "message.loadedResources": "Loaded {count} Lovelace resources from Home Assistant. {total} palette entries detected, including {hacs} /hacsfiles resources.",
@@ -787,7 +787,7 @@ const translations = {
     "button.addEntity": "Entität hinzufügen",
     "button.save": "Speichern",
     "button.cancel": "Abbrechen",
-    "button.refreshEntities": "Entitäten aktualisieren",
+    "button.refreshEntities": "Entitäten synchronisieren",
     "button.saveFavorites": "Favoriten speichern",
     "button.showAllCards": "Alle Cards anzeigen",
     "button.showFavorites": "Favoriten anzeigen",
@@ -970,9 +970,9 @@ const translations = {
     "message.loadedEntities": "{count} Entitäten aus Home Assistant geladen.",
     "message.loadedEntitiesWithChanges": "{count} Entitäten aus Home Assistant geladen. Cache: +{added}, -{removed}.",
     "message.entitySyncIdle": "Entitäten: noch kein Home-Assistant-Katalog geladen.",
-    "message.entitySyncCached": "Entitäten: Cache bereit · {count} Einträge.",
-    "message.entitySyncing": "Entitäten: synchronisiere mit Home Assistant...",
-    "message.entitySyncDone": "Entitäten: fertig · {count} geladen · +{added} / -{removed}.",
+    "message.entitySyncCached": "Entitäten: lokaler Cache bereit · {count} Einträge.",
+    "message.entitySyncing": "Entitätensynchronisation mit Home Assistant läuft...",
+    "message.entitySyncDone": "Scan abgeschlossen · {count} Entitäten · +{added} neu · -{removed} entfernt.",
     "message.entitySyncFailed": "Entitäten: Fehler · {reason}",
     "message.entityListFailed": "Entitätsliste fehlgeschlagen: {reason}",
     "message.loadedResources": "{count} Lovelace-Ressourcen aus Home Assistant geladen. {total} Palette-Einträge erkannt, davon {hacs} /hacsfiles-Ressourcen.",
@@ -2195,7 +2195,7 @@ function renderConnectionLifecycle(lifecycle) {
       scheduleReconnect();
     }
   }
-  refreshHomeAssistantEntities.disabled = lifecycle.state !== "connected";
+  refreshHomeAssistantEntities.disabled = lifecycle.state !== "connected" || entityCatalogSyncStatus.state === "syncing";
   renderConnectionPanelState();
 }
 
@@ -2402,6 +2402,9 @@ function renderEntityCatalogSyncStatus() {
   if (!entitySyncState) return;
   const status = entityCatalogSyncStatus;
   entitySyncState.dataset.syncState = status.state;
+  if (refreshHomeAssistantEntities) {
+    refreshHomeAssistantEntities.disabled = status.state === "syncing" || connectionLifecycleState !== "connected";
+  }
   if (status.state === "cached") {
     entitySyncState.textContent = t("message.entitySyncCached", { count: status.count ?? 0 });
   } else if (status.state === "syncing") {
@@ -2648,7 +2651,7 @@ function refreshLiveEntityStates() {
     });
   }
   statusMessage.textContent = entityResult?.accepted
-    ? t("message.entityListRequested", { requestId: entityResult.requestId })
+    ? t("message.entitySyncing")
     : entityResult?.reason ?? t("message.connectBeforeRefreshingEntities");
   checkLiveLovelaceResources({ appendStatus: true });
 }
@@ -8305,7 +8308,7 @@ function bindSelectedEntity(nextTransport) {
         setEntityCatalogSyncStatus({ state: "done", ...changes });
         renderEntityPickerOptions();
         renderEntityList();
-        statusMessage.textContent = t("message.loadedEntitiesWithChanges", changes);
+        statusMessage.textContent = t("message.entitySyncDone", changes);
         return;
       }
       setEntityCatalogSyncStatus({

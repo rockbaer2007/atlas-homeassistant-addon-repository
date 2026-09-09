@@ -1844,12 +1844,14 @@
         gap: 10px;
         align-content: start;
         min-width: 0;
+        max-height: 360px;
         margin-bottom: 10px;
         padding: 12px;
         border: 1px solid #2563eb;
         border-radius: 6px;
         background: #f8fbff;
         color: #172033;
+        overflow: auto;
       }
 
       .expert-selected-card-details h3 {
@@ -1913,6 +1915,8 @@
       .expert-detail-card-list {
         display: grid;
         gap: 4px;
+        max-height: 96px;
+        overflow: auto;
       }
 
       .expert-detail-card-list ul {
@@ -1930,7 +1934,7 @@
       }
 
       .expert-detail-style-code {
-        max-height: 220px;
+        max-height: 120px;
         margin: 0;
         overflow: auto;
         border-radius: 6px;
