@@ -28,12 +28,16 @@ export type HomeAssistantBubbleButtonType = "name" | "slider" | "state" | "switc
 
 export interface HomeAssistantEntitiesCardConfiguration {
   readonly type: "entities";
+  readonly styles?: HomeAssistantCardStyles;
   readonly title: string;
   readonly entities: readonly HomeAssistantEntitiesCardEntity[];
 }
 
+export type HomeAssistantCardStyles = Record<string, unknown>;
+
 export interface HomeAssistantGlanceCardConfiguration {
   readonly type: "glance";
+  readonly styles?: HomeAssistantCardStyles;
   readonly title?: string;
   readonly show_name?: boolean;
   readonly show_icon?: boolean;
@@ -45,6 +49,7 @@ export interface HomeAssistantGlanceCardConfiguration {
 
 export interface HomeAssistantEntityCardConfiguration {
   readonly type: "entity";
+  readonly styles?: HomeAssistantCardStyles;
   readonly name: string;
   readonly entity: string;
 }
@@ -57,6 +62,7 @@ export interface HomeAssistantButtonCardTapAction {
 
 export interface HomeAssistantButtonCardConfiguration {
   readonly type: "button";
+  readonly styles?: HomeAssistantCardStyles;
   readonly name: string;
   readonly entity?: string;
   readonly icon?: string;
@@ -65,18 +71,21 @@ export interface HomeAssistantButtonCardConfiguration {
 
 export interface HomeAssistantSensorCardConfiguration {
   readonly type: "sensor";
+  readonly styles?: HomeAssistantCardStyles;
   readonly name: string;
   readonly entity: string;
 }
 
 export interface HomeAssistantThermostatCardConfiguration {
   readonly type: "thermostat";
+  readonly styles?: HomeAssistantCardStyles;
   readonly name: string;
   readonly entity: string;
 }
 
 export interface HomeAssistantWebpageCardConfiguration {
   readonly type: "iframe";
+  readonly styles?: HomeAssistantCardStyles;
   readonly title: string;
   readonly url: string;
   readonly aspect_ratio: string;
@@ -84,6 +93,7 @@ export interface HomeAssistantWebpageCardConfiguration {
 
 export interface HomeAssistantMushroomTemplateCardConfiguration {
   readonly type: "custom:mushroom-template-card";
+  readonly styles?: HomeAssistantCardStyles;
   readonly primary: string;
   readonly secondary: string;
   readonly entity: string;
@@ -91,6 +101,7 @@ export interface HomeAssistantMushroomTemplateCardConfiguration {
 
 export interface HomeAssistantBubbleCardConfiguration {
   readonly type: "custom:bubble-card";
+  readonly styles?: HomeAssistantCardStyles;
   readonly card_type: "button" | "empty-column" | "separator";
   readonly button_type?: HomeAssistantBubbleButtonType;
   readonly name: string;
@@ -115,7 +126,7 @@ export interface HomeAssistantTabbedCardV2Tab {
 
 export interface HomeAssistantTabbedCardV2Configuration {
   readonly type: "custom:tabbed-card-v2";
-  readonly styles?: Record<string, unknown>;
+  readonly styles?: HomeAssistantCardStyles;
   readonly options: {
     readonly defaultTabIndex: number;
   };
@@ -132,6 +143,7 @@ export interface HomeAssistantCardGridOptions {
 
 export interface HomeAssistantGridCardConfiguration {
   readonly type: "grid";
+  readonly styles?: HomeAssistantCardStyles;
   readonly columns?: number;
   readonly square?: boolean;
   readonly cards: readonly HomeAssistantCardConfiguration[];
@@ -145,12 +157,14 @@ export interface HomeAssistantConditionalCardCondition {
 
 export interface HomeAssistantConditionalCardConfiguration {
   readonly type: "conditional";
+  readonly styles?: HomeAssistantCardStyles;
   readonly conditions: readonly HomeAssistantConditionalCardCondition[];
   readonly card: HomeAssistantCardConfiguration;
 }
 
 export interface HomeAssistantStackCardConfiguration {
   readonly type: "horizontal-stack" | "vertical-stack";
+  readonly styles?: HomeAssistantCardStyles;
   readonly columns?: "full" | number;
   readonly rows?: "auto";
   readonly grid_options?: HomeAssistantCardGridOptions;
@@ -962,6 +976,7 @@ function normalizeHomeAssistantCardConfiguration(
     }
     const normalizedCard = {
       type: card.type,
+      ...preserveHomeAssistantCardStyles(card),
       ...(columns === "full" || typeof columns === "number" ? { columns } : {}),
       ...(rows === "auto" ? { rows } : {}),
       cards: normalizedCards,
@@ -980,6 +995,7 @@ function normalizeHomeAssistantCardConfiguration(
     }
     const normalizedCard = {
       type: "grid",
+      ...preserveHomeAssistantCardStyles(card),
       columns: typeof card.columns === "number" ? card.columns : undefined,
       square: typeof card.square === "boolean" ? card.square : undefined,
       cards: normalizedCards,
@@ -995,6 +1011,7 @@ function normalizeHomeAssistantCardConfiguration(
     const normalizedChild = normalizeHomeAssistantCardConfiguration(card.card).card;
     const normalizedCard = {
       type: "conditional",
+      ...preserveHomeAssistantCardStyles(card),
       conditions: card.conditions
         .filter(isRecord)
         .map(condition => ({
@@ -1017,6 +1034,7 @@ function normalizeHomeAssistantCardConfiguration(
     return {
       card: {
         type: "custom:mushroom-template-card",
+        ...preserveHomeAssistantCardStyles(card),
         primary: typeof card.primary === "string" && card.primary.trim() ? card.primary.trim() : "Imported Mushroom card",
         secondary: typeof card.secondary === "string" ? card.secondary : entity,
         entity,
@@ -1038,6 +1056,7 @@ function normalizeHomeAssistantCardConfiguration(
     return {
       card: {
         type: "custom:bubble-card",
+        ...preserveHomeAssistantCardStyles(card),
         card_type: cardType,
         ...(cardType !== "separator" ? { button_type: buttonType ?? "state" } : {}),
         name: typeof card.name === "string" && card.name.trim() ? card.name.trim() : "Imported Bubble card",
@@ -1077,7 +1096,7 @@ function normalizeHomeAssistantCardConfiguration(
     return {
       card: {
         type: "custom:tabbed-card-v2",
-        ...(isRecord(card.styles) ? { styles: { ...card.styles } } : {}),
+        ...preserveHomeAssistantCardStyles(card),
         options: {
           defaultTabIndex: isRecord(card.options) && typeof card.options.defaultTabIndex === "number"
             ? Math.max(0, Math.floor(card.options.defaultTabIndex))
@@ -1105,6 +1124,7 @@ function normalizeHomeAssistantCardConfiguration(
     if (!entity) throw new Error("Home Assistant core card has no entity.");
     const normalizedCard = {
       type: card.type,
+      ...preserveHomeAssistantCardStyles(card),
       name: typeof card.name === "string" && card.name.trim() ? card.name.trim() : `Imported ${card.type} card`,
       entity,
     } satisfies HomeAssistantEntityCardConfiguration | HomeAssistantSensorCardConfiguration | HomeAssistantThermostatCardConfiguration;
@@ -1125,6 +1145,7 @@ function normalizeHomeAssistantCardConfiguration(
       : undefined;
     const normalizedCard = {
       type: "button",
+      ...preserveHomeAssistantCardStyles(card),
       name: typeof card.name === "string" && card.name.trim() ? card.name.trim() : "Imported button card",
       ...(entity ? { entity } : {}),
       ...(typeof card.icon === "string" ? { icon: card.icon } : {}),
@@ -1141,6 +1162,7 @@ function normalizeHomeAssistantCardConfiguration(
     const url = typeof card.url === "string" && card.url.trim() ? card.url.trim() : "https://www.home-assistant.io";
     const normalizedCard = {
       type: "iframe",
+      ...preserveHomeAssistantCardStyles(card),
       title: typeof card.title === "string" && card.title.trim() ? card.title.trim() : "Imported webpage card",
       url,
       aspect_ratio: typeof card.aspect_ratio === "string" && card.aspect_ratio.trim() ? card.aspect_ratio.trim() : "50%",
@@ -1162,6 +1184,7 @@ function normalizeHomeAssistantCardConfiguration(
       return {
         card: {
           type: "glance",
+          ...preserveHomeAssistantCardStyles(card),
           ...(typeof card.title === "string" && card.title.trim() ? { title: card.title.trim() } : {}),
           ...(typeof card.show_name === "boolean" ? { show_name: card.show_name } : {}),
           ...(typeof card.show_icon === "boolean" ? { show_icon: card.show_icon } : {}),
@@ -1178,6 +1201,7 @@ function normalizeHomeAssistantCardConfiguration(
     return {
       card: {
         type: "entities",
+        ...preserveHomeAssistantCardStyles(card),
         title: typeof card.title === "string" ? card.title : "Imported HA card",
         entities,
       },
@@ -1208,12 +1232,19 @@ function normalizeHomeAssistantCardRows(card: Record<string, unknown>): "auto" |
     : undefined;
 }
 
+function preserveHomeAssistantCardStyles(card: Record<string, unknown>): { readonly styles?: HomeAssistantCardStyles } {
+  return isRecord(card.styles) ? { styles: { ...card.styles } } : {};
+}
+
 function serializeHomeAssistantEntitiesCardYaml(card: HomeAssistantEntitiesCardConfiguration): string {
   const lines = [
     "type: entities",
+  ];
+  appendHomeAssistantCardStylesYaml(lines, card);
+  lines.push(
     `title: ${JSON.stringify(card.title)}`,
     "entities:",
-  ];
+  );
   for (const item of card.entities) {
     lines.push(`  - entity: ${JSON.stringify(item.entity)}`);
     if (item.name) lines.push(`    name: ${JSON.stringify(item.name)}`);
@@ -1227,6 +1258,7 @@ function serializeHomeAssistantGlanceCardYaml(card: HomeAssistantGlanceCardConfi
   const lines = [
     "type: glance",
   ];
+  appendHomeAssistantCardStylesYaml(lines, card);
   if (card.title) lines.push(`title: ${JSON.stringify(card.title)}`);
   if (card.show_name !== undefined) lines.push(`show_name: ${serializeYamlScalar(card.show_name)}`);
   if (card.show_icon !== undefined) lines.push(`show_icon: ${serializeYamlScalar(card.show_icon)}`);
@@ -1243,6 +1275,14 @@ function serializeHomeAssistantGlanceCardYaml(card: HomeAssistantGlanceCardConfi
   return lines.join("\n");
 }
 
+function appendHomeAssistantCardStylesYaml(
+  lines: string[],
+  card: { readonly styles?: HomeAssistantCardStyles },
+): void {
+  if (!card.styles || Object.keys(card.styles).length === 0) return;
+  lines.push(...serializeHomeAssistantYamlObject({ styles: card.styles }));
+}
+
 function serializeHomeAssistantCustomCardYaml(
   card: HomeAssistantCustomCardConfiguration,
 ): string {
@@ -1257,9 +1297,7 @@ function serializeHomeAssistantTabbedCardV2Yaml(card: HomeAssistantTabbedCardV2C
   const lines = [
     "type: \"custom:tabbed-card-v2\"",
   ];
-  if (card.styles && Object.keys(card.styles).length > 0) {
-    lines.push(...serializeHomeAssistantYamlObject({ styles: card.styles }));
-  }
+  appendHomeAssistantCardStylesYaml(lines, card);
   lines.push(
     "options:",
     `  defaultTabIndex: ${serializeYamlScalar(card.options.defaultTabIndex)}`,
@@ -1364,6 +1402,7 @@ function serializeHomeAssistantStackCardYaml(card: HomeAssistantStackCardConfigu
   const lines = [
     `type: ${card.type}`,
   ];
+  appendHomeAssistantCardStylesYaml(lines, card);
   appendHomeAssistantGridOptionsYaml(lines, card);
   lines.push("cards:");
   for (const child of card.cards) {
@@ -1379,6 +1418,7 @@ function serializeHomeAssistantGridCardYaml(card: HomeAssistantGridCardConfigura
   const lines = [
     "type: grid",
   ];
+  appendHomeAssistantCardStylesYaml(lines, card);
   if (card.columns !== undefined) lines.push(`columns: ${serializeYamlScalar(card.columns)}`);
   if (card.square !== undefined) lines.push(`square: ${serializeYamlScalar(card.square)}`);
   lines.push("cards:");
@@ -1394,8 +1434,9 @@ function serializeHomeAssistantGridCardYaml(card: HomeAssistantGridCardConfigura
 function serializeHomeAssistantConditionalCardYaml(card: HomeAssistantConditionalCardConfiguration): string {
   const lines = [
     "type: conditional",
-    "conditions:",
   ];
+  appendHomeAssistantCardStylesYaml(lines, card);
+  lines.push("conditions:");
   for (const condition of card.conditions) {
     lines.push(`  - condition: ${serializeYamlScalar(condition.condition)}`);
     if (condition.entity) lines.push(`    entity: ${serializeYamlScalar(condition.entity)}`);

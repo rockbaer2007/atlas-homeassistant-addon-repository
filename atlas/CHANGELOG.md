@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.182
+
+- Preserve root `styles` during Card Editor import and YAML export for
+  normalized Home Assistant cards such as Bubble, Entity and stack cards.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.71`.
+
 ## 0.1.181
 
 - Preserve Tabbed Card V2 root `styles` during Card Editor import and Expert

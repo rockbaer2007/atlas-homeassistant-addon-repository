@@ -1322,6 +1322,52 @@ describe("Home Assistant entities card configuration", () => {
     ].join("\n"));
   });
 
+  it("preserves root styles on normalized Home Assistant cards", () => {
+    const examples = [
+      {
+        input: [
+          "type: custom:bubble-card",
+          "styles:",
+          "  --bubble-main-background-color: rgba(255,255,255,0.1)",
+          "card_type: button",
+          "button_type: state",
+          "name: Bubble",
+          "entity: switch.trockner_1_2",
+        ],
+        expected: "  --bubble-main-background-color: \"rgba(255,255,255,0.1)\"",
+      },
+      {
+        input: [
+          "type: entity",
+          "styles:",
+          "  --ha-card-border-radius: 12px",
+          "name: Trockner",
+          "entity: switch.trockner_1_2",
+        ],
+        expected: "  --ha-card-border-radius: \"12px\"",
+      },
+      {
+        input: [
+          "type: vertical-stack",
+          "styles:",
+          "  --stack-title-font-size: 18px",
+          "cards:",
+          "  - type: entity",
+          "    name: Trockner",
+          "    entity: switch.trockner_1_2",
+        ],
+        expected: "  --stack-title-font-size: \"18px\"",
+      },
+    ];
+
+    for (const example of examples) {
+      const summary = summarizeHomeAssistantCardImport(example.input.join("\n"));
+      const yaml = serializeHomeAssistantEntitiesCardConfiguration(summary.card, "yaml");
+      expect(yaml).toContain("styles:");
+      expect(yaml).toContain(example.expected);
+    }
+  });
+
   it("parses nested stack cards from Home Assistant YAML examples", () => {
     expect(parseHomeAssistantEntitiesCardConfiguration([
       "type: vertical-stack",
