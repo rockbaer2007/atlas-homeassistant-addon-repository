@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.179
+
+- Fix Expert Card Editor YAML export indentation for nested custom card lists.
+- Write imported template and style blocks as YAML block scalars.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.68`.
+
 ## 0.1.178
 
 - Rebuild the Card Editor Expert export from the current editor plan after

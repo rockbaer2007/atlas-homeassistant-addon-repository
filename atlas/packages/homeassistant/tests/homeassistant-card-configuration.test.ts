@@ -15,6 +15,7 @@ import {
   createHomeAssistantCardEditorDependencyPlan,
   createHomeAssistantCardEditorScriptExport,
   createHomeAssistantCardLocaleFiles,
+  HomeAssistantCustomCardConfiguration,
   convertHomeAssistantCardModStylesToUixStyle,
   decideHomeAssistantCardArtifactImport,
   findHomeAssistantCardTargetDescriptor,
@@ -1133,6 +1134,53 @@ describe("Home Assistant entities card configuration", () => {
 
     expect(serializeHomeAssistantEntitiesCardConfiguration(card, "yaml")).toContain("type: \"custom:mushroom-chips-card\"");
     expect(serializeHomeAssistantEntitiesCardConfiguration(card, "yaml")).toContain("mdi:lock-open-variant");
+  });
+
+  it("keeps nested raw custom card list indentation and multiline YAML blocks", () => {
+    expect(serializeHomeAssistantEntitiesCardConfiguration({
+      type: "custom:mushroom-chips-card",
+      chips: [
+        {
+          type: "template",
+          entity: "switch.waschmaschine_2_child_lock_2",
+          icon: "{% if is_state(entity, 'on') %}\n  mdi:lock\n{% else %}\n  mdi:lock-open-variant\n{% endif %}",
+          content: "LOCK",
+          tap_action: {
+            action: "toggle",
+          },
+          hold_action: {
+            action: "more-info",
+          },
+        },
+      ],
+      alignment: "end",
+      card_mod: {
+        style: "ha-card {\n  position: absolute;\n  right: 12px;\n}",
+      },
+    } as HomeAssistantCustomCardConfiguration, "yaml")).toBe([
+      "type: \"custom:mushroom-chips-card\"",
+      "chips:",
+      "  - type: \"template\"",
+      "    entity: \"switch.waschmaschine_2_child_lock_2\"",
+      "    icon: |-",
+      "      {% if is_state(entity, 'on') %}",
+      "        mdi:lock",
+      "      {% else %}",
+      "        mdi:lock-open-variant",
+      "      {% endif %}",
+      "    content: \"LOCK\"",
+      "    tap_action:",
+      "      action: \"toggle\"",
+      "    hold_action:",
+      "      action: \"more-info\"",
+      "alignment: \"end\"",
+      "card_mod:",
+      "  style: |-",
+      "    ha-card {",
+      "      position: absolute;",
+      "      right: 12px;",
+      "    }",
+    ].join("\n"));
   });
 
   it("parses nested stack cards from Home Assistant YAML examples", () => {

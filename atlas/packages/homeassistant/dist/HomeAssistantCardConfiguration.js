@@ -828,10 +828,7 @@ function serializeHomeAssistantCustomCardYaml(card) {
     if (isHomeAssistantTabbedCardV2Configuration(card)) {
         return serializeHomeAssistantTabbedCardV2Yaml(card);
     }
-    return Object.entries(card)
-        .filter(([, value]) => value !== undefined)
-        .map(([key, value]) => `${key}: ${serializeYamlScalar(value)}`)
-        .join("\n");
+    return serializeHomeAssistantYamlObject({ ...card }).join("\n");
 }
 function serializeHomeAssistantTabbedCardV2Yaml(card) {
     const lines = [
@@ -878,10 +875,13 @@ function serializeHomeAssistantYamlObject(value, indent = 0) {
             lines.push(`${padding}${key}:`);
             for (const entry of item) {
                 if (isRecord(entry)) {
-                    const [firstLine, ...restLines] = serializeHomeAssistantYamlObject(entry, indent + 2);
+                    const [firstLine, ...restLines] = serializeHomeAssistantYamlObject(entry, indent + 4);
                     if (firstLine)
                         lines.push(`${padding}  - ${firstLine.trimStart()}`);
                     restLines.forEach(line => lines.push(line));
+                }
+                else if (isMultilineYamlString(entry)) {
+                    appendYamlListBlockScalar(lines, entry, indent + 2);
                 }
                 else {
                     lines.push(`${padding}  - ${serializeYamlScalar(entry)}`);
@@ -894,9 +894,38 @@ function serializeHomeAssistantYamlObject(value, indent = 0) {
             lines.push(...serializeHomeAssistantYamlObject(item, indent + 2));
             continue;
         }
+        if (isMultilineYamlString(item)) {
+            appendYamlBlockScalar(lines, key, item, indent);
+            continue;
+        }
         lines.push(`${padding}${key}: ${serializeYamlScalar(item)}`);
     }
     return lines;
+}
+function isMultilineYamlString(value) {
+    return typeof value === "string" && /\r|\n/.test(value);
+}
+function appendYamlBlockScalar(lines, key, value, indent) {
+    const padding = " ".repeat(indent);
+    lines.push(`${padding}${key}: |-`);
+    appendYamlBlockScalarBody(lines, value, indent + 2);
+}
+function appendYamlListBlockScalar(lines, value, indent) {
+    const padding = " ".repeat(indent);
+    lines.push(`${padding}- |-`);
+    appendYamlBlockScalarBody(lines, value, indent + 2);
+}
+function appendYamlBlockScalarBody(lines, value, indent) {
+    const padding = " ".repeat(indent);
+    const normalizedLines = value.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    const blockLines = normalizedLines.at(-1) === "" ? normalizedLines.slice(0, -1) : normalizedLines;
+    if (blockLines.length === 0) {
+        lines.push(padding);
+        return;
+    }
+    blockLines.forEach(line => {
+        lines.push(`${padding}${line}`);
+    });
 }
 function serializeHomeAssistantStackCardYaml(card) {
     const lines = [
