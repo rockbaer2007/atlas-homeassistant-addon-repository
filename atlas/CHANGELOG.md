@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.199
+
+- Widen the Card Editor palette sidebar again and restore a two-column palette
+  card layout so mapped HACS cards no longer overlap or appear squeezed.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.88`.
+
 ## 0.1.198
 
 - Remove the extra Card Editor palette groupbox so the card list can use the
