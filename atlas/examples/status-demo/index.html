@@ -1843,8 +1843,9 @@
         display: grid;
         gap: 10px;
         align-content: start;
+        align-self: start;
         min-width: 0;
-        max-height: 260px;
+        max-height: clamp(150px, 22vh, 190px);
         margin-bottom: 10px;
         padding: 12px;
         border: 1px solid #2563eb;
@@ -1915,7 +1916,7 @@
       .expert-detail-card-list {
         display: grid;
         gap: 4px;
-        max-height: 62px;
+        max-height: 48px;
         overflow: auto;
       }
 
@@ -1934,7 +1935,7 @@
       }
 
       .expert-detail-style-code {
-        max-height: 78px;
+        max-height: 44px;
         margin: 0;
         overflow: auto;
         border-radius: 6px;
