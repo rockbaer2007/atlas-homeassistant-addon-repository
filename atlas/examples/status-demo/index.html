@@ -512,20 +512,24 @@
       }
 
       .entity-domain-shortcuts {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+        gap: 4px;
         min-height: 32px;
       }
 
       .entity-domain-shortcuts button {
+        width: 100%;
         border: 1px solid #cbd5e1;
         border-radius: 4px;
         background: #ffffff;
         color: #172033;
-        padding: 6px 9px;
+        padding: 7px 8px;
         font: inherit;
         font-size: 13px;
+        line-height: 1.2;
+        text-align: left;
+        overflow-wrap: anywhere;
         cursor: pointer;
       }
 

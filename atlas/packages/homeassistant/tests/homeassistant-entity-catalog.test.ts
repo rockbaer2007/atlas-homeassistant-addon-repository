@@ -56,9 +56,9 @@ describe("Home Assistant entity catalog", () => {
     expect(domains).toEqual(["cover", "sensor", "switch"]);
     expect(listHomeAssistantEntityDomainShortcuts(domains)).toEqual([
       "all",
+      "cover",
       "sensor",
       "switch",
-      "cover",
     ]);
   });
 
