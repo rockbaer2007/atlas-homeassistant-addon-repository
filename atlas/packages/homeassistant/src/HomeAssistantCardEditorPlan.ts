@@ -78,6 +78,7 @@ export interface HomeAssistantCardEditorSurfaceField {
   readonly bubbleButtonType?: HomeAssistantBubbleButtonType;
   readonly customType?: `custom:${string}`;
   readonly resourceUrl?: string;
+  readonly rawCard?: HomeAssistantCardConfiguration;
   readonly entityId: string;
   readonly layout?: HomeAssistantCardEditorSurfaceFieldLayout;
   readonly entries?: readonly HomeAssistantCardEditorSurfaceFieldEntry[];
@@ -595,6 +596,7 @@ function normalizeSurfaceField(field: HomeAssistantCardEditorSurfaceField): Home
     ...(field.target === "bubble" ? { bubbleButtonType: normalizeBubbleButtonType(field.bubbleButtonType) } : {}),
     ...(field.target === "custom-card" && customType ? { customType } : {}),
     ...(field.target === "custom-card" && resourceUrl ? { resourceUrl } : {}),
+    ...(field.rawCard ? { rawCard: field.rawCard } : {}),
     entityId: field.entityId.trim(),
     layout: field.layout ?? "card",
     entries: (field.entries ?? []).map(normalizeSurfaceFieldEntry),
@@ -772,6 +774,7 @@ function createSurfaceFieldCardConfiguration(
     });
     if (tabs.length === 0) return undefined;
     return {
+      ...(field.rawCard ? { ...field.rawCard } : {}),
       type: "custom:tabbed-card-v2",
       options: {
         defaultTabIndex: normalizeTabIndex(field.activeTabIndex, tabs.length),
@@ -801,6 +804,7 @@ function createSurfaceFieldCardConfiguration(
   if (layout !== "card" && populatedEntries.length > 0) {
     if (layout === "grid") {
       return {
+        ...(field.rawCard ? { ...field.rawCard } : {}),
         type: "grid",
         columns: Math.min(4, Math.max(1, populatedEntries.length)),
         square: false,
@@ -812,6 +816,7 @@ function createSurfaceFieldCardConfiguration(
     }
 
     return {
+      ...(field.rawCard ? { ...field.rawCard } : {}),
       type: layout,
       ...createSurfaceFieldGridOptions(field),
       cards: populatedEntries.flatMap(entry => {

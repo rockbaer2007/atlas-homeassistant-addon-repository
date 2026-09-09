@@ -381,6 +381,7 @@ function normalizeSurfaceField(field) {
         ...(field.target === "bubble" ? { bubbleButtonType: normalizeBubbleButtonType(field.bubbleButtonType) } : {}),
         ...(field.target === "custom-card" && customType ? { customType } : {}),
         ...(field.target === "custom-card" && resourceUrl ? { resourceUrl } : {}),
+        ...(field.rawCard ? { rawCard: field.rawCard } : {}),
         entityId: field.entityId.trim(),
         layout: field.layout ?? "card",
         entries: (field.entries ?? []).map(normalizeSurfaceFieldEntry),
@@ -533,6 +534,7 @@ function createSurfaceFieldCardConfiguration(field) {
         if (tabs.length === 0)
             return undefined;
         return {
+            ...(field.rawCard ? { ...field.rawCard } : {}),
             type: "custom:tabbed-card-v2",
             options: {
                 defaultTabIndex: normalizeTabIndex(field.activeTabIndex, tabs.length),
@@ -560,6 +562,7 @@ function createSurfaceFieldCardConfiguration(field) {
     if (layout !== "card" && populatedEntries.length > 0) {
         if (layout === "grid") {
             return {
+                ...(field.rawCard ? { ...field.rawCard } : {}),
                 type: "grid",
                 columns: Math.min(4, Math.max(1, populatedEntries.length)),
                 square: false,
@@ -570,6 +573,7 @@ function createSurfaceFieldCardConfiguration(field) {
             };
         }
         return {
+            ...(field.rawCard ? { ...field.rawCard } : {}),
             type: layout,
             ...createSurfaceFieldGridOptions(field),
             cards: populatedEntries.flatMap(entry => {

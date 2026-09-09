@@ -3352,6 +3352,7 @@ function createImportedTabbedCardExpertField(card) {
   const tabs = Array.isArray(card.tabs) ? card.tabs : [];
   const columns = getImportedCardColumns(card);
   const rows = getImportedCardRows(card);
+  const rawCard = cloneImportedCard(card);
   const entries = tabs.map((tab, index) => {
     const attributes = tab?.attributes && typeof tab.attributes === "object" ? tab.attributes : {};
     const tabCard = tab?.card && typeof tab.card === "object" ? tab.card : undefined;
@@ -3366,6 +3367,7 @@ function createImportedTabbedCardExpertField(card) {
     id: getSimplePreviewCardTitle(card) || "Tabbed Card V2",
     target: "tabbed-card-v2",
     templateId: "tabbed-card-v2",
+    ...(rawCard ? { rawCard } : {}),
     entityId: "",
     layout: "vertical-stack",
     entries,
@@ -3382,6 +3384,7 @@ function createImportedTabbedCardExpertField(card) {
 function createImportedStackExpertField(card) {
   const columns = getImportedCardColumns(card);
   const rows = getImportedCardRows(card);
+  const rawCard = cloneImportedCard(card);
   const entries = Array.isArray(card.cards)
     ? card.cards.map((child, index) => createImportedContainerEntryFromCard(child, index))
     : [];
@@ -3389,6 +3392,7 @@ function createImportedStackExpertField(card) {
     id: getSimplePreviewCardTitle(card) || (card.type === "horizontal-stack" ? "Horizontal stack" : "Vertical stack"),
     target: getImportedCardTarget(card),
     templateId: card.type === "horizontal-stack" ? "horizontal-stack" : "vertical-stack",
+    ...(rawCard ? { rawCard } : {}),
     entityId: entries.find(entry => entry.entityId)?.entityId ?? "",
     layout: card.type,
     entries,

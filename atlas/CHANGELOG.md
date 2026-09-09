@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.183
+
+- Keep imported root `styles` attached to Expert editor fields while rebuilding
+  Tabbed Card V2 and stack cards, so the HA card code preview and export keep
+  those styles.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.72`.
+
 ## 0.1.182
 
 - Preserve root `styles` during Card Editor import and YAML export for

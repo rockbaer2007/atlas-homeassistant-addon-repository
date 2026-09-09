@@ -1368,6 +1368,81 @@ describe("Home Assistant entities card configuration", () => {
     }
   });
 
+  it("keeps root styles when expert editor fields rebuild imported containers", () => {
+    const card = createHomeAssistantCardEditorConfiguration({
+      editorMode: "expert",
+      fields: [
+        {
+          id: "Imported tabs",
+          target: "tabbed-card-v2",
+          layout: "vertical-stack",
+          entityId: "",
+          rawCard: {
+            type: "custom:tabbed-card-v2",
+            styles: {
+              "--tabbed-card-v2-card-background": "transparent",
+              "--tabbed-card-v2-tabs-gap": "6px",
+            },
+            options: {
+              defaultTabIndex: 0,
+            },
+            tabs: [],
+          },
+          entries: [
+            {
+              id: "Keller",
+              icon: "mdi:home",
+              cards: [
+                {
+                  id: "Waschmaschine",
+                  target: "entity",
+                  layout: "vertical-stack",
+                  rawCard: {
+                    type: "vertical-stack",
+                    styles: {
+                      "--stack-title-font-size": "18px",
+                    },
+                    cards: [],
+                  },
+                  cards: [
+                    {
+                      id: "TR 1",
+                      target: "entity",
+                      entityId: "switch.trockner_1_2",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+          activeTabIndex: 0,
+          columns: "full",
+          rows: "auto",
+          column: 0,
+          row: 0,
+          width: 12,
+          height: 6,
+        },
+      ],
+    });
+
+    const yaml = serializeHomeAssistantEntitiesCardConfiguration(card, "yaml");
+    expect(yaml).toContain([
+      "type: \"custom:tabbed-card-v2\"",
+      "styles:",
+      "  --tabbed-card-v2-card-background: \"transparent\"",
+      "  --tabbed-card-v2-tabs-gap: \"6px\"",
+      "options:",
+    ].join("\n"));
+    expect(yaml).toContain([
+      "    card:",
+      "      type: vertical-stack",
+      "      styles:",
+      "        --stack-title-font-size: \"18px\"",
+      "      cards:",
+    ].join("\n"));
+  });
+
   it("parses nested stack cards from Home Assistant YAML examples", () => {
     expect(parseHomeAssistantEntitiesCardConfiguration([
       "type: vertical-stack",
