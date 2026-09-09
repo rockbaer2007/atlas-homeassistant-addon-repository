@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.197
+
+- Give the Expert Card Editor card palette more vertical room.
+- Prevent mapped card entries from overlapping in the narrow sidebar.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.86`.
+
 ## 0.1.196
 
 - Make the Expert Card Editor palette panel taller and slightly wider so card
