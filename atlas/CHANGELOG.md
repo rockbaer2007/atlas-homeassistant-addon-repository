@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.195
+
+- Add groupbox-style panels around the Expert Card Editor controls and card
+  palette.
+- Make the card palette action buttons fill the palette width consistently.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.84`.
+
 ## 0.1.194
 
 - Put the entity domain shortcut grid into its own groupbox-style panel.
