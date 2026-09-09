@@ -84,6 +84,7 @@ export interface HomeAssistantTabbedCardV2Tab {
 }
 export interface HomeAssistantTabbedCardV2Configuration {
     readonly type: "custom:tabbed-card-v2";
+    readonly styles?: Record<string, unknown>;
     readonly options: {
         readonly defaultTabIndex: number;
     };

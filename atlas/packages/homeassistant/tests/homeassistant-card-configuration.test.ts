@@ -1269,6 +1269,59 @@ describe("Home Assistant entities card configuration", () => {
     ].join("\n"));
   });
 
+  it("preserves Tabbed Card V2 root styles while importing and exporting YAML", () => {
+    const yaml = [
+      "type: custom:tabbed-card-v2",
+      "styles:",
+      "  --mdc-theme-primary: '#ff9800'",
+      "  --mdc-tab-text-label-color-default: rgba(255,255,255,0.75)",
+      "  --tabbed-card-v2-card-background: transparent",
+      "  --tabbed-card-v2-card-border: 0.2px solid var(--primary-color)",
+      "  --tabbed-card-v2-card-border-radius: 12px",
+      "  --tabbed-card-v2-content-padding-side: 16px",
+      "  --tabbed-card-v2-content-padding-bottom: 16px",
+      "  --tabbed-card-v2-active-background-opacity: 35",
+      "  --tabbed-card-v2-inactive-background-opacity: 8",
+      "options:",
+      "  defaultTabIndex: 0",
+      "grid_options:",
+      "  columns: full",
+      "  rows: auto",
+      "tabs:",
+      "  - attributes:",
+      "      label: Keller",
+      "      icon: mdi:home-floor-negative-1",
+      "    card:",
+      "      type: entity",
+      "      entity: switch.trockner_1_2",
+    ].join("\n");
+
+    const summary = summarizeHomeAssistantCardImport(yaml);
+    expect(summary.card).toMatchObject({
+      type: "custom:tabbed-card-v2",
+      styles: {
+        "--mdc-theme-primary": "#ff9800",
+        "--tabbed-card-v2-card-background": "transparent",
+        "--tabbed-card-v2-active-background-opacity": 35,
+      },
+    });
+
+    expect(serializeHomeAssistantEntitiesCardConfiguration(summary.card, "yaml")).toContain([
+      "type: \"custom:tabbed-card-v2\"",
+      "styles:",
+      "  --mdc-theme-primary: \"#ff9800\"",
+      "  --mdc-tab-text-label-color-default: \"rgba(255,255,255,0.75)\"",
+      "  --tabbed-card-v2-card-background: \"transparent\"",
+      "  --tabbed-card-v2-card-border: \"0.2px solid var(--primary-color)\"",
+      "  --tabbed-card-v2-card-border-radius: \"12px\"",
+      "  --tabbed-card-v2-content-padding-side: \"16px\"",
+      "  --tabbed-card-v2-content-padding-bottom: \"16px\"",
+      "  --tabbed-card-v2-active-background-opacity: 35",
+      "  --tabbed-card-v2-inactive-background-opacity: 8",
+      "options:",
+    ].join("\n"));
+  });
+
   it("parses nested stack cards from Home Assistant YAML examples", () => {
     expect(parseHomeAssistantEntitiesCardConfiguration([
       "type: vertical-stack",

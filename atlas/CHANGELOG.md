@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.181
+
+- Preserve Tabbed Card V2 root `styles` during Card Editor import and Expert
+  YAML export.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.70`.
+
 ## 0.1.180
 
 - Add a regression check for Tabbed Card V2 exports with nested

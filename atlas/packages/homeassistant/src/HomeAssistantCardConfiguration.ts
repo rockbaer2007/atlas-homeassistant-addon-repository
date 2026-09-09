@@ -115,6 +115,7 @@ export interface HomeAssistantTabbedCardV2Tab {
 
 export interface HomeAssistantTabbedCardV2Configuration {
   readonly type: "custom:tabbed-card-v2";
+  readonly styles?: Record<string, unknown>;
   readonly options: {
     readonly defaultTabIndex: number;
   };
@@ -1076,6 +1077,7 @@ function normalizeHomeAssistantCardConfiguration(
     return {
       card: {
         type: "custom:tabbed-card-v2",
+        ...(isRecord(card.styles) ? { styles: { ...card.styles } } : {}),
         options: {
           defaultTabIndex: isRecord(card.options) && typeof card.options.defaultTabIndex === "number"
             ? Math.max(0, Math.floor(card.options.defaultTabIndex))
@@ -1254,9 +1256,14 @@ function serializeHomeAssistantCustomCardYaml(
 function serializeHomeAssistantTabbedCardV2Yaml(card: HomeAssistantTabbedCardV2Configuration): string {
   const lines = [
     "type: \"custom:tabbed-card-v2\"",
+  ];
+  if (card.styles && Object.keys(card.styles).length > 0) {
+    lines.push(...serializeHomeAssistantYamlObject({ styles: card.styles }));
+  }
+  lines.push(
     "options:",
     `  defaultTabIndex: ${serializeYamlScalar(card.options.defaultTabIndex)}`,
-  ];
+  );
   appendHomeAssistantGridOptionsYaml(lines, card);
   lines.push("tabs:");
   for (const tab of card.tabs) {
