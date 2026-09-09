@@ -538,8 +538,10 @@ const translations = {
     "message.unnamedConfiguration": "Unnamed configuration",
     "message.configurationImported": "Configuration imported: {groups} groups and {entities} entities.",
     "message.importConfigurationFailed": "Import failed: invalid configuration.",
+    "message.importCanContinue": "Import can continue: ATLAS recognized a supported Home Assistant card artifact.",
     "message.importPaused": "Import paused: review the compatibility details before mapping this artifact.",
     "message.importRejected": "Import rejected: unsupported Home Assistant card artifact.",
+    "message.importRejectedSafePath": "Import rejected: ATLAS cannot identify a safe import path.",
     "message.haCardImported": "{type} {format} imported: {title} with {entities} entities.",
     "message.importHaCardFailed": "Import failed: invalid Home Assistant entities card JSON or YAML.",
     "message.pasteImportEmpty": "Paste YAML or JSON before importing.",
@@ -1015,8 +1017,10 @@ const translations = {
     "message.unnamedConfiguration": "Unbenannte Konfiguration",
     "message.configurationImported": "Konfiguration importiert: {groups} Gruppen und {entities} Entitäten.",
     "message.importConfigurationFailed": "Import fehlgeschlagen: ungültige Konfiguration.",
+    "message.importCanContinue": "Import möglich: ATLAS hat ein unterstütztes Home-Assistant-Card-Artefakt erkannt.",
     "message.importPaused": "Import pausiert: Prüfe die Kompatibilitätsdetails, bevor dieses Artefakt gemappt wird.",
     "message.importRejected": "Import abgelehnt: nicht unterstütztes Home-Assistant-Card-Artefakt.",
+    "message.importRejectedSafePath": "Import abgelehnt: ATLAS kann keinen sicheren Importpfad erkennen.",
     "message.haCardImported": "{type} {format} importiert: {title} mit {entities} Entitäten.",
     "message.importHaCardFailed": "Import fehlgeschlagen: ungültige Home-Assistant-Entities-Card als JSON oder YAML.",
     "message.pasteImportEmpty": "Füge zuerst YAML oder JSON ein.",
@@ -3679,17 +3683,35 @@ function renderHaCardImportDecision(text) {
   haCardImportReview.dataset.action = decision.action;
 
   if (decision.action === "import") {
-    haCardImportReview.textContent = decision.message;
+    haCardImportReview.textContent = formatHaCardImportDecisionMessage(decision);
     return decision;
   }
 
   if (decision.action === "review") {
-    haCardImportReview.textContent = formatHomeAssistantCardArtifactReviewLines(text).join("\n");
+    haCardImportReview.textContent = formatHaCardImportReviewText(text);
     return decision;
   }
 
-  haCardImportReview.textContent = `${decision.message} ${decision.inspection.reason}`;
+  haCardImportReview.textContent = formatHaCardImportDecisionMessage(decision);
   return decision;
+}
+
+function formatHaCardImportDecisionMessage(decision) {
+  if (decision.action === "import") {
+    return t("message.importCanContinue");
+  }
+  if (decision.action === "review") {
+    return t("message.importPaused");
+  }
+  return t("message.importRejectedSafePath");
+}
+
+function formatHaCardImportReviewText(text) {
+  const lines = formatHomeAssistantCardArtifactReviewLines(text);
+  return [
+    t("message.importPaused"),
+    ...lines.slice(1),
+  ].join("\n");
 }
 
 function formatHacsBundlePackageReadReview(packageRead) {
@@ -9095,9 +9117,12 @@ haCardPasteImportText.addEventListener("input", () => {
 function updateHaCardPasteImportText(text) {
   haCardPasteImportText.value = text;
   renderHaCardStyleInspection(text);
-  haCardPasteImportStatus.textContent = text.trim()
-    ? renderHaCardImportDecision(text).message
-    : t("message.pasteImportEmpty");
+  if (text.trim()) {
+    const decision = renderHaCardImportDecision(text);
+    haCardPasteImportStatus.textContent = formatHaCardImportDecisionMessage(decision);
+  } else {
+    haCardPasteImportStatus.textContent = t("message.pasteImportEmpty");
+  }
   haCardPasteImportText.focus();
 }
 applyHaCardPasteImport.addEventListener("click", () => {
