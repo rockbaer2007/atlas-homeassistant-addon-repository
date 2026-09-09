@@ -1183,6 +1183,92 @@ describe("Home Assistant entities card configuration", () => {
     ].join("\n"));
   });
 
+  it("exports tabbed cards with nested custom stack-in-card children on the correct level", () => {
+    const yaml = serializeHomeAssistantEntitiesCardConfiguration({
+      type: "custom:tabbed-card-v2",
+      options: {
+        defaultTabIndex: 0,
+      },
+      grid_options: {
+        columns: "full",
+        rows: "auto",
+      },
+      tabs: [
+        {
+          attributes: {
+            label: "Keller",
+          },
+          card: {
+            type: "horizontal-stack",
+            grid_options: {
+              columns: "full",
+              rows: "auto",
+            },
+            cards: [
+              {
+                type: "vertical-stack",
+                cards: [
+                  {
+                    type: "custom:vertical-stack-in-card",
+                    cards: [
+                      {
+                        type: "custom:mushroom-entity-card",
+                        entity: "switch.waschmaschine_1_2",
+                        name: "Waschmaschine 1",
+                        tap_action: {
+                          action: "toggle",
+                        },
+                      },
+                      {
+                        type: "custom:mushroom-chips-card",
+                        chips: [
+                          {
+                            type: "template",
+                            entity: "switch.waschmaschine_1_child_lock_2",
+                            icon: "{% if is_state(entity, 'on') %}\nmdi:lock\n{% else %}\nmdi:lock-open-variant\n{% endif %}",
+                            content: "LOCK",
+                          },
+                        ],
+                        alignment: "end",
+                        card_mod: {
+                          style: "ha-card {\nposition: absolute !important;\nright: 10px;\n}",
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    }, "yaml");
+
+    expect(yaml).toContain([
+      "            - type: \"custom:vertical-stack-in-card\"",
+      "              cards:",
+      "                - type: \"custom:mushroom-entity-card\"",
+      "                  entity: \"switch.waschmaschine_1_2\"",
+      "                  name: \"Waschmaschine 1\"",
+      "                  tap_action:",
+      "                    action: \"toggle\"",
+      "                - type: \"custom:mushroom-chips-card\"",
+      "                  chips:",
+      "                    - type: \"template\"",
+      "                      entity: \"switch.waschmaschine_1_child_lock_2\"",
+      "                      icon: |-",
+    ].join("\n"));
+    expect(yaml).toContain([
+      "                  alignment: \"end\"",
+      "                  card_mod:",
+      "                    style: |-",
+      "                      ha-card {",
+      "                      position: absolute !important;",
+      "                      right: 10px;",
+      "                      }",
+    ].join("\n"));
+  });
+
   it("parses nested stack cards from Home Assistant YAML examples", () => {
     expect(parseHomeAssistantEntitiesCardConfiguration([
       "type: vertical-stack",

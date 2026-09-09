@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.180
+
+- Add a regression check for Tabbed Card V2 exports with nested
+  `vertical-stack-in-card` and Mushroom children.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.69`.
+
 ## 0.1.179
 
 - Fix Expert Card Editor YAML export indentation for nested custom card lists.
