@@ -1603,6 +1603,7 @@ try {
       }
     }
   }
+  normalizeExpertPaletteVisibilityState();
   if (Array.isArray(savedConfiguration?.expertCustomCardMappings)) {
     for (const entry of savedConfiguration.expertCustomCardMappings) {
       const resourceUrl = normalizeLovelaceResourceUrl(entry?.resourceUrl);
@@ -2231,6 +2232,7 @@ function scheduleReconnect() {
 
 function persistConfiguration() {
   try {
+    normalizeExpertPaletteVisibilityState();
     localStorage.setItem(configurationStorageKey, JSON.stringify({
       themePreference: currentThemePreference,
       url: homeAssistantUrl.value,
@@ -3807,14 +3809,15 @@ function expertPaletteCardMatchesSearch(card, template, query) {
 }
 
 function renderExpertTemplatePalette() {
+  normalizeExpertPaletteVisibilityState();
   expertTemplatePalette.replaceChildren();
   const baseCards = expertPaletteFavoriteIds.size && !expertPaletteShowAllCards
-    ? expertPaletteCards.filter(card => expertPaletteFavoriteIds.has(card.id) && !expertPaletteHiddenIds.has(card.id))
+    ? expertPaletteCards.filter(card => expertPaletteFavoriteIds.has(card.id))
     : expertPaletteCards;
   const visibleCards = baseCards.filter(card => {
     const template = cardEditorTemplates.find(candidate => candidate.id === card.templateId);
     if (!template) return false;
-    if (!expertPaletteShowAllCards && expertPaletteHiddenIds.has(card.id)) return false;
+    if (!expertPaletteShowAllCards && isExpertPaletteCardHidden(card.id)) return false;
     return expertPaletteCardMatchesSearch(card, template, expertPaletteSearchQuery.trim());
   });
   saveExpertPaletteFavorites.disabled = !isExpertPaletteFavoriteDraftDirty();
@@ -3835,9 +3838,11 @@ function renderExpertTemplatePalette() {
     const cardCategory = translatePaletteCategory(card.category);
     const item = document.createElement("article");
     item.className = "expert-template-card";
+    const isFavoriteCard = expertPaletteDraftFavoriteIds.has(card.id);
+    const isHiddenCard = isExpertPaletteCardHidden(card.id);
     item.classList.toggle("selected", isExpertPaletteCardSelected(card));
     item.classList.toggle("disabled", card.disabled === true);
-    item.classList.toggle("hidden-palette-card", expertPaletteHiddenIds.has(card.id));
+    item.classList.toggle("hidden-palette-card", isHiddenCard);
     item.draggable = card.disabled !== true;
     item.tabIndex = 0;
     item.setAttribute("role", "button");
@@ -3875,7 +3880,7 @@ function renderExpertTemplatePalette() {
     favorite.className = "favorite-toggle";
     const favoriteCheckbox = document.createElement("input");
     favoriteCheckbox.type = "checkbox";
-    favoriteCheckbox.checked = expertPaletteDraftFavoriteIds.has(card.id);
+    favoriteCheckbox.checked = isFavoriteCard;
     favorite.append(favoriteCheckbox, t("text.favorite"));
     main.append(favorite);
     favorite.addEventListener("click", event => event.stopPropagation());
@@ -3885,10 +3890,10 @@ function renderExpertTemplatePalette() {
     });
     const hiddenToggle = document.createElement("label");
     hiddenToggle.className = "hidden-toggle";
-    hiddenToggle.hidden = favoriteCheckbox.checked;
+    hiddenToggle.hidden = isFavoriteCard;
     const hiddenCheckbox = document.createElement("input");
     hiddenCheckbox.type = "checkbox";
-    hiddenCheckbox.checked = expertPaletteHiddenIds.has(card.id);
+    hiddenCheckbox.checked = isHiddenCard;
     hiddenToggle.append(hiddenCheckbox, t("text.hiddenCard"));
     main.append(hiddenToggle);
     hiddenToggle.addEventListener("click", event => event.stopPropagation());
@@ -3955,6 +3960,19 @@ function isExpertPaletteFavoriteDraftDirty() {
     if (!expertPaletteFavoriteIds.has(cardId)) return true;
   }
   return false;
+}
+
+function normalizeExpertPaletteVisibilityState() {
+  for (const cardId of expertPaletteFavoriteIds) {
+    expertPaletteHiddenIds.delete(cardId);
+  }
+  for (const cardId of expertPaletteDraftFavoriteIds) {
+    expertPaletteHiddenIds.delete(cardId);
+  }
+}
+
+function isExpertPaletteCardHidden(cardId) {
+  return !expertPaletteDraftFavoriteIds.has(cardId) && expertPaletteHiddenIds.has(cardId);
 }
 
 function isExpertTemplateSizingDirty() {
@@ -8722,6 +8740,7 @@ duplicateHomeAssistantGroup.addEventListener("click", () => {
   statusMessage.textContent = t("message.groupCreated", { title });
 });
 exportHomeAssistantConfig.addEventListener("click", () => {
+  normalizeExpertPaletteVisibilityState();
   const payload = JSON.stringify({
     version: 1,
     name: homeAssistantGroup.value === "custom" ? "ATLAS custom panel" : homeAssistantGroup.value,
@@ -9000,6 +9019,7 @@ importHomeAssistantConfig.addEventListener("change", async () => {
         }
       }
     }
+    normalizeExpertPaletteVisibilityState();
     expertCustomCardMappings.clear();
     if (Array.isArray(pendingImport.expertCustomCardMappings)) {
       for (const entry of pendingImport.expertCustomCardMappings) {
