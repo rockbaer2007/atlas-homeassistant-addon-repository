@@ -3528,10 +3528,11 @@ function getImportedEntityStyleBlocks(entityId) {
 }
 
 function getEntryStyleBlocks(entry) {
-  if (Array.isArray(entry?.styleBlocks) && entry.styleBlocks.length) {
-    return entry.styleBlocks;
-  }
-  return getImportedEntityStyleBlocks(entry?.entityId);
+  return dedupeStyleBlocks([
+    ...getRawCardStyleBlocks(entry?.rawCard),
+    ...(Array.isArray(entry?.styleBlocks) ? entry.styleBlocks : []),
+    ...getImportedEntityStyleBlocks(entry?.entityId),
+  ]);
 }
 
 function renderHaCardDependency(card) {
@@ -5960,16 +5961,14 @@ function handleExpertEditorSurfaceDrop(event) {
 
 function getExpertFieldStyleBlocks(field) {
   const blocks = [];
+  blocks.push(...getRawCardStyleBlocks(field.rawCard));
   if (field.entityId) {
     blocks.push(...getImportedEntityStyleBlocks(field.entityId));
   }
-  for (const entry of field.entries ?? []) {
+  forEachExpertEntry(field.entries ?? [], entry => {
     blocks.push(...getEntryStyleBlocks(entry));
-    for (const card of entry.cards ?? []) {
-      blocks.push(...getEntryStyleBlocks(card));
-    }
-  }
-  return blocks;
+  });
+  return dedupeStyleBlocks(blocks);
 }
 
 function selectedExpertDetailContext() {
@@ -6910,30 +6909,19 @@ function appendImportedStylesToExpertYaml(text) {
 
 function expertEditorHasEntryStyleBlocks() {
   return expertEditorFields.some(field =>
-    (field.entries ?? []).some(entry =>
-      getEntryStyleBlocks(entry).length || (entry.cards ?? []).some(card => getEntryStyleBlocks(card).length),
-    ),
+    getExpertFieldStyleBlocks(field).length > 0,
   );
 }
 
 function getExpertEditorEntityStyleBlocks(entityId) {
   const blocks = [];
   for (const field of expertEditorFields) {
-    for (const entry of field.entries ?? []) {
+    forEachExpertEntry(field.entries ?? [], entry => {
       if (entry.entityId === entityId) blocks.push(...getEntryStyleBlocks(entry));
-      for (const card of entry.cards ?? []) {
-        if (card.entityId === entityId) blocks.push(...getEntryStyleBlocks(card));
-      }
-    }
+    });
   }
   blocks.push(...getImportedEntityStyleBlocks(entityId));
-  const seen = new Set();
-  return blocks.filter(block => {
-    const key = `${block.key}:${block.code}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return dedupeStyleBlocks(blocks);
 }
 
 function yamlEntityBlockHasStyle(lines, entityLineIndex, entityIndentSize) {
@@ -6966,6 +6954,45 @@ function indentImportedStyleBlock(code, indent) {
     .split(/\r?\n/)
     .map(line => `${indent}${line}`)
     .join("\n");
+}
+
+function getRawCardStyleBlocks(rawCard) {
+  if (!rawCard || typeof rawCard !== "object") return [];
+  try {
+    const yaml = serializeHomeAssistantEntitiesCardConfiguration(rawCard, "yaml");
+    const inspection = inspectHomeAssistantCardStyleBlocks(yaml);
+    return [
+      ...inspection.globalStyles,
+      ...inspection.cardStyles,
+      ...inspection.layoutOptions,
+    ];
+  } catch {
+    return Object.entries(rawCard)
+      .filter(([key]) => ["styles", "style", "card_mod", "uix", "uix_style"].includes(key))
+      .map(([key, value]) => ({
+        scope: "global",
+        label: rawCard.type || "Card style",
+        key,
+        code: `${key}: ${typeof value === "string" ? value : JSON.stringify(value, null, 2)}`,
+      }));
+  }
+}
+
+function dedupeStyleBlocks(blocks) {
+  const seen = new Set();
+  return blocks.filter(block => {
+    const key = `${block.scope}:${block.label}:${block.key}:${block.code}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function forEachExpertEntry(entries, visitor) {
+  for (const entry of entries ?? []) {
+    visitor(entry);
+    forEachExpertEntry(entry.cards ?? [], visitor);
+  }
 }
 
 function addExpertEditorField() {
