@@ -265,6 +265,20 @@ function inspectJsonCardArtifact(json: Record<string, unknown>): HomeAssistantCa
     };
   }
 
+  if (isRecord(json.manifest) && typeof json.content === "string") {
+    const content = json.content.trim();
+    const contentJson = parseJsonRecord(content);
+    if ((contentJson && isHomeAssistantCardRecord(contentJson)) || looksLikeHomeAssistantCardYaml(content)) {
+      return {
+        kind: "home-assistant-card",
+        format: "json",
+        importable: true,
+        requiresReview: false,
+        reason: "The artifact is an ATLAS Home Assistant card export payload.",
+      };
+    }
+  }
+
   if (isHomeAssistantCardRecord(json)) {
     return {
       kind: "home-assistant-card",
@@ -304,7 +318,7 @@ function parseJsonRecord(text: string): Record<string, unknown> | undefined {
 }
 
 function looksLikeHomeAssistantCardYaml(text: string): boolean {
-  return /^type:\s*(entities|glance|entity|button|sensor|thermostat|iframe|grid|horizontal-stack|vertical-stack|custom:[A-Za-z0-9_-]+)\b/m.test(text);
+  return /^type:\s*["']?(entities|glance|entity|button|sensor|thermostat|iframe|grid|horizontal-stack|vertical-stack|custom:[A-Za-z0-9_-]+)["']?(?:\s|$)/m.test(text);
 }
 
 function isHomeAssistantCardRecord(value: Record<string, unknown>): boolean {

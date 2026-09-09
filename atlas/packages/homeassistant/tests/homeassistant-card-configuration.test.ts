@@ -791,6 +791,48 @@ describe("Home Assistant entities card configuration", () => {
       importable: true,
       requiresReview: false,
     });
+    const exportedTabbedYaml = [
+      'type: "custom:tabbed-card-v2"',
+      "tabs:",
+      "  - attributes:",
+      "      label: Keller",
+      "    card:",
+      "      type: entities",
+      "      entities:",
+      "        - sensor.keller",
+    ].join("\n");
+    expect(inspectHomeAssistantCardArtifact(exportedTabbedYaml)).toMatchObject({
+      kind: "home-assistant-card",
+      format: "yaml",
+      importable: true,
+      requiresReview: false,
+    });
+    expect(inspectHomeAssistantCardArtifact(JSON.stringify({
+      manifest: {
+        name: "Tabbed",
+        filename: "tabbed.yaml",
+        format: "yaml",
+      },
+      content: exportedTabbedYaml,
+    }))).toMatchObject({
+      kind: "home-assistant-card",
+      format: "json",
+      importable: true,
+      requiresReview: false,
+      reason: "The artifact is an ATLAS Home Assistant card export payload.",
+    });
+    expect(summarizeHomeAssistantCardImport(JSON.stringify({
+      manifest: {
+        name: "Tabbed",
+        filename: "tabbed.yaml",
+        format: "yaml",
+      },
+      content: exportedTabbedYaml,
+    }))).toMatchObject({
+      format: "yaml",
+      target: "tabbed-card-v2",
+      packaged: false,
+    });
   });
 
   it("flags external card-builder shaped artifacts for explicit review", () => {

@@ -366,9 +366,12 @@ export function parseHomeAssistantEntitiesCardConfiguration(text) {
 }
 export function summarizeHomeAssistantCardImport(text) {
     const packageCandidate = parseHomeAssistantCardExportPackage(text);
+    const payloadCandidate = packageCandidate ? undefined : parseHomeAssistantCardExportPayload(text);
     const parsed = packageCandidate
         ? parseHomeAssistantEntitiesCardConfiguration(packageCandidate.content)
-        : parseHomeAssistantEntitiesCardConfiguration(text);
+        : payloadCandidate
+            ? parseHomeAssistantEntitiesCardConfiguration(payloadCandidate.content)
+            : parseHomeAssistantEntitiesCardConfiguration(text);
     return {
         ...parsed,
         title: getHomeAssistantCardTitle(parsed.card),
@@ -486,7 +489,8 @@ export function getHomeAssistantCardEntityIds(card) {
         ]);
     }
     if (isHomeAssistantTabbedCardV2Configuration(card)) {
-        return dedupeEntityIds(card.tabs.flatMap(tab => getHomeAssistantCardEntityIds(tab.card)));
+        const tabs = Array.isArray(card.tabs) ? card.tabs : [];
+        return dedupeEntityIds(tabs.flatMap(tab => getHomeAssistantCardEntityIds(tab.card)));
     }
     if (card.type === "entities" || card.type === "glance") {
         return dedupeEntityIds(card.entities.map(entity => entity.entity));
@@ -519,7 +523,8 @@ export function getHomeAssistantCardTitle(card) {
         return card.primary;
     }
     if (card.type === "custom:tabbed-card-v2") {
-        return card.tabs[0]?.attributes.label ?? "Tabbed Card V2";
+        const tabs = card.tabs;
+        return Array.isArray(tabs) ? tabs[0]?.attributes?.label ?? "Tabbed Card V2" : "Tabbed Card V2";
     }
     if (isHomeAssistantRawCustomCardConfiguration(card)) {
         return typeof card.title === "string" && card.title.trim()
@@ -1029,6 +1034,21 @@ function parseHomeAssistantCardExportPackage(text) {
                 }),
             ...(isRecord(parsed.editorPlan) ? { editorPlan: parsed.editorPlan } : {}),
             ...(isRecord(parsed.script) ? { script: parsed.script } : {}),
+        };
+    }
+    catch {
+        return undefined;
+    }
+}
+function parseHomeAssistantCardExportPayload(text) {
+    try {
+        const parsed = JSON.parse(text);
+        if (!isRecord(parsed) || !isRecord(parsed.manifest) || typeof parsed.content !== "string") {
+            return undefined;
+        }
+        return {
+            manifest: parsed.manifest,
+            content: parsed.content,
         };
     }
     catch {
