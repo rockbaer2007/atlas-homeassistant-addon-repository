@@ -1530,6 +1530,7 @@ let cachedEntityPickerCatalog = [];
 let cachedEntityPickerDomains = [];
 let cachedEntityPickerSignature = "";
 let entityPickerRenderTimer;
+let entityPickerOptionsExpanded = false;
 let entityTableSort = { key: "type", direction: "asc" };
 let entityCatalogSyncStatus = { state: "idle", count: 0, added: 0, removed: 0, reason: "" };
 const stackSelectedEntityIds = new Set();
@@ -2447,6 +2448,12 @@ function scheduleEntityPickerOptionsRender(delay = 140) {
   entityPickerRenderTimer = window.setTimeout(renderEntityPickerOptions, delay);
 }
 
+function expandEntityPickerOptions() {
+  if (entityPickerOptionsExpanded) return;
+  entityPickerOptionsExpanded = true;
+  renderEntityPickerOptions();
+}
+
 function renderEntityDomainOptions() {
   const selected = homeAssistantEntityDomain.value || "all";
   const domains = createEntityPickerCatalogDomains();
@@ -2583,7 +2590,13 @@ function renderEntityPickerOptions() {
   const entityIds = entityEntries.map(entry => entry.entityId);
 
   homeAssistantEntityPicker.replaceChildren();
-  for (const entry of entityEntries) {
+  const visibleEntries = entityPickerOptionsExpanded
+    ? entityEntries
+    : entityEntries.filter(entry => entry.entityId === selected || trackedEntityIds().includes(entry.entityId)).slice(0, 25);
+  if (!entityPickerOptionsExpanded && visibleEntries.length === 0 && entityEntries[0]) {
+    visibleEntries.push(entityEntries[0]);
+  }
+  for (const entry of visibleEntries) {
     const option = document.createElement("option");
     option.value = entry.entityId;
     option.textContent = entry.label !== entry.entityId
@@ -2591,7 +2604,8 @@ function renderEntityPickerOptions() {
       : entry.entityId;
     homeAssistantEntityPicker.append(option);
   }
-  homeAssistantEntityPicker.value = entityIds.includes(selected) ? selected : entityIds[0] ?? "";
+  const visibleEntityIds = visibleEntries.map(entry => entry.entityId);
+  homeAssistantEntityPicker.value = visibleEntityIds.includes(selected) ? selected : visibleEntityIds[0] ?? "";
   addHomeAssistantEntity.disabled = !homeAssistantEntityPicker.value;
   homeAssistantEntityPicker.disabled = entityIds.length === 0;
   const domainLabel = selectedDomain === "all" ? t("message.allTypes") : selectedDomain;
@@ -7893,6 +7907,27 @@ function renderEntityList() {
   entityList.replaceChildren();
   reconcileStackEntitySelection();
   renderCardEntityOverview();
+  if (selectedEntitiesPanel && !selectedEntitiesPanel.open) {
+    const entityIds = trackedEntityIds();
+    if (entityIds.length === 0) {
+      renderEntitySummaryText(groupSummary, emptyEntitySelectionMessage);
+      renderEntitySummaryText(groupIssues, "");
+      renderEntitySummaryText(selectedEntity, emptyEntitySelectionMessage);
+      renderStackSelectionSummary();
+      renderHaCardPreview();
+      renderEmptyStatusPreview();
+      return;
+    }
+    renderEntitySummaryText(groupSummary, t("message.entitiesFound", {
+      count: entityIds.length,
+      entityLabel: entityIds.length === 1 ? t("message.entitySingular") : t("message.entityPlural"),
+      domain: t("message.allTypes"),
+    }));
+    renderEntitySummaryText(groupIssues, "");
+    renderStackSelectionSummary();
+    renderHaCardPreview();
+    return;
+  }
   const selectedEntityIds = trackedEntityIds();
   const selectedEntitySet = new Set(selectedEntityIds);
   const useLiveCatalogList = activeTransport !== transport && entitySnapshots.size > 0;
@@ -8452,6 +8487,7 @@ homeAssistantEntity.addEventListener("input", () => {
   renderHaCardPreview();
 });
 homeAssistantEntityDomain.addEventListener("change", () => {
+  entityPickerOptionsExpanded = true;
   persistConfiguration();
   renderEntityPickerOptions();
 });
@@ -8459,10 +8495,12 @@ homeAssistantEntityDomainShortcuts.addEventListener("click", event => {
   const button = event.target.closest("[data-entity-domain]");
   if (!button) return;
   homeAssistantEntityDomain.value = button.dataset.entityDomain;
+  entityPickerOptionsExpanded = true;
   persistConfiguration();
   renderEntityPickerOptions();
 });
 homeAssistantEntitySearch.addEventListener("input", () => {
+  entityPickerOptionsExpanded = true;
   persistConfiguration();
   scheduleEntityPickerOptionsRender();
 });
@@ -8473,6 +8511,8 @@ clearHomeAssistantEntitySearch.addEventListener("click", () => {
   homeAssistantEntitySearch.focus();
 });
 addHomeAssistantEntity.addEventListener("click", addSelectedEntityFromPicker);
+homeAssistantEntityPicker.addEventListener("focus", expandEntityPickerOptions);
+homeAssistantEntityPicker.addEventListener("pointerdown", expandEntityPickerOptions);
 homeAssistantEntityPicker.addEventListener("change", addSelectedEntityFromPicker);
 refreshHomeAssistantEntities.addEventListener("click", refreshLiveEntityStates);
 checkHaCardResources.addEventListener("click", () => checkLiveLovelaceResources());
@@ -8505,6 +8545,11 @@ expertCardName.addEventListener("input", () => {
   renderExpertEditorPreview();
 });
 diagnosticsPanel.addEventListener("toggle", persistConfiguration);
+selectedEntitiesPanel?.addEventListener("toggle", () => {
+  if (selectedEntitiesPanel.open) {
+    renderEntityList();
+  }
+});
 haCardTarget.addEventListener("change", () => {
   clearImportedSimplePreviewState();
   syncCardLayoutState();
