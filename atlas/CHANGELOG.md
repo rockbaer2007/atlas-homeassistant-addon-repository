@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.196
+
+- Make the Expert Card Editor palette panel taller and slightly wider so card
+  entries have more room.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.85`.
+
 ## 0.1.195
 
 - Add groupbox-style panels around the Expert Card Editor controls and card
