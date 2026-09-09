@@ -1,5 +1,68 @@
 # Changelog
 
+## 0.1.193
+
+- Move the Expert Card Editor information, controls and generated HA card code
+  above the editor grid in three equal columns.
+- Move the X, Y and Zoom sliders into the Expert controls column.
+- Keep the generated code preview scrollable so long YAML does not stretch the
+  editor header.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.82`.
+
+## 0.1.192
+
+- Show entity domain shortcuts as a compact clickable grid.
+- Keep `All` first and sort all other entity domains alphabetically.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.81`.
+
+## 0.1.191
+
+- Align the Expert Card Editor output layout with a compact selected-card
+  information column, centered controls and a right-side code preview.
+- Make Expert controls, dropdowns, buttons and numeric inputs more consistent.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.80`.
+
+## 0.1.190
+
+- Compact the selected-card detail panel so style and contained-card details use
+  smaller scroll areas.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.79`.
+
+## 0.1.189
+
+- Hide the `Hidden` toggle entirely while a palette card is selected as a
+  favorite.
+- Normalize stored palette visibility so a card cannot remain both favorite and
+  hidden.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.78`.
+
+## 0.1.188
+
+- Localize unsupported card import status messages for the German UI.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.77`.
+
+## 0.1.187
+
+- Accept exported ATLAS card payloads again when importing HA card YAML.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.76`.
+
+## 0.1.186
+
+- Synchronize Home Assistant entities from the local cached catalog to reduce
+  repeated Home Assistant reads during editor startup.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.75`.
+
+## 0.1.185
+
+- Lazy-render large entity lists so the Card Editor becomes interactive faster
+  with large Home Assistant installations.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.74`.
+
+## 0.1.184
+
+- Preserve raw imported card styles in the Expert preview and exported YAML.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.73`.
+
 ## 0.1.183
 
 - Keep imported root `styles` attached to Expert editor fields while rebuilding
