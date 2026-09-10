@@ -66,7 +66,7 @@ export function createHomeAssistantCardEditorPlugin(): RuntimePlugin {
         de: "ATLAS Home Assistant Karten-Editor",
         en: "ATLAS Home Assistant Card Editor",
       },
-      version: "0.2.0-alpha.92",
+      version: "0.2.0-alpha.93",
       description: "Reference plugin for Expert Home Assistant card editing, entity selection and HACS-oriented exports.",
       descriptionI18n: {
         de: "Referenz-Plugin für Expert-Home-Assistant-Kartenbearbeitung, Entitätsauswahl und HACS-orientierte Exporte.",

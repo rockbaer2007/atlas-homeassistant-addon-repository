@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.204
+
+- Keep the Expert Card Editor palette hidden-toggle visually hidden while a card
+  is marked as favorite.
+- Bump the Home Assistant Card Editor package to `0.2.0-alpha.93`.
+
 ## 0.1.203
 
 - Disable and hide the Expert Card Editor palette hidden-checkbox whenever a

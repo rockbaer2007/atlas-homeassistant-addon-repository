@@ -10,11 +10,14 @@ export type HomeAssistantCardLayout = "single" | "horizontal-stack" | "vertical-
 export type HomeAssistantBubbleButtonType = "name" | "slider" | "state" | "switch";
 export interface HomeAssistantEntitiesCardConfiguration {
     readonly type: "entities";
+    readonly styles?: HomeAssistantCardStyles;
     readonly title: string;
     readonly entities: readonly HomeAssistantEntitiesCardEntity[];
 }
+export type HomeAssistantCardStyles = Record<string, unknown>;
 export interface HomeAssistantGlanceCardConfiguration {
     readonly type: "glance";
+    readonly styles?: HomeAssistantCardStyles;
     readonly title?: string;
     readonly show_name?: boolean;
     readonly show_icon?: boolean;
@@ -25,6 +28,7 @@ export interface HomeAssistantGlanceCardConfiguration {
 }
 export interface HomeAssistantEntityCardConfiguration {
     readonly type: "entity";
+    readonly styles?: HomeAssistantCardStyles;
     readonly name: string;
     readonly entity: string;
 }
@@ -35,6 +39,7 @@ export interface HomeAssistantButtonCardTapAction {
 }
 export interface HomeAssistantButtonCardConfiguration {
     readonly type: "button";
+    readonly styles?: HomeAssistantCardStyles;
     readonly name: string;
     readonly entity?: string;
     readonly icon?: string;
@@ -42,28 +47,33 @@ export interface HomeAssistantButtonCardConfiguration {
 }
 export interface HomeAssistantSensorCardConfiguration {
     readonly type: "sensor";
+    readonly styles?: HomeAssistantCardStyles;
     readonly name: string;
     readonly entity: string;
 }
 export interface HomeAssistantThermostatCardConfiguration {
     readonly type: "thermostat";
+    readonly styles?: HomeAssistantCardStyles;
     readonly name: string;
     readonly entity: string;
 }
 export interface HomeAssistantWebpageCardConfiguration {
     readonly type: "iframe";
+    readonly styles?: HomeAssistantCardStyles;
     readonly title: string;
     readonly url: string;
     readonly aspect_ratio: string;
 }
 export interface HomeAssistantMushroomTemplateCardConfiguration {
     readonly type: "custom:mushroom-template-card";
+    readonly styles?: HomeAssistantCardStyles;
     readonly primary: string;
     readonly secondary: string;
     readonly entity: string;
 }
 export interface HomeAssistantBubbleCardConfiguration {
     readonly type: "custom:bubble-card";
+    readonly styles?: HomeAssistantCardStyles;
     readonly card_type: "button" | "empty-column" | "separator";
     readonly button_type?: HomeAssistantBubbleButtonType;
     readonly name: string;
@@ -84,6 +94,7 @@ export interface HomeAssistantTabbedCardV2Tab {
 }
 export interface HomeAssistantTabbedCardV2Configuration {
     readonly type: "custom:tabbed-card-v2";
+    readonly styles?: HomeAssistantCardStyles;
     readonly options: {
         readonly defaultTabIndex: number;
     };
@@ -98,6 +109,7 @@ export interface HomeAssistantCardGridOptions {
 }
 export interface HomeAssistantGridCardConfiguration {
     readonly type: "grid";
+    readonly styles?: HomeAssistantCardStyles;
     readonly columns?: number;
     readonly square?: boolean;
     readonly cards: readonly HomeAssistantCardConfiguration[];
@@ -109,11 +121,13 @@ export interface HomeAssistantConditionalCardCondition {
 }
 export interface HomeAssistantConditionalCardConfiguration {
     readonly type: "conditional";
+    readonly styles?: HomeAssistantCardStyles;
     readonly conditions: readonly HomeAssistantConditionalCardCondition[];
     readonly card: HomeAssistantCardConfiguration;
 }
 export interface HomeAssistantStackCardConfiguration {
     readonly type: "horizontal-stack" | "vertical-stack";
+    readonly styles?: HomeAssistantCardStyles;
     readonly columns?: "full" | number;
     readonly rows?: "auto";
     readonly grid_options?: HomeAssistantCardGridOptions;

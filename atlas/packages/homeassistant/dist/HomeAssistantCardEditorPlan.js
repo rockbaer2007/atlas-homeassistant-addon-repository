@@ -381,6 +381,7 @@ function normalizeSurfaceField(field) {
         ...(field.target === "bubble" ? { bubbleButtonType: normalizeBubbleButtonType(field.bubbleButtonType) } : {}),
         ...(field.target === "custom-card" && customType ? { customType } : {}),
         ...(field.target === "custom-card" && resourceUrl ? { resourceUrl } : {}),
+        ...(field.rawCard ? { rawCard: field.rawCard } : {}),
         entityId: field.entityId.trim(),
         layout: field.layout ?? "card",
         entries: (field.entries ?? []).map(normalizeSurfaceFieldEntry),
@@ -406,6 +407,7 @@ function normalizeSurfaceFieldEntry(entry) {
         ...(target === "custom-card" && customType ? { customType } : {}),
         ...(target === "custom-card" && resourceUrl ? { resourceUrl } : {}),
         ...(entry.layout === "horizontal-stack" || entry.layout === "vertical-stack" || entry.layout === "grid" ? { layout: entry.layout } : {}),
+        ...(entry.rawCard ? { rawCard: entry.rawCard } : {}),
         ...(entityId ? { entityId } : {}),
         ...(entry.icon?.trim() ? { icon: entry.icon.trim() } : {}),
         ...(typeof entry.show_last_changed === "boolean" ? { show_last_changed: entry.show_last_changed } : {}),
@@ -452,6 +454,8 @@ function hasSurfaceFieldContent(field) {
     return (field.entries ?? []).some(hasSurfaceFieldEntryContent);
 }
 function hasSurfaceFieldEntryContent(entry) {
+    if (entry.rawCard)
+        return true;
     if (entry.layout === "horizontal-stack" || entry.layout === "vertical-stack" || entry.layout === "grid")
         return true;
     return Boolean(entry.entityId)
@@ -530,6 +534,7 @@ function createSurfaceFieldCardConfiguration(field) {
         if (tabs.length === 0)
             return undefined;
         return {
+            ...(field.rawCard ? { ...field.rawCard } : {}),
             type: "custom:tabbed-card-v2",
             options: {
                 defaultTabIndex: normalizeTabIndex(field.activeTabIndex, tabs.length),
@@ -557,6 +562,7 @@ function createSurfaceFieldCardConfiguration(field) {
     if (layout !== "card" && populatedEntries.length > 0) {
         if (layout === "grid") {
             return {
+                ...(field.rawCard ? { ...field.rawCard } : {}),
                 type: "grid",
                 columns: Math.min(4, Math.max(1, populatedEntries.length)),
                 square: false,
@@ -567,6 +573,7 @@ function createSurfaceFieldCardConfiguration(field) {
             };
         }
         return {
+            ...(field.rawCard ? { ...field.rawCard } : {}),
             type: layout,
             ...createSurfaceFieldGridOptions(field),
             cards: populatedEntries.flatMap(entry => {
@@ -596,12 +603,24 @@ function createSurfaceFieldEntryCardConfiguration(entry) {
         return card ? [card] : [];
     });
     if (layout === "horizontal-stack" || layout === "vertical-stack") {
+        if (entry.rawCard) {
+            return {
+                ...entry.rawCard,
+                cards: childCards,
+            };
+        }
         return {
             type: layout,
             cards: childCards,
         };
     }
     if (layout === "grid") {
+        if (entry.rawCard) {
+            return {
+                ...entry.rawCard,
+                cards: childCards,
+            };
+        }
         return {
             type: "grid",
             columns: Math.min(4, Math.max(1, childCards.length)),
@@ -609,6 +628,8 @@ function createSurfaceFieldEntryCardConfiguration(entry) {
             cards: childCards,
         };
     }
+    if (entry.rawCard)
+        return entry.rawCard;
     if (!entry.entityId && entry.target !== "link" && entry.target !== "webpage" && entry.target !== "custom-card")
         return undefined;
     if (entry.target === "custom-card") {
