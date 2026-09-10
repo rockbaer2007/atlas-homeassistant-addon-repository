@@ -37,7 +37,6 @@ export interface HomeAssistantCardEditorSurfaceFieldEntry {
     readonly customType?: `custom:${string}`;
     readonly resourceUrl?: string;
     readonly layout?: HomeAssistantCardEditorSurfaceFieldLayout;
-    readonly rawCard?: HomeAssistantCardConfiguration;
     readonly entityId?: string;
     readonly icon?: string;
     readonly show_last_changed?: boolean;
@@ -50,7 +49,6 @@ export interface HomeAssistantCardEditorSurfaceField {
     readonly bubbleButtonType?: HomeAssistantBubbleButtonType;
     readonly customType?: `custom:${string}`;
     readonly resourceUrl?: string;
-    readonly rawCard?: HomeAssistantCardConfiguration;
     readonly entityId: string;
     readonly layout?: HomeAssistantCardEditorSurfaceFieldLayout;
     readonly entries?: readonly HomeAssistantCardEditorSurfaceFieldEntry[];

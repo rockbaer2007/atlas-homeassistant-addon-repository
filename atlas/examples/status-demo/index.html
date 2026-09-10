@@ -512,29 +512,20 @@
       }
 
       .entity-domain-shortcuts {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(142px, 1fr));
+        display: flex;
+        flex-wrap: wrap;
         gap: 6px;
         min-height: 32px;
-        padding: 10px;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        background: #f8fbff;
       }
 
       .entity-domain-shortcuts button {
-        width: 100%;
         border: 1px solid #cbd5e1;
         border-radius: 4px;
         background: #ffffff;
         color: #172033;
-        padding: 7px 8px;
+        padding: 6px 9px;
         font: inherit;
         font-size: 13px;
-        line-height: 1.2;
-        text-align: left;
-        overflow-wrap: anywhere;
-        min-height: 34px;
         cursor: pointer;
       }
 
@@ -1246,48 +1237,25 @@
 
       .expert-editor-controls {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 8px;
-        align-items: end;
-      }
-
-      .expert-control-panel {
-        display: grid;
-        gap: 10px;
-        min-width: 0;
-        padding: 12px;
-        border: 1px solid #d7dee8;
-        border-radius: 6px;
-        background: #ffffff;
-      }
-
-      .expert-palette-actions {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 6px;
-      }
-
-      .expert-palette-actions button {
-        width: 100%;
-        min-height: 36px;
       }
 
       .expert-output-toolbar {
-        display: none;
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 14px;
       }
 
       .expert-output-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: minmax(420px, 1.1fr) minmax(320px, 0.8fr) minmax(420px, 1fr);
         gap: 12px;
         align-items: start;
-        margin-bottom: 10px;
+        margin-top: 8px;
       }
 
       .expert-output-column {
-        display: grid;
-        gap: 8px;
-        align-content: start;
         min-width: 0;
       }
 
@@ -1296,15 +1264,7 @@
       }
 
       .expert-output-column.ha-card-preview pre {
-        min-height: 0;
-        max-height: 220px;
-        overflow: auto;
-      }
-
-      .expert-output-column.expert-detail-column {
-        display: grid;
-        gap: 8px;
-        min-width: 0;
+        min-height: 188px;
       }
 
       .editor-mode-toggle {
@@ -1333,16 +1293,9 @@
 
       .expert-editor-workbench {
         display: grid;
-        grid-template-columns: minmax(420px, 520px) minmax(640px, 1fr);
+        grid-template-columns: minmax(220px, 280px) minmax(640px, 1fr);
         gap: 12px;
         align-items: start;
-      }
-
-      .expert-editor-sidebar {
-        display: grid;
-        gap: 10px;
-        align-content: start;
-        min-width: 0;
       }
 
       .expert-editor-canvas-row {
@@ -1360,13 +1313,10 @@
 
       .expert-grid-top-controls {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(88px, 128px)) minmax(132px, 192px);
         gap: 8px;
         align-items: end;
-      }
-
-      .expert-grid-zoom-control {
-        grid-column: 1 / -1;
+        justify-content: start;
       }
 
       .expert-grid-axis-control {
@@ -1405,11 +1355,11 @@
       }
 
       .expert-editor-controls .wide {
-        grid-column: 1 / -1;
+        grid-column: span 2;
       }
 
       .expert-editor-controls .span-2 {
-        grid-column: 1 / -1;
+        grid-column: span 2;
       }
 
       .expert-editor-controls .field-pair {
@@ -1418,21 +1368,13 @@
         align-content: start;
       }
 
-      .expert-editor-controls input:not([type="checkbox"]):not([type="radio"]),
-      .expert-editor-controls select,
-      .expert-title-row button,
-      .expert-editor-actions button {
-        box-sizing: border-box;
-        min-height: 38px;
-      }
-
       .expert-editor-controls .field-pair[hidden] {
         display: none;
       }
 
       .expert-number-controls {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(4, 58px);
         gap: 8px;
         align-items: end;
       }
@@ -1450,7 +1392,7 @@
       }
 
       .expert-number-controls input {
-        width: 100%;
+        width: 58px;
         min-height: 34px;
         padding: 6px 4px;
         text-align: center;
@@ -1458,12 +1400,11 @@
 
       .expert-title-row {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: minmax(0, 1fr) auto auto;
         gap: 8px;
       }
 
       .expert-title-row input {
-        grid-column: 1 / -1;
         min-width: 0;
       }
 
@@ -1479,21 +1420,7 @@
       }
 
       .expert-output-grid .expert-editor-actions {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
         margin-top: 8px;
-      }
-
-      .expert-output-grid .expert-editor-actions button {
-        width: 100%;
-        min-width: 0;
-      }
-
-      .expert-editor-status {
-        display: grid;
-        gap: 8px;
-        margin-top: 10px;
       }
 
       @media (max-width: 720px) {
@@ -1532,32 +1459,17 @@
         .expert-title-row button {
           width: 100%;
         }
-
-        .expert-selected-card-details {
-          grid-template-columns: 1fr;
-        }
-
-        .expert-detail-actions {
-          grid-column: 1;
-          grid-row: auto;
-          flex-direction: row;
-          justify-content: flex-start;
-        }
       }
 
       .expert-template-palette {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        grid-auto-rows: max-content;
-        align-content: start;
-        align-items: start;
         gap: 8px;
       }
 
       .expert-editor-sidebar .expert-template-palette {
         grid-template-columns: 1fr;
-        height: min(760px, calc(100vh - 210px));
-        max-height: min(1120px, calc(100vh - 120px));
+        max-height: min(860px, calc(100vh - 300px));
         overflow-y: auto;
         overscroll-behavior: contain;
         scrollbar-gutter: stable;
@@ -1565,14 +1477,18 @@
       }
 
       .expert-palette-toolbar {
-        display: grid;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
         gap: 8px;
         margin: 0 0 8px;
       }
 
       .expert-palette-toolbar button {
         box-sizing: border-box;
-        width: 100%;
+        flex: 0 0 156px;
+        width: 156px;
         min-height: 36px;
         height: 36px;
         border: 1px solid #cbd5e1;
@@ -1588,8 +1504,9 @@
       }
 
       .expert-palette-actions {
-        display: grid;
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
         gap: 6px;
       }
 
@@ -1605,14 +1522,13 @@
 
       .expert-template-card {
         display: grid;
-        grid-template-columns: minmax(0, 1.35fr) minmax(150px, 0.65fr);
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
         align-items: start;
-        gap: 6px;
+        gap: 8px;
         max-width: 100%;
-        min-height: max-content;
-        height: auto;
+        min-height: 44px;
         box-sizing: border-box;
-        padding: 9px 10px;
+        padding: 7px 8px;
         border: 1px solid #cbd5e1;
         border-radius: 6px;
         background: #ffffff;
@@ -1635,7 +1551,6 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 4px;
-        width: 100%;
       }
 
       .expert-template-sizing select {
@@ -1926,23 +1841,18 @@
 
       .expert-selected-card-details {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
         gap: 10px;
         align-content: start;
-        align-self: start;
         min-width: 0;
-        max-height: clamp(150px, 22vh, 190px);
         margin-bottom: 10px;
         padding: 12px;
         border: 1px solid #2563eb;
         border-radius: 6px;
         background: #f8fbff;
         color: #172033;
-        overflow: auto;
       }
 
       .expert-selected-card-details h3 {
-        grid-column: 1;
         margin: 0;
         color: #172033;
         font-size: 15px;
@@ -1951,7 +1861,6 @@
       }
 
       .expert-selected-card-details dl {
-        grid-column: 1;
         display: grid;
         grid-template-columns: minmax(78px, auto) minmax(0, 1fr);
         gap: 6px 10px;
@@ -1984,18 +1893,13 @@
       }
 
       .expert-detail-actions {
-        grid-column: 2;
-        grid-row: 1 / span 5;
         display: flex;
-        flex-direction: column;
         flex-wrap: wrap;
         gap: 6px;
         justify-content: flex-end;
-        align-self: end;
       }
 
       .expert-detail-actions button {
-        width: 112px;
         min-height: 26px;
         padding: 4px 9px;
       }
@@ -2007,11 +1911,8 @@
       }
 
       .expert-detail-card-list {
-        grid-column: 1;
         display: grid;
         gap: 4px;
-        max-height: 48px;
-        overflow: auto;
       }
 
       .expert-detail-card-list ul {
@@ -2029,8 +1930,7 @@
       }
 
       .expert-detail-style-code {
-        grid-column: 1;
-        max-height: 44px;
+        max-height: 220px;
         margin: 0;
         overflow: auto;
         border-radius: 6px;
@@ -3036,10 +2936,8 @@
       :root[data-theme="dark"] .connection-config.compact-panel,
       :root[data-theme="dark"] .card-export-column,
       :root[data-theme="dark"] .card-export-language-panel,
-      :root[data-theme="dark"] .entity-domain-shortcuts,
       :root[data-theme="dark"] .entity-picker-column,
       :root[data-theme="dark"] .diagnostics-panel,
-      :root[data-theme="dark"] .expert-control-panel,
       :root[data-theme="dark"] .selected-entities-panel,
       :root[data-theme="dark"] .entity-picker-panel,
       :root[data-theme="dark"] .tabbed-card-dialog,
@@ -3468,10 +3366,6 @@
           grid-template-columns: 1fr;
         }
 
-        .expert-template-card {
-          grid-template-columns: 1fr;
-        }
-
         .expert-editor-canvas-row {
           overflow-x: auto;
         }
@@ -3729,102 +3623,100 @@
             <div id="expert-template-palette" class="expert-template-palette" aria-label="Expert editor templates" data-i18n-aria-label="aria.expertTemplates"></div>
           </aside>
           <section class="expert-editor-surface" aria-label="Expert editor surface" data-i18n-aria-label="aria.expertSurface">
-            <div class="expert-output-grid">
-              <div class="expert-output-column expert-detail-column">
-                <aside id="expert-selected-card-details" class="expert-selected-card-details" aria-live="polite"></aside>
-              </div>
-              <div class="expert-output-column">
-                <div class="expert-control-panel">
-                  <div class="expert-grid-top-controls">
-                    <div class="expert-grid-axis-control expert-grid-columns-control">
-                      <label for="expert-grid-columns" data-i18n="label.gridColumns">X</label>
-                      <input id="expert-grid-columns" type="range" min="0" max="5" value="0">
-                      <output id="expert-grid-columns-output" for="expert-grid-columns">0</output>
-                    </div>
-                    <div class="expert-grid-axis-control expert-grid-rows-control">
-                      <label for="expert-grid-rows" data-i18n="label.gridRows">Y</label>
-                      <input id="expert-grid-rows" type="range" min="0" max="5" value="0">
-                      <output id="expert-grid-rows-output" for="expert-grid-rows">0</output>
-                    </div>
-                    <div class="expert-grid-axis-control expert-grid-zoom-control">
-                      <label for="expert-grid-zoom" data-i18n="label.gridZoom">Zoom</label>
-                      <input id="expert-grid-zoom" type="range" min="75" max="150" step="5" value="100">
-                      <output id="expert-grid-zoom-output" for="expert-grid-zoom">100%</output>
-                    </div>
-                  </div>
-                  <div class="expert-editor-controls">
-                    <div class="field-pair">
-                      <label for="expert-card-name" data-i18n="label.expertCardName">Expert card name</label>
-                      <input id="expert-card-name" type="text" autocomplete="off" spellcheck="false" placeholder="ATLAS Expert card" data-i18n-placeholder="placeholder.expertCardName">
-                    </div>
-                    <div class="field-pair">
-                      <label for="expert-template" data-i18n="label.template">Template</label>
-                      <select id="expert-template"></select>
-                    </div>
-                    <div class="field-pair">
-                      <label for="expert-target" data-i18n="label.cardFamily">Card family</label>
-                      <select id="expert-target"></select>
-                    </div>
-                    <div id="expert-bubble-type-control" class="field-pair" hidden>
-                      <label for="expert-bubble-button-type" data-i18n="label.bubbleButtonType">Bubble button type</label>
-                      <select id="expert-bubble-button-type"></select>
-                    </div>
-                    <div class="field-pair span-2">
-                      <label for="expert-title" data-i18n="label.title">Title</label>
-                      <div class="expert-title-row">
-                        <input id="expert-title" type="text" autocomplete="off" spellcheck="false" placeholder="Use template title when empty" data-i18n-placeholder="placeholder.expertTitle">
-                        <button id="apply-expert-title" type="button" data-i18n="button.applyTitle">Apply title</button>
-                        <button id="use-entity-name-as-title" type="button" data-i18n="button.useEntityName">Use entity name</button>
-                      </div>
-                    </div>
-                    <div class="field-pair">
-                      <label for="expert-entity" data-i18n="label.entity">Entity</label>
-                      <input id="expert-entity" type="text" autocomplete="off" spellcheck="false" placeholder="Use current entity when empty" data-i18n-placeholder="placeholder.expertEntity">
-                    </div>
-                    <div class="expert-number-controls span-2">
-                      <div class="field-pair">
-                        <label for="expert-column" data-i18n="label.column">Column</label>
-                        <input id="expert-column" type="number" min="0" max="99" value="0">
-                      </div>
-                      <div class="field-pair">
-                        <label for="expert-row" data-i18n="label.row">Row</label>
-                        <input id="expert-row" type="number" min="0" max="99" value="0">
-                      </div>
-                      <div class="field-pair">
-                        <label for="expert-width" data-i18n="label.width">Width</label>
-                        <input id="expert-width" type="number" min="1" max="99" value="3">
-                      </div>
-                      <div class="field-pair">
-                        <label for="expert-height" data-i18n="label.height">Height</label>
-                        <input id="expert-height" type="number" min="1" max="99" value="2">
-                      </div>
-                    </div>
-                  </div>
-                  <div class="connection-actions expert-editor-actions">
-                    <button id="add-expert-field" type="button" data-i18n="button.addTemplate">Add template</button>
-                    <button id="edit-expert-field" type="button" data-i18n="button.editSelected">Edit selected</button>
-                    <button id="arrange-expert-fields" type="button" data-i18n="button.autoArrange">Auto arrange</button>
-                    <button id="reset-expert-surface-size" type="button" data-i18n="button.resetSize">Reset size</button>
-                    <button id="reset-expert-preview" class="preview-reset-button" type="button" data-i18n="button.resetPreview">Reset preview</button>
-                    <button id="clear-expert-fields" type="button" data-i18n="button.clearPreview">Clear preview</button>
-                  </div>
+            <aside id="expert-selected-card-details" class="expert-selected-card-details" aria-live="polite"></aside>
+            <div class="expert-grid-frame">
+              <div class="expert-grid-top-controls">
+                <div class="expert-grid-axis-control expert-grid-columns-control">
+                  <label for="expert-grid-columns" data-i18n="label.gridColumns">X</label>
+                  <input id="expert-grid-columns" type="range" min="0" max="5" value="0">
+                  <output id="expert-grid-columns-output" for="expert-grid-columns">0</output>
+                </div>
+                <div class="expert-grid-axis-control expert-grid-rows-control">
+                  <label for="expert-grid-rows" data-i18n="label.gridRows">Y</label>
+                  <input id="expert-grid-rows" type="range" min="0" max="5" value="0">
+                  <output id="expert-grid-rows-output" for="expert-grid-rows">0</output>
+                </div>
+                <div class="expert-grid-axis-control expert-grid-zoom-control">
+                  <label for="expert-grid-zoom" data-i18n="label.gridZoom">Zoom</label>
+                  <input id="expert-grid-zoom" type="range" min="75" max="150" step="5" value="100">
+                  <output id="expert-grid-zoom-output" for="expert-grid-zoom">100%</output>
                 </div>
               </div>
-              <div class="expert-output-column ha-card-preview">
-                <label for="expert-editor-preview" data-i18n="label.expertHaCardCode">Expert HA card code</label>
-                <pre id="expert-editor-preview" aria-live="polite"></pre>
-              </div>
-            </div>
-            <div class="expert-grid-frame">
               <div class="expert-grid-body">
                 <div class="expert-editor-canvas-row">
                   <div id="expert-editor-dropzone" class="expert-editor-dropzone"></div>
                 </div>
               </div>
             </div>
-            <div class="expert-editor-status">
-              <output id="expert-editor-summary" aria-live="polite"></output>
-              <div id="expert-field-list" class="expert-field-list" aria-live="polite"></div>
+            <div class="expert-output-toolbar">
+              <button id="reset-expert-preview" class="preview-reset-button" type="button" data-i18n="button.resetPreview">Reset preview</button>
+            </div>
+            <div class="expert-output-grid">
+              <div class="expert-output-column">
+                <div class="expert-editor-controls">
+                  <div class="field-pair">
+                    <label for="expert-card-name" data-i18n="label.expertCardName">Expert card name</label>
+                    <input id="expert-card-name" type="text" autocomplete="off" spellcheck="false" placeholder="ATLAS Expert card" data-i18n-placeholder="placeholder.expertCardName">
+                  </div>
+                  <div class="field-pair">
+                    <label for="expert-template" data-i18n="label.template">Template</label>
+                    <select id="expert-template"></select>
+                  </div>
+                  <div class="field-pair">
+                    <label for="expert-target" data-i18n="label.cardFamily">Card family</label>
+                    <select id="expert-target"></select>
+                  </div>
+                  <div id="expert-bubble-type-control" class="field-pair" hidden>
+                    <label for="expert-bubble-button-type" data-i18n="label.bubbleButtonType">Bubble button type</label>
+                    <select id="expert-bubble-button-type"></select>
+                  </div>
+                  <div class="field-pair span-2">
+                    <label for="expert-title" data-i18n="label.title">Title</label>
+                    <div class="expert-title-row">
+                      <input id="expert-title" type="text" autocomplete="off" spellcheck="false" placeholder="Use template title when empty" data-i18n-placeholder="placeholder.expertTitle">
+                      <button id="apply-expert-title" type="button" data-i18n="button.applyTitle">Apply title</button>
+                      <button id="use-entity-name-as-title" type="button" data-i18n="button.useEntityName">Use entity name</button>
+                    </div>
+                  </div>
+                  <div class="field-pair">
+                    <label for="expert-entity" data-i18n="label.entity">Entity</label>
+                    <input id="expert-entity" type="text" autocomplete="off" spellcheck="false" placeholder="Use current entity when empty" data-i18n-placeholder="placeholder.expertEntity">
+                  </div>
+                  <div class="expert-number-controls span-2">
+                    <div class="field-pair">
+                      <label for="expert-column" data-i18n="label.column">Column</label>
+                      <input id="expert-column" type="number" min="0" max="99" value="0">
+                    </div>
+                    <div class="field-pair">
+                      <label for="expert-row" data-i18n="label.row">Row</label>
+                      <input id="expert-row" type="number" min="0" max="99" value="0">
+                    </div>
+                    <div class="field-pair">
+                      <label for="expert-width" data-i18n="label.width">Width</label>
+                      <input id="expert-width" type="number" min="1" max="99" value="3">
+                    </div>
+                    <div class="field-pair">
+                      <label for="expert-height" data-i18n="label.height">Height</label>
+                      <input id="expert-height" type="number" min="1" max="99" value="2">
+                    </div>
+                  </div>
+                </div>
+                <div class="connection-actions expert-editor-actions">
+                  <button id="add-expert-field" type="button" data-i18n="button.addTemplate">Add template</button>
+                  <button id="edit-expert-field" type="button" data-i18n="button.editSelected">Edit selected</button>
+                  <button id="arrange-expert-fields" type="button" data-i18n="button.autoArrange">Auto arrange</button>
+                  <button id="reset-expert-surface-size" type="button" data-i18n="button.resetSize">Reset size</button>
+                  <button id="clear-expert-fields" type="button" data-i18n="button.clearPreview">Clear preview</button>
+                </div>
+              </div>
+              <div class="expert-output-column">
+                <output id="expert-editor-summary" aria-live="polite"></output>
+                <div id="expert-field-list" class="expert-field-list" aria-live="polite"></div>
+              </div>
+              <div class="expert-output-column ha-card-preview">
+                <label for="expert-editor-preview" data-i18n="label.expertHaCardCode">Expert HA card code</label>
+                <pre id="expert-editor-preview" aria-live="polite"></pre>
+              </div>
             </div>
           </section>
           </div>

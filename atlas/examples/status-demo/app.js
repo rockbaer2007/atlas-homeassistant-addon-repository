@@ -3883,23 +3883,28 @@ function renderExpertTemplatePalette() {
     favoriteCheckbox.checked = isFavoriteCard;
     favorite.append(favoriteCheckbox, t("text.favorite"));
     main.append(favorite);
-    favorite.addEventListener("click", event => event.stopPropagation());
-    favoriteCheckbox.addEventListener("change", event => {
-      event.stopPropagation();
-      hiddenToggle.hidden = favoriteCheckbox.checked;
-      if (favoriteCheckbox.checked) {
-        hiddenCheckbox.checked = false;
-      }
-      setExpertPaletteFavoriteDraft(card.id, favoriteCheckbox.checked);
-    });
     const hiddenToggle = document.createElement("label");
     hiddenToggle.className = "hidden-toggle";
-    hiddenToggle.hidden = isFavoriteCard;
     const hiddenCheckbox = document.createElement("input");
     hiddenCheckbox.type = "checkbox";
     hiddenCheckbox.checked = isHiddenCard;
     hiddenToggle.append(hiddenCheckbox, t("text.hiddenCard"));
     main.append(hiddenToggle);
+    const syncHiddenToggleForFavorite = () => {
+      const favoriteSelected = favoriteCheckbox.checked;
+      hiddenToggle.hidden = favoriteSelected;
+      hiddenCheckbox.disabled = favoriteSelected;
+      if (favoriteSelected) {
+        hiddenCheckbox.checked = false;
+      }
+    };
+    syncHiddenToggleForFavorite();
+    favorite.addEventListener("click", event => event.stopPropagation());
+    favoriteCheckbox.addEventListener("change", event => {
+      event.stopPropagation();
+      syncHiddenToggleForFavorite();
+      setExpertPaletteFavoriteDraft(card.id, favoriteCheckbox.checked);
+    });
     hiddenToggle.addEventListener("click", event => event.stopPropagation());
     hiddenCheckbox.addEventListener("change", event => {
       event.stopPropagation();

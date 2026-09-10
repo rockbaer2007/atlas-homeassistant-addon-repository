@@ -31,14 +31,7 @@ export function listHomeAssistantEntityCatalogDomains(catalog) {
 export function listHomeAssistantEntityDomainShortcuts(domains, preferredDomains = defaultHomeAssistantEntityDomains) {
     return ["all", ...preferredDomains, ...domains]
         .filter((domain, index, list) => list.indexOf(domain) === index)
-        .filter(domain => domain === "all" || domains.includes(domain))
-        .sort((left, right) => {
-        if (left === "all")
-            return -1;
-        if (right === "all")
-            return 1;
-        return left.localeCompare(right);
-    });
+        .filter(domain => domain === "all" || domains.includes(domain));
 }
 export function filterHomeAssistantEntityCatalog(catalog, filter) {
     const selectedDomain = filter.domain?.trim() || "all";
