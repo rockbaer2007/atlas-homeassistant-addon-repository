@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.217
+
+- Use the native `ha banner --no-wait` command to show IP addresses, OS/Core versions, and URLs when opening the local terminal.
+
 ## 0.1.216
 
 - Show a Home Assistant welcome banner and system information when opening the local terminal.
