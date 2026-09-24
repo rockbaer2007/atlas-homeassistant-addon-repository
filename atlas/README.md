@@ -40,8 +40,8 @@ muss `Terminal aktivieren` eingeschaltet und ein zufälliges Zugriffstoken mit
 mindestens 32 URL-sicheren Zeichen gesetzt werden. Die Shell läuft mit den
 Berechtigungen des Add-ons und kann auf die eingebundenen Pfade zugreifen.
 Aktiviere die Funktion nur, wenn du den Zugang wirklich benötigst.
-Die lokale Shell enthält außerdem Home-Assistant-CLI (`ha`) und kann dank der
-Supervisor-Freigabe Befehle wie `ha core check` ausführen. Behandle den
+Die lokale Shell enthält außerdem Home-Assistant-CLI (`ha`) und kann mit der
+Supervisor-Rolle `manager` Befehle wie `ha core check` ausführen. Behandle den
 Terminal-Zugang daher wie administrativen Zugriff auf deinen Home-Assistant-
 Supervisor. Der `SUPERVISOR_TOKEN` wird nur an lokale Shell-Sitzungen gegeben,
 nicht an konfigurierte SSH-Ziele.
@@ -62,7 +62,7 @@ das Terminal daher nur in einem vertrauenswürdigen Browserprofil.
 
 Home Assistant zeigt bei Add-on-Updates manchmal zwei Versionen: `old` ist die
 installierte Version, `target` ist die neue Version aus diesem Repository. Wenn
-ATLAS hier aktualisiert wurde, sollte `target` mindestens `0.1.208` anzeigen.
+ATLAS hier aktualisiert wurde, sollte `target` mindestens `0.1.209` anzeigen.
 Falls Home Assistant weiter eine alte Zielversion zeigt, lade im Add-on Store
 die Repository-Informationen neu und starte danach das ATLAS Add-on neu.
 
@@ -120,7 +120,7 @@ browser. The access token is also stored in this browser's local storage and can
 be cleared from the Terminal screen. Same-origin scripts can access this
 storage, so use the terminal only in a trusted browser profile.
 The local shell includes the Home Assistant CLI (`ha`) and receives the
-Supervisor permission needed for commands such as `ha core check`. Treat
+Supervisor `manager` role needed for commands such as `ha core check`. Treat
 terminal access as administrative access to the Home Assistant Supervisor. The
 `SUPERVISOR_TOKEN` is passed only to local shell sessions, never configured SSH
 targets.
@@ -129,6 +129,6 @@ targets.
 
 Home Assistant may show two versions during Add-on updates: `old` is the
 installed version, `target` is the new version from this repository. After this
-ATLAS update, `target` should be at least `0.1.208`. If Home Assistant still
+ATLAS update, `target` should be at least `0.1.209`. If Home Assistant still
 shows an older target version, reload the repository information in the Add-on
 Store and then restart the ATLAS Add-on.

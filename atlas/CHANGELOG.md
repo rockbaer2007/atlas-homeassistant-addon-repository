@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.209
+
+- Grant the local `ha` CLI the Supervisor manager role so commands such as
+  `ha core check` are not rejected for insufficient permissions.
+- Bump the ATLAS framework and Home Assistant package to `0.2.0-alpha.77`.
+
 ## 0.1.208
 
 - Register the ATLAS Terminal in the Administration plugin manager and make it
