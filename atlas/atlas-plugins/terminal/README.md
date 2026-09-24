@@ -1,6 +1,6 @@
 # ATLAS Terminal
 
-An ATLAS plugin that provides an xterm.js browser terminal with ANSI colors, adjustable font size and an optional server-configured SSH target. Its segmented ANSI shell prompt takes visual inspiration from Oh My Posh. The Home Assistant SSH add-on is a functional reference; no code from either project is bundled.
+An ATLAS plugin that provides an xterm.js browser terminal with ANSI colors, adjustable font size, optional server-configured SSH and selectable Oh My Posh themes from the maintained [UGSo theme fork](https://github.com/rockbaer2007/oh-my-posh). The Home Assistant SSH add-on is a functional reference; no code from it is bundled.
 
 ## Enable access
 
@@ -16,4 +16,4 @@ For Docker, mount the SSH key and `known_hosts` read-only into the container bef
 
 ## UI settings
 
-Switch the interface between German and English. Use the slider to set a font size from 11 to 26 px; the choice is saved locally in the browser. ANSI colors are rendered by xterm.js, and the shell prompt uses colored path/status segments when the configured shell supports them.
+Switch the interface between German and English. Use the slider to set a font size from 11 to 26 px; the choice is saved locally in the browser. When the ATLAS host has Oh My Posh and Bash installed, select a theme from the dropdown for local terminal sessions. The theme list comes from the UGSo fork and the selection is saved in this browser. SSH sessions use the remote server's own shell and do not apply a local theme. ANSI colors are rendered by xterm.js.

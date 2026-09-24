@@ -28,6 +28,7 @@ h1 { margin: 0; font-size: 21px; line-height: 1.25; }
 select, input, button { font: inherit; }
 select, input[type="password"] { min-height: 36px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel-soft); color: var(--text); padding: 0 10px; }
 .target-control select { min-width: 145px; }
+.theme-control select { min-width: 180px; max-width: 240px; }
 .font-control { min-width: 150px; grid-template-columns: 1fr auto; align-items: center; }
 .font-control input { grid-column: 1 / -1; width: 150px; accent-color: var(--accent); }
 .font-control output { color: var(--text); }

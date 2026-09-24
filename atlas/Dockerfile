@@ -2,6 +2,7 @@ FROM node:22-alpine AS builder
 
 ARG BUILD_VERSION=0.1.0
 ARG BUILD_ARCH=amd64
+ARG OH_MY_POSH_VERSION=31.3.0
 
 LABEL \
   io.hass.version=${BUILD_VERSION} \
@@ -27,6 +28,7 @@ FROM node:22-alpine AS runtime
 ARG BUILD_VERSION=0.1.0
 ARG BUILD_ARCH=amd64
 ARG HA_CLI_VERSION=5.2.0
+ARG OH_MY_POSH_VERSION=31.3.0
 
 LABEL \
   io.hass.version=${BUILD_VERSION} \
@@ -43,11 +45,23 @@ ENV NODE_ENV=production \
     ATLAS_DEMO_PORT=4174 \
     ATLAS_DISTRIBUTION_TARGET=home-assistant-app-preview
 
-RUN apk add --no-cache openssh-client curl \
+RUN apk add --no-cache openssh-client curl bash \
   && curl --fail --location --silent --show-error \
     "https://github.com/home-assistant/cli/releases/download/${HA_CLI_VERSION}/ha_${BUILD_ARCH}" \
     --output /usr/local/bin/ha \
-  && chmod 0755 /usr/local/bin/ha
+  && chmod 0755 /usr/local/bin/ha \
+  && case "${BUILD_ARCH}" in amd64) OMP_ARCH=amd64 ;; aarch64) OMP_ARCH=arm64 ;; armv7) OMP_ARCH=arm ;; *) echo "Unsupported Oh My Posh architecture: ${BUILD_ARCH}" >&2; exit 1 ;; esac \
+  && curl --fail --location --silent --show-error \
+    "https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v${OH_MY_POSH_VERSION}/checksums.txt" \
+    --output /tmp/oh-my-posh-checksums.txt \
+  && curl --fail --location --silent --show-error \
+    "https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v${OH_MY_POSH_VERSION}/posh-linux-${OMP_ARCH}" \
+    --output /usr/local/bin/oh-my-posh \
+  && chmod 0755 /usr/local/bin/oh-my-posh \
+  && OMP_SHA="$(awk -v file="posh-linux-${OMP_ARCH}" '$2 == file { print $1 }' /tmp/oh-my-posh-checksums.txt)" \
+  && test -n "${OMP_SHA}" \
+  && printf '%s  %s\n' "${OMP_SHA}" /usr/local/bin/oh-my-posh | sha256sum -c - \
+  && rm /tmp/oh-my-posh-checksums.txt
 
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/scripts ./scripts

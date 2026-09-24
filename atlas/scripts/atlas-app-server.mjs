@@ -1,9 +1,9 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { timingSafeEqual } from "node:crypto";
-import { cpSync, createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, createReadStream, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { homedir } from "node:os";
-import { basename, dirname, extname, isAbsolute, normalize, relative, resolve } from "node:path";
+import { homedir, tmpdir } from "node:os";
+import { basename, dirname, extname, isAbsolute, join, normalize, relative, resolve } from "node:path";
 import { inflateRawSync } from "node:zlib";
 import * as pty from "node-pty";
 import { WebSocketServer } from "ws";
@@ -120,6 +120,8 @@ const server = createServer((request, response) => {
       enabled: terminalEnabled && isValidTerminalToken(terminalAccessToken),
       sshAvailable: terminalEnabled && isValidTerminalToken(terminalAccessToken)
         && isValidSshProfile(),
+      ohMyPoshAvailable: terminalEnabled && isValidTerminalToken(terminalAccessToken)
+        && isCommandAvailable("oh-my-posh") && isCommandAvailable("bash"),
     });
     return;
   }
@@ -338,6 +340,13 @@ server.on("upgrade", (request, socket, head) => {
 terminalWebSockets.on("connection", (webSocket, request) => {
   const requestUrl = new URL(request.url ?? "/", `http://${request.headers.host ?? `${host}:${appPort}`}`);
   const useSsh = requestUrl.searchParams.get("target") === "ssh";
+  const requestedTheme = requestUrl.searchParams.get("theme") ?? "";
+  const theme = /^[a-zA-Z0-9._-]{1,100}$/.test(requestedTheme) ? requestedTheme : "";
+  if (requestedTheme && (!theme || useSsh || !isCommandAvailable("oh-my-posh") || !isCommandAvailable("bash"))) {
+    webSocket.send(JSON.stringify({ type: "error", message: "Das ausgewählte Theme ist für dieses Terminalziel nicht verfügbar." }));
+    webSocket.close(1008, "Theme unavailable");
+    return;
+  }
   if (useSsh && !isValidSshProfile()) {
     webSocket.send(JSON.stringify({ type: "error", message: "SSH-Profil ist serverseitig nicht vollständig konfiguriert." }));
     webSocket.close(1008, "SSH profile unavailable");
@@ -345,8 +354,9 @@ terminalWebSockets.on("connection", (webSocket, request) => {
   }
 
   let terminalProcess;
+  let shell;
   try {
-    const shell = createTerminalCommand(useSsh);
+    shell = createTerminalCommand(useSsh, theme);
     terminalProcess = pty.spawn(shell.command, shell.args, {
       name: "xterm-256color",
       cols: clampTerminalDimension(requestUrl.searchParams.get("cols"), 120),
@@ -355,6 +365,7 @@ terminalWebSockets.on("connection", (webSocket, request) => {
       env: createTerminalEnvironment(useSsh),
     });
   } catch (error) {
+    shell?.cleanup?.();
     webSocket.send(JSON.stringify({ type: "error", message: `Terminal konnte nicht gestartet werden: ${error.message}` }));
     webSocket.close(1011, "Terminal spawn failed");
     return;
@@ -367,6 +378,7 @@ terminalWebSockets.on("connection", (webSocket, request) => {
   });
   let terminalCloseTimer;
   terminalProcess.onExit(({ exitCode }) => {
+    shell?.cleanup?.();
     if (terminalCloseTimer) clearTimeout(terminalCloseTimer);
     if (webSocket.readyState === webSocket.OPEN) {
       webSocket.send(JSON.stringify({ type: "exit", code: exitCode }));
@@ -454,8 +466,19 @@ function isExistingFile(pathname) {
   }
 }
 
-function createTerminalCommand(useSsh) {
+function createTerminalCommand(useSsh, theme = "") {
   if (!useSsh) {
+    if (theme) {
+      const directory = mkdtempSync(join(tmpdir(), "atlas-terminal-"));
+      const startupFile = join(directory, "bashrc");
+      const configUrl = `https://raw.githubusercontent.com/rockbaer2007/oh-my-posh/main/themes/${theme}.omp.json`;
+      writeFileSync(startupFile, `eval "$(oh-my-posh init bash --config '${configUrl}')"\n`, { mode: 0o600 });
+      return {
+        command: process.env.ATLAS_TERMINAL_BASH || "bash",
+        args: ["--noprofile", "--rcfile", startupFile, "-i"],
+        cleanup: () => rmSync(directory, { recursive: true, force: true }),
+      };
+    }
     const command = process.platform === "win32"
       ? (process.env.ATLAS_TERMINAL_SHELL || process.env.COMSPEC || "powershell.exe")
       : (process.env.ATLAS_TERMINAL_SHELL || process.env.SHELL || "/bin/sh");
@@ -475,6 +498,15 @@ function createTerminalCommand(useSsh) {
   }
   args.push(`${terminalSshUser}@${terminalSshHost}`);
   return { command: "ssh", args };
+}
+
+function isCommandAvailable(command) {
+  try {
+    const result = spawnSync(command, ["--version"], { stdio: "ignore", timeout: 1500 });
+    return !result.error && result.status === 0;
+  } catch {
+    return false;
+  }
 }
 
 function createTerminalEnvironment(useSsh) {

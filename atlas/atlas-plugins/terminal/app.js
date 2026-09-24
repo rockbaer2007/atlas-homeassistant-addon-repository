@@ -7,6 +7,8 @@ const tokenInput = document.querySelector("#access-token");
 const connectButton = document.querySelector("#connect");
 const disconnectButton = document.querySelector("#disconnect");
 const targetSelect = document.querySelector("#target-select");
+const themeControl = document.querySelector("#theme-control");
+const themeSelect = document.querySelector("#theme-select");
 const fontInput = document.querySelector("#font-size");
 const fontValue = document.querySelector("#font-value");
 const status = document.querySelector("#connection-status");
@@ -15,6 +17,7 @@ const translations = {
   de: {
     backToHub: "Zurück zum Hub",
     targetLabel: "Ziel", localTarget: "ATLAS lokal", sshTarget: "Home Assistant · SSH",
+    themeLabel: "Oh-My-Posh-Theme", defaultTheme: "Standard", themesUnavailable: "Themes konnten nicht geladen werden",
     fontSize: "Schriftgröße", connect: "Verbinden", disconnect: "Trennen",
     tokenLabel: "Terminal-Zugriffstoken", tokenPlaceholder: "Serverseitig konfiguriertes Token eingeben",
     show: "Anzeigen", hide: "Verbergen", forgetToken: "Gespeichertes Token löschen",
@@ -28,6 +31,7 @@ const translations = {
   en: {
     backToHub: "Back to Hub",
     targetLabel: "Target", localTarget: "ATLAS local", sshTarget: "Home Assistant · SSH",
+    themeLabel: "Oh My Posh theme", defaultTheme: "Default", themesUnavailable: "Could not load themes",
     fontSize: "Font size", connect: "Connect", disconnect: "Disconnect",
     tokenLabel: "Terminal access token", tokenPlaceholder: "Enter the token configured on the server",
     show: "Show", hide: "Hide", forgetToken: "Forget saved token",
@@ -94,6 +98,8 @@ function applyLanguage() {
   if (localOption) localOption.textContent = translate("localTarget");
   const sshOption = targetSelect.querySelector('[value="ssh"]');
   if (sshOption) sshOption.textContent = translate("sshTarget");
+  const defaultThemeOption = themeSelect.querySelector('[value=""]');
+  if (defaultThemeOption) defaultThemeOption.textContent = translate("defaultTheme");
 }
 
 function readFontSize() {
@@ -130,10 +136,63 @@ async function loadTerminalConfig() {
     if (config.sshAvailable && !targetSelect.querySelector('[value="ssh"]')) {
       targetSelect.add(new Option(translate("sshTarget"), "ssh"));
     }
+    themeControl.hidden = !config.ohMyPoshAvailable || targetSelect.value !== "local";
+    if (config.ohMyPoshAvailable) await loadThemes();
     if (!config.enabled) setStatus(translate("disabled"));
   } catch {
     setStatus(translate("configError"), "error");
   }
+}
+
+async function loadThemes() {
+  let cachedNames = [];
+  let cachedAt = 0;
+  try {
+    const cache = JSON.parse(localStorage.getItem("atlas.terminal.ohMyPoshThemes") ?? "null");
+    cachedNames = Array.isArray(cache?.names)
+      ? cache.names.filter(name => typeof name === "string" && /^[a-zA-Z0-9._-]{1,100}$/.test(name))
+      : [];
+    cachedAt = Number(cache?.fetchedAt) || 0;
+  } catch {
+    // Fetch a fresh list if this browser has no readable cache.
+  }
+  if (cachedNames.length && Date.now() - cachedAt < 24 * 60 * 60 * 1000) {
+    showThemeOptions(cachedNames);
+    return;
+  }
+
+  try {
+    const response = await fetch("https://api.github.com/repos/rockbaer2007/oh-my-posh/contents/themes?ref=main", {
+      headers: { Accept: "application/vnd.github+json" },
+      cache: "no-cache",
+    });
+    if (!response.ok) throw new Error(`Theme request failed: ${response.status}`);
+    const files = await response.json();
+    const names = files
+      .filter(file => file.type === "file" && /^[a-zA-Z0-9._-]+\.omp\.json$/.test(file.name))
+      .map(file => file.name.replace(/\.omp\.json$/, ""))
+      .sort((a, b) => a.localeCompare(b));
+    showThemeOptions(names);
+    try {
+      localStorage.setItem("atlas.terminal.ohMyPoshThemes", JSON.stringify({ names, fetchedAt: Date.now() }));
+    } catch {
+      // Keep the loaded theme list available for this session.
+    }
+  } catch {
+    if (cachedNames.length) showThemeOptions(cachedNames);
+    else {
+      themeSelect.replaceChildren(new Option(translate("themesUnavailable"), ""));
+      themeSelect.disabled = true;
+    }
+  }
+}
+
+function showThemeOptions(names) {
+  themeSelect.replaceChildren(new Option(translate("defaultTheme"), ""));
+  for (const name of names) themeSelect.add(new Option(name, name));
+  const savedTheme = localStorage.getItem("atlas.terminal.ohMyPoshTheme") ?? "";
+  if (names.includes(savedTheme)) themeSelect.value = savedTheme;
+  themeSelect.disabled = false;
 }
 
 function connect() {
@@ -150,12 +209,14 @@ function connect() {
     cols: String(terminal.cols),
     rows: String(terminal.rows),
   });
+  if (targetSelect.value === "local" && themeSelect.value) query.set("theme", themeSelect.value);
   const url = `${scheme}//${location.host}${basePath}/socket?${query}`;
   socket = new WebSocket(url, ["atlas-terminal.v1", `atlas-auth.${accessToken}`]);
   socket.addEventListener("open", () => {
     connectButton.disabled = true;
     disconnectButton.disabled = false;
     targetSelect.disabled = true;
+    themeSelect.disabled = true;
     tokenInput.disabled = true;
     setStatus(translate("connected"), "connected");
     terminal.clear();
@@ -201,6 +262,7 @@ function resetControls() {
   connectButton.disabled = false;
   disconnectButton.disabled = true;
   targetSelect.disabled = false;
+  themeSelect.disabled = false;
 }
 
 terminal.onData(data => send({ type: "input", data }));
@@ -215,6 +277,10 @@ fontInput.addEventListener("input", () => {
   send({ type: "resize", cols: terminal.cols, rows: terminal.rows });
 });
 connectButton.addEventListener("click", connect);
+targetSelect.addEventListener("change", () => {
+  themeControl.hidden = targetSelect.value !== "local" || themeSelect.options.length <= 1;
+});
+themeSelect.addEventListener("change", () => localStorage.setItem("atlas.terminal.ohMyPoshTheme", themeSelect.value));
 disconnectButton.addEventListener("click", disconnect);
 tokenInput.addEventListener("input", () => saveStoredToken(tokenInput.value));
 document.querySelector("#forget-token").addEventListener("click", () => {

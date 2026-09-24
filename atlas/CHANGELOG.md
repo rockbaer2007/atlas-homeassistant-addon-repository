@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.211
+
+- Add a dropdown of themes from the UGSo Oh My Posh fork for local terminal sessions.
+- Include the pinned Oh My Posh binary and Bash in the Home Assistant App image.
+- Bump the ATLAS framework to `0.2.0-alpha.79`.
+
 ## 0.1.210
 
 - Add a German/English toolbar link to return from ATLAS Terminal to the Plugin Hub.
