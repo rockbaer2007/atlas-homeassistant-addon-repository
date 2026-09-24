@@ -1,3 +1,21 @@
+@font-face {
+  font-family: "MesloLGM Nerd Font Mono";
+  src:
+    url("/local/fonts/MesloLGMNerdFontMono-Regular.ttf") format("truetype"),
+    url("/local/MesloLGMNerdFontMono-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "MesloLGM Nerd Font Mono";
+  src:
+    url("/local/fonts/MesloLGMNerdFontMono-Bold.ttf") format("truetype"),
+    url("/local/MesloLGMNerdFontMono-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
 :root {
   color-scheme: dark;
   --bg: #0b1220;

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.214
+
+- Load Meslo LGM Nerd Font Mono from Home Assistant `/local/` for the ATLAS web terminal.
+- Bump the standalone ATLAS Terminal plugin to `0.1.5`.
+
 ## 0.1.213
 
 - Update the Administration overview entry for ATLAS Terminal to version `0.1.4`, including Oh My Posh theme support.
