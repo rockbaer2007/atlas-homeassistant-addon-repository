@@ -53,7 +53,7 @@ tokenInput.value = readStoredToken();
 const terminal = new Terminal({
   cursorBlink: true,
   convertEol: false,
-  fontFamily: '"Cascadia Code", "Fira Code", Consolas, "Liberation Mono", monospace',
+  fontFamily: '"MesloLGM Nerd Font Mono", "Cascadia Code", "Fira Code", Consolas, "Liberation Mono", monospace',
   fontSize: readFontSize(),
   theme: {
     background: "#080d16",

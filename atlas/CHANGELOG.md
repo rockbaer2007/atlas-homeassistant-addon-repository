@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.212
+
+- Prefer Meslo LGM Nerd Font Mono in the browser terminal when installed on the client computer.
+- Bump the standalone ATLAS Terminal plugin to `0.1.4`.
+
 ## 0.1.211
 
 - Add a dropdown of themes from the UGSo Oh My Posh fork for local terminal sessions.

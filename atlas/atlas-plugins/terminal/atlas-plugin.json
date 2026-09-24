@@ -5,7 +5,7 @@
     "de": "ATLAS Terminal",
     "en": "ATLAS Terminal"
   },
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Authenticated local terminal with ANSI colors, adjustable font size, optional SSH, Oh My Posh themes and a return link to the ATLAS Hub.",
   "descriptionI18n": {
     "de": "Authentifiziertes lokales Webterminal mit ANSI-Farben, einstellbarer Schriftgröße, optionalem SSH, Oh-My-Posh-Themes und einem Rückweg zum ATLAS Hub.",
