@@ -16,7 +16,7 @@ Aktuelles Add-on:
 
 - Name: ATLAS
 - Slug: `atlas`
-- Version: `0.1.208`
+- Version: `0.1.213`
 
 Das Terminal ist standardmäßig deaktiviert und benötigt ein serverseitiges
 Zugriffstoken. Es bietet eine lokale Shell und optional ein fest konfiguriertes
