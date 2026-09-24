@@ -45,4 +45,4 @@ select, input[type="password"] { min-height: 36px; border: 1px solid var(--borde
 footer { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
 #connection-status[data-state="connected"] { color: var(--green); }
 #connection-status[data-state="error"] { color: #ff7373; }
-@media (max-width: 700px) { .terminal-shell { padding: 10px; } .toolbar { align-items: start; } .toolbar-controls { justify-content: start; } #terminal { min-height: 52vh; } footer { flex-direction: column; } }
+@media (max-width: 700px) { .terminal-shell { padding: 10px; } .toolbar { align-items: start; } .toolbar-controls { justify-content: start; } .token-row { flex-wrap: wrap; } .token-row input { flex-basis: 100%; } .token-row .button { flex: 1; } #terminal { min-height: 52vh; } footer { flex-direction: column; } }

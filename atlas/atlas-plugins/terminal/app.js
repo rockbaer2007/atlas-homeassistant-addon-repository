@@ -16,7 +16,8 @@ const translations = {
     targetLabel: "Ziel", localTarget: "ATLAS lokal", sshTarget: "Home Assistant · SSH",
     fontSize: "Schriftgröße", connect: "Verbinden", disconnect: "Trennen",
     tokenLabel: "Terminal-Zugriffstoken", tokenPlaceholder: "Serverseitig konfiguriertes Token eingeben",
-    show: "Anzeigen", hide: "Verbergen", tokenHelp: "Das Token bleibt nur während dieser Sitzung im Speicher des Tabs.",
+    show: "Anzeigen", hide: "Verbergen", forgetToken: "Gespeichertes Token löschen",
+    tokenHelp: "Das Token wird lokal in diesem Browser gespeichert und nur zum Verbinden an den Server gesendet.",
     disconnected: "Getrennt", footer: "ANSI-Farben · Oh-My-Posh-inspirierter Shell-Prompt",
     banner: "Verbindung benötigt ein serverseitiges Zugriffstoken.", tokenRequired: "Bitte das gültige Zugriffstoken eingeben",
     disabled: "Terminal serverseitig deaktiviert", configError: "Serverkonfiguration nicht erreichbar",
@@ -27,7 +28,8 @@ const translations = {
     targetLabel: "Target", localTarget: "ATLAS local", sshTarget: "Home Assistant · SSH",
     fontSize: "Font size", connect: "Connect", disconnect: "Disconnect",
     tokenLabel: "Terminal access token", tokenPlaceholder: "Enter the token configured on the server",
-    show: "Show", hide: "Hide", tokenHelp: "The token stays in this tab's memory for this session only.",
+    show: "Show", hide: "Hide", forgetToken: "Forget saved token",
+    tokenHelp: "The token is stored locally in this browser and sent to the server only when connecting.",
     disconnected: "Disconnected", footer: "ANSI colors · Oh My Posh-inspired shell prompt",
     banner: "A server-side access token is required to connect.", tokenRequired: "Enter the valid access token",
     disabled: "Terminal is disabled on the server", configError: "Could not load server configuration",
@@ -39,6 +41,8 @@ let currentLanguage = readLanguage();
 const socketPath = `${location.pathname.replace(/\/index\.html$/, "").replace(/\/$/, "")}/socket`;
 let socket;
 let accessToken = "";
+const tokenStorageKey = "atlas.terminal.accessToken";
+tokenInput.value = readStoredToken();
 
 const terminal = new Terminal({
   cursorBlink: true,
@@ -93,6 +97,23 @@ function applyLanguage() {
 function readFontSize() {
   const stored = Number(localStorage.getItem("atlas.terminal.fontSize"));
   return Number.isInteger(stored) && stored >= 11 && stored <= 26 ? stored : 14;
+}
+
+function readStoredToken() {
+  try {
+    return localStorage.getItem(tokenStorageKey) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function saveStoredToken(value) {
+  try {
+    if (value) localStorage.setItem(tokenStorageKey, value);
+    else localStorage.removeItem(tokenStorageKey);
+  } catch {
+    // Continue to allow a session when browser storage is unavailable.
+  }
 }
 
 function setStatus(message, state = "") {
@@ -171,7 +192,6 @@ function disconnect() {
   socket = undefined;
   accessToken = "";
   tokenInput.disabled = false;
-  tokenInput.value = "";
   resetControls();
 }
 
@@ -194,6 +214,12 @@ fontInput.addEventListener("input", () => {
 });
 connectButton.addEventListener("click", connect);
 disconnectButton.addEventListener("click", disconnect);
+tokenInput.addEventListener("input", () => saveStoredToken(tokenInput.value));
+document.querySelector("#forget-token").addEventListener("click", () => {
+  saveStoredToken("");
+  tokenInput.value = "";
+  tokenInput.focus();
+});
 document.querySelector("#toggle-token").addEventListener("click", event => {
   const visible = tokenInput.type === "text";
   tokenInput.type = visible ? "password" : "text";

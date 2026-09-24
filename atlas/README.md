@@ -48,13 +48,16 @@ ab und trage ihre absoluten Containerpfade ein, zum Beispiel
 aktiv; Passwörter und beliebige Ziele aus dem Browser sind nicht erlaubt.
 
 Die Oberfläche bietet ANSI-Farben und eine Schriftgröße von 11 bis 26 px. Die
-Schriftgröße wird lokal im Browser gespeichert.
+Schriftgröße wird lokal im Browser gespeichert. Das Zugriffstoken wird ebenfalls
+im lokalen Browserspeicher abgelegt und kann in der Terminal-Ansicht gelöscht
+werden. Skripte derselben Website können auf diesen Speicher zugreifen; verwende
+das Terminal daher nur in einem vertrauenswürdigen Browserprofil.
 
 ## Update-Hinweis
 
 Home Assistant zeigt bei Add-on-Updates manchmal zwei Versionen: `old` ist die
 installierte Version, `target` ist die neue Version aus diesem Repository. Wenn
-ATLAS hier aktualisiert wurde, sollte `target` mindestens `0.1.205` anzeigen.
+ATLAS hier aktualisiert wurde, sollte `target` mindestens `0.1.206` anzeigen.
 Falls Home Assistant weiter eine alte Zielversion zeigt, lade im Add-on Store
 die Repository-Informationen neu und starte danach das ATLAS Add-on neu.
 
@@ -107,12 +110,14 @@ absolute container paths, for example `/config/.ssh/id_ed25519` and
 and browser-supplied arbitrary destinations are not allowed.
 
 The UI supports ANSI colors and an 11–26 px font size, saved locally in the
-browser.
+browser. The access token is also stored in this browser's local storage and can
+be cleared from the Terminal screen. Same-origin scripts can access this
+storage, so use the terminal only in a trusted browser profile.
 
 ## Update note
 
 Home Assistant may show two versions during Add-on updates: `old` is the
 installed version, `target` is the new version from this repository. After this
-ATLAS update, `target` should be at least `0.1.205`. If Home Assistant still
+ATLAS update, `target` should be at least `0.1.206`. If Home Assistant still
 shows an older target version, reload the repository information in the Add-on
 Store and then restart the ATLAS Add-on.

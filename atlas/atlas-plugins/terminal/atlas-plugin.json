@@ -5,7 +5,7 @@
     "de": "ATLAS Terminal",
     "en": "ATLAS Terminal"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Authenticated local web terminal and optional SSH terminal with adjustable font size and ANSI colors.",
   "descriptionI18n": {
     "de": "Authentifiziertes lokales Webterminal und optionales SSH-Terminal mit einstellbarer Schriftgröße und ANSI-Farben.",

@@ -16,11 +16,12 @@ Aktuelles Add-on:
 
 - Name: ATLAS
 - Slug: `atlas`
-- Version: `0.1.205`
+- Version: `0.1.206`
 
 Das Terminal ist standardmäßig deaktiviert und benötigt ein serverseitiges
 Zugriffstoken. Es bietet eine lokale Shell und optional ein fest konfiguriertes
-SSH-Ziel mit Hostschlüsselprüfung.
+SSH-Ziel mit Hostschlüsselprüfung. Das Token kann lokal im Browser gespeichert
+und über die Terminal-Oberfläche wieder gelöscht werden.
 
 Der Plugin-Hub kann aktive Plugins direkt öffnen, bei mehreren Plugins eine
 Auswahl anzeigen und Seitenleisten-URLs beziehungsweise `panel_iframe`-YAML

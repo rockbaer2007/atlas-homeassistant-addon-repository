@@ -4,7 +4,7 @@ An ATLAS plugin that provides an xterm.js browser terminal with ANSI colors, adj
 
 ## Enable access
 
-The terminal is disabled unless `ATLAS_TERMINAL_ENABLED=1` and a random access token of at least 32 URL-safe characters is configured on the ATLAS server. Generate one with `openssl rand -base64 32 | tr '+/' '-_' | tr -d '='` and provide it through the server environment as `ATLAS_TERMINAL_TOKEN`. Enter it in the plugin to start a session. It stays in tab memory only and is sent in the WebSocket subprotocol, never in a URL or persistent browser storage.
+The terminal is disabled unless `ATLAS_TERMINAL_ENABLED=1` and a random access token of at least 32 URL-safe characters is configured on the ATLAS server. Generate one with `openssl rand -base64 32 | tr '+/' '-_' | tr -d '='` and provide it through the server environment as `ATLAS_TERMINAL_TOKEN`. The plugin stores the token in this browser's local storage for reuse, with a control to forget it. It is sent to the server only when connecting, in the WebSocket subprotocol and never in a URL. Anyone who can run scripts on the same browser origin could access local storage, so use the plugin only in a trusted browser profile.
 
 The shell runs with the same operating-system permissions as the ATLAS server process. Do not expose the server to an untrusted network. In Docker, treat enabling the terminal as granting shell access inside the container and to any mounted paths.
 
