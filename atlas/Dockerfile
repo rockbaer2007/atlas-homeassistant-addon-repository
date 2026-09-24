@@ -11,6 +11,7 @@ LABEL \
 WORKDIR /app
 
 RUN corepack enable
+RUN apk add --no-cache python3 make g++
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages ./packages
@@ -41,11 +42,14 @@ ENV NODE_ENV=production \
     ATLAS_DEMO_PORT=4174 \
     ATLAS_DISTRIBUTION_TARGET=home-assistant-app-preview
 
+RUN apk add --no-cache openssh-client
+
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/examples ./examples
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/atlas-plugins ./atlas-plugins
+COPY --from=builder /app/node_modules ./node_modules
 COPY run.sh /run.sh
 
 RUN chmod a+x /run.sh

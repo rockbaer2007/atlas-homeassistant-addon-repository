@@ -33,11 +33,28 @@ Freigaben deaktiviert bleiben.
 Der Token wird als Passwortfeld angezeigt und von Home Assistant maskiert. Der
 Card Editor speichert den Token nicht dauerhaft.
 
+## ATLAS Terminal
+
+Das Terminal-Plugin ist standardmäßig deaktiviert. Für den lokalen Shell-Zugriff
+muss `Terminal aktivieren` eingeschaltet und ein zufälliges Zugriffstoken mit
+mindestens 32 URL-sicheren Zeichen gesetzt werden. Die Shell läuft mit den
+Berechtigungen des Add-ons und kann auf die eingebundenen Pfade zugreifen.
+Aktiviere die Funktion nur, wenn du den Zugang wirklich benötigst.
+
+Für ein optionales SSH-Ziel müssen Host, Benutzer, privater Schlüssel und
+`known_hosts` konfiguriert werden. Lege Schlüssel und Hostliste unter `/config`
+ab und trage ihre absoluten Containerpfade ein, zum Beispiel
+`/config/.ssh/id_ed25519` und `/config/.ssh/known_hosts`. Die Hostprüfung bleibt
+aktiv; Passwörter und beliebige Ziele aus dem Browser sind nicht erlaubt.
+
+Die Oberfläche bietet ANSI-Farben und eine Schriftgröße von 11 bis 26 px. Die
+Schriftgröße wird lokal im Browser gespeichert.
+
 ## Update-Hinweis
 
 Home Assistant zeigt bei Add-on-Updates manchmal zwei Versionen: `old` ist die
 installierte Version, `target` ist die neue Version aus diesem Repository. Wenn
-ATLAS hier aktualisiert wurde, sollte `target` mindestens `0.1.129` anzeigen.
+ATLAS hier aktualisiert wurde, sollte `target` mindestens `0.1.205` anzeigen.
 Falls Home Assistant weiter eine alte Zielversion zeigt, lade im Add-on Store
 die Repository-Informationen neu und starte danach das ATLAS Add-on neu.
 
@@ -73,14 +90,29 @@ the default. Additional approvals for `/config/www`,
 `/config/custom_components`, `/addons` and `parent-of-config` can be enabled
 separately. Keep administrative approvals disabled for normal editor usage.
 
-The token is shown as text because Home Assistant can mask local password fields
-on reload and pass only a shortened placeholder to the Add-on. The token is not
-stored permanently by the Card Editor.
+The token is shown as a password field and masked by Home Assistant. The Card
+Editor does not store it permanently.
+
+## ATLAS Terminal
+
+The Terminal plugin is disabled by default. To enable local shell access, turn
+on `Enable terminal` and set a random access token of at least 32 URL-safe
+characters. The shell runs with the add-on's permissions and can access mounted
+paths, so enable it only when needed.
+
+For an optional SSH target, configure the host, username, private key and
+`known_hosts` file. Store the key and host list under `/config` and enter their
+absolute container paths, for example `/config/.ssh/id_ed25519` and
+`/config/.ssh/known_hosts`. Host-key verification remains enabled; passwords
+and browser-supplied arbitrary destinations are not allowed.
+
+The UI supports ANSI colors and an 11–26 px font size, saved locally in the
+browser.
 
 ## Update note
 
 Home Assistant may show two versions during Add-on updates: `old` is the
 installed version, `target` is the new version from this repository. After this
-ATLAS update, `target` should be at least `0.1.129`. If Home Assistant still
+ATLAS update, `target` should be at least `0.1.205`. If Home Assistant still
 shows an older target version, reload the repository information in the Add-on
 Store and then restart the ATLAS Add-on.

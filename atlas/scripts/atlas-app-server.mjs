@@ -1,8 +1,12 @@
 import { spawn } from "node:child_process";
+import { timingSafeEqual } from "node:crypto";
 import { cpSync, createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
+import { homedir } from "node:os";
 import { basename, dirname, extname, isAbsolute, normalize, relative, resolve } from "node:path";
 import { inflateRawSync } from "node:zlib";
+import * as pty from "node-pty";
+import { WebSocketServer } from "ws";
 
 const root = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -24,6 +28,14 @@ const fileStudioAllowCustomComponents = process.env.ATLAS_FILE_STUDIO_ALLOW_CUST
 const fileStudioAllowParentOfConfig = process.env.ATLAS_FILE_STUDIO_ALLOW_PARENT_OF_CONFIG === "1";
 const fileStudioHistoryRoot = resolve(process.env.ATLAS_FILE_STUDIO_HISTORY_ROOT ?? ".atlas-file-studio-history");
 const fileStudioTrashRoot = resolve(process.env.ATLAS_FILE_STUDIO_TRASH_ROOT ?? ".atlas-file-studio-trash");
+const terminalEnabled = process.env.ATLAS_TERMINAL_ENABLED === "1";
+const terminalAccessToken = process.env.ATLAS_TERMINAL_TOKEN ?? "";
+const terminalSshHost = process.env.ATLAS_TERMINAL_SSH_HOST ?? "";
+const terminalSshUser = process.env.ATLAS_TERMINAL_SSH_USER ?? "";
+const terminalSshPort = Number(process.env.ATLAS_TERMINAL_SSH_PORT ?? "22");
+const terminalSshIdentityFile = process.env.ATLAS_TERMINAL_SSH_IDENTITY_FILE ?? "";
+const terminalSshKnownHosts = process.env.ATLAS_TERMINAL_SSH_KNOWN_HOSTS
+  || resolve(homedir(), ".ssh", "known_hosts");
 const adminConnectionCookieName = "atlas_admin_connection";
 const sharedPluginCatalogCookieName = "atlas_plugin_catalog";
 const startedAt = new Date().toISOString();
@@ -79,7 +91,7 @@ await startSurface({
   },
 });
 
-createServer((request, response) => {
+const server = createServer((request, response) => {
   const requestUrl = new URL(request.url ?? "/", `http://${request.headers.host ?? `${host}:${appPort}`}`);
   const routePath = createRoutePath(requestUrl.pathname);
 
@@ -100,6 +112,15 @@ createServer((request, response) => {
 
   if (routePath === "/api/plugins") {
     void writePluginCatalogResponse(response, requestUrl, request.headers.cookie);
+    return;
+  }
+
+  if (routePath === "/plugin-assets/terminal/config") {
+    writeJson(response, 200, {
+      enabled: terminalEnabled && isValidTerminalToken(terminalAccessToken),
+      sshAvailable: terminalEnabled && isValidTerminalToken(terminalAccessToken)
+        && isValidSshProfile(),
+    });
     return;
   }
 
@@ -285,7 +306,196 @@ createServer((request, response) => {
       health: createPublicAppRouteUrl(requestUrl, "/health"),
     },
   });
-}).listen(appPort, host, () => {
+});
+
+const terminalWebSockets = new WebSocketServer({
+  noServer: true,
+  maxPayload: 16 * 1024,
+  handleProtocols(protocols) {
+    return protocols.has("atlas-terminal.v1") ? "atlas-terminal.v1" : false;
+  },
+});
+
+server.on("upgrade", (request, socket, head) => {
+  const requestUrl = new URL(request.url ?? "/", `http://${request.headers.host ?? `${host}:${appPort}`}`);
+  if (createRoutePath(requestUrl.pathname) !== "/plugin-assets/terminal/socket") {
+    socket.destroy();
+    return;
+  }
+  if (!terminalEnabled || !isValidTerminalToken(terminalAccessToken)) {
+    rejectTerminalUpgrade(socket, 4403);
+    return;
+  }
+  if (!isSameOriginRequest(request) || !hasValidTerminalSubprotocol(request, terminalAccessToken)) {
+    rejectTerminalUpgrade(socket, 4401);
+    return;
+  }
+  terminalWebSockets.handleUpgrade(request, socket, head, webSocket => {
+    terminalWebSockets.emit("connection", webSocket, request);
+  });
+});
+
+terminalWebSockets.on("connection", (webSocket, request) => {
+  const requestUrl = new URL(request.url ?? "/", `http://${request.headers.host ?? `${host}:${appPort}`}`);
+  const useSsh = requestUrl.searchParams.get("target") === "ssh";
+  if (useSsh && !isValidSshProfile()) {
+    webSocket.send(JSON.stringify({ type: "error", message: "SSH-Profil ist serverseitig nicht vollständig konfiguriert." }));
+    webSocket.close(1008, "SSH profile unavailable");
+    return;
+  }
+
+  let terminalProcess;
+  try {
+    const shell = createTerminalCommand(useSsh);
+    terminalProcess = pty.spawn(shell.command, shell.args, {
+      name: "xterm-256color",
+      cols: clampTerminalDimension(requestUrl.searchParams.get("cols"), 120),
+      rows: clampTerminalDimension(requestUrl.searchParams.get("rows"), 30),
+      cwd: process.cwd(),
+      env: createTerminalEnvironment(),
+    });
+  } catch (error) {
+    webSocket.send(JSON.stringify({ type: "error", message: `Terminal konnte nicht gestartet werden: ${error.message}` }));
+    webSocket.close(1011, "Terminal spawn failed");
+    return;
+  }
+
+  terminalProcess.onData(data => {
+    if (webSocket.readyState === webSocket.OPEN) {
+      webSocket.send(JSON.stringify({ type: "output", data }));
+    }
+  });
+  let terminalCloseTimer;
+  terminalProcess.onExit(({ exitCode }) => {
+    if (terminalCloseTimer) clearTimeout(terminalCloseTimer);
+    if (webSocket.readyState === webSocket.OPEN) {
+      webSocket.send(JSON.stringify({ type: "exit", code: exitCode }));
+      webSocket.close(1000, "Terminal exited");
+    }
+  });
+  webSocket.on("message", buffer => {
+    let message;
+    try {
+      message = JSON.parse(buffer.toString());
+    } catch {
+      return;
+    }
+    if (message?.type === "input" && typeof message.data === "string" && message.data.length <= 8192) {
+      terminalProcess.write(message.data);
+    } else if (message?.type === "resize") {
+      terminalProcess.resize(
+        clampTerminalDimension(message.cols, 120),
+        clampTerminalDimension(message.rows, 30),
+      );
+    }
+  });
+  const closeTerminal = () => {
+    if (!terminalProcess) return;
+    try {
+      terminalProcess.write("\x03exit\r");
+    } catch {
+      terminalProcess.kill();
+      return;
+    }
+    terminalCloseTimer = setTimeout(() => terminalProcess.kill(), 2000);
+    terminalCloseTimer.unref?.();
+  };
+  webSocket.on("close", closeTerminal);
+  webSocket.on("error", closeTerminal);
+});
+
+function isValidTerminalToken(value) {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{32,}$/.test(value);
+}
+
+function hasValidTerminalSubprotocol(request, expectedToken) {
+  const offered = String(request.headers["sec-websocket-protocol"] ?? "")
+    .split(",")
+    .map(value => value.trim());
+  const tokenProtocol = offered.find(value => value.startsWith("atlas-auth."));
+  if (!tokenProtocol) return false;
+  const suppliedToken = tokenProtocol.slice("atlas-auth.".length);
+  if (!isValidTerminalToken(suppliedToken) || suppliedToken.length !== expectedToken.length) return false;
+  return timingSafeEqual(Buffer.from(suppliedToken), Buffer.from(expectedToken));
+}
+
+function isSameOriginRequest(request) {
+  const origin = request.headers.origin;
+  const hostHeader = request.headers.host;
+  if (typeof origin !== "string" || typeof hostHeader !== "string") return false;
+  try {
+    return new URL(origin).host.toLowerCase() === hostHeader.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+function rejectTerminalUpgrade(socket, code) {
+  socket.write(`HTTP/1.1 ${code === 4403 ? "403 Forbidden" : "401 Unauthorized"}\r\nConnection: close\r\nSec-WebSocket-Version: 13\r\n\r\n`);
+  socket.destroy();
+}
+
+function isValidSshProfile() {
+  return /^[a-zA-Z0-9.-]+$/.test(terminalSshHost)
+    && /^[a-zA-Z0-9._-]+$/.test(terminalSshUser)
+    && Number.isInteger(terminalSshPort)
+    && terminalSshPort > 0
+    && terminalSshPort <= 65535
+    && isExistingFile(resolve(terminalSshKnownHosts))
+    && Boolean(terminalSshIdentityFile)
+    && isExistingFile(resolve(terminalSshIdentityFile));
+}
+
+function isExistingFile(pathname) {
+  try {
+    return statSync(pathname).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function createTerminalCommand(useSsh) {
+  if (!useSsh) {
+    const command = process.platform === "win32"
+      ? (process.env.ATLAS_TERMINAL_SHELL || process.env.COMSPEC || "powershell.exe")
+      : (process.env.ATLAS_TERMINAL_SHELL || process.env.SHELL || "/bin/sh");
+    return { command, args: [] };
+  }
+  if (!isValidSshProfile()) throw new Error("SSH-Profil oder known_hosts fehlt.");
+  const args = [
+    "-tt",
+    "-p", String(terminalSshPort),
+    "-o", "BatchMode=yes",
+    "-o", "StrictHostKeyChecking=yes",
+    "-o", `UserKnownHostsFile=${resolve(terminalSshKnownHosts)}`,
+    "-o", "ServerAliveInterval=30",
+  ];
+  if (terminalSshIdentityFile) {
+    args.push("-i", resolve(terminalSshIdentityFile), "-o", "IdentitiesOnly=yes");
+  }
+  args.push(`${terminalSshUser}@${terminalSshHost}`);
+  return { command: "ssh", args };
+}
+
+function createTerminalEnvironment() {
+  const env = { ...process.env, TERM: "xterm-256color" };
+  for (const key of Object.keys(env)) {
+    if (/^(?:ATLAS_|.*(?:ACCESS_TOKEN|TOKEN|SECRET|PASS(?:WORD)?|API[_-]?KEY|PRIVATE[_-]?KEY)$)/i.test(key)) {
+      delete env[key];
+    }
+  }
+  if (process.platform !== "win32" && !terminalSshHost) {
+    env.PS1 = "\\[\\e[38;5;39m\\] atlas \\w \\[\\e[38;5;82m\\]❯\\[\\e[0m\\] ";
+  }
+  return env;
+}
+
+function clampTerminalDimension(value, fallback) {
+  const number = Number(value);
+  return Number.isInteger(number) ? Math.max(20, Math.min(300, number)) : fallback;
+}
+
+server.listen(appPort, host, () => {
   console.log(`ATLAS app server: http://${host}:${appPort}/`);
   console.log(`ATLAS health: http://${host}:${appPort}/health`);
   console.log(`ATLAS administration: ${adminUrl}`);

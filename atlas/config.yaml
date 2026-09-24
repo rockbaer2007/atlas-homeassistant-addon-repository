@@ -1,5 +1,5 @@
 name: "ATLAS"
-version: "0.1.204"
+version: "0.1.205"
 slug: "atlas"
 description: "ATLAS Administration and Home Assistant Plugins preview"
 url: "https://github.com/rockbaer2007/atlas"
@@ -31,6 +31,13 @@ options:
   allow_www_path: false
   allow_custom_components_path: false
   allow_parent_of_config_path: false
+  terminal_enabled: false
+  terminal_token: ""
+  terminal_ssh_host: ""
+  terminal_ssh_user: ""
+  terminal_ssh_port: 22
+  terminal_ssh_identity_file: ""
+  terminal_ssh_known_hosts: ""
 schema:
   atlas_instance_id: "str"
   home_assistant_url: "url"
@@ -42,3 +49,10 @@ schema:
   allow_www_path: "bool"
   allow_custom_components_path: "bool"
   allow_parent_of_config_path: "bool"
+  terminal_enabled: "bool"
+  terminal_token: "password"
+  terminal_ssh_host: "str"
+  terminal_ssh_user: "str"
+  terminal_ssh_port: "int"
+  terminal_ssh_identity_file: "str"
+  terminal_ssh_known_hosts: "str"

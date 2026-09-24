@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ATLAS Terminal</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="app.bundle.css">
+  </head>
+  <body>
+    <main class="terminal-shell">
+      <header class="toolbar">
+        <div class="brand">
+          <span class="brand-mark">&gt;_</span>
+          <div><p class="eyebrow">ATLAS Plugin</p><h1>Terminal</h1></div>
+        </div>
+        <div class="toolbar-controls">
+          <div class="language-control" aria-label="Language / Sprache">
+            <button type="button" data-language="de" aria-pressed="true">DE</button>
+            <button type="button" data-language="en" aria-pressed="false">EN</button>
+          </div>
+          <label class="target-control"><span data-i18n="targetLabel">Ziel</span>
+            <select id="target-select"><option value="local">ATLAS lokal</option></select>
+          </label>
+          <label class="font-control" for="font-size"><span data-i18n="fontSize">Schriftgröße</span> <output id="font-value">14 px</output>
+            <input id="font-size" type="range" min="11" max="26" value="14">
+          </label>
+          <button id="connect" class="button primary" type="button" data-i18n="connect">Verbinden</button>
+          <button id="disconnect" class="button" type="button" data-i18n="disconnect" disabled>Trennen</button>
+        </div>
+      </header>
+      <section class="connection-panel" id="connection-panel">
+        <label for="access-token" data-i18n="tokenLabel">Terminal-Zugriffstoken</label>
+        <div class="token-row">
+          <input id="access-token" type="password" autocomplete="off" spellcheck="false" data-i18n-placeholder="tokenPlaceholder" placeholder="Serverseitig konfiguriertes Token eingeben">
+          <button id="toggle-token" class="button" type="button" data-i18n="show">Anzeigen</button>
+        </div>
+        <p data-i18n="tokenHelp">Das Token bleibt nur während dieser Sitzung im Speicher des Tabs.</p>
+      </section>
+      <div id="terminal" role="application" aria-label="ATLAS Webterminal"></div>
+      <footer><span id="connection-status" role="status" data-i18n="disconnected">Getrennt</span><span data-i18n="footer">ANSI-Farben · Oh-My-Posh-inspirierter Shell-Prompt</span></footer>
+    </main>
+    <script src="app.bundle.js"></script>
+  </body>
+</html>

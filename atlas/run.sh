@@ -14,6 +14,13 @@ if [ -f "$OPTIONS_PATH" ]; then
   ATLAS_FILE_STUDIO_ALLOW_WWW="$(node -e "const fs = require('node:fs'); const options = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(options.allow_www_path === true ? '1' : '0');" "$OPTIONS_PATH")"
   ATLAS_FILE_STUDIO_ALLOW_CUSTOM_COMPONENTS="$(node -e "const fs = require('node:fs'); const options = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(options.allow_custom_components_path === true ? '1' : '0');" "$OPTIONS_PATH")"
   ATLAS_FILE_STUDIO_ALLOW_PARENT_OF_CONFIG="$(node -e "const fs = require('node:fs'); const options = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(options.allow_parent_of_config_path === true ? '1' : '0');" "$OPTIONS_PATH")"
+  ATLAS_TERMINAL_ENABLED="$(node -e "const fs = require('node:fs'); const options = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(options.terminal_enabled === true ? '1' : '0');" "$OPTIONS_PATH")"
+  ATLAS_TERMINAL_TOKEN="$(node -e "const fs = require('node:fs'); const options = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(String(options.terminal_token || ''));" "$OPTIONS_PATH")"
+  ATLAS_TERMINAL_SSH_HOST="$(node -e "const fs = require('node:fs'); const options = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(String(options.terminal_ssh_host || ''));" "$OPTIONS_PATH")"
+  ATLAS_TERMINAL_SSH_USER="$(node -e "const fs = require('node:fs'); const options = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(String(options.terminal_ssh_user || ''));" "$OPTIONS_PATH")"
+  ATLAS_TERMINAL_SSH_PORT="$(node -e "const fs = require('node:fs'); const options = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(String(options.terminal_ssh_port || 22));" "$OPTIONS_PATH")"
+  ATLAS_TERMINAL_SSH_IDENTITY_FILE="$(node -e "const fs = require('node:fs'); const options = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(String(options.terminal_ssh_identity_file || ''));" "$OPTIONS_PATH")"
+  ATLAS_TERMINAL_SSH_KNOWN_HOSTS="$(node -e "const fs = require('node:fs'); const options = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(String(options.terminal_ssh_known_hosts || ''));" "$OPTIONS_PATH")"
   export ATLAS_INSTANCE_ID
   export ATLAS_ADMIN_HOME_ASSISTANT_URL
   export ATLAS_ADMIN_HOME_ASSISTANT_TOKEN
@@ -24,6 +31,13 @@ if [ -f "$OPTIONS_PATH" ]; then
   export ATLAS_FILE_STUDIO_ALLOW_WWW
   export ATLAS_FILE_STUDIO_ALLOW_CUSTOM_COMPONENTS
   export ATLAS_FILE_STUDIO_ALLOW_PARENT_OF_CONFIG
+  export ATLAS_TERMINAL_ENABLED
+  export ATLAS_TERMINAL_TOKEN
+  export ATLAS_TERMINAL_SSH_HOST
+  export ATLAS_TERMINAL_SSH_USER
+  export ATLAS_TERMINAL_SSH_PORT
+  export ATLAS_TERMINAL_SSH_IDENTITY_FILE
+  export ATLAS_TERMINAL_SSH_KNOWN_HOSTS
 fi
 
 export ATLAS_HOST="${ATLAS_HOST:-0.0.0.0}"

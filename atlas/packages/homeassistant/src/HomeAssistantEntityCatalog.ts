@@ -63,7 +63,12 @@ export function listHomeAssistantEntityDomainShortcuts(
 ): readonly string[] {
   return ["all", ...preferredDomains, ...domains]
     .filter((domain, index, list) => list.indexOf(domain) === index)
-    .filter(domain => domain === "all" || domains.includes(domain));
+    .filter(domain => domain === "all" || domains.includes(domain))
+    .sort((left, right) => {
+      if (left === "all") return -1;
+      if (right === "all") return 1;
+      return left.localeCompare(right);
+    });
 }
 
 export function filterHomeAssistantEntityCatalog(
