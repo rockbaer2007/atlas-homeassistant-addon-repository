@@ -185,11 +185,11 @@ pluginCatalog.register({
       de: "ATLAS Terminal",
       en: "ATLAS Terminal",
     },
-    version: "0.1.1",
-    description: "Authenticated local web terminal and optional SSH terminal with adjustable font size and ANSI colors.",
+    version: "0.1.4",
+    description: "Authenticated local web terminal with adjustable font size, ANSI colors, optional SSH and selectable Oh My Posh themes.",
     descriptionI18n: {
-      de: "Authentifiziertes lokales Webterminal und optionales SSH-Terminal mit einstellbarer Schriftgröße und ANSI-Farben.",
-      en: "Authenticated local web terminal and optional SSH terminal with adjustable font size and ANSI colors.",
+      de: "Authentifiziertes lokales Webterminal mit einstellbarer Schriftgröße, ANSI-Farben, optionalem SSH und auswählbaren Oh-My-Posh-Themes.",
+      en: "Authenticated local web terminal with adjustable font size, ANSI colors, optional SSH and selectable Oh My Posh themes.",
     },
     icon: "icon.svg",
     provides: [
@@ -197,6 +197,7 @@ pluginCatalog.register({
       "atlas.terminal.ssh",
       "atlas.terminal.ansi-colors",
       "atlas.terminal.font-size",
+      "atlas.terminal.oh-my-posh-themes",
     ],
   },
   async activate() {},

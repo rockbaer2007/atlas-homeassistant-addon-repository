@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.213
+
+- Update the Administration overview entry for ATLAS Terminal to version `0.1.4`, including Oh My Posh theme support.
+
 ## 0.1.212
 
 - Prefer Meslo LGM Nerd Font Mono in the browser terminal when installed on the client computer.
