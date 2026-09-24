@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.208
+
+- Register the ATLAS Terminal in the Administration plugin manager and make it
+  available in the Administration sidebar-plugin dialog.
+- Bump the ATLAS framework and Home Assistant package to `0.2.0-alpha.76`.
+
+## 0.1.207
+
+- Include the official Home Assistant `ha` CLI in the add-on image.
+- Enable Supervisor API access for local terminal sessions so commands such as
+  `ha core check` can authenticate.
+- Keep the Supervisor token out of SSH sessions.
+- Bump the ATLAS framework and Home Assistant package to `0.2.0-alpha.75`.
+
+## 0.1.206
+
+- Remember the Terminal access token locally in the browser and provide a
+  control to clear it.
+- Bump the ATLAS framework and Home Assistant package to `0.2.0-alpha.74`.
+
+## 0.1.205
+
+- Add the opt-in ATLAS Terminal plugin with authenticated local shell and
+  optional server-configured SSH access.
+- Bump the ATLAS framework and Home Assistant package to `0.2.0-alpha.73`.
+
 ## 0.1.204
 
 - Keep the Expert Card Editor palette hidden-toggle visually hidden while a card

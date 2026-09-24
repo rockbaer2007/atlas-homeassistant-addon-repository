@@ -174,8 +174,33 @@ const appRuntimeApiUrl = createAppRuntimeApiUrl();
 const longTermCookieMaxAge = 31536000;
 const pluginCatalog = new RuntimePluginCatalog();
 const AutomationExporterPluginId = "atlas.plugin.automation-exporter-editor";
+const TerminalPluginId = "atlas.plugin.terminal";
 pluginCatalog.register(createHomeAssistantCardEditorPlugin());
 pluginCatalog.register(createFileStudioPlugin());
+pluginCatalog.register({
+  manifest: {
+    id: TerminalPluginId,
+    name: "ATLAS Terminal",
+    nameI18n: {
+      de: "ATLAS Terminal",
+      en: "ATLAS Terminal",
+    },
+    version: "0.1.1",
+    description: "Authenticated local web terminal and optional SSH terminal with adjustable font size and ANSI colors.",
+    descriptionI18n: {
+      de: "Authentifiziertes lokales Webterminal und optionales SSH-Terminal mit einstellbarer Schriftgröße und ANSI-Farben.",
+      en: "Authenticated local web terminal and optional SSH terminal with adjustable font size and ANSI colors.",
+    },
+    icon: "icon.svg",
+    provides: [
+      "atlas.terminal.local-shell",
+      "atlas.terminal.ssh",
+      "atlas.terminal.ansi-colors",
+      "atlas.terminal.font-size",
+    ],
+  },
+  async activate() {},
+});
 pluginCatalog.register({
   manifest: {
     id: AutomationExporterPluginId,
@@ -208,12 +233,14 @@ const localPluginAssetDirectories = {
   [HomeAssistantCardEditorPluginId]: "homeassistant-card-editor",
   [FileStudioPluginId]: "file-studio",
   [AutomationExporterPluginId]: "automation-exporter-editor",
+  [TerminalPluginId]: "terminal",
   "atlas.plugin.simple-editor": "simple-editor",
 };
 const defaultActivePluginIds = [
   HomeAssistantCardEditorPluginId,
   FileStudioPluginId,
   AutomationExporterPluginId,
+  TerminalPluginId,
 ];
 
 let currentLanguage = "en";
@@ -2888,6 +2915,9 @@ function createPluginNavigationUrl(plugin) {
   if (plugin.id === AutomationExporterPluginId) {
     return appendThemeSearch(createAppRouteNavigationUrl("/plugin-assets/automation-exporter-editor/index.html"));
   }
+  if (plugin.id === TerminalPluginId) {
+    return appendThemeSearch(createAppRouteNavigationUrl("/plugin-assets/terminal/index.html"));
+  }
   if (entry === "admin") {
     return appendThemeSearch(lastAppRuntime?.urls?.admin) || createPortNavigationUrl(4175, "/", createThemeSearch());
   }
@@ -2912,6 +2942,7 @@ function createPluginNavigationUrl(plugin) {
 function createPluginSidebarIcon(plugin) {
   if (plugin.id === HomeAssistantCardEditorPluginId) return "mdi:view-dashboard-edit";
   if (plugin.id === FileStudioPluginId) return "mdi:file-document-edit";
+  if (plugin.id === TerminalPluginId) return "mdi:console";
   return "mdi:puzzle";
 }
 
