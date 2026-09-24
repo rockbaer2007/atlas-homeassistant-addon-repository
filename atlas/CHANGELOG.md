@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.215
+
+- Fix the Oh My Posh terminal prompt so the cursor stays after the rendered prompt.
+
 ## 0.1.214
 
 - Load Meslo LGM Nerd Font Mono from Home Assistant `/local/` for the ATLAS web terminal.

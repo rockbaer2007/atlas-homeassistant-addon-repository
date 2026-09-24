@@ -362,7 +362,7 @@ terminalWebSockets.on("connection", (webSocket, request) => {
       cols: clampTerminalDimension(requestUrl.searchParams.get("cols"), 120),
       rows: clampTerminalDimension(requestUrl.searchParams.get("rows"), 30),
       cwd: process.cwd(),
-      env: createTerminalEnvironment(useSsh),
+      env: createTerminalEnvironment(useSsh, Boolean(theme)),
     });
   } catch (error) {
     shell?.cleanup?.();
@@ -509,7 +509,7 @@ function isCommandAvailable(command) {
   }
 }
 
-function createTerminalEnvironment(useSsh) {
+function createTerminalEnvironment(useSsh, useOhMyPosh = false) {
   const env = { ...process.env, TERM: "xterm-256color" };
   for (const key of Object.keys(env)) {
     if (key === "SUPERVISOR_TOKEN" && !useSsh) continue;
@@ -517,7 +517,7 @@ function createTerminalEnvironment(useSsh) {
       delete env[key];
     }
   }
-  if (process.platform !== "win32" && !terminalSshHost) {
+  if (process.platform !== "win32" && !terminalSshHost && !useOhMyPosh) {
     env.PS1 = "\\[\\e[38;5;39m\\] atlas \\w \\[\\e[38;5;82m\\]❯\\[\\e[0m\\] ";
   }
   return env;
