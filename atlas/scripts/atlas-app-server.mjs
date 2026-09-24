@@ -468,13 +468,35 @@ function isExistingFile(pathname) {
 
 function createTerminalCommand(useSsh, theme = "") {
   if (!useSsh) {
-    if (theme) {
+    const bashCommand = process.env.ATLAS_TERMINAL_BASH || (isCommandAvailable("bash") ? "bash" : "");
+    if (theme || bashCommand) {
       const directory = mkdtempSync(join(tmpdir(), "atlas-terminal-"));
       const startupFile = join(directory, "bashrc");
       const configUrl = `https://raw.githubusercontent.com/rockbaer2007/oh-my-posh/main/themes/${theme}.omp.json`;
-      writeFileSync(startupFile, `eval "$(oh-my-posh init bash --config '${configUrl}')"\n`, { mode: 0o600 });
+      const startupLines = [
+        "if command -v ha >/dev/null 2>&1; then",
+        "  cat <<'ATLAS_WELCOME'",
+        "   ▄██▄           _   _",
+        " ▄██████▄        | | | | ___  _ __ ___   ___",
+        "▄████▀▀████▄      | |_| |/ _ \\ | '_ ` _ \\ / _ \\ ",
+        " ▄█████    █████▄    |  _  | (_) | | | | | |  __/",
+        "▄██████▄  ▄██████▄   |_| |_|\\___/|_| |_| |_|\\___|",
+        "████████  ██▀  ▀██",
+        "███▀▀███  ██   ▄██     Welcome to the Home Assistant command line interface.",
+        "██    ██  ▀ ▄█████",
+        "███▄▄ ▀█  ▄███████",
+        "▀█████▄   ███████▀",
+        "",
+        "Home Assistant system information:",
+        "ATLAS_WELCOME",
+        "  ha info || true",
+        "  printf '\\nSystem is ready. Use the browser or app to configure Home Assistant.\\n\\n'",
+        "fi",
+      ];
+      if (theme) startupLines.push(`eval "$(oh-my-posh init bash --config '${configUrl}')"`);
+      writeFileSync(startupFile, `${startupLines.join("\n")}\n`, { mode: 0o600 });
       return {
-        command: process.env.ATLAS_TERMINAL_BASH || "bash",
+        command: bashCommand || "bash",
         args: ["--noprofile", "--rcfile", startupFile, "-i"],
         cleanup: () => rmSync(directory, { recursive: true, force: true }),
       };
