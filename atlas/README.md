@@ -62,7 +62,7 @@ das Terminal daher nur in einem vertrauenswürdigen Browserprofil.
 
 Home Assistant zeigt bei Add-on-Updates manchmal zwei Versionen: `old` ist die
 installierte Version, `target` ist die neue Version aus diesem Repository. Wenn
-ATLAS hier aktualisiert wurde, sollte `target` mindestens `0.1.209` anzeigen.
+ATLAS hier aktualisiert wurde, sollte `target` mindestens `0.1.210` anzeigen.
 Falls Home Assistant weiter eine alte Zielversion zeigt, lade im Add-on Store
 die Repository-Informationen neu und starte danach das ATLAS Add-on neu.
 
@@ -129,6 +129,6 @@ targets.
 
 Home Assistant may show two versions during Add-on updates: `old` is the
 installed version, `target` is the new version from this repository. After this
-ATLAS update, `target` should be at least `0.1.209`. If Home Assistant still
+ATLAS update, `target` should be at least `0.1.210`. If Home Assistant still
 shows an older target version, reload the repository information in the Add-on
 Store and then restart the ATLAS Add-on.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.210
+
+- Add a German/English toolbar link to return from ATLAS Terminal to the Plugin Hub.
+- Bump the standalone ATLAS Terminal plugin to `0.1.2`.
+- Bump the ATLAS framework and Home Assistant package to `0.2.0-alpha.78`.
+
 ## 0.1.209
 
 - Grant the local `ha` CLI the Supervisor manager role so commands such as

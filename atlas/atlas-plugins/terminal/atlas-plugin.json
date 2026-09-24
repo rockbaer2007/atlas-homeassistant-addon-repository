@@ -5,11 +5,11 @@
     "de": "ATLAS Terminal",
     "en": "ATLAS Terminal"
   },
-  "version": "0.1.1",
-  "description": "Authenticated local web terminal and optional SSH terminal with adjustable font size and ANSI colors.",
+  "version": "0.1.2",
+  "description": "Authenticated local web terminal with ANSI colors, adjustable font size, optional SSH and a return link to the ATLAS Hub.",
   "descriptionI18n": {
-    "de": "Authentifiziertes lokales Webterminal und optionales SSH-Terminal mit einstellbarer Schriftgröße und ANSI-Farben.",
-    "en": "Authenticated local web terminal and optional SSH terminal with adjustable font size and ANSI colors."
+    "de": "Authentifiziertes lokales Webterminal mit ANSI-Farben, einstellbarer Schriftgröße, optionalem SSH und einem Rückweg zum ATLAS Hub.",
+    "en": "Authenticated local web terminal with ANSI colors, adjustable font size, optional SSH and a return link to the ATLAS Hub."
   },
   "status": "active",
   "order": 30,

@@ -32,6 +32,7 @@ select, input[type="password"] { min-height: 36px; border: 1px solid var(--borde
 .font-control input { grid-column: 1 / -1; width: 150px; accent-color: var(--accent); }
 .font-control output { color: var(--text); }
 .button { min-height: 36px; padding: 0 13px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel-soft); color: var(--text); cursor: pointer; }
+.hub-button { display: inline-flex; align-items: center; gap: 7px; text-decoration: none; white-space: nowrap; }
 .button:hover:not(:disabled) { border-color: var(--accent); }
 .button:disabled { opacity: .45; cursor: not-allowed; }
 .button.primary { border-color: var(--accent); background: var(--accent); color: white; font-weight: 700; }

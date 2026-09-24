@@ -13,6 +13,7 @@ const status = document.querySelector("#connection-status");
 const languageButtons = [...document.querySelectorAll("[data-language]")];
 const translations = {
   de: {
+    backToHub: "Zurück zum Hub",
     targetLabel: "Ziel", localTarget: "ATLAS lokal", sshTarget: "Home Assistant · SSH",
     fontSize: "Schriftgröße", connect: "Verbinden", disconnect: "Trennen",
     tokenLabel: "Terminal-Zugriffstoken", tokenPlaceholder: "Serverseitig konfiguriertes Token eingeben",
@@ -25,6 +26,7 @@ const translations = {
     failed: "Terminal-Verbindung fehlgeschlagen",
   },
   en: {
+    backToHub: "Back to Hub",
     targetLabel: "Target", localTarget: "ATLAS local", sshTarget: "Home Assistant · SSH",
     fontSize: "Font size", connect: "Connect", disconnect: "Disconnect",
     tokenLabel: "Terminal access token", tokenPlaceholder: "Enter the token configured on the server",
