@@ -352,7 +352,7 @@ terminalWebSockets.on("connection", (webSocket, request) => {
       cols: clampTerminalDimension(requestUrl.searchParams.get("cols"), 120),
       rows: clampTerminalDimension(requestUrl.searchParams.get("rows"), 30),
       cwd: process.cwd(),
-      env: createTerminalEnvironment(),
+      env: createTerminalEnvironment(useSsh),
     });
   } catch (error) {
     webSocket.send(JSON.stringify({ type: "error", message: `Terminal konnte nicht gestartet werden: ${error.message}` }));
@@ -477,9 +477,10 @@ function createTerminalCommand(useSsh) {
   return { command: "ssh", args };
 }
 
-function createTerminalEnvironment() {
+function createTerminalEnvironment(useSsh) {
   const env = { ...process.env, TERM: "xterm-256color" };
   for (const key of Object.keys(env)) {
+    if (key === "SUPERVISOR_TOKEN" && !useSsh) continue;
     if (/^(?:ATLAS_|.*(?:ACCESS_TOKEN|TOKEN|SECRET|PASS(?:WORD)?|API[_-]?KEY|PRIVATE[_-]?KEY)$)/i.test(key)) {
       delete env[key];
     }

@@ -1,5 +1,5 @@
 name: "ATLAS"
-version: "0.1.206"
+version: "0.1.207"
 slug: "atlas"
 description: "ATLAS Administration and Home Assistant Plugins preview"
 url: "https://github.com/rockbaer2007/atlas"
@@ -11,6 +11,7 @@ boot: manual
 init: false
 ingress: true
 ingress_port: 4176
+hassio_api: true
 panel_icon: mdi:view-dashboard-edit
 webui: "http://[HOST]:[PORT:4176]/"
 map:

@@ -26,6 +26,7 @@ FROM node:22-alpine AS runtime
 
 ARG BUILD_VERSION=0.1.0
 ARG BUILD_ARCH=amd64
+ARG HA_CLI_VERSION=5.2.0
 
 LABEL \
   io.hass.version=${BUILD_VERSION} \
@@ -42,7 +43,11 @@ ENV NODE_ENV=production \
     ATLAS_DEMO_PORT=4174 \
     ATLAS_DISTRIBUTION_TARGET=home-assistant-app-preview
 
-RUN apk add --no-cache openssh-client
+RUN apk add --no-cache openssh-client curl \
+  && curl --fail --location --silent --show-error \
+    "https://github.com/home-assistant/cli/releases/download/${HA_CLI_VERSION}/ha_${BUILD_ARCH}" \
+    --output /usr/local/bin/ha \
+  && chmod 0755 /usr/local/bin/ha
 
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/scripts ./scripts
