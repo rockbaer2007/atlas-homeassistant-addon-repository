@@ -1114,6 +1114,11 @@ body.is-resizing .splitter {
   padding: 24px;
 }
 
+/* Prompts opened from an archive preview must appear above that preview. */
+.studio-dialog-modal {
+  z-index: 120;
+}
+
 .studio-dialog-backdrop,
 .image-preview-backdrop,
 .archive-preview-backdrop {

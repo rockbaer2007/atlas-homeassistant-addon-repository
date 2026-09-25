@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.225
+
+- Keep File Studio confirmation prompts above archive previews.
+
 ## 0.1.224
 
 - Add safe TAR, TAR.GZ and TGZ archive preview and extraction to File Studio.
