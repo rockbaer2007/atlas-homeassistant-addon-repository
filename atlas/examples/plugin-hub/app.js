@@ -44,6 +44,7 @@ const translations = {
     "button.close": "Close",
     "button.planned": "Planned",
     "button.disabled": "Disabled",
+    "button.noLaunchPage": "No launch page available",
     "status.active": "Active",
     "status.available": "Available",
     "status.planned": "Planned",
@@ -86,6 +87,7 @@ const translations = {
     "button.close": "Schließen",
     "button.planned": "Geplant",
     "button.disabled": "Deaktiviert",
+    "button.noLaunchPage": "Noch keine Startseite verfügbar",
     "status.active": "Aktiv",
     "status.available": "Verfügbar",
     "status.planned": "Geplant",
@@ -423,6 +425,8 @@ function createPluginCard(plugin) {
     ? t("button.open")
     : plugin.status === "planned"
       ? t("button.planned")
+      : plugin.status === "active"
+        ? t("button.noLaunchPage")
       : t("button.disabled");
   if (launchable) {
     body.append(createSidebarUrlDetails(sidebarActionUrl));

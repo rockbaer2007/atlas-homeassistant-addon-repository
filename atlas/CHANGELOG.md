@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.232
+
+- Show locally imported plugin packages in the Plugin Hub and indicate when no launch page is available.
+
 ## 0.1.231
 
 - Add a bilingual Administration plugin generator that creates a starter install package and repository catalog file.

@@ -2601,7 +2601,6 @@ function removeBundledImportedPlugins(plugins) {
 
 function persistSharedPluginCatalogCookie() {
   const plugins = importedPluginDescriptors
-    .filter(plugin => plugin.source === "repository")
     .map(plugin => ({
       id: plugin.id,
       name: plugin.name,
@@ -2610,12 +2609,13 @@ function persistSharedPluginCatalogCookie() {
       description: plugin.description,
       descriptionI18n: plugin.descriptionI18n,
       status: activePluginIds.has(plugin.id) ? "active" : "available",
-      capabilities: plugin.capabilities,
+      capabilities: plugin.capabilities ?? plugin.provides ?? [],
       iconUrl: resolvePluginDisplayAssetUrl(plugin, "icon"),
       logoUrl: resolvePluginDisplayAssetUrl(plugin, "logo"),
       previewUrl: resolvePluginDisplayAssetUrl(plugin, "preview"),
-      entry: plugin.entry,
-      slug: plugin.slug,
+      entry: plugin.source === "repository" ? plugin.entry : "",
+      slug: plugin.slug || plugin.id.split(".").at(-1),
+      source: plugin.source || "package",
     }));
 
   const encodedCatalog = encodeURIComponent(JSON.stringify({ plugins }));
@@ -3456,7 +3456,12 @@ async function importSelectedPluginPackage() {
       return;
     }
 
-    importedPluginDescriptors = [...importedPluginDescriptors, plugin];
+    importedPluginDescriptors = [...importedPluginDescriptors, {
+      ...plugin,
+      source: "package",
+      capabilities: plugin.provides ?? [],
+      slug: plugin.id.split(".").at(-1),
+    }];
     persistImportedPlugins();
     renderAdministration();
     adminSaveState.textContent = t("message.pluginPackageImported", { name: localizedPluginText(plugin, "name", plugin.id) });
