@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.226
+
+- Snapshot selected upload files before opening dialogs so browser permissions remain valid.
+
 ## 0.1.225
 
 - Keep File Studio confirmation prompts above archive previews.

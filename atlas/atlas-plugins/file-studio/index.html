@@ -2078,6 +2078,15 @@
         updateEditorActions();
       }
 
+      async function snapshotBrowserFile(file) {
+        if (!file || typeof file.arrayBuffer !== "function") return file;
+        const contents = await file.arrayBuffer();
+        return new File([contents], file.name, {
+          type: file.type,
+          lastModified: file.lastModified,
+        });
+      }
+
       async function uploadFileToSelectedFolder(file) {
         const name = await showPromptDialog("Upload", "Dateiname für Upload", file.name);
         if (!name) return;
@@ -2216,7 +2225,12 @@
           if (files.length > 1) {
             void uploadFilesToSelectedFolder(files);
           } else {
-            void replaceOpenFileFromUpload(files[0]);
+            const file = files[0];
+            if (file) {
+              void snapshotBrowserFile(file)
+                .then(snapshot => replaceOpenFileFromUpload(snapshot))
+                .catch(error => setStatus(`Datei konnte nicht eingelesen werden: ${describeFileStudioError(error)}`, "warning"));
+            }
           }
           event.target.value = "";
         });
