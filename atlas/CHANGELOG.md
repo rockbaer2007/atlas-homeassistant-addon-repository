@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.221
+
+- Start local terminal sessions at the filesystem root (`/`) instead of `/app`.
+
 ## 0.1.220
 
 - Reopen terminal token settings after disconnecting or when a terminal session ends.
