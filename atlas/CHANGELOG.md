@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.229
+
+- Save File Studio uploads to the currently selected folder, including after an upload conflict prompt.
+
 ## 0.1.228
 
 - Show the 64 MiB upload limit and direct oversized files to the Samba add-on without attempting upload.

@@ -398,11 +398,14 @@
       }
 
       function selectedCreateParentPath() {
+        if (state.selectedFolderPath && state.selectedFolderPath !== "/") {
+          return state.selectedFolderPath;
+        }
         const selectedNode = findNodeByPath(state.tree, state.selectedFilePath);
         if (selectedNode?.type === "file") {
           return state.selectedFilePath.split("/").slice(0, -1).join("/") || "/config";
         }
-        return state.selectedFolderPath && state.selectedFolderPath !== "/" ? state.selectedFolderPath : "/config";
+        return "/config";
       }
 
       function setStatus(message, tone = "default") {
@@ -1088,6 +1091,10 @@
       }
 
       async function openFile(node, button) {
+        const parentPath = node.path.split("/").slice(0, -1).join("/") || "/config";
+        if (parentPath !== state.selectedFolderPath) {
+          selectFolder(parentPath);
+        }
         for (const selectedButton of document.querySelectorAll(".tree-file.active")) {
           selectedButton.classList.remove("active");
         }
@@ -2107,7 +2114,7 @@
         return true;
       }
 
-      async function uploadFileToSelectedFolder(file) {
+      async function uploadFileToSelectedFolder(file, parentPath = selectedCreateParentPath()) {
         if (rejectOversizedUploads([file])) return;
         const name = await showPromptDialog("Upload", "Dateiname für Upload", file.name);
         if (!name) return;
@@ -2117,12 +2124,12 @@
           return;
         }
         try {
-          const created = await uploadFileContent(file, selectedCreateParentPath(), trimmedName, false);
+          const created = await uploadFileContent(file, parentPath, trimmedName, false);
           await openFile(createFileNode(created));
           setStatus(`Upload gespeichert: ${created.path}`, "ok");
         } catch (error) {
           if (error instanceof Error && /already exists/i.test(error.message)) {
-            await resolveUploadConflict(file, selectedCreateParentPath(), trimmedName);
+            await resolveUploadConflict(file, parentPath, trimmedName);
             return;
           }
           setStatus(`Upload fehlgeschlagen: ${describeFileStudioError(error)}`, "warning");
@@ -2159,7 +2166,7 @@
           setStatus("Upload abgebrochen.", "warning");
           return false;
         }
-        await uploadFileToSelectedFolder(new File([file], nextName.trim(), { type: file.type }));
+        await uploadFileToSelectedFolder(new File([file], nextName.trim(), { type: file.type }), parentPath);
         return true;
       }
 
@@ -2186,14 +2193,15 @@
         const queue = [...files].filter(Boolean);
         if (!queue.length) return;
         if (rejectOversizedUploads(queue)) return;
+        const parentPath = selectedCreateParentPath();
         let uploaded = 0;
         for (const file of queue) {
           try {
-            await uploadFileContent(file, selectedCreateParentPath(), file.name, false);
+            await uploadFileContent(file, parentPath, file.name, false);
             uploaded += 1;
           } catch (error) {
             if (error instanceof Error && /already exists/i.test(error.message)) {
-              if (await resolveUploadConflict(file, selectedCreateParentPath(), file.name)) {
+              if (await resolveUploadConflict(file, parentPath, file.name)) {
                 uploaded += 1;
               }
               continue;
