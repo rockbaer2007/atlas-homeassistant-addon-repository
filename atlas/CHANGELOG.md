@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.223
+
+- Add safe extraction of individual files from ZIP archives in File Studio.
+
 ## 0.1.222
 
 - Restyle the File Studio access note with regular, smaller text and distinct colors for each path.

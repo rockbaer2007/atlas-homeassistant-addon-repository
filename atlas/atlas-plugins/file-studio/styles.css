@@ -1366,7 +1366,7 @@ body.is-resizing .splitter {
 .archive-preview-table-header,
 .archive-preview-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 110px 84px;
+  grid-template-columns: minmax(180px, 1fr) 110px 84px 100px;
   gap: 12px;
   align-items: center;
 }
@@ -1404,6 +1404,22 @@ body.is-resizing .splitter {
 .archive-preview-row.directory {
   color: var(--atlas-folder);
   font-weight: 800;
+}
+
+.archive-entry-extract {
+  min-height: 30px;
+  padding: 3px 8px;
+  border: 1px solid var(--atlas-border);
+  border-radius: 6px;
+  background: var(--atlas-panel-soft);
+  color: var(--atlas-text);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.archive-entry-extract:hover {
+  border-color: var(--atlas-accent);
 }
 
 .archive-preview-empty {

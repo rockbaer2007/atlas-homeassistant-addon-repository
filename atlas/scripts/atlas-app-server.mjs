@@ -28,6 +28,7 @@ const fileStudioAllowCustomComponents = process.env.ATLAS_FILE_STUDIO_ALLOW_CUST
 const fileStudioAllowParentOfConfig = process.env.ATLAS_FILE_STUDIO_ALLOW_PARENT_OF_CONFIG === "1";
 const fileStudioHistoryRoot = resolve(process.env.ATLAS_FILE_STUDIO_HISTORY_ROOT ?? ".atlas-file-studio-history");
 const fileStudioTrashRoot = resolve(process.env.ATLAS_FILE_STUDIO_TRASH_ROOT ?? ".atlas-file-studio-trash");
+const maxFileStudioArchiveEntryBytes = 64 * 1024 * 1024;
 const terminalEnabled = process.env.ATLAS_TERMINAL_ENABLED === "1";
 const terminalAccessToken = process.env.ATLAS_TERMINAL_TOKEN ?? "";
 const terminalSshHost = process.env.ATLAS_TERMINAL_SSH_HOST ?? "";
@@ -243,6 +244,11 @@ const server = createServer((request, response) => {
 
   if (routePath === "/api/file-studio/extract") {
     void writeFileStudioExtractResponse(request, response, request.headers.cookie);
+    return;
+  }
+
+  if (routePath === "/api/file-studio/extract-entry") {
+    void writeFileStudioExtractEntryResponse(request, response, request.headers.cookie);
     return;
   }
 
@@ -569,6 +575,7 @@ function createRoutePath(pathname) {
     "/api/file-studio/move",
     "/api/file-studio/search",
     "/api/file-studio/extract",
+    "/api/file-studio/extract-entry",
     "/examples/plugin-hub/",
     "/examples/admin-demo/",
     "/examples/status-demo/",
@@ -1519,6 +1526,110 @@ async function writeFileStudioExtractResponse(request, response, cookieHeader) {
       error: error instanceof Error ? error.message : "archive could not be extracted",
     });
   }
+}
+
+async function writeFileStudioExtractEntryResponse(request, response, cookieHeader) {
+  const body = await readJsonRequestBody(request);
+  const access = createFileStudioAccessContext(cookieHeader);
+  const sourcePath = resolveFileStudioPath(body.path, access);
+  const targetParentPath = typeof body.targetParentPath === "string" && body.targetParentPath.trim()
+    ? body.targetParentPath
+    : dirname(normalizeFileStudioDisplayInput(body.path));
+  const targetParent = resolveFileStudioPath(targetParentPath, access);
+  const targetScope = resolveFileStudioRootScope(targetParentPath, access);
+  const entryPath = typeof body.entryPath === "string" ? body.entryPath : "";
+  const requestedName = String(body.name ?? basename(entryPath)).trim();
+  const invalidReason = validateFileStudioName(requestedName);
+  const invalidEntryPath = validateZipArchiveEntryPath(entryPath);
+
+  if (invalidReason || invalidEntryPath) {
+    writeJson(response, 400, { kind: "atlas.file-studio.extract-entry", ok: false, error: invalidReason ?? invalidEntryPath });
+    return;
+  }
+  if (!sourcePath || !existsSync(sourcePath) || !statSync(sourcePath).isFile() || extname(sourcePath).toLowerCase() !== ".zip") {
+    writeJson(response, 404, { kind: "atlas.file-studio.extract-entry", ok: false, error: "zip file not found" });
+    return;
+  }
+  if (!targetParent || !targetScope || !existsSync(targetParent) || !statSync(targetParent).isDirectory()) {
+    writeJson(response, 404, { kind: "atlas.file-studio.extract-entry", ok: false, error: "target directory not found" });
+    return;
+  }
+
+  const targetFilePath = resolve(targetParent, requestedName);
+  if (!isInsideFileStudioRootScope(targetScope, targetFilePath)) {
+    writeJson(response, 403, { kind: "atlas.file-studio.extract-entry", ok: false, error: "path outside configured root" });
+    return;
+  }
+  if (existsSync(targetFilePath)) {
+    writeJson(response, 409, { kind: "atlas.file-studio.extract-entry", ok: false, error: "target already exists" });
+    return;
+  }
+
+  try {
+    const content = readZipArchiveEntry(sourcePath, entryPath);
+    writeFileSync(targetFilePath, content, { flag: "wx" });
+    writeJson(response, 200, createFileStudioOperationResult("extract-entry", targetFilePath, access));
+  } catch (error) {
+    writeJson(response, 422, { kind: "atlas.file-studio.extract-entry", ok: false, error: error instanceof Error ? error.message : "ZIP entry could not be extracted" });
+  }
+}
+
+function validateZipArchiveEntryPath(value) {
+  const path = String(value ?? "");
+  if (!path || path.length > 2_048 || path.startsWith("/") || /^[a-zA-Z]:/.test(path)) return "ZIP entry path is invalid";
+  if (path.includes("\\") || path.split("/").some(part => part === ".." || part === "")) return "ZIP entry path is unsafe";
+  return undefined;
+}
+
+function readZipArchiveEntry(sourcePath, requestedEntryPath) {
+  const buffer = readFileSync(sourcePath);
+  const eocdOffset = findZipEndOfCentralDirectory(buffer);
+  if (eocdOffset < 0) throw new Error("ZIP directory not found");
+  const totalEntries = buffer.readUInt16LE(eocdOffset + 10);
+  const centralDirectorySize = buffer.readUInt32LE(eocdOffset + 12);
+  const centralDirectoryOffset = buffer.readUInt32LE(eocdOffset + 16);
+  const centralDirectoryEnd = centralDirectoryOffset + centralDirectorySize;
+  if (centralDirectoryEnd > buffer.length) throw new Error("ZIP directory is incomplete");
+
+  let offset = centralDirectoryOffset;
+  for (let index = 0; index < Math.min(totalEntries, 500) && offset + 46 <= centralDirectoryEnd; index += 1) {
+    if (buffer.readUInt32LE(offset) !== 0x02014b50) throw new Error("ZIP directory contains an invalid entry");
+    const compressionMethod = buffer.readUInt16LE(offset + 10);
+    const compressedSize = buffer.readUInt32LE(offset + 20);
+    const uncompressedSize = buffer.readUInt32LE(offset + 24);
+    const nameLength = buffer.readUInt16LE(offset + 28);
+    const extraLength = buffer.readUInt16LE(offset + 30);
+    const commentLength = buffer.readUInt16LE(offset + 32);
+    const localHeaderOffset = buffer.readUInt32LE(offset + 42);
+    const nameStart = offset + 46;
+    const nameEnd = nameStart + nameLength;
+    if (nameEnd > centralDirectoryEnd) throw new Error("ZIP entry name is incomplete");
+    const entryPath = buffer.toString("utf8", nameStart, nameEnd);
+    if (entryPath === requestedEntryPath) {
+      if (entryPath.endsWith("/")) throw new Error("ZIP entry is a directory");
+      if (uncompressedSize > maxFileStudioArchiveEntryBytes) throw new Error("ZIP entry exceeds the 64 MiB extraction limit");
+      if (localHeaderOffset + 30 > buffer.length || buffer.readUInt32LE(localHeaderOffset) !== 0x04034b50) throw new Error("ZIP local header is invalid");
+      const localNameLength = buffer.readUInt16LE(localHeaderOffset + 26);
+      const localExtraLength = buffer.readUInt16LE(localHeaderOffset + 28);
+      const localNameStart = localHeaderOffset + 30;
+      const localNameEnd = localNameStart + localNameLength;
+      if (localNameEnd > buffer.length || buffer.toString("utf8", localNameStart, localNameEnd) !== entryPath) throw new Error("ZIP entry name does not match its local header");
+      const dataStart = localNameEnd + localExtraLength;
+      const dataEnd = dataStart + compressedSize;
+      if (dataEnd > buffer.length) throw new Error("ZIP entry data is incomplete");
+      const compressed = buffer.subarray(dataStart, dataEnd);
+      const content = compressionMethod === 0
+        ? compressed
+        : compressionMethod === 8
+          ? inflateRawSync(compressed, { maxOutputLength: maxFileStudioArchiveEntryBytes })
+          : undefined;
+      if (!content) throw new Error(`ZIP compression method ${compressionMethod} is not supported`);
+      if (content.length !== uncompressedSize) throw new Error("ZIP entry size does not match its directory record");
+      return content;
+    }
+    offset = nameEnd + extraLength + commentLength;
+  }
+  throw new Error("ZIP entry was not found in the first 500 entries");
 }
 
 function createFileStudioOperationResult(operation, targetPath, access) {
