@@ -35,15 +35,18 @@
           <button id="disconnect" class="button" type="button" data-i18n="disconnect" disabled>Trennen</button>
         </div>
       </header>
-      <section class="connection-panel" id="connection-panel">
-        <label for="access-token" data-i18n="tokenLabel">Terminal-Zugriffstoken</label>
-        <div class="token-row">
-          <input id="access-token" type="password" autocomplete="off" spellcheck="false" data-i18n-placeholder="tokenPlaceholder" placeholder="Serverseitig konfiguriertes Token eingeben">
-          <button id="toggle-token" class="button" type="button" data-i18n="show">Anzeigen</button>
-          <button id="forget-token" class="button" type="button" data-i18n="forgetToken">Gespeichertes Token löschen</button>
+      <details class="connection-panel" id="connection-panel">
+        <summary data-i18n="tokenSettings">Token-Einstellungen</summary>
+        <div class="connection-content">
+          <label for="access-token" data-i18n="tokenLabel">Terminal-Zugriffstoken</label>
+          <div class="token-row">
+            <input id="access-token" type="password" autocomplete="off" spellcheck="false" data-i18n-placeholder="tokenPlaceholder" placeholder="Serverseitig konfiguriertes Token eingeben">
+            <button id="toggle-token" class="button" type="button" data-i18n="show">Anzeigen</button>
+            <button id="forget-token" class="button" type="button" data-i18n="forgetToken">Gespeichertes Token löschen</button>
+          </div>
+          <p data-i18n="tokenHelp">Das Token wird lokal in diesem Browser gespeichert und nur zum Verbinden an den Server gesendet.</p>
         </div>
-        <p data-i18n="tokenHelp">Das Token wird lokal in diesem Browser gespeichert und nur zum Verbinden an den Server gesendet.</p>
-      </section>
+      </details>
       <div id="terminal" role="application" aria-label="ATLAS Webterminal"></div>
       <footer><span id="connection-status" role="status" data-i18n="disconnected">Getrennt</span><span data-i18n="footer">ANSI-Farben · Oh-My-Posh-inspirierter Shell-Prompt</span></footer>
     </main>

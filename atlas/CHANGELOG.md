@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.219
+
+- Collapse the terminal access-token panel by default when the browser already has a saved token.
+- Bump the standalone ATLAS Terminal plugin to `0.1.6`.
+
 ## 0.1.218
 
 - Install optional Alpine packages from the add-on `packages` option so commands such as `mc` are available in the local terminal.

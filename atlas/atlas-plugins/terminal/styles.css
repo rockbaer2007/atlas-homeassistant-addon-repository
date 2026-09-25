@@ -55,7 +55,12 @@ select, input[type="password"] { min-height: 36px; border: 1px solid var(--borde
 .button:hover:not(:disabled) { border-color: var(--accent); }
 .button:disabled { opacity: .45; cursor: not-allowed; }
 .button.primary { border-color: var(--accent); background: var(--accent); color: white; font-weight: 700; }
-.connection-panel { width: min(100%, 620px); padding: 13px 15px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+.connection-panel { width: min(100%, 620px); border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+.connection-panel > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 13px; font-weight: 700; cursor: pointer; list-style: none; }
+.connection-panel > summary::-webkit-details-marker { display: none; }
+.connection-panel > summary::after { content: "+"; color: var(--muted); font-size: 18px; line-height: 1; }
+.connection-panel[open] > summary::after { content: "−"; }
+.connection-content { padding: 0 13px 12px; }
 .connection-panel label { display: block; margin-bottom: 6px; font-weight: 700; }
 .token-row { display: flex; gap: 7px; }
 .token-row input { flex: 1; min-width: 0; }

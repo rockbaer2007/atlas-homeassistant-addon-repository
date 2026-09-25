@@ -4,6 +4,7 @@ import "@xterm/xterm/css/xterm.css";
 
 const terminalElement = document.querySelector("#terminal");
 const tokenInput = document.querySelector("#access-token");
+const connectionPanel = document.querySelector("#connection-panel");
 const connectButton = document.querySelector("#connect");
 const disconnectButton = document.querySelector("#disconnect");
 const targetSelect = document.querySelector("#target-select");
@@ -19,7 +20,7 @@ const translations = {
     targetLabel: "Ziel", localTarget: "ATLAS lokal", sshTarget: "Home Assistant · SSH",
     themeLabel: "Oh-My-Posh-Theme", defaultTheme: "Standard", themesUnavailable: "Themes konnten nicht geladen werden",
     fontSize: "Schriftgröße", connect: "Verbinden", disconnect: "Trennen",
-    tokenLabel: "Terminal-Zugriffstoken", tokenPlaceholder: "Serverseitig konfiguriertes Token eingeben",
+    tokenSettings: "Token-Einstellungen", tokenLabel: "Terminal-Zugriffstoken", tokenPlaceholder: "Serverseitig konfiguriertes Token eingeben",
     show: "Anzeigen", hide: "Verbergen", forgetToken: "Gespeichertes Token löschen",
     tokenHelp: "Das Token wird lokal in diesem Browser gespeichert und nur zum Verbinden an den Server gesendet.",
     disconnected: "Getrennt", footer: "ANSI-Farben · Oh-My-Posh-inspirierter Shell-Prompt",
@@ -33,7 +34,7 @@ const translations = {
     targetLabel: "Target", localTarget: "ATLAS local", sshTarget: "Home Assistant · SSH",
     themeLabel: "Oh My Posh theme", defaultTheme: "Default", themesUnavailable: "Could not load themes",
     fontSize: "Font size", connect: "Connect", disconnect: "Disconnect",
-    tokenLabel: "Terminal access token", tokenPlaceholder: "Enter the token configured on the server",
+    tokenSettings: "Access token settings", tokenLabel: "Terminal access token", tokenPlaceholder: "Enter the token configured on the server",
     show: "Show", hide: "Hide", forgetToken: "Forget saved token",
     tokenHelp: "The token is stored locally in this browser and sent to the server only when connecting.",
     disconnected: "Disconnected", footer: "ANSI colors · Oh My Posh-inspired shell prompt",
@@ -49,6 +50,7 @@ let socket;
 let accessToken = "";
 const tokenStorageKey = "atlas.terminal.accessToken";
 tokenInput.value = readStoredToken();
+connectionPanel.open = !tokenInput.value;
 
 const terminal = new Terminal({
   cursorBlink: true,
@@ -198,6 +200,7 @@ function showThemeOptions(names) {
 function connect() {
   accessToken = tokenInput.value.trim();
   if (accessToken.length < 32) {
+    connectionPanel.open = true;
     setStatus(translate("tokenRequired"), "error");
     tokenInput.focus();
     return;
@@ -218,6 +221,7 @@ function connect() {
     targetSelect.disabled = true;
     themeSelect.disabled = true;
     tokenInput.disabled = true;
+    connectionPanel.open = false;
     setStatus(translate("connected"), "connected");
     terminal.clear();
     fitAddon.fit();
@@ -286,6 +290,7 @@ tokenInput.addEventListener("input", () => saveStoredToken(tokenInput.value));
 document.querySelector("#forget-token").addEventListener("click", () => {
   saveStoredToken("");
   tokenInput.value = "";
+  connectionPanel.open = true;
   tokenInput.focus();
 });
 document.querySelector("#toggle-token").addEventListener("click", event => {
