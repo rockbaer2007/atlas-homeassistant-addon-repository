@@ -1072,6 +1072,21 @@ body.is-resizing .splitter {
   justify-content: flex-end;
 }
 
+.file-upload-note {
+  flex: 0 0 auto;
+  margin: -2px 0 8px;
+  padding: 5px 8px;
+  border-left: 2px solid var(--atlas-accent);
+  border-radius: 3px;
+  color: var(--atlas-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.file-upload-note a {
+  color: var(--atlas-link);
+}
+
 .toolbar-separator {
   display: inline-block;
   width: 1px;

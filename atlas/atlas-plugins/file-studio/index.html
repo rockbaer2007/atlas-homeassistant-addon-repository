@@ -109,6 +109,10 @@
               <button id="show-trash" class="icon-button svg-icon-button icon-trash is-empty" type="button" aria-label="Papierkorb leer" title="Papierkorb leer" aria-pressed="false"></button>
             </div>
           </div>
+          <p class="file-upload-note" id="file-upload-note">
+            <span id="file-upload-note-de">Upload-Limit: 64 MiB. Größere Dateien bitte über die <a href="https://github.com/home-assistant/addons/tree/master/samba" target="_blank" rel="noopener noreferrer">Home-Assistant-Samba-App</a> übertragen.</span>
+            <span id="file-upload-note-en" hidden>Upload limit: 64 MiB. Transfer larger files with the <a href="https://github.com/home-assistant/addons/tree/master/samba" target="_blank" rel="noopener noreferrer">Home Assistant Samba add-on</a>.</span>
+          </p>
           <div id="editor-input" class="editor-input" role="textbox" aria-label="Dateieditor"></div>
           <div class="status-row">
             <span id="tree-root-status" class="ok">/config als Standard</span>
@@ -276,6 +280,8 @@
       function applyLanguagePreference(language = currentLanguage) {
         currentLanguage = language === "en" ? "en" : "de";
         document.documentElement.lang = currentLanguage;
+        document.querySelector("#file-upload-note-de").hidden = currentLanguage !== "de";
+        document.querySelector("#file-upload-note-en").hidden = currentLanguage !== "en";
         updateChromeControls();
         updateLocationState();
         bindHubLinks(currentThemePreference);
@@ -2091,7 +2097,18 @@
         });
       }
 
+      function rejectOversizedUploads(files) {
+        const oversizedFiles = files.filter(file => Number(file?.size) > 64 * 1024 * 1024);
+        if (!oversizedFiles.length) return false;
+        const message = currentLanguage === "en"
+          ? "Upload not started: A selected file exceeds the 64 MiB limit. Use the Samba add-on linked above for larger files."
+          : "Upload nicht gestartet: Mindestens eine ausgewählte Datei überschreitet 64 MiB. Bitte für größere Dateien die oben verlinkte Samba-App verwenden.";
+        setStatus(message, "warning");
+        return true;
+      }
+
       async function uploadFileToSelectedFolder(file) {
+        if (rejectOversizedUploads([file])) return;
         const name = await showPromptDialog("Upload", "Dateiname für Upload", file.name);
         if (!name) return;
         const trimmedName = name.trim();
@@ -2168,6 +2185,7 @@
       async function uploadFilesToSelectedFolder(files) {
         const queue = [...files].filter(Boolean);
         if (!queue.length) return;
+        if (rejectOversizedUploads(queue)) return;
         let uploaded = 0;
         for (const file of queue) {
           try {
@@ -2220,6 +2238,10 @@
         document.querySelector("#upload-file-trigger").addEventListener("click", () => document.querySelector("#upload-file").click());
         document.querySelector("#upload-file").addEventListener("change", event => {
           const files = [...(event.target.files ?? [])];
+          if (rejectOversizedUploads(files)) {
+            event.target.value = "";
+            return;
+          }
           if (files.length > 1) {
             void uploadFilesToSelectedFolder(files);
           } else {
@@ -2409,6 +2431,7 @@
       resetImagePreviewSize();
       applyHeightLimitPreference();
       applyWidthLimitPreference();
+      applyLanguagePreference(currentLanguage);
       applyThemePreference();
       applyEditorPreferences();
       loadFavoritePaths();
