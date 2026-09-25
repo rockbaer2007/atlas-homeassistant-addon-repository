@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.230
+
+- Refresh the File Studio tree after upload without automatically opening the uploaded file or archive.
+
 ## 0.1.229
 
 - Save File Studio uploads to the currently selected folder, including after an upload conflict prompt.

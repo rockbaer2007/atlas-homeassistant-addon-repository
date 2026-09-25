@@ -2125,7 +2125,7 @@
         }
         try {
           const created = await uploadFileContent(file, parentPath, trimmedName, false);
-          await openFile(createFileNode(created));
+          await loadDirectoryTree({ preserveSelection: true });
           setStatus(`Upload gespeichert: ${created.path}`, "ok");
         } catch (error) {
           if (error instanceof Error && /already exists/i.test(error.message)) {
@@ -2148,8 +2148,8 @@
         });
         if (choice === "replace") {
           const targetPath = joinDisplayPath(parentPath, name);
-          const uploaded = await uploadFileContent(file, parentPath, name, true);
-          await openFile(createFileNode(uploaded));
+          await uploadFileContent(file, parentPath, name, true);
+          await loadDirectoryTree({ preserveSelection: true });
           setStatus(`Upload ersetzt: ${targetPath}`, "ok");
           return true;
         }
