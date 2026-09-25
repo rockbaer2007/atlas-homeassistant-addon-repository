@@ -826,6 +826,63 @@
         align-content: start;
       }
 
+      .mdi-picker {
+        display: grid;
+        gap: 8px;
+      }
+
+      .mdi-picker-selection {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 32px;
+        color: var(--atlas-muted);
+        font-size: 13px;
+      }
+
+      .mdi-picker-selection svg,
+      .mdi-picker-option svg {
+        width: 24px;
+        height: 24px;
+        flex: 0 0 auto;
+        fill: currentColor;
+      }
+
+      .mdi-picker-results {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 6px;
+        max-height: 210px;
+        overflow: auto;
+        padding: 2px;
+      }
+
+      .mdi-picker-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        padding: 7px 9px;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+        color: var(--atlas-text);
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .mdi-picker-option:hover,
+      .mdi-picker-option[aria-pressed="true"] {
+        border-color: var(--atlas-accent);
+        background: color-mix(in srgb, var(--atlas-accent) 12%, var(--atlas-panel-soft));
+      }
+
+      .mdi-picker-option span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
       .plugin-generator-preview {
         min-height: 340px;
         max-height: 55vh;
@@ -1394,6 +1451,13 @@
             <div class="field-pair">
               <label for="plugin-generator-name" data-i18n="label.generatorPluginName">Name</label>
               <input id="plugin-generator-name" value="ATLAS Example Plugin" maxlength="80">
+            </div>
+            <div class="field-pair mdi-picker">
+              <label for="plugin-generator-icon-search" data-i18n="label.generatorIcon">MDI icon</label>
+              <input id="plugin-generator-icon-search" value="puzzle-outline" autocomplete="off" spellcheck="false" aria-controls="plugin-generator-icon-results" aria-autocomplete="list">
+              <div id="plugin-generator-icon-selection" class="mdi-picker-selection" aria-live="polite"></div>
+              <div id="plugin-generator-icon-results" class="mdi-picker-results" role="listbox" aria-label="Material Design Icons"></div>
+              <span class="field-hint" data-i18n="message.generatorIconHint">Search MDI icons and click a result to select it.</span>
             </div>
             <div class="field-pair">
               <label for="plugin-generator-description" data-i18n="label.generatorDescription">Description</label>

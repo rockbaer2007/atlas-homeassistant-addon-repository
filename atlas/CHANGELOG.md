@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.234
+
+- Add an offline MDI icon search and click-to-select picker to the plugin generator.
+
 ## 0.1.233
 
 - Keep Plugin Hub status badges compact when a plugin has no icon.
