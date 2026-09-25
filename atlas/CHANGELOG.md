@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.218
+
+- Install optional Alpine packages from the add-on `packages` option so commands such as `mc` are available in the local terminal.
+
 ## 0.1.217
 
 - Use the native `ha banner --no-wait` command to show IP addresses, OS/Core versions, and URLs when opening the local terminal.
