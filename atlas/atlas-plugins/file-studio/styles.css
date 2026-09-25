@@ -661,7 +661,18 @@ body.is-resizing .splitter {
 .tree-note {
   margin-top: 12px;
   margin-bottom: 0;
-  font-size: 0.76rem;
+  font-size: calc(0.76rem - 2px);
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.tree-note .access-path[data-path="/config"] { color: #73d7ff; }
+.tree-note .access-path[data-path="/config/www"] { color: #ffd166; }
+.tree-note .access-path[data-path="/config/custom_components"] { color: #f08bd3; }
+.tree-note .access-path[data-path="/addons"] { color: #72e0a1; }
+.tree-note .access-path[data-path="/parent-of-config"] { color: #b7a0ff; }
+.tree-note .access-path:not([data-path="/config"]):not([data-path="/config/www"]):not([data-path="/config/custom_components"]):not([data-path="/addons"]):not([data-path="/parent-of-config"]) {
+  color: #a7e27b;
 }
 
 .tree-status.warning,

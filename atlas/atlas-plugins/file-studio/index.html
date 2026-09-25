@@ -1311,10 +1311,29 @@
         const note = document.querySelector("#addons-access-note");
         const addonsRoot = (catalog.roots ?? []).find(root => root.path === "/addons");
         const enabled = addonsRoot?.enabled === true;
-        const roots = (catalog.roots ?? []).map(root => `${root.path}${root.enabled ? "" : " gesperrt"}`).join(", ");
-        note.textContent = enabled
-          ? `Freigabe aktiv: ${roots}`
-          : `Freigabe aktiv: /config. /addons erst nach Admin-Freigabe`;
+        note.replaceChildren();
+        note.append(document.createTextNode("Freigabe aktiv: "));
+        if (enabled) {
+          (catalog.roots ?? []).forEach((root, index) => {
+            if (index > 0) note.append(document.createTextNode(", "));
+            const path = document.createElement("span");
+            path.className = "access-path";
+            path.dataset.path = root.path;
+            path.textContent = root.path;
+            note.append(path);
+            if (!root.enabled) {
+              const locked = document.createElement("span");
+              locked.textContent = " gesperrt";
+              note.append(locked);
+            }
+          });
+        } else {
+          const path = document.createElement("span");
+          path.className = "access-path";
+          path.dataset.path = "/config";
+          path.textContent = "/config";
+          note.append(path, document.createTextNode(". /addons erst nach Admin-Freigabe"));
+        }
         note.classList.toggle("locked", !enabled);
         note.classList.toggle("ok", enabled);
         document.querySelector("#tree-root-status").textContent = enabled

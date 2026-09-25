@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.222
+
+- Restyle the File Studio access note with regular, smaller text and distinct colors for each path.
+
 ## 0.1.221
 
 - Start local terminal sessions at the filesystem root (`/`) instead of `/app`.
