@@ -44,6 +44,22 @@ const adminConnectionModeHint = document.querySelector("#admin-connection-mode-h
 const editorStartMode = document.querySelector("#editor-start-mode");
 const importPluginPackage = document.querySelector("#import-plugin-package");
 const pluginPackageFile = document.querySelector("#plugin-package-file");
+const openPluginGenerator = document.querySelector("#open-plugin-generator");
+const pluginGeneratorDialog = document.querySelector("#plugin-generator-dialog");
+const closePluginGenerator = document.querySelector("#close-plugin-generator");
+const pluginGeneratorInputs = {
+  id: document.querySelector("#plugin-generator-id"),
+  name: document.querySelector("#plugin-generator-name"),
+  description: document.querySelector("#plugin-generator-description"),
+  version: document.querySelector("#plugin-generator-version"),
+  entry: document.querySelector("#plugin-generator-entry"),
+  capabilities: document.querySelector("#plugin-generator-capabilities"),
+};
+let pluginGeneratorLastAutoSlug = "example";
+const pluginGeneratorPreview = document.querySelector("#plugin-generator-preview");
+const pluginGeneratorStatus = document.querySelector("#plugin-generator-status");
+const downloadPluginGeneratorPackage = document.querySelector("#download-plugin-generator-package");
+const downloadPluginGeneratorCatalog = document.querySelector("#download-plugin-generator-catalog");
 const openPluginRepositoryDialog = document.querySelector("#open-plugin-repository-dialog");
 const pluginRepositoryDialog = document.querySelector("#plugin-repository-dialog");
 const pluginRepositoryUrl = document.querySelector("#plugin-repository-url");
@@ -275,7 +291,22 @@ const translations = {
     "heading.pluginUpdates": "External plugin updates",
     "heading.policy": "Plugin access policy",
     "heading.addPluginRepository": "Add ATLAS repository",
+    "heading.pluginGenerator": "Plugin generator",
     "heading.sidebarPluginDialog": "Plugin sidebar entry",
+    "button.createPlugin": "Create plugin",
+    "button.downloadPluginPackage": "Download plugin package",
+    "button.downloadPluginCatalog": "Download repository catalog",
+    "label.generatorPluginId": "Plugin ID",
+    "label.generatorPluginName": "Name",
+    "label.generatorDescription": "Description",
+    "label.generatorVersion": "Version",
+    "label.generatorEntry": "Entry path",
+    "label.generatorCapabilities": "Capabilities (one per line)",
+    "message.pluginGeneratorHint": "Enter the plugin details. ATLAS generates an install package and repository catalog file for you to review and publish.",
+    "message.generatorCapabilitiesHint": "Only declare capabilities the plugin actually needs.",
+    "message.pluginGeneratorInvalid": "Check the plugin ID, name, version and entry path.",
+    "message.pluginGeneratorReady": "Preview updated. The package includes a small editable HTML/CSS/JavaScript starter.",
+    "message.pluginGeneratorCatalogDownloaded": "Repository catalog downloaded. Review its package paths and add the plugin files before publishing.",
     "label.haUrl": "Home Assistant URL",
     "label.accessToken": "Access token",
     "label.translationProvider": "Translation module",
@@ -483,7 +514,22 @@ const translations = {
     "heading.pluginUpdates": "Externe Plugin-Updates",
     "heading.policy": "Plugin-Zugriffsregel",
     "heading.addPluginRepository": "ATLAS Repository hinzufügen",
+    "heading.pluginGenerator": "Plugin-Generator",
     "heading.sidebarPluginDialog": "Plugin als Seitenleisteneintrag",
+    "button.createPlugin": "Plugin erstellen",
+    "button.downloadPluginPackage": "Plugin-Paket herunterladen",
+    "button.downloadPluginCatalog": "Repository-Katalog herunterladen",
+    "label.generatorPluginId": "Plugin-ID",
+    "label.generatorPluginName": "Name",
+    "label.generatorDescription": "Beschreibung",
+    "label.generatorVersion": "Version",
+    "label.generatorEntry": "Einstiegspfad",
+    "label.generatorCapabilities": "Fähigkeiten (eine pro Zeile)",
+    "message.pluginGeneratorHint": "Gib die Plugin-Daten ein. ATLAS erstellt ein Installationspaket und eine Repository-Katalogdatei, die du prüfen und veröffentlichen kannst.",
+    "message.generatorCapabilitiesHint": "Deklariere nur Fähigkeiten, die das Plugin tatsächlich benötigt.",
+    "message.pluginGeneratorInvalid": "Prüfe Plugin-ID, Name, Version und Einstiegspfad.",
+    "message.pluginGeneratorReady": "Vorschau aktualisiert. Das Paket enthält ein kleines HTML/CSS/JavaScript-Grundgerüst zum Anpassen.",
+    "message.pluginGeneratorCatalogDownloaded": "Repository-Katalog heruntergeladen. Prüfe die Paketpfade und füge vor der Veröffentlichung die Plugin-Dateien hinzu.",
     "label.haUrl": "Home Assistant URL",
     "label.accessToken": "Access Token",
     "label.translationProvider": "Übersetzungsmodul",
@@ -2794,6 +2840,172 @@ function downloadTextFile(filename, content, type) {
   URL.revokeObjectURL(link.href);
 }
 
+function buildPluginGeneratorOutput() {
+  const id = pluginGeneratorInputs.id.value.trim();
+  const name = pluginGeneratorInputs.name.value.trim();
+  const description = pluginGeneratorInputs.description.value.trim();
+  const version = pluginGeneratorInputs.version.value.trim();
+  const entry = pluginGeneratorInputs.entry.value.trim();
+  const capabilities = [...new Set(pluginGeneratorInputs.capabilities.value
+    .split(/[\n,]+/)
+    .map(value => value.trim())
+    .filter(Boolean))];
+
+  if (
+    !/^atlas\.plugin\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(id)
+    || !name
+    || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)
+    || !entry.startsWith("/")
+    || capabilities.some(value => !/^[a-z0-9][a-z0-9._-]*$/.test(value))
+  ) {
+    return undefined;
+  }
+
+  const slug = id.split(".").at(-1).replace(/[^a-z0-9-]/g, "-");
+  const localizedName = { de: name, en: name };
+  const localizedDescription = { de: description, en: description };
+  const manifest = {
+    id,
+    name,
+    nameI18n: localizedName,
+    version,
+    description,
+    descriptionI18n: localizedDescription,
+    status: "active",
+    order: 100,
+    entry,
+    icon: "icon.svg",
+    logo: "logo.svg",
+    preview: "preview.svg",
+    capabilities,
+  };
+  const xmlName = escapePluginXml(name);
+  const htmlName = escapePluginHtml(name);
+  const htmlDescription = escapePluginHtml(description);
+  const pluginFiles = [
+    { path: "atlas-plugin.json", mediaType: "application/json", content: `${JSON.stringify(manifest, null, 2)}\n` },
+    {
+      path: "README.md",
+      mediaType: "text/markdown",
+      content: `# ${name}\n\n${description}\n\n## Development\n\nEdit the manifest and files in this package, then rebuild it with the ATLAS plugin template.\n`,
+    },
+    {
+      path: "index.html",
+      mediaType: "text/html",
+      content: `<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <title>${htmlName}</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n  <main>\n    <img src="icon.svg" alt="" width="56" height="56">\n    <h1>${htmlName}</h1>\n    <p>${htmlDescription}</p>\n    <button id="example-action" type="button">Example action</button>\n    <output id="example-result" aria-live="polite"></output>\n  </main>\n  <script type="module" src="app.js"></script>\n</body>\n</html>\n`,
+    },
+    {
+      path: "styles.css",
+      mediaType: "text/css",
+      content: `:root { color-scheme: light dark; font: 16px/1.5 system-ui, sans-serif; }\nbody { margin: 0; padding: 24px; background: #111827; color: #f8fafc; }\nmain { max-width: 760px; margin: 8vh auto; padding: 28px; border: 1px solid #334155; border-radius: 16px; background: #1e293b; }\nbutton { padding: 10px 16px; border: 0; border-radius: 8px; background: #0e9fbe; color: white; font: inherit; cursor: pointer; }\noutput { display: block; margin-top: 12px; }\n`,
+    },
+    {
+      path: "app.js",
+      mediaType: "text/javascript",
+      content: `const button = document.querySelector("#example-action");\nconst result = document.querySelector("#example-result");\nbutton?.addEventListener("click", () => {\n  result.textContent = "Your plugin is ready to customize.";\n});\n`,
+    },
+    {
+      path: "icon.svg",
+      mediaType: "image/svg+xml",
+      content: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#0e9fbe"/><text x="32" y="41" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="700" fill="white">${xmlName.slice(0, 1)}</text></svg>\n`,
+    },
+    {
+      path: "logo.svg",
+      mediaType: "image/svg+xml",
+      content: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80"><rect width="80" height="80" rx="18" fill="#0e9fbe"/><text x="40" y="53" text-anchor="middle" font-family="sans-serif" font-size="42" font-weight="700" fill="white">${xmlName.slice(0, 1)}</text><text x="100" y="49" font-family="sans-serif" font-size="24" font-weight="700" fill="#f8fafc">${xmlName}</text></svg>\n`,
+    },
+    {
+      path: "preview.svg",
+      mediaType: "image/svg+xml",
+      content: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360"><rect width="640" height="360" rx="24" fill="#111827"/><rect x="28" y="28" width="584" height="304" rx="18" fill="#1e293b" stroke="#334155"/><circle cx="88" cy="88" r="28" fill="#0e9fbe"/><text x="88" y="98" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="700" fill="white">${xmlName.slice(0, 1)}</text><text x="132" y="84" font-family="sans-serif" font-size="24" font-weight="700" fill="#f8fafc">${xmlName}</text><text x="60" y="164" font-family="sans-serif" font-size="16" fill="#cbd5e1">${xmlName}</text><rect x="60" y="202" width="156" height="42" rx="9" fill="#0e9fbe"/><text x="82" y="229" font-family="sans-serif" font-size="15" fill="white">Example action</text></svg>\n`,
+    },
+  ];
+  const filename = `${slug}.atlas-plugin.json`;
+  const plugin = {
+    id,
+    name,
+    nameI18n: localizedName,
+    version,
+    description,
+    descriptionI18n: localizedDescription,
+    icon: "icon.svg",
+    logo: "logo.svg",
+    preview: "preview.svg",
+    dependencies: [],
+    extensionPoints: [],
+    provides: capabilities,
+  };
+  const installPackage = {
+    kind: "atlas.runtime.plugin.install-package",
+    filename,
+    plugin,
+    files: pluginFiles,
+  };
+  const repository = {
+    kind: "atlas.plugin.repository",
+    atlas: { type: "plugin-repository", schemaVersion: 1 },
+    name: `${name} Repository`,
+    version: "1",
+    plugins: [{
+      id,
+      atlas: { type: "plugin", schemaVersion: 1 },
+      name,
+      nameI18n: localizedName,
+      version,
+      description,
+      descriptionI18n: localizedDescription,
+      icon: `./plugins/${slug}/icon.svg`,
+      logo: `./plugins/${slug}/logo.svg`,
+      preview: `./plugins/${slug}/preview.svg`,
+      entry,
+      package: `./plugins/${slug}/${filename}`,
+      manifest: `./plugins/${slug}/atlas-plugin.json`,
+      capabilities,
+      compatibility: { atlas: ">=0.1.0", host: ["administration-local"] },
+    }],
+  };
+
+  return { filename, installPackage, manifest, pluginFiles, repository };
+}
+
+function escapePluginHtml(value) {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+}
+
+function escapePluginXml(value) {
+  return escapePluginHtml(value);
+}
+
+function renderPluginGeneratorPreview() {
+  const output = buildPluginGeneratorOutput();
+  const valid = Boolean(output);
+  downloadPluginGeneratorPackage.disabled = !valid;
+  downloadPluginGeneratorCatalog.disabled = !valid;
+  pluginGeneratorStatus.textContent = t(valid ? "message.pluginGeneratorReady" : "message.pluginGeneratorInvalid");
+  pluginGeneratorPreview.textContent = valid
+    ? JSON.stringify({ manifest: output.manifest, installPackage: output.installPackage, repository: output.repository }, null, 2)
+    : "";
+  return output;
+}
+
+function openPluginGeneratorDialog() {
+  renderPluginGeneratorPreview();
+  pluginGeneratorDialog.showModal();
+}
+
+function downloadGeneratedPluginPackage() {
+  const output = renderPluginGeneratorPreview();
+  if (!output) return;
+  downloadTextFile(output.filename, `${JSON.stringify(output.installPackage, null, 2)}\n`, "application/json");
+}
+
+function downloadGeneratedPluginCatalog() {
+  const output = renderPluginGeneratorPreview();
+  if (!output) return;
+  downloadTextFile("repository.json", `${JSON.stringify(output.repository, null, 2)}\n`, "application/json");
+  pluginGeneratorStatus.textContent = t("message.pluginGeneratorCatalogDownloaded");
+}
+
 function createSecretSummary(secrets) {
   return {
     tokenConfigured: Boolean(secrets.token?.trim()),
@@ -3450,6 +3662,23 @@ exportAdminSettings.addEventListener("click", () => {
 openCardEditor.addEventListener("click", openEditorWithConnectionHandoff);
 openSidebarPluginDialog?.addEventListener("click", openSidebarPluginEntryDialog);
 closeSidebarPluginDialog.addEventListener("click", closeSidebarPluginEntryDialog);
+openPluginGenerator.addEventListener("click", openPluginGeneratorDialog);
+closePluginGenerator.addEventListener("click", () => pluginGeneratorDialog.close());
+for (const input of Object.values(pluginGeneratorInputs)) {
+  input.addEventListener("input", () => {
+    if (input === pluginGeneratorInputs.id) {
+      const previousAutoPath = `/plugin-assets/${pluginGeneratorLastAutoSlug}/index.html`;
+      if (pluginGeneratorInputs.entry.value === previousAutoPath) {
+        const slug = input.value.trim().split(".").at(-1).replace(/[^a-z0-9-]/g, "-") || "example";
+        pluginGeneratorInputs.entry.value = `/plugin-assets/${slug}/index.html`;
+        pluginGeneratorLastAutoSlug = slug;
+      }
+    }
+    renderPluginGeneratorPreview();
+  });
+}
+downloadPluginGeneratorPackage.addEventListener("click", downloadGeneratedPluginPackage);
+downloadPluginGeneratorCatalog.addEventListener("click", downloadGeneratedPluginCatalog);
 importPluginPackage.addEventListener("click", () => pluginPackageFile.click());
 pluginPackageFile.addEventListener("change", importSelectedPluginPackage);
 openPluginRepositoryDialog.addEventListener("click", openPluginRepositoryAddDialog);

@@ -213,7 +213,8 @@
       }
 
       input,
-      select {
+      select,
+      textarea {
         width: 100%;
         min-height: 36px;
         box-sizing: border-box;
@@ -240,6 +241,7 @@
 
       input:focus,
       select:focus,
+      textarea:focus,
       button:focus-visible {
         outline: 2px solid var(--atlas-accent);
         outline-offset: 1px;
@@ -808,6 +810,36 @@
         gap: 10px;
       }
 
+      .plugin-generator-dialog {
+        width: min(980px, calc(100vw - 32px));
+      }
+
+      .plugin-generator-layout {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+        gap: 14px;
+      }
+
+      .plugin-generator-fields {
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+
+      .plugin-generator-preview {
+        min-height: 340px;
+        max-height: 55vh;
+        overflow: auto;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+        padding: 12px;
+        color: var(--atlas-text);
+        font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
       .repository-preview-list {
         display: grid;
         gap: 8px;
@@ -999,6 +1031,14 @@
 
         .repository-dialog-grid {
           grid-template-columns: 1fr;
+        }
+
+        .plugin-generator-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .plugin-generator-preview {
+          min-height: 220px;
         }
 
         .runtime-actions {
@@ -1234,6 +1274,7 @@
             <output id="plugin-summary" aria-live="polite"></output>
           </div>
           <div class="plugin-tools">
+            <button id="open-plugin-generator" type="button" data-i18n="button.createPlugin">Create plugin</button>
             <button id="import-plugin-package" type="button" data-i18n="button.importPackage">Import package</button>
             <input id="plugin-package-file" class="visually-hidden" type="file" accept=".json,.atlas-plugin.json,application/json">
             <button id="open-plugin-repository-dialog" class="atlas-repository-button" type="button">
@@ -1333,6 +1374,54 @@
           <button id="preview-plugin-repository" type="button" data-i18n="button.previewRepository">Preview repository</button>
           <button id="add-plugin-repository" class="accent" type="button" data-i18n="button.addRepository">Add</button>
           <button id="close-plugin-repository-dialog" class="secondary" type="button" data-i18n="button.cancel">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="plugin-generator-dialog" class="plugin-generator-dialog" aria-labelledby="plugin-generator-heading">
+      <form class="dialog-panel" method="dialog">
+        <div class="panel-header">
+          <div>
+            <h2 id="plugin-generator-heading" data-i18n="heading.pluginGenerator">Plugin generator</h2>
+            <p data-i18n="message.pluginGeneratorHint">Enter the plugin details. ATLAS generates an install package and repository catalog file for you to review and publish.</p>
+          </div>
+        </div>
+        <div class="plugin-generator-layout">
+          <div class="plugin-generator-fields">
+            <div class="field-pair">
+              <label for="plugin-generator-id" data-i18n="label.generatorPluginId">Plugin ID</label>
+              <input id="plugin-generator-id" value="atlas.plugin.example" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="field-pair">
+              <label for="plugin-generator-name" data-i18n="label.generatorPluginName">Name</label>
+              <input id="plugin-generator-name" value="ATLAS Example Plugin" maxlength="80">
+            </div>
+            <div class="field-pair">
+              <label for="plugin-generator-description" data-i18n="label.generatorDescription">Description</label>
+              <textarea id="plugin-generator-description" rows="3" maxlength="240">A starter plugin created with ATLAS Administration.</textarea>
+            </div>
+            <div class="repository-dialog-grid">
+              <div class="field-pair">
+                <label for="plugin-generator-version" data-i18n="label.generatorVersion">Version</label>
+                <input id="plugin-generator-version" value="0.1.0" inputmode="decimal">
+              </div>
+              <div class="field-pair">
+                <label for="plugin-generator-entry" data-i18n="label.generatorEntry">Entry path</label>
+                <input id="plugin-generator-entry" value="/plugin-assets/example/index.html">
+              </div>
+            </div>
+            <div class="field-pair">
+              <label for="plugin-generator-capabilities" data-i18n="label.generatorCapabilities">Capabilities (one per line)</label>
+              <textarea id="plugin-generator-capabilities" rows="3" placeholder="atlas.plugin.example"></textarea>
+              <span class="field-hint" data-i18n="message.generatorCapabilitiesHint">Only declare capabilities the plugin actually needs.</span>
+            </div>
+            <output id="plugin-generator-status" aria-live="polite"></output>
+          </div>
+          <pre id="plugin-generator-preview" class="plugin-generator-preview" aria-label="Generated package preview"></pre>
+        </div>
+        <div class="dialog-actions">
+          <button id="download-plugin-generator-package" class="accent" type="button" data-i18n="button.downloadPluginPackage">Download plugin package</button>
+          <button id="download-plugin-generator-catalog" type="button" data-i18n="button.downloadPluginCatalog">Download repository catalog</button>
+          <button id="close-plugin-generator" class="secondary" type="button" data-i18n="button.cancel">Cancel</button>
         </div>
       </form>
     </dialog>

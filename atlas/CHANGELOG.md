@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.231
+
+- Add a bilingual Administration plugin generator that creates a starter install package and repository catalog file.
+
 ## 0.1.230
 
 - Refresh the File Studio tree after upload without automatically opening the uploaded file or archive.
