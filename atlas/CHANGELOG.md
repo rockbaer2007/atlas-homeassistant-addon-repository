@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.220
+
+- Reopen terminal token settings after disconnecting or when a terminal session ends.
+- Bump the standalone ATLAS Terminal plugin to `0.1.7`.
+
 ## 0.1.219
 
 - Collapse the terminal access-token panel by default when the browser already has a saved token.

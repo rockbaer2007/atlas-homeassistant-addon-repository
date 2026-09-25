@@ -245,6 +245,7 @@ function connect() {
     if (event.code === 4401) setStatus(translate("badToken"), "error");
     else if (event.code === 4403) setStatus(translate("denied"), "error");
     else setStatus(translate("disconnected"));
+    connectionPanel.open = true;
     resetControls();
   });
   socket.addEventListener("error", () => setStatus(translate("failed"), "error"));
@@ -259,6 +260,7 @@ function disconnect() {
   socket = undefined;
   accessToken = "";
   tokenInput.disabled = false;
+  connectionPanel.open = true;
   resetControls();
 }
 
