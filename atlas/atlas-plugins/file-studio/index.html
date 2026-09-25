@@ -610,6 +610,7 @@
         if (/outside configured root/i.test(message)) return "Pfad liegt außerhalb der freigegebenen File-Studio-Bereiche.";
         if (/not found/i.test(message)) return "Datei oder Ordner wurde nicht gefunden.";
         if (/already exists/i.test(message)) return "Am Ziel existiert bereits eine Datei oder ein Ordner mit diesem Namen.";
+        if (/file upload exceeds/i.test(message)) return "Die Datei überschreitet das Upload-Limit von 64 MiB.";
         if (/too large/i.test(message)) return "Die Anfrage ist zu groß für File Studio.";
         if (/path separators|relative path/i.test(message)) return "Name ungültig: keine Pfadtrenner und keine relativen Pfade verwenden.";
         return message;
@@ -2080,6 +2081,9 @@
 
       async function snapshotBrowserFile(file) {
         if (!file || typeof file.arrayBuffer !== "function") return file;
+        if (Number(file.size) > 64 * 1024 * 1024) {
+          throw new Error("file upload exceeds the 64 MiB limit");
+        }
         const contents = await file.arrayBuffer();
         return new File([contents], file.name, {
           type: file.type,
@@ -2143,28 +2147,22 @@
       }
 
       async function uploadFileContent(file, parentPath, name, overwrite) {
-        const contentBase64 = await readFileAsBase64(file);
-        return await apiJson("api/file-studio/upload", {
+        const response = await fetch(createAppUrl("api/file-studio/upload"), {
           method: "POST",
-          body: JSON.stringify({
-            parentPath,
-            name,
-            overwrite,
-            contentBase64,
-          }),
+          cache: "no-store",
+          headers: {
+            "content-type": "application/octet-stream",
+            "x-atlas-upload-parent": encodeURIComponent(parentPath),
+            "x-atlas-upload-name": encodeURIComponent(name),
+            "x-atlas-upload-overwrite": overwrite ? "true" : "false",
+          },
+          body: file,
         });
-      }
-
-      function readFileAsBase64(file) {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.addEventListener("load", () => {
-            const result = String(reader.result ?? "");
-            resolve(result.includes(",") ? result.split(",").pop() : result);
-          });
-          reader.addEventListener("error", () => reject(reader.error ?? new Error("Datei konnte nicht gelesen werden.")));
-          reader.readAsDataURL(file);
-        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(body.error ?? body.message ?? `HTTP ${response.status}`);
+        }
+        return body;
       }
 
       async function uploadFilesToSelectedFolder(files) {

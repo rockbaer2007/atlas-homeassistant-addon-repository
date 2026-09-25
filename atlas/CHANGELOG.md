@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.227
+
+- Upload File Studio files as binary data up to 64 MiB, avoiding JSON body limits.
+
 ## 0.1.226
 
 - Snapshot selected upload files before opening dialogs so browser permissions remain valid.

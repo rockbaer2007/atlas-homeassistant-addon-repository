@@ -30,6 +30,7 @@ const fileStudioAllowParentOfConfig = process.env.ATLAS_FILE_STUDIO_ALLOW_PARENT
 const fileStudioHistoryRoot = resolve(process.env.ATLAS_FILE_STUDIO_HISTORY_ROOT ?? ".atlas-file-studio-history");
 const fileStudioTrashRoot = resolve(process.env.ATLAS_FILE_STUDIO_TRASH_ROOT ?? ".atlas-file-studio-trash");
 const maxFileStudioArchiveEntryBytes = 64 * 1024 * 1024;
+const maxFileStudioUploadBytes = 64 * 1024 * 1024;
 const maxFileStudioArchiveEntries = 500;
 const maxFileStudioArchiveTotalBytes = 512 * 1024 * 1024;
 const terminalEnabled = process.env.ATLAS_TERMINAL_ENABLED === "1";
@@ -1375,7 +1376,37 @@ async function writeFileStudioCreateFileResponse(request, response, cookieHeader
 }
 
 async function writeFileStudioUploadResponse(request, response, cookieHeader) {
-  const body = await readJsonRequestBody(request);
+  const isBinaryUpload = String(request.headers["content-type"] ?? "").split(";")[0].trim().toLowerCase() === "application/octet-stream";
+  let body;
+  let buffer;
+  if (isBinaryUpload) {
+    try {
+      buffer = await readBinaryRequestBody(request, maxFileStudioUploadBytes);
+    } catch (error) {
+      const tooLarge = error instanceof Error && error.message === "file upload exceeds the 64 MiB limit";
+      writeJson(response, tooLarge ? 413 : 400, {
+        kind: "atlas.file-studio.upload",
+        ok: false,
+        error: tooLarge ? error.message : "file upload could not be read",
+      });
+      return;
+    }
+    try {
+      const encodedParentPath = request.headers["x-atlas-upload-parent"];
+      const encodedName = request.headers["x-atlas-upload-name"];
+      body = {
+        parentPath: encodedParentPath === undefined ? "/config" : decodeURIComponent(String(encodedParentPath)),
+        name: encodedName === undefined ? "" : decodeURIComponent(String(encodedName)),
+        overwrite: String(request.headers["x-atlas-upload-overwrite"] ?? "") === "true",
+      };
+    } catch {
+      writeJson(response, 400, { kind: "atlas.file-studio.upload", ok: false, error: "invalid upload metadata" });
+      return;
+    }
+  } else {
+    body = await readJsonRequestBody(request);
+    buffer = Buffer.from(String(body.contentBase64 ?? ""), "base64");
+  }
   const access = createFileStudioAccessContext(cookieHeader);
   const parentPath = typeof body.parentPath === "string" && body.parentPath.trim() ? body.parentPath : "/config";
   const parentDirectory = resolveFileStudioPath(parentPath, access);
@@ -1410,8 +1441,6 @@ async function writeFileStudioUploadResponse(request, response, cookieHeader) {
     return;
   }
 
-  const contentBase64 = String(body.contentBase64 ?? "");
-  const buffer = Buffer.from(contentBase64, "base64");
   const backup = exists ? createFileStudioBackup(targetPath) : undefined;
   writeFileSync(targetPath, buffer);
   writeJson(response, 200, {
@@ -2445,6 +2474,19 @@ async function readJsonRequestBody(request) {
   }
 
   return JSON.parse(body);
+}
+
+async function readBinaryRequestBody(request, maxBytes) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > maxBytes) {
+      throw new Error("file upload exceeds the 64 MiB limit");
+    }
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks, size);
 }
 
 function createFileStudioPath(parentPath, name, type, access) {
