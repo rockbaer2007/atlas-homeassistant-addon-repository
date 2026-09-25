@@ -5,6 +5,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, normalize, relative, resolve } from "node:path";
 import { inflateRawSync } from "node:zlib";
+import * as tar from "tar";
 import * as pty from "node-pty";
 import { WebSocketServer } from "ws";
 
@@ -29,6 +30,8 @@ const fileStudioAllowParentOfConfig = process.env.ATLAS_FILE_STUDIO_ALLOW_PARENT
 const fileStudioHistoryRoot = resolve(process.env.ATLAS_FILE_STUDIO_HISTORY_ROOT ?? ".atlas-file-studio-history");
 const fileStudioTrashRoot = resolve(process.env.ATLAS_FILE_STUDIO_TRASH_ROOT ?? ".atlas-file-studio-trash");
 const maxFileStudioArchiveEntryBytes = 64 * 1024 * 1024;
+const maxFileStudioArchiveEntries = 500;
+const maxFileStudioArchiveTotalBytes = 512 * 1024 * 1024;
 const terminalEnabled = process.env.ATLAS_TERMINAL_ENABLED === "1";
 const terminalAccessToken = process.env.ATLAS_TERMINAL_TOKEN ?? "";
 const terminalSshHost = process.env.ATLAS_TERMINAL_SSH_HOST ?? "";
@@ -942,7 +945,8 @@ async function writeFileStudioArchiveResponse(response, requestUrl, cookieHeader
     return;
   }
 
-  if (extname(targetPath).toLowerCase() !== ".zip") {
+  const archiveType = getFileStudioArchiveType(targetPath);
+  if (!archiveType) {
     writeJson(response, 415, {
       kind: "atlas.file-studio.archive",
       error: "unsupported archive type",
@@ -952,7 +956,9 @@ async function writeFileStudioArchiveResponse(response, requestUrl, cookieHeader
 
   try {
     const stats = statSync(targetPath);
-    const archive = inspectZipArchive(targetPath);
+    const archive = archiveType === "zip"
+      ? inspectZipArchive(targetPath)
+      : await inspectTarArchive(targetPath);
     writeJson(response, 200, {
       kind: "atlas.file-studio.archive",
       path: createFileStudioDisplayPath(targetPath, access),
@@ -1168,6 +1174,7 @@ function inspectZipArchive(targetPath) {
       size: uncompressedSize,
       compressedSize,
       compressionMethod,
+      safe: !path.endsWith("/") && !validateZipArchiveEntryPath(path),
     });
     offset = nameEnd + extraLength + commentLength;
   }
@@ -1176,6 +1183,129 @@ function inspectZipArchive(targetPath) {
     entries,
     truncated: totalEntries > entries.length,
   };
+}
+
+async function inspectTarArchive(targetPath) {
+  const entries = [];
+  let scanned = 0;
+  await tar.list({
+    file: targetPath,
+    strict: true,
+    maxDecompressionRatio: 1_000,
+    onReadEntry(entry) {
+      scanned += 1;
+      if (entries.length >= maxFileStudioArchiveEntries) return;
+      const normalizedPath = normalizeTarArchivePath(entry.path);
+      const regularFile = isTarRegularFile(entry.type);
+      const directory = entry.type === "Directory";
+      entries.push({
+        path: normalizedPath ?? entry.path,
+        name: basename(normalizedPath ?? entry.path),
+        type: directory ? "directory" : regularFile ? "file" : "other",
+        size: Number.isFinite(entry.size) ? entry.size : 0,
+        safe: Boolean(normalizedPath) && (regularFile || directory),
+      });
+    },
+  });
+  return { entries, truncated: scanned > entries.length };
+}
+
+function getFileStudioArchiveType(filePath) {
+  const filename = basename(filePath).toLowerCase();
+  if (filename.endsWith(".zip")) return "zip";
+  if (filename.endsWith(".tar") || filename.endsWith(".tar.gz") || filename.endsWith(".tgz")) return "tar";
+  return undefined;
+}
+
+function normalizeTarArchivePath(value) {
+  const path = String(value ?? "");
+  if (!path || path.includes("\\") || path.includes("\0") || path.startsWith("/") || /^[a-zA-Z]:/.test(path)) return undefined;
+  const parts = path.split("/").filter(part => part && part !== ".");
+  if (!parts.length || parts.some(part => part === "..")) return undefined;
+  return parts.join("/");
+}
+
+function isTarRegularFile(type) {
+  return ["File", "OldFile", "ContiguousFile"].includes(type);
+}
+
+async function extractTarArchive(sourcePath, targetDirectory, targetScope) {
+  const archive = await inspectTarArchive(sourcePath);
+  if (archive.truncated) throw new Error(`TAR archive has more than ${maxFileStudioArchiveEntries} entries`);
+  const stagingDirectory = mkdtempSync(join(dirname(targetDirectory), ".atlas-tar-extract-"));
+  let acceptedEntries = 0;
+  let skippedEntries = 0;
+  let acceptedBytes = 0;
+  try {
+    await tar.extract({
+      file: sourcePath,
+      cwd: stagingDirectory,
+      strict: true,
+      preservePaths: false,
+      unlink: true,
+      maxDecompressionRatio: 1_000,
+      filter(entryPath, entry) {
+        const normalizedPath = normalizeTarArchivePath(entryPath);
+        const isDirectory = entry.type === "Directory";
+        const isFile = isTarRegularFile(entry.type);
+        const size = Number(entry.size ?? 0);
+        if (!normalizedPath || !(isDirectory || isFile) || (isFile && size > maxFileStudioArchiveEntryBytes)) {
+          skippedEntries += 1;
+          return false;
+        }
+        if (acceptedEntries >= maxFileStudioArchiveEntries || acceptedBytes + size > maxFileStudioArchiveTotalBytes) {
+          skippedEntries += 1;
+          return false;
+        }
+        const outputPath = resolve(stagingDirectory, ...normalizedPath.split("/"));
+        if (!isInsideFileStudioDirectory(stagingDirectory, outputPath) || !isInsideFileStudioRootScope(targetScope, resolve(targetDirectory, ...normalizedPath.split("/")))) {
+          skippedEntries += 1;
+          return false;
+        }
+        acceptedEntries += 1;
+        acceptedBytes += isFile ? size : 0;
+        return true;
+      },
+    });
+    renameSync(stagingDirectory, targetDirectory);
+    return { extracted: acceptedEntries, skipped: skippedEntries };
+  } catch (error) {
+    rmSync(stagingDirectory, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+async function readTarArchiveEntry(sourcePath, requestedEntryPath) {
+  const normalizedRequest = normalizeTarArchivePath(requestedEntryPath);
+  if (!normalizedRequest) throw new Error("TAR entry path is unsafe");
+  const archive = await inspectTarArchive(sourcePath);
+  const matches = archive.entries.filter(entry => entry.path === normalizedRequest && entry.type === "file" && entry.safe);
+  if (matches.length !== 1) throw new Error(matches.length ? "TAR entry path is ambiguous" : "TAR file entry was not found");
+  if (matches[0].size > maxFileStudioArchiveEntryBytes) throw new Error("TAR entry exceeds the 64 MiB extraction limit");
+  const stagingDirectory = mkdtempSync(join(tmpdir(), "atlas-tar-entry-"));
+  try {
+    await tar.extract({
+      file: sourcePath,
+      cwd: stagingDirectory,
+      strict: true,
+      preservePaths: false,
+      unlink: true,
+      maxDecompressionRatio: 1_000,
+      filter(entryPath, entry) {
+        return normalizeTarArchivePath(entryPath) === normalizedRequest
+          && isTarRegularFile(entry.type)
+          && Number(entry.size ?? 0) <= maxFileStudioArchiveEntryBytes;
+      },
+    });
+    const extractedPath = resolve(stagingDirectory, ...normalizedRequest.split("/"));
+    if (!isInsideFileStudioDirectory(stagingDirectory, extractedPath) || !existsSync(extractedPath) || !statSync(extractedPath).isFile()) {
+      throw new Error("TAR entry was not safely extracted");
+    }
+    if (statSync(extractedPath).size > maxFileStudioArchiveEntryBytes) throw new Error("TAR entry exceeds the 64 MiB extraction limit");
+    return readFileSync(extractedPath);
+  } finally {
+    rmSync(stagingDirectory, { recursive: true, force: true });
+  }
 }
 
 function findZipEndOfCentralDirectory(buffer) {
@@ -1492,8 +1622,9 @@ async function writeFileStudioExtractResponse(request, response, cookieHeader) {
     return;
   }
 
-  if (!sourcePath || !existsSync(sourcePath) || !statSync(sourcePath).isFile() || extname(sourcePath).toLowerCase() !== ".zip") {
-    writeJson(response, 404, { kind: "atlas.file-studio.extract", ok: false, error: "zip file not found" });
+  const archiveType = sourcePath ? getFileStudioArchiveType(sourcePath) : undefined;
+  if (!sourcePath || !existsSync(sourcePath) || !statSync(sourcePath).isFile() || !archiveType) {
+    writeJson(response, 404, { kind: "atlas.file-studio.extract", ok: false, error: "supported archive not found" });
     return;
   }
 
@@ -1514,10 +1645,13 @@ async function writeFileStudioExtractResponse(request, response, cookieHeader) {
   }
 
   try {
-    const extracted = extractZipArchive(sourcePath, targetDirectory, targetScope);
+    const extraction = archiveType === "zip"
+      ? { extracted: extractZipArchive(sourcePath, targetDirectory, targetScope), skipped: 0 }
+      : await extractTarArchive(sourcePath, targetDirectory, targetScope);
     writeJson(response, 200, {
       ...createFileStudioOperationResult("extract", targetDirectory, access),
-      extracted,
+      extracted: extraction.extracted,
+      skipped: extraction.skipped,
     });
   } catch (error) {
     writeJson(response, 422, {
@@ -1546,8 +1680,9 @@ async function writeFileStudioExtractEntryResponse(request, response, cookieHead
     writeJson(response, 400, { kind: "atlas.file-studio.extract-entry", ok: false, error: invalidReason ?? invalidEntryPath });
     return;
   }
-  if (!sourcePath || !existsSync(sourcePath) || !statSync(sourcePath).isFile() || extname(sourcePath).toLowerCase() !== ".zip") {
-    writeJson(response, 404, { kind: "atlas.file-studio.extract-entry", ok: false, error: "zip file not found" });
+  const archiveType = sourcePath ? getFileStudioArchiveType(sourcePath) : undefined;
+  if (!sourcePath || !existsSync(sourcePath) || !statSync(sourcePath).isFile() || !archiveType) {
+    writeJson(response, 404, { kind: "atlas.file-studio.extract-entry", ok: false, error: "supported archive not found" });
     return;
   }
   if (!targetParent || !targetScope || !existsSync(targetParent) || !statSync(targetParent).isDirectory()) {
@@ -1566,7 +1701,9 @@ async function writeFileStudioExtractEntryResponse(request, response, cookieHead
   }
 
   try {
-    const content = readZipArchiveEntry(sourcePath, entryPath);
+    const content = archiveType === "zip"
+      ? readZipArchiveEntry(sourcePath, entryPath)
+      : await readTarArchiveEntry(sourcePath, entryPath);
     writeFileSync(targetFilePath, content, { flag: "wx" });
     writeJson(response, 200, createFileStudioOperationResult("extract-entry", targetFilePath, access));
   } catch (error) {
@@ -1710,7 +1847,7 @@ function matchesFileStudioSearchType(type, extension, filter = "all") {
   if (filter === "directory") return type === "directory";
   if (filter === "yaml") return type === "file" && ["yaml", "yml"].includes(extension);
   if (filter === "image") return type === "file" && ["png", "jpg", "jpeg", "svg", "gif", "webp", "bmp", "ico"].includes(extension);
-  if (filter === "archive") return type === "file" && ["zip", "gz", "tar"].includes(extension);
+  if (filter === "archive") return type === "file" && ["zip", "gz", "tar", "tgz"].includes(extension);
   return true;
 }
 

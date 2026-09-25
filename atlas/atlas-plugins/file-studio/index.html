@@ -164,12 +164,12 @@
       <section class="archive-preview-dialog">
         <header class="archive-preview-header">
           <div>
-            <h2 id="archive-preview-title">ZIP-Inhalt</h2>
+            <h2 id="archive-preview-title">Archivinhalt</h2>
             <p id="archive-preview-meta"></p>
           </div>
           <div class="archive-preview-actions">
             <button id="archive-preview-download" class="icon-button asset-icon-button icon-download" type="button" aria-label="Download" title="Download"></button>
-            <button id="archive-preview-close" class="icon-button icon-close" type="button" aria-label="ZIP-Inhalt schließen" title="Schließen"></button>
+            <button id="archive-preview-close" class="icon-button icon-close" type="button" aria-label="Archivinhalt schließen" title="Schließen"></button>
           </div>
         </header>
         <div class="archive-preview-table">
@@ -217,7 +217,7 @@
         dialogResolve: undefined,
       };
       const imagePreviewExtensions = new Set(["png", "jpg", "jpeg", "svg", "gif", "webp", "bmp", "ico"]);
-      const archivePreviewExtensions = new Set(["zip"]);
+      const archivePreviewExtensions = new Set(["zip", "tar", "tgz", "gz"]);
       let currentLanguage = readLanguageFromLocation();
       let currentThemePreference = readThemePreferenceFromLocation() ?? "auto";
 
@@ -313,8 +313,10 @@
         return imagePreviewExtensions.has(String(extension ?? "").trim().toLowerCase());
       }
 
-      function isArchiveExtension(extension) {
-        return archivePreviewExtensions.has(String(extension ?? "").trim().toLowerCase());
+      function isArchiveExtension(extension, filename = "") {
+        const normalized = String(extension ?? "").trim().toLowerCase();
+        if (normalized === "gz") return String(filename).toLowerCase().endsWith(".tar.gz");
+        return archivePreviewExtensions.has(normalized);
       }
 
       function imageMimeType(extension) {
@@ -639,7 +641,7 @@
         document.querySelector("#copy-file").disabled = !hasFile && selectedCount === 0;
         document.querySelector("#move-file").disabled = !hasFile && selectedCount === 0;
         document.querySelector("#delete-file").disabled = !hasFile && selectedCount === 0;
-        document.querySelector("#extract-archive").disabled = !hasFile || !isArchiveExtension(state.selectedFileExtension);
+        document.querySelector("#extract-archive").disabled = !hasFile || !isArchiveExtension(state.selectedFileExtension, state.selectedFileName);
         document.querySelector("#editor-dirty-status").textContent = hasFile
           ? selectedCount > 1 ? `${selectedCount} Einträge markiert` : isPreview ? "Vorschau" : isDirty ? "Geändert, nicht gespeichert" : "Gespeichert"
           : "Keine Datei geladen";
@@ -849,8 +851,8 @@
           row.innerHTML = `<span></span><span></span><span></span>`;
           row.children[0].textContent = entry.path;
           row.children[1].textContent = entry.type === "directory" ? "-" : formatFileSize(entry.size);
-          row.children[2].textContent = entry.type === "directory" ? "Ordner" : "Datei";
-          if (entry.type === "file") {
+          row.children[2].textContent = entry.type === "directory" ? "Ordner" : entry.type === "file" ? "Datei" : "Nicht unterstützt";
+          if (entry.type === "file" && entry.safe !== false) {
             const extractButton = document.createElement("button");
             extractButton.type = "button";
             extractButton.className = "archive-entry-extract";
@@ -1107,13 +1109,13 @@
           return;
           }
 
-          if (isArchiveExtension(node.extension)) {
+          if (isArchiveExtension(node.extension, node.name)) {
             const archiveFile = { ...node, readonly: true };
             state.originalContent = "";
             await showArchivePreview(archiveFile);
             document.querySelector("#editor-title").textContent = archiveFile.name;
             document.querySelector("#editor-kind").textContent = "ZIP";
-            document.querySelector("#editor-validation-status").textContent = "ZIP-Inhalt bereit";
+            document.querySelector("#editor-validation-status").textContent = "Archivinhalt bereit";
           updateCursorStatus();
           updateEditorActions();
           syncFavoriteToggle();
@@ -1847,8 +1849,8 @@
       }
 
       async function extractSelectedArchive() {
-        if (!state.selectedFilePath || !isArchiveExtension(state.selectedFileExtension)) return;
-        const defaultName = (state.selectedFileName ?? "archiv").replace(/\.zip$/i, "");
+        if (!state.selectedFilePath || !isArchiveExtension(state.selectedFileExtension, state.selectedFileName)) return;
+        const defaultName = (state.selectedFileName ?? "archiv").replace(/\.(?:tar\.gz|tgz|tar|zip)$/i, "");
         const name = await showPromptDialog("Archiv entpacken", "Zielordner für Archiv", defaultName);
         if (!name) return;
         const trimmedName = name.trim();
@@ -1867,7 +1869,7 @@
           });
           await loadDirectoryTree({ preserveSelection: false });
           selectFolder(extracted.path);
-          setStatus(`Archiv entpackt: ${extracted.path} (${extracted.extracted} Einträge)`, "ok");
+          setStatus(`Archiv entpackt: ${extracted.path} (${extracted.extracted} Einträge${extracted.skipped ? `, ${extracted.skipped} übersprungen` : ""})`, "ok");
         } catch (error) {
           setStatus(`Entpacken fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
         }
