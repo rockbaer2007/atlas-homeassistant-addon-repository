@@ -58,9 +58,14 @@ const pluginGeneratorInputs = {
 const pluginGeneratorIconSearch = document.querySelector("#plugin-generator-icon-search");
 const pluginGeneratorIconSelection = document.querySelector("#plugin-generator-icon-selection");
 const pluginGeneratorIconResults = document.querySelector("#plugin-generator-icon-results");
+const pluginGeneratorMdiPicker = document.querySelector("#plugin-generator-mdi-picker");
+const pluginGeneratorPngPicker = document.querySelector("#plugin-generator-png-picker");
+const pluginGeneratorIconFile = document.querySelector("#plugin-generator-icon-file");
+const pluginGeneratorPngPreview = document.querySelector("#plugin-generator-png-preview");
 let mdiIconCatalog;
 let mdiIconCatalogPromise;
 let selectedMdiIconName = "puzzle-outline";
+let selectedPluginIconPng;
 let pluginGeneratorLastAutoSlug = "example";
 const pluginGeneratorPreview = document.querySelector("#plugin-generator-preview");
 const pluginGeneratorStatus = document.querySelector("#plugin-generator-status");
@@ -308,8 +313,12 @@ const translations = {
     "label.generatorVersion": "Version",
     "label.generatorEntry": "Entry path",
     "label.generatorCapabilities": "Capabilities (one per line)",
-    "label.generatorIcon": "MDI icon",
+    "label.generatorIconSource": "Icon source",
+    "label.generatorMdi": "MDI icon",
+    "label.generatorPng": "Custom PNG",
     "message.generatorIconHint": "Search MDI icons and click a result to select it.",
+    "message.generatorPngHint": "Choose a PNG image. Color and transparency are preserved (max. 512 KB).",
+    "message.generatorPngInvalid": "Choose a PNG image smaller than 512 KB.",
     "message.generatorIconLoading": "Loading the local MDI icon list…",
     "message.generatorIconNoResults": "No matching icons. Try another search term.",
     "message.generatorIconLoadFailed": "The local MDI icon list could not be loaded.",
@@ -536,8 +545,12 @@ const translations = {
     "label.generatorVersion": "Version",
     "label.generatorEntry": "Einstiegspfad",
     "label.generatorCapabilities": "Fähigkeiten (eine pro Zeile)",
-    "label.generatorIcon": "MDI-Icon",
+    "label.generatorIconSource": "Iconquelle",
+    "label.generatorMdi": "MDI-Icon",
+    "label.generatorPng": "Eigenes PNG",
     "message.generatorIconHint": "Suche nach MDI-Icons und klicke einen Treffer zur Auswahl an.",
+    "message.generatorPngHint": "Wähle ein PNG-Bild. Farbe und Transparenz bleiben erhalten (max. 512 KB).",
+    "message.generatorPngInvalid": "Wähle ein PNG-Bild unter 512 KB aus.",
     "message.generatorIconLoading": "Lokale MDI-Iconliste wird geladen …",
     "message.generatorIconNoResults": "Keine passenden Icons. Versuche einen anderen Suchbegriff.",
     "message.generatorIconLoadFailed": "Die lokale MDI-Iconliste konnte nicht geladen werden.",
@@ -2617,28 +2630,36 @@ function removeBundledImportedPlugins(plugins) {
 
 function persistSharedPluginCatalogCookie() {
   const plugins = importedPluginDescriptors
-    .map(plugin => ({
-      id: plugin.id,
-      name: plugin.name,
-      nameI18n: plugin.nameI18n,
-      version: plugin.version,
-      description: plugin.description,
-      descriptionI18n: plugin.descriptionI18n,
-      status: activePluginIds.has(plugin.id) ? "active" : "available",
-      capabilities: plugin.capabilities ?? plugin.provides ?? [],
-      iconUrl: resolvePluginDisplayAssetUrl(plugin, "icon"),
-      logoUrl: resolvePluginDisplayAssetUrl(plugin, "logo"),
-      previewUrl: resolvePluginDisplayAssetUrl(plugin, "preview"),
-      entry: plugin.source === "repository" ? plugin.entry : "",
-      slug: plugin.slug || plugin.id.split(".").at(-1),
-      source: plugin.source || "package",
-    }));
+    .map(plugin => {
+      const iconUrl = resolvePluginDisplayAssetUrl(plugin, "icon");
+      const logoUrl = resolvePluginDisplayAssetUrl(plugin, "logo");
+      const previewUrl = resolvePluginDisplayAssetUrl(plugin, "preview");
+      return {
+        id: plugin.id,
+        name: plugin.name,
+        nameI18n: plugin.nameI18n,
+        version: plugin.version,
+        description: plugin.description,
+        descriptionI18n: plugin.descriptionI18n,
+        status: activePluginIds.has(plugin.id) ? "active" : "available",
+        capabilities: plugin.capabilities ?? plugin.provides ?? [],
+        iconUrl: iconUrl.startsWith("data:") ? "" : iconUrl,
+        logoUrl: logoUrl.startsWith("data:") ? "" : logoUrl,
+        previewUrl: previewUrl.startsWith("data:") ? "" : previewUrl,
+        entry: plugin.source === "repository" ? plugin.entry : "",
+        slug: plugin.slug || plugin.id.split(".").at(-1),
+        source: plugin.source || "package",
+      };
+    });
 
   const encodedCatalog = encodeURIComponent(JSON.stringify({ plugins }));
   document.cookie = `${sharedPluginCatalogCookieName}=${encodedCatalog}; Max-Age=${longTermCookieMaxAge}; Path=/; SameSite=Lax`;
 }
 
 function resolvePluginDisplayAssetUrl(plugin, kind) {
+  if (plugin.iconDataUrl && ["icon", "logo", "preview"].includes(kind)) {
+    return plugin.iconDataUrl;
+  }
   const directUrl = kind === "logo"
     ? plugin.logoUrl
     : kind === "preview"
@@ -2866,12 +2887,18 @@ function buildPluginGeneratorOutput() {
     .split(/[\n,]+/)
     .map(value => value.trim())
     .filter(Boolean))];
-  const selectedIcon = mdiIconCatalog?.icons.find(icon => icon.name === selectedMdiIconName);
+  const iconSource = document.querySelector('input[name="plugin-generator-icon-source"]:checked')?.value ?? "mdi";
+  const selectedIcon = iconSource === "mdi"
+    ? mdiIconCatalog?.icons.find(icon => icon.name === selectedMdiIconName)
+    : undefined;
+  const selectedPng = iconSource === "png" ? selectedPluginIconPng : undefined;
+  const iconAsset = selectedPng ? "icon.png" : "icon.svg";
 
   if (
     !/^atlas\.plugin\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(id)
     || !name
-    || !selectedIcon
+    || (iconSource === "mdi" && !selectedIcon)
+    || (iconSource === "png" && !selectedPng)
     || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)
     || !entry.startsWith("/")
     || capabilities.some(value => !/^[a-z0-9][a-z0-9._-]*$/.test(value))
@@ -2892,9 +2919,9 @@ function buildPluginGeneratorOutput() {
     status: "active",
     order: 100,
     entry,
-    icon: "icon.svg",
-    logo: "logo.svg",
-    preview: "preview.svg",
+    icon: iconAsset,
+    logo: selectedPng ? iconAsset : "logo.svg",
+    preview: selectedPng ? iconAsset : "preview.svg",
     capabilities,
   };
   const xmlName = escapePluginXml(name);
@@ -2905,12 +2932,12 @@ function buildPluginGeneratorOutput() {
     {
       path: "README.md",
       mediaType: "text/markdown",
-      content: `# ${name}\n\n${description}\n\nThe plugin icon is mdi:${selectedIcon.name}. See THIRD-PARTY-NOTICES.md and LICENSES/mdi-icons.txt for its attribution and license information.\n\n## Development\n\nEdit the manifest and files in this package, then rebuild it with the ATLAS plugin template.\n`,
+      content: `# ${name}\n\n${description}\n\n${selectedPng ? "The plugin uses the provided PNG icon (colors and transparency are preserved)." : `The plugin icon is mdi:${selectedIcon.name}. See THIRD-PARTY-NOTICES.md and LICENSES/mdi-icons.txt for its attribution and license information.`}\n\n## Development\n\nEdit the manifest and files in this package, then rebuild it with the ATLAS plugin template.\n`,
     },
     {
       path: "index.html",
       mediaType: "text/html",
-      content: `<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <title>${htmlName}</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n  <main>\n    <img src="icon.svg" alt="" width="56" height="56">\n    <h1>${htmlName}</h1>\n    <p>${htmlDescription}</p>\n    <button id="example-action" type="button">Example action</button>\n    <output id="example-result" aria-live="polite"></output>\n  </main>\n  <script type="module" src="app.js"></script>\n</body>\n</html>\n`,
+      content: `<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <title>${htmlName}</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n  <main>\n    <img src="${iconAsset}" alt="" width="56" height="56">\n    <h1>${htmlName}</h1>\n    <p>${htmlDescription}</p>\n    <button id="example-action" type="button">Example action</button>\n    <output id="example-result" aria-live="polite"></output>\n  </main>\n  <script type="module" src="app.js"></script>\n</body>\n</html>\n`,
     },
     {
       path: "styles.css",
@@ -2923,10 +2950,16 @@ function buildPluginGeneratorOutput() {
       content: `const button = document.querySelector("#example-action");\nconst result = document.querySelector("#example-result");\nbutton?.addEventListener("click", () => {\n  result.textContent = "Your plugin is ready to customize.";\n});\n`,
     },
     {
-      path: "icon.svg",
-      mediaType: "image/svg+xml",
-      content: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#0e9fbe"/><path d="${selectedIcon.path}" fill="#fff" transform="translate(8 8) scale(2)"/></svg>\n`,
+      path: iconAsset,
+      mediaType: selectedPng ? "image/png" : "image/svg+xml",
+      ...(selectedPng ? {
+        content: selectedPng.split(",", 2)[1],
+        contentEncoding: "base64",
+      } : {
+        content: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#0e9fbe"/><path d="${selectedIcon.path}" fill="#fff" transform="translate(8 8) scale(2)"/></svg>\n`,
+      }),
     },
+    ...(!selectedPng ? [
     {
       path: "LICENSES/mdi-icons.txt",
       mediaType: "text/plain",
@@ -2937,16 +2970,16 @@ function buildPluginGeneratorOutput() {
       mediaType: "text/markdown",
       content: `# Third-party notices\n\nThe plugin icon mdi:${selectedIcon.name} is from [Material Design Icons](https://github.com/Templarian/MaterialDesign) by ${selectedIcon.author}. License and attribution details are included in LICENSES/mdi-icons.txt.\n`,
     },
-    {
+    ] : []),
+    ...(!selectedPng ? [{
       path: "logo.svg",
       mediaType: "image/svg+xml",
       content: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80"><rect width="80" height="80" rx="18" fill="#0e9fbe"/><path d="${selectedIcon.path}" fill="#fff" transform="translate(16 8) scale(2)"/><text x="100" y="49" font-family="sans-serif" font-size="24" font-weight="700" fill="#f8fafc">${xmlName}</text></svg>\n`,
-    },
-    {
+    }, {
       path: "preview.svg",
       mediaType: "image/svg+xml",
       content: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360"><rect width="640" height="360" rx="24" fill="#111827"/><rect x="28" y="28" width="584" height="304" rx="18" fill="#1e293b" stroke="#334155"/><circle cx="88" cy="88" r="28" fill="#0e9fbe"/><path d="${selectedIcon.path}" fill="#fff" transform="translate(64 64) scale(2)"/><text x="132" y="84" font-family="sans-serif" font-size="24" font-weight="700" fill="#f8fafc">${xmlName}</text><text x="60" y="164" font-family="sans-serif" font-size="16" fill="#cbd5e1">${xmlName}</text><rect x="60" y="202" width="156" height="42" rx="9" fill="#0e9fbe"/><text x="82" y="229" font-family="sans-serif" font-size="15" fill="white">Example action</text></svg>\n`,
-    },
+    }] : []),
   ];
   const filename = `${slug}.atlas-plugin.json`;
   const plugin = {
@@ -2956,9 +2989,9 @@ function buildPluginGeneratorOutput() {
     version,
     description,
     descriptionI18n: localizedDescription,
-    icon: "icon.svg",
-    logo: "logo.svg",
-    preview: "preview.svg",
+    icon: iconAsset,
+    logo: selectedPng ? iconAsset : "logo.svg",
+    preview: selectedPng ? iconAsset : "preview.svg",
     dependencies: [],
     extensionPoints: [],
     provides: capabilities,
@@ -2982,9 +3015,9 @@ function buildPluginGeneratorOutput() {
       version,
       description,
       descriptionI18n: localizedDescription,
-      icon: `./plugins/${slug}/icon.svg`,
-      logo: `./plugins/${slug}/logo.svg`,
-      preview: `./plugins/${slug}/preview.svg`,
+      icon: `./plugins/${slug}/${iconAsset}`,
+      logo: `./plugins/${slug}/${selectedPng ? iconAsset : "logo.svg"}`,
+      preview: `./plugins/${slug}/${selectedPng ? iconAsset : "preview.svg"}`,
       entry,
       package: `./plugins/${slug}/${filename}`,
       manifest: `./plugins/${slug}/atlas-plugin.json`,
@@ -3087,6 +3120,7 @@ function createMdiIconElement(path) {
 
 async function openPluginGeneratorDialog() {
   pluginGeneratorDialog.showModal();
+  renderPluginGeneratorIconSource();
   pluginGeneratorIconResults.textContent = t("message.generatorIconLoading");
   try {
     await loadMdiIconCatalog();
@@ -3095,6 +3129,58 @@ async function openPluginGeneratorDialog() {
   } catch {
     pluginGeneratorIconResults.textContent = t("message.generatorIconLoadFailed");
   }
+}
+
+function renderPluginGeneratorIconSource() {
+  const source = document.querySelector('input[name="plugin-generator-icon-source"]:checked')?.value ?? "mdi";
+  pluginGeneratorMdiPicker.hidden = source !== "mdi";
+  pluginGeneratorPngPicker.hidden = source !== "png";
+  if (source === "png") {
+    renderPluginGeneratorPngPreview();
+  }
+  renderPluginGeneratorPreview();
+}
+
+function renderPluginGeneratorPngPreview() {
+  pluginGeneratorPngPreview.replaceChildren();
+  if (!selectedPluginIconPng) return;
+  const image = document.createElement("img");
+  image.src = selectedPluginIconPng;
+  image.alt = "";
+  image.width = 32;
+  image.height = 32;
+  image.style.objectFit = "contain";
+  const label = document.createElement("span");
+  label.textContent = pluginGeneratorIconFile.files?.[0]?.name ?? "icon.png";
+  pluginGeneratorPngPreview.append(image, label);
+}
+
+async function readPluginGeneratorPng() {
+  const file = pluginGeneratorIconFile.files?.[0];
+  selectedPluginIconPng = undefined;
+  if (!file) {
+    renderPluginGeneratorPngPreview();
+    renderPluginGeneratorPreview();
+    return;
+  }
+  const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+  const validPng = signature.length === 8
+    && signature[0] === 0x89 && signature[1] === 0x50 && signature[2] === 0x4e && signature[3] === 0x47
+    && signature[4] === 0x0d && signature[5] === 0x0a && signature[6] === 0x1a && signature[7] === 0x0a;
+  if (!validPng || file.size > 512 * 1024) {
+    renderPluginGeneratorPngPreview();
+    renderPluginGeneratorPreview();
+    pluginGeneratorStatus.textContent = t("message.generatorPngInvalid");
+    return;
+  }
+  selectedPluginIconPng = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(typeof reader.result === "string" ? reader.result : undefined), { once: true });
+    reader.addEventListener("error", reject, { once: true });
+    reader.readAsDataURL(file);
+  });
+  renderPluginGeneratorPngPreview();
+  renderPluginGeneratorPreview();
 }
 
 function downloadGeneratedPluginPackage() {
@@ -3560,11 +3646,19 @@ async function importSelectedPluginPackage() {
       return;
     }
 
+    const iconFile = installPackage.files.find(entry => entry.path === plugin.icon && entry.mediaType === "image/png");
+    const iconDataUrl = iconFile?.contentEncoding === "base64"
+      && typeof iconFile.content === "string"
+      && /^[A-Za-z0-9+/]+={0,2}$/.test(iconFile.content)
+      ? `data:image/png;base64,${iconFile.content}`
+      : undefined;
     importedPluginDescriptors = [...importedPluginDescriptors, {
       ...plugin,
       source: "package",
       capabilities: plugin.provides ?? [],
       slug: plugin.id.split(".").at(-1),
+      files: installPackage.files,
+      iconDataUrl,
     }];
     persistImportedPlugins();
     renderAdministration();
@@ -3775,6 +3869,17 @@ openPluginGenerator.addEventListener("click", openPluginGeneratorDialog);
 closePluginGenerator.addEventListener("click", () => pluginGeneratorDialog.close());
 pluginGeneratorIconSearch.addEventListener("input", renderMdiIconPicker);
 pluginGeneratorIconSearch.addEventListener("focus", renderMdiIconPicker);
+document.querySelectorAll('input[name="plugin-generator-icon-source"]').forEach(input => {
+  input.addEventListener("change", renderPluginGeneratorIconSource);
+});
+pluginGeneratorIconFile.addEventListener("change", () => {
+  void readPluginGeneratorPng().catch(() => {
+    selectedPluginIconPng = undefined;
+    renderPluginGeneratorPngPreview();
+    renderPluginGeneratorPreview();
+    pluginGeneratorStatus.textContent = t("message.generatorPngInvalid");
+  });
+});
 for (const input of Object.values(pluginGeneratorInputs)) {
   input.addEventListener("input", () => {
     if (input === pluginGeneratorInputs.id) {

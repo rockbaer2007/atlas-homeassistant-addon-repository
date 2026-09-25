@@ -3,6 +3,7 @@ export type RuntimePluginInstallPackageFile = Readonly<{
     path: string;
     mediaType: string;
     content: string;
+    contentEncoding?: "base64";
 }>;
 export type RuntimePluginInstallPackage = Readonly<{
     kind: "atlas.runtime.plugin.install-package";

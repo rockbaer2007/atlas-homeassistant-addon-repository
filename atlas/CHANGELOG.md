@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.235
+
+- Allow plugin packages to use custom color PNG icons while retaining MDI icon search.
+
 ## 0.1.234
 
 - Add an offline MDI icon search and click-to-select picker to the plugin generator.

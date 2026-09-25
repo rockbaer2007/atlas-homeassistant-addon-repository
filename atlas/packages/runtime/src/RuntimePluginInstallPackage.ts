@@ -4,6 +4,7 @@ export type RuntimePluginInstallPackageFile = Readonly<{
   path: string;
   mediaType: string;
   content: string;
+  contentEncoding?: "base64";
 }>;
 
 export type RuntimePluginInstallPackage = Readonly<{
@@ -137,8 +138,17 @@ function readInstallPackageFiles(value: unknown): readonly RuntimePluginInstallP
       path: readRequiredString(file.path, "Runtime plugin package file path is required."),
       mediaType: readRequiredString(file.mediaType, "Runtime plugin package file media type is required."),
       content: readRequiredString(file.content, "Runtime plugin package file content is required."),
+      ...(readOptionalContentEncoding(file.contentEncoding) ? { contentEncoding: "base64" as const } : {}),
     };
   });
+}
+
+function readOptionalContentEncoding(value: unknown): "base64" | undefined {
+  if (value === undefined) return undefined;
+  if (value !== "base64") {
+    throw new Error("Runtime plugin package file content encoding is invalid.");
+  }
+  return value;
 }
 
 function readDependencies(value: unknown): RuntimePluginDescriptor["dependencies"] {

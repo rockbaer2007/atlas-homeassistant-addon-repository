@@ -831,6 +831,24 @@
         gap: 8px;
       }
 
+      .plugin-generator-icon-source {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .plugin-generator-icon-source label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .plugin-generator-icon-source input[type="radio"] {
+        width: auto;
+        min-height: auto;
+        margin: 0;
+      }
+
       .mdi-picker-selection {
         display: flex;
         align-items: center;
@@ -1453,11 +1471,22 @@
               <input id="plugin-generator-name" value="ATLAS Example Plugin" maxlength="80">
             </div>
             <div class="field-pair mdi-picker">
-              <label for="plugin-generator-icon-search" data-i18n="label.generatorIcon">MDI icon</label>
-              <input id="plugin-generator-icon-search" value="puzzle-outline" autocomplete="off" spellcheck="false" aria-controls="plugin-generator-icon-results" aria-autocomplete="list">
-              <div id="plugin-generator-icon-selection" class="mdi-picker-selection" aria-live="polite"></div>
-              <div id="plugin-generator-icon-results" class="mdi-picker-results" role="listbox" aria-label="Material Design Icons"></div>
-              <span class="field-hint" data-i18n="message.generatorIconHint">Search MDI icons and click a result to select it.</span>
+              <label data-i18n="label.generatorIconSource">Icon source</label>
+              <div class="plugin-generator-icon-source">
+                <label><input type="radio" name="plugin-generator-icon-source" value="mdi" checked> <span data-i18n="label.generatorMdi">MDI icon</span></label>
+                <label><input type="radio" name="plugin-generator-icon-source" value="png"> <span data-i18n="label.generatorPng">Custom PNG</span></label>
+              </div>
+              <div id="plugin-generator-mdi-picker">
+                <input id="plugin-generator-icon-search" value="puzzle-outline" autocomplete="off" spellcheck="false" aria-controls="plugin-generator-icon-results" aria-autocomplete="list">
+                <div id="plugin-generator-icon-selection" class="mdi-picker-selection" aria-live="polite"></div>
+                <div id="plugin-generator-icon-results" class="mdi-picker-results" role="listbox" aria-label="Material Design Icons"></div>
+                <span class="field-hint" data-i18n="message.generatorIconHint">Search MDI icons and click a result to select it.</span>
+              </div>
+              <div id="plugin-generator-png-picker" hidden>
+                <input id="plugin-generator-icon-file" type="file" accept="image/png,.png">
+                <div id="plugin-generator-png-preview" class="mdi-picker-selection" aria-live="polite"></div>
+                <span class="field-hint" data-i18n="message.generatorPngHint">Choose a PNG image. Color and transparency are preserved (max. 512 KB).</span>
+              </div>
             </div>
             <div class="field-pair">
               <label for="plugin-generator-description" data-i18n="label.generatorDescription">Description</label>

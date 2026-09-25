@@ -114,6 +114,26 @@ describe("RuntimePluginInstallPackage", () => {
     expect(parsed.files).toHaveLength(1);
   });
 
+  it("preserves base64 encoding for binary plugin assets", () => {
+    const parsed = parseRuntimePluginInstallPackage({
+      kind: "atlas.runtime.plugin.install-package",
+      plugin,
+      files: [{
+        path: "icon.png",
+        mediaType: "image/png",
+        content: "iVBORw0KGgo=",
+        contentEncoding: "base64",
+      }],
+    });
+
+    expect(parsed.files).toEqual([{
+      path: "icon.png",
+      mediaType: "image/png",
+      content: "iVBORw0KGgo=",
+      contentEncoding: "base64",
+    }]);
+  });
+
   it("rejects invalid install packages", () => {
     expect(() => parseRuntimePluginInstallPackage("{")).toThrow(
       "Runtime plugin install package JSON is invalid.",
