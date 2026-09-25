@@ -385,6 +385,7 @@ function createPluginCard(plugin) {
   const pluginName = localizedPluginText(plugin, "name", plugin.id);
   let icon;
   if (imageUrl) {
+    titleRow.classList.add("has-plugin-image");
     icon = document.createElement("img");
     icon.className = "plugin-image";
     icon.alt = t("alt.pluginImage", { name: pluginName });

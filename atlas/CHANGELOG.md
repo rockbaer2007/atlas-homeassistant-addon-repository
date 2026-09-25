@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.233
+
+- Keep Plugin Hub status badges compact when a plugin has no icon.
+
 ## 0.1.232
 
 - Show locally imported plugin packages in the Plugin Hub and indicate when no launch page is available.

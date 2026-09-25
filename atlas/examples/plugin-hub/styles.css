@@ -349,9 +349,13 @@ h1 {
 
 .plugin-title-row {
   display: grid;
-  grid-template-columns: 32px 1fr auto;
-  gap: 12px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.plugin-title-row.has-plugin-image {
+  grid-template-columns: 32px minmax(0, 1fr) auto;
 }
 
 .plugin-image {
@@ -380,12 +384,15 @@ h1 {
 }
 
 .plugin-status {
-  padding: 5px 8px;
+  justify-self: end;
+  padding: 3px 7px;
   border-radius: 999px;
   background: #d8f7e9;
   color: #10633f;
   font-size: 0.75rem;
   font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .plugin-status[data-status="active"] {
