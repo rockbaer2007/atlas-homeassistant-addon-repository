@@ -3342,6 +3342,14 @@ function createPluginNavigationUrl(plugin) {
   }
 }
 
+function createPluginPanelIframeUrl(plugin) {
+  if (![FileStudioPluginId, AutomationExporterPluginId, TerminalPluginId].includes(plugin?.id)) {
+    return createPluginNavigationUrl(plugin);
+  }
+  const path = `/launch/${encodeURIComponent(plugin.id)}`;
+  return appendThemeSearch(createPortNavigationUrl(4176, path, createThemeSearch()));
+}
+
 function createPluginSidebarIcon(plugin) {
   if (plugin.id === HomeAssistantCardEditorPluginId) return "mdi:view-dashboard-edit";
   if (plugin.id === FileStudioPluginId) return "mdi:file-document-edit";
@@ -3396,9 +3404,10 @@ function createSidebarPluginEntry(plugin) {
   const action = document.createElement("button");
   const name = localizedPluginText(plugin, "name", plugin.id);
   const url = createPluginNavigationUrl(plugin);
+  const panelIframeUrl = createPluginPanelIframeUrl(plugin);
   const icon = createPluginSidebarIcon(plugin);
   const panelId = createPanelIframeId(plugin, name);
-  const panelIframeYaml = url ? createPanelIframeYaml({ panelId, name, url, icon }) : "";
+  const panelIframeYaml = panelIframeUrl ? createPanelIframeYaml({ panelId, name, url: panelIframeUrl, icon }) : "";
   const status = activePluginIds.has(plugin.id) ? t("text.pluginStatusActive") : translatePluginStatus(plugin.status);
 
   card.className = "sidebar-plugin-card";

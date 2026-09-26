@@ -10,6 +10,7 @@ const atlasThemeStorageKey = "atlas.themePreference";
 const FileStudioPluginId = "atlas.plugin.file-studio";
 const HomeAssistantCardEditorPluginId = "atlas.plugin.homeassistant-card-editor";
 const AutomationExporterPluginId = "atlas.plugin.automation-exporter-editor";
+const TerminalPluginId = "atlas.plugin.terminal";
 const translations = {
   en: {
     "heading.hub": "Plugin Hub",
@@ -568,7 +569,23 @@ function createPluginSidebarUrl(plugin) {
   if (plugin?.id === HomeAssistantCardEditorPluginId) {
     return appendHubStateSearch(createAppUrl("editor"));
   }
+  if ([FileStudioPluginId, AutomationExporterPluginId, TerminalPluginId].includes(plugin?.id)) {
+    return appendHubStateSearch(createPluginLaunchEndpoint(plugin));
+  }
   return createPluginActionUrl(plugin?.entryUrl, createKnownPluginEntryPath(plugin));
+}
+
+function createPluginLaunchEndpoint(plugin) {
+  try {
+    const url = new URL(window.location.href);
+    url.port = "4176";
+    url.pathname = `/launch/${encodeURIComponent(plugin.id)}`;
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return "";
+  }
 }
 
 function createKnownPluginEntryPath(plugin) {

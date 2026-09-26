@@ -120,6 +120,11 @@ const server = createServer((request, response) => {
     return;
   }
 
+  if (routePath.startsWith("/launch/")) {
+    writePluginLaunchResponse(response, requestUrl, routePath);
+    return;
+  }
+
   if (routePath === "/plugin-assets/terminal/config") {
     writeJson(response, 200, {
       enabled: terminalEnabled && isValidTerminalToken(terminalAccessToken),
@@ -557,6 +562,7 @@ function createRoutePath(pathname) {
     "/api/card-translation",
     "/api/homeassistant/lovelace-resources",
     "/api/plugins",
+    "/launch/",
     "/api/file-studio/tree",
     "/api/file-studio/file",
     "/api/file-studio/asset",
@@ -2850,6 +2856,43 @@ function readLaunchablePluginCatalog(requestUrl, cookieHeader = "") {
   return readPluginCatalog(requestUrl, cookieHeader).filter(plugin =>
     plugin.status === "active" && Boolean(plugin.entryUrl),
   );
+}
+
+function writePluginLaunchResponse(response, requestUrl, routePath) {
+  let requestedId;
+  try {
+    requestedId = decodeURIComponent(routePath.slice("/launch/".length)).trim();
+  } catch {
+    response.writeHead(400, { "cache-control": "no-store", "content-type": "text/plain; charset=utf-8" });
+    response.end("Invalid plugin identifier.");
+    return;
+  }
+
+  if (!requestedId || requestedId.includes("/")) {
+    response.writeHead(400, { "cache-control": "no-store", "content-type": "text/plain; charset=utf-8" });
+    response.end("Invalid plugin identifier.");
+    return;
+  }
+
+  const plugin = readLaunchablePluginCatalog(requestUrl)
+    .find(candidate => candidate.id === requestedId || candidate.slug === requestedId);
+  if (!plugin) {
+    response.writeHead(404, { "cache-control": "no-store", "content-type": "text/plain; charset=utf-8" });
+    response.end("Plugin not found or not active.");
+    return;
+  }
+
+  const destination = new URL(plugin.entryUrl);
+  for (const key of ["theme", "language"]) {
+    const value = requestUrl.searchParams.get(key);
+    if (value) destination.searchParams.set(key, value);
+  }
+
+  response.writeHead(302, {
+    "cache-control": "no-store",
+    location: destination.toString(),
+  });
+  response.end();
 }
 
 function readPluginManifest(directoryName, requestUrl) {

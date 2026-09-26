@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.236
+
+- Generate stable Home Assistant sidebar URLs that launch active plugins directly.
+
 ## 0.1.235
 
 - Allow plugin packages to use custom color PNG icons while retaining MDI icon search.
