@@ -2,7 +2,7 @@
 
 ## 0.1.236
 
-- Generate stable Home Assistant sidebar URLs that launch active plugins directly.
+- Generate stable Home Assistant sidebar URLs that launch active plugins directly; recopy the URL from the sidebar dialog for existing entries.
 
 ## 0.1.235
 
