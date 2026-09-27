@@ -3174,6 +3174,14 @@ async function writePluginUninstallResponse(request, response) {
       writeJson(response, 409, { error: "plugin installation could not be verified" });
       return;
     }
+    if (existsSync(persistentPluginRoot)) {
+      const stagingPrefix = `.install-${slug}-`;
+      for (const entry of readdirSync(persistentPluginRoot, { withFileTypes: true })) {
+        if (entry.isDirectory() && entry.name.startsWith(stagingPrefix)) {
+          rmSync(resolve(persistentPluginRoot, entry.name), { recursive: true, force: true });
+        }
+      }
+    }
     if (existsSync(directory)) rmSync(directory, { recursive: true, force: true });
     const removedPluginSlugs = readRemovedPluginSlugs();
     removedPluginSlugs.add(slug);
