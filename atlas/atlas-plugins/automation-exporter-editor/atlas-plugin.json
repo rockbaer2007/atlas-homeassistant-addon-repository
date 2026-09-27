@@ -11,7 +11,7 @@
     "de": "Home-Assistant-Automationen analysieren, ausgewählte Einträge exportieren und über File Studio weiter bearbeiten.",
     "en": "Analyze Home Assistant automations, export selected entries and continue editing them through File Studio."
   },
-  "status": "active",
+  "status": "available",
   "order": 30,
   "entry": "/plugin-assets/automation-exporter-editor/index.html",
   "icon": "icon.svg",

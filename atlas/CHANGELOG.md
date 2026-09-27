@@ -1,8 +1,12 @@
 # Changelog
 
+## 0.1.239
+
+- Add a dedicated Plugin Manager with persistent install, update and uninstall support; ship only the Card Editor as the built-in reference plugin and add ATLAS Terminal branding.
+
 ## 0.1.238
 
-- Discover optional plugins from persistent storage while preserving independent activation state.
+- Discover optional plugins from persistent storage while preserving independent activation state; keep persistent assets within their own plugin directory.
 
 ## 0.1.237
 

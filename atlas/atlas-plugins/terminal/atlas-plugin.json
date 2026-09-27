@@ -11,7 +11,7 @@
     "de": "Authentifiziertes lokales Webterminal mit ANSI-Farben, einstellbarer Schriftgröße, optionalem SSH, Oh-My-Posh-Themes und einem Rückweg zum ATLAS Hub.",
     "en": "Authenticated local terminal with ANSI colors, adjustable font size, optional SSH, Oh My Posh themes and a return link to the ATLAS Hub."
   },
-  "status": "active",
+  "status": "available",
   "order": 30,
   "entry": "/plugin-assets/terminal/index.html",
   "icon": "icon.svg",

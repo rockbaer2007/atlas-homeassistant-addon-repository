@@ -87,8 +87,12 @@ const pluginRepositoryPluginList = document.querySelector("#plugin-repository-pl
 const refreshPluginUpdates = document.querySelector("#refresh-plugin-updates");
 const pluginUpdateSummary = document.querySelector("#plugin-update-summary");
 const pluginUpdateList = document.querySelector("#plugin-update-list");
+const pluginManagerDialog = document.querySelector("#plugin-manager-dialog");
+const openPluginManager = document.querySelector("#open-plugin-manager");
+const closePluginManager = document.querySelector("#close-plugin-manager");
 const adminSaveState = document.querySelector("#admin-save-state");
 const pluginSummary = document.querySelector("#plugin-summary");
+const pluginManagerSummary = document.querySelector("#plugin-manager-summary");
 const pluginList = document.querySelector("#plugin-list");
 const policySummary = document.querySelector("#policy-summary");
 const allowAddonsPath = document.querySelector("#allow-addons-path");
@@ -108,6 +112,7 @@ const parcelProviderList = document.querySelector("#parcel-provider-list");
 const adminStorageKey = "atlas.administration.configuration";
 const adminPluginStorageKey = "atlas.administration.importedPlugins";
 const adminPluginStateStorageKey = "atlas.administration.pluginState";
+const adminPluginStateVersionStorageKey = "atlas.administration.pluginStateVersion";
 const adminPluginRepositoryStorageKey = "atlas.administration.pluginRepository";
 const adminPluginUpdateCheckStorageKey = "atlas.administration.pluginUpdateCheck";
 const atlasThemeStorageKey = "atlas.themePreference";
@@ -118,6 +123,8 @@ const adminSecretsKeyStorageKey = "atlas.administration.secretsCookieKey";
 const legacyAdminTranslationApiKeysCookieName = "atlas_admin_translation_api_keys";
 const legacyAdminTranslationApiKeysKeyStorageKey = "atlas.administration.translationApiKeysCookieKey";
 const adminConnectionApiPath = createAdminApiUrl("api/admin-connection");
+const pluginInstallApiPath = createAdminApiUrl("api/plugins/install");
+const pluginUninstallApiPath = createAdminApiUrl("api/plugins/uninstall");
 const adminDeviceApiPath = createAdminApiUrl("api/admin-device");
 const defaultTranslationApiEndpoint = "https://api.deepl.com/v2/translate";
 const translationProviderValues = ["none", "chatgpt", "gemini", "deepl-free", "deepl-pro", "custom-ai"];
@@ -266,15 +273,13 @@ const localPluginAssetDirectories = {
 };
 const defaultActivePluginIds = [
   HomeAssistantCardEditorPluginId,
-  FileStudioPluginId,
-  AutomationExporterPluginId,
-  TerminalPluginId,
 ];
 
 let currentLanguage = "en";
 let currentThemePreference = "auto";
 let activePluginIds = new Set(defaultActivePluginIds);
 let importedPluginDescriptors = [];
+let serverCatalogPluginIds;
 let pluginRepositories = [];
 let repositoryPluginDescriptors = [];
 let pendingRepositoryPreview;
@@ -299,12 +304,14 @@ const translations = {
     "heading.releaseChecks": "Release checks",
     "heading.releaseTargets": "Distribution targets",
     "heading.plugins": "Installed plugins",
+    "heading.pluginManager": "Plugin Manager",
     "heading.pluginUpdates": "External plugin updates",
     "heading.policy": "Plugin access policy",
     "heading.addPluginRepository": "Add ATLAS repository",
     "heading.pluginGenerator": "Plugin generator",
     "heading.sidebarPluginDialog": "Plugin sidebar entry",
     "button.createPlugin": "Create plugin",
+    "button.openPluginManager": "Open Plugin Manager",
     "button.downloadPluginPackage": "Download plugin package",
     "button.downloadPluginCatalog": "Download repository catalog",
     "label.generatorPluginId": "Plugin ID",
@@ -387,6 +394,8 @@ const translations = {
     "button.bundledRepositoryPackage": "Built in",
     "button.removeRepositoryPackage": "Remove",
     "button.removeImportedPackage": "Remove import",
+    "button.uninstallPlugin": "Uninstall",
+    "message.confirmUninstallPlugin": "Uninstall {name}? You can install it again from its repository.",
     "provider.none": "Default / fallback files",
     "provider.chatgpt": "ChatGPT / OpenAI",
     "provider.gemini": "Gemini",
@@ -409,7 +418,8 @@ const translations = {
     "message.openAiApiKeyLink": "Get OpenAI API key:",
     "message.geminiApiKeyLink": "Get Gemini API key:",
     "message.deeplApiKeyLink": "Get DeepL API key:",
-    "message.pluginsHint": "The Home Assistant Card Editor is the first official reference plugin.",
+    "message.pluginsHint": "The Home Assistant Card Editor is the built-in reference plugin. Manage other plugins independently here.",
+    "message.pluginManagerHint": "Manage installed plugins, repositories and updates in one place.",
     "message.appRuntimeHint": "Read the combined app server status exposed on port 4176.",
     "message.appRuntimeLoading": "Loading app runtime status...",
     "message.appRuntimeSummary": "{name} {version}: {status}, started {startedAt}.",
@@ -531,12 +541,14 @@ const translations = {
     "heading.releaseChecks": "Freigabe-Checks",
     "heading.releaseTargets": "Ausgabeziele",
     "heading.plugins": "Installierte Plugins",
+    "heading.pluginManager": "Plugin-Manager",
     "heading.pluginUpdates": "Externe Plugin-Updates",
     "heading.policy": "Plugin-Zugriffsregel",
     "heading.addPluginRepository": "ATLAS Repository hinzufügen",
     "heading.pluginGenerator": "Plugin-Generator",
     "heading.sidebarPluginDialog": "Plugin als Seitenleisteneintrag",
     "button.createPlugin": "Plugin erstellen",
+    "button.openPluginManager": "Plugin-Manager öffnen",
     "button.downloadPluginPackage": "Plugin-Paket herunterladen",
     "button.downloadPluginCatalog": "Repository-Katalog herunterladen",
     "label.generatorPluginId": "Plugin-ID",
@@ -619,6 +631,8 @@ const translations = {
     "button.bundledRepositoryPackage": "Eingebaut",
     "button.removeRepositoryPackage": "Entfernen",
     "button.removeImportedPackage": "Import entfernen",
+    "button.uninstallPlugin": "Deinstallieren",
+    "message.confirmUninstallPlugin": "{name} deinstallieren? Du kannst das Plugin anschließend erneut aus seinem Repository installieren.",
     "provider.none": "Standard / Fallback-Dateien",
     "provider.chatgpt": "ChatGPT / OpenAI",
     "provider.gemini": "Gemini",
@@ -641,7 +655,8 @@ const translations = {
     "message.openAiApiKeyLink": "OpenAI API-Key erhalten:",
     "message.geminiApiKeyLink": "Gemini API-Key erhalten:",
     "message.deeplApiKeyLink": "DeepL API-Key erhalten:",
-    "message.pluginsHint": "Der Home Assistant Card Editor ist das erste offizielle Referenz-Plugin.",
+    "message.pluginsHint": "Der Home Assistant Card Editor ist das mitgelieferte Referenz-Plugin. Andere Plugins verwaltest du hier unabhängig.",
+    "message.pluginManagerHint": "Verwalte installierte Plugins, Repositories und Updates zentral an einem Ort.",
     "message.appRuntimeHint": "Liest den gemeinsamen App-Server-Status auf Port 4176.",
     "message.appRuntimeLoading": "App-Laufzeitstatus wird geladen...",
     "message.appRuntimeSummary": "{name} {version}: {status}, gestartet {startedAt}.",
@@ -2342,6 +2357,7 @@ async function installRepositoryPluginPackage(plugin) {
     if (descriptor.id !== plugin.id) {
       throw new Error("Repository plugin id does not match descriptor.");
     }
+    await persistPluginPackageOnServer(installPackage);
 
     const installedPlugin = {
       ...descriptor,
@@ -2381,20 +2397,66 @@ async function installRepositoryPluginPackage(plugin) {
   }
 }
 
-function removeRepositoryPluginPackage(plugin) {
+async function removeRepositoryPluginPackage(plugin) {
   if (!isRepositoryInstalledPlugin(plugin.id)) {
     return;
   }
+  if (!window.confirm(t("message.confirmUninstallPlugin", { name: localizedPluginText(plugin, "name", plugin.id) }))) return;
+  try {
+    await uninstallPluginFromServer(plugin.id);
+    importedPluginDescriptors = importedPluginDescriptors.filter(entry =>
+      !(entry.id === plugin.id && entry.source === "repository"),
+    );
+    activePluginIds.delete(plugin.id);
+    persistImportedPlugins();
+    persistPluginState();
+    serverCatalogPluginIds?.delete(plugin.id);
+    renderPluginRepositoryPreview();
+    renderAdministration();
+    adminSaveState.textContent = t("message.pluginRepositoryPluginRemoved", { name: localizedPluginText(plugin, "name", plugin.id) });
+  } catch {
+    adminSaveState.textContent = t("message.pluginRepositoryInstallFailed", { name: localizedPluginText(plugin, "name", plugin.id) });
+  }
+}
 
-  importedPluginDescriptors = importedPluginDescriptors.filter(entry =>
-    !(entry.id === plugin.id && entry.source === "repository"),
-  );
-  activePluginIds.delete(plugin.id);
-  persistImportedPlugins();
-  persistPluginState();
-  renderPluginRepositoryPreview();
-  renderAdministration();
-  adminSaveState.textContent = t("message.pluginRepositoryPluginRemoved", { name: localizedPluginText(plugin, "name", plugin.id) });
+async function persistPluginPackageOnServer(installPackage) {
+  const response = await fetch(pluginInstallApiPath, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ installPackage }),
+  });
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(result.error || "Plugin package could not be installed on the Atlas server.");
+  }
+  const result = await response.json();
+  serverCatalogPluginIds?.add(result.pluginId);
+  return result;
+}
+
+async function uninstallPluginFromServer(pluginId) {
+  const response = await fetch(pluginUninstallApiPath, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ pluginId }),
+  });
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(result.error || "Plugin could not be removed from the Atlas server.");
+  }
+  return response.json();
+}
+
+async function loadServerPluginCatalog() {
+  try {
+    const response = await fetch(createAdminApiUrl("api/plugins"), { cache: "no-store" });
+    if (!response.ok) return;
+    const catalog = await response.json();
+    if (!Array.isArray(catalog.plugins)) return;
+    serverCatalogPluginIds = new Set(catalog.plugins.map(plugin => plugin.id).filter(Boolean));
+  } catch {
+    serverCatalogPluginIds = undefined;
+  }
 }
 
 function renderPluginRepositoryPreview() {
@@ -2587,6 +2649,13 @@ function restorePluginState() {
     for (const pluginId of defaultActivePluginIds) {
       activePluginIds.add(pluginId);
     }
+    if (localStorage.getItem(adminPluginStateVersionStorageKey) !== "2") {
+      for (const pluginId of [FileStudioPluginId, AutomationExporterPluginId, TerminalPluginId]) {
+        activePluginIds.delete(pluginId);
+      }
+      localStorage.setItem(adminPluginStateVersionStorageKey, "2");
+      persistPluginState();
+    }
   } catch {
     activePluginIds = new Set(defaultActivePluginIds);
     localStorage.removeItem(adminPluginStateStorageKey);
@@ -2603,6 +2672,7 @@ function persistPluginState() {
 function currentPluginDescriptors() {
   const pluginsById = new Map();
   for (const plugin of pluginCatalog.list()) {
+    if (serverCatalogPluginIds && !serverCatalogPluginIds.has(plugin.id)) continue;
     pluginsById.set(plugin.id, plugin);
   }
   for (const plugin of importedPluginDescriptors) {
@@ -3630,13 +3700,38 @@ function removeImportedPluginPackage(plugin) {
   if (!isImportedPlugin(plugin.id)) {
     return;
   }
+  void (async () => {
+    try {
+      await uninstallPluginFromServer(plugin.id);
+      importedPluginDescriptors = importedPluginDescriptors.filter(entry => entry.id !== plugin.id);
+      activePluginIds.delete(plugin.id);
+      persistImportedPlugins();
+      persistPluginState();
+      serverCatalogPluginIds?.delete(plugin.id);
+      renderAdministration();
+      adminSaveState.textContent = t("message.pluginPackageRemoved", { name: localizedPluginText(plugin, "name", plugin.id) });
+    } catch {
+      adminSaveState.textContent = t("message.pluginPackageImportFailed");
+    }
+  })();
+}
 
-  importedPluginDescriptors = importedPluginDescriptors.filter(entry => entry.id !== plugin.id);
-  activePluginIds.delete(plugin.id);
-  persistImportedPlugins();
-  persistPluginState();
-  renderAdministration();
-  adminSaveState.textContent = t("message.pluginPackageRemoved", { name: localizedPluginText(plugin, "name", plugin.id) });
+async function uninstallManagedPlugin(plugin) {
+  if (plugin.id === HomeAssistantCardEditorPluginId) return;
+  if (!window.confirm(t("message.confirmUninstallPlugin", { name: localizedPluginText(plugin, "name", plugin.id) }))) return;
+  try {
+    await uninstallPluginFromServer(plugin.id);
+    importedPluginDescriptors = importedPluginDescriptors.filter(entry => entry.id !== plugin.id);
+    activePluginIds.delete(plugin.id);
+    persistImportedPlugins();
+    persistPluginState();
+    serverCatalogPluginIds?.delete(plugin.id);
+    renderPluginRepositoryPreview();
+    renderAdministration();
+    adminSaveState.textContent = t("message.pluginPackageRemoved", { name: localizedPluginText(plugin, "name", plugin.id) });
+  } catch {
+    adminSaveState.textContent = t("message.pluginPackageImportFailed");
+  }
 }
 
 async function importSelectedPluginPackage() {
@@ -3654,6 +3749,8 @@ async function importSelectedPluginPackage() {
       adminSaveState.textContent = t("message.pluginPackageDuplicate", { name: existing.name });
       return;
     }
+
+    await persistPluginPackageOnServer(installPackage);
 
     const iconFile = installPackage.files.find(entry => entry.path === plugin.icon && entry.mediaType === "image/png");
     const iconDataUrl = iconFile?.contentEncoding === "base64"
@@ -3685,6 +3782,7 @@ function renderAdministration() {
     activePluginIds: [...activePluginIds],
   });
   pluginSummary.textContent = t("message.pluginSummary", view.summary);
+  if (pluginManagerSummary) pluginManagerSummary.textContent = pluginSummary.textContent;
   policySummary.textContent = t("message.policySummary", {
     url: homeAssistantUrl.value.trim() || "-",
     websocket: currentWebSocketPath(),
@@ -3739,12 +3837,12 @@ function renderAdministration() {
       actions.append(button);
     }
 
-    if (isImportedPlugin(plugin.id)) {
+    if (plugin.id !== HomeAssistantCardEditorPluginId) {
       const removeButton = document.createElement("button");
       removeButton.type = "button";
       removeButton.className = "secondary";
-      removeButton.textContent = t("button.removeImportedPackage");
-      removeButton.addEventListener("click", () => removeImportedPluginPackage(plugin));
+      removeButton.textContent = t("button.uninstallPlugin");
+      removeButton.addEventListener("click", () => void uninstallManagedPlugin(plugin));
       actions.append(removeButton);
     }
 
@@ -3775,6 +3873,7 @@ async function initializeAdministration() {
   }
   await restoreAdminDeviceBinding();
   await restoreEncryptedAdminSecretsCookie();
+  await loadServerPluginCatalog();
   restoreImportedPlugins();
   restorePluginState();
   persistSharedPluginCatalogCookie();
@@ -3872,6 +3971,8 @@ exportAdminSettings.addEventListener("click", () => {
 });
 
 openCardEditor.addEventListener("click", openEditorWithConnectionHandoff);
+openPluginManager?.addEventListener("click", () => pluginManagerDialog?.showModal());
+closePluginManager?.addEventListener("click", () => pluginManagerDialog?.close());
 openSidebarPluginDialog?.addEventListener("click", openSidebarPluginEntryDialog);
 closeSidebarPluginDialog.addEventListener("click", closeSidebarPluginEntryDialog);
 openPluginGenerator.addEventListener("click", openPluginGeneratorDialog);

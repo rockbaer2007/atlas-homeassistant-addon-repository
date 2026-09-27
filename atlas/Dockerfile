@@ -67,7 +67,7 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/examples ./examples
 COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/atlas-plugins ./atlas-plugins
+COPY --from=builder /app/atlas-plugins/homeassistant-card-editor ./atlas-plugins/homeassistant-card-editor
 COPY --from=builder /app/node_modules ./node_modules
 COPY run.sh /run.sh
 
