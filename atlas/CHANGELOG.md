@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.238
+
+- Discover optional plugins from persistent storage while preserving independent activation state.
+
 ## 0.1.237
 
 - Keep repository-installed plugin packages inactive until runtime execution and trust controls are implemented.

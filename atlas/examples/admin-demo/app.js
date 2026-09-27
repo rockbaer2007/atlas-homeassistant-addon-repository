@@ -454,7 +454,6 @@ const translations = {
     "message.pluginRepositoryPreviewLoaded": "{count} plugins found in {name}.",
     "message.pluginRepositoryPluginInstalled": "{name} installed from repository.",
     "message.pluginRepositoryPluginUpdated": "{name} updated from repository.",
-    "message.pluginRepositoryStoredInactive": "Package stored locally. Repository-provided code is not executed or activated yet.",
     "message.pluginRepositoryPluginRemoved": "{name} removed.",
     "message.pluginRepositoryInstallFailed": "{name} could not be installed from repository.",
     "message.pluginRepositoryUpdateAvailable": "Update available: {installed} -> {available}",
@@ -687,7 +686,6 @@ const translations = {
     "message.pluginRepositoryPreviewLoaded": "{count} Plugins in {name} gefunden.",
     "message.pluginRepositoryPluginInstalled": "{name} aus Repository installiert.",
     "message.pluginRepositoryPluginUpdated": "{name} aus Repository aktualisiert.",
-    "message.pluginRepositoryStoredInactive": "Paket lokal gespeichert. Vom Repository bereitgestellter Code wird noch nicht ausgeführt oder aktiviert.",
     "message.pluginRepositoryPluginRemoved": "{name} entfernt.",
     "message.pluginRepositoryInstallFailed": "{name} konnte nicht aus dem Repository installiert werden.",
     "message.pluginRepositoryUpdateAvailable": "Update verfügbar: {installed} -> {available}",
@@ -2369,15 +2367,15 @@ async function installRepositoryPluginPackage(plugin) {
       ...importedPluginDescriptors.filter(entry => entry.id !== descriptor.id),
       installedPlugin,
     ];
-    activePluginIds.delete(descriptor.id);
+    activePluginIds.add(descriptor.id);
     persistImportedPlugins();
     persistPluginState();
     renderPluginRepositoryPreview();
     renderAdministration();
-    adminSaveState.textContent = `${t(
+    adminSaveState.textContent = t(
       wasInstalled ? "message.pluginRepositoryPluginUpdated" : "message.pluginRepositoryPluginInstalled",
       { name: descriptor.name },
-    )} ${t("message.pluginRepositoryStoredInactive")}`;
+    );
   } catch {
     adminSaveState.textContent = t("message.pluginRepositoryInstallFailed", { name: localizedPluginText(plugin, "name", plugin.id) });
   }
@@ -2589,11 +2587,6 @@ function restorePluginState() {
     for (const pluginId of defaultActivePluginIds) {
       activePluginIds.add(pluginId);
     }
-    for (const plugin of importedPluginDescriptors) {
-      if (plugin.source === "repository") {
-        activePluginIds.delete(plugin.id);
-      }
-    }
   } catch {
     activePluginIds = new Set(defaultActivePluginIds);
     localStorage.removeItem(adminPluginStateStorageKey);
@@ -2648,7 +2641,7 @@ function persistSharedPluginCatalogCookie() {
         version: plugin.version,
         description: plugin.description,
         descriptionI18n: plugin.descriptionI18n,
-        status: plugin.source !== "repository" && activePluginIds.has(plugin.id) ? "active" : "available",
+        status: activePluginIds.has(plugin.id) ? "active" : "available",
         capabilities: plugin.capabilities ?? plugin.provides ?? [],
         iconUrl: iconUrl.startsWith("data:") ? "" : iconUrl,
         logoUrl: logoUrl.startsWith("data:") ? "" : logoUrl,
@@ -3591,14 +3584,6 @@ function receiveEditorReady(event) {
 
 function handlePluginAction(action, plugin) {
   const pluginName = localizedPluginText(plugin, "name", plugin.id);
-  if (plugin.source === "repository" && (action === "activate" || action === "deactivate")) {
-    activePluginIds.delete(plugin.id);
-    persistPluginState();
-    adminSaveState.textContent = t("message.pluginRepositoryStoredInactive");
-    renderAdministration();
-    return;
-  }
-
   if (action === "activate") {
     activePluginIds.add(plugin.id);
     persistPluginState();

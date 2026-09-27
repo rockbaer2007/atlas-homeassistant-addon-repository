@@ -2,6 +2,7 @@
 set -eu
 
 OPTIONS_PATH="/data/options.json"
+export ATLAS_PLUGIN_DATA_ROOT="${ATLAS_PLUGIN_DATA_ROOT:-/data/atlas-plugins}"
 
 if [ -f "$OPTIONS_PATH" ]; then
   node scripts/install-addon-packages.mjs "$OPTIONS_PATH"

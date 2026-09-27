@@ -3,7 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { cpSync, createReadStream, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
-import { basename, dirname, extname, isAbsolute, join, normalize, relative, resolve } from "node:path";
+import { basename, dirname, extname, isAbsolute, join, normalize, relative, resolve, sep } from "node:path";
 import { inflateRawSync } from "node:zlib";
 import * as tar from "tar";
 import * as pty from "node-pty";
@@ -20,7 +20,9 @@ const editorPort = Number(process.env.ATLAS_DEMO_PORT ?? "4174");
 const distributionTarget = process.env.ATLAS_DISTRIBUTION_TARGET ?? "standalone-docker-preview";
 const adminUrl = `http://${healthHost}:${adminPort}/`;
 const editorUrl = `http://${healthHost}:${editorPort}/`;
-const pluginRoot = resolve(root, "atlas-plugins");
+const bundledPluginRoot = resolve(root, "atlas-plugins");
+const persistentPluginRoot = resolve(process.env.ATLAS_PLUGIN_DATA_ROOT ?? join(homedir(), ".atlas", "plugins"));
+const pluginRoots = [...new Set([persistentPluginRoot, bundledPluginRoot])];
 const fileStudioConfigRoot = resolve(process.env.ATLAS_FILE_STUDIO_CONFIG_ROOT ?? "/config");
 const fileStudioAddonsRoot = resolve(process.env.ATLAS_FILE_STUDIO_ADDONS_ROOT ?? "/addons");
 const fileStudioAllowAddons = process.env.ATLAS_FILE_STUDIO_ALLOW_ADDONS === "1";
@@ -2825,12 +2827,16 @@ function sortFileStudioTreeEntries(left, right) {
 }
 
 function readPluginCatalog(requestUrl, cookieHeader = "") {
-  const localPlugins = existsSync(pluginRoot)
-    ? readdirSync(pluginRoot, { withFileTypes: true })
-      .filter(entry => entry.isDirectory())
-      .map(entry => readPluginManifest(entry.name, requestUrl))
-      .filter(Boolean)
-    : [];
+  const pluginDirectoryNames = [...new Set(pluginRoots.flatMap(pluginRoot =>
+    existsSync(pluginRoot)
+      ? readdirSync(pluginRoot, { withFileTypes: true })
+        .filter(entry => entry.isDirectory())
+        .map(entry => entry.name)
+      : [],
+  ))];
+  const localPlugins = pluginDirectoryNames
+    .map(directoryName => readPluginManifest(directoryName, requestUrl))
+    .filter(Boolean);
   const sharedPlugins = readSharedPluginCatalog(cookieHeader, requestUrl);
   const pluginsById = new Map(localPlugins.map(plugin => [plugin.id, plugin]));
 
@@ -2896,8 +2902,12 @@ function writePluginLaunchResponse(response, requestUrl, routePath) {
 }
 
 function readPluginManifest(directoryName, requestUrl) {
-  const manifestPath = resolve(pluginRoot, directoryName, "atlas-plugin.json");
-  if (!manifestPath.startsWith(pluginRoot) || !existsSync(manifestPath)) {
+  const pluginDirectory = resolvePluginDirectory(directoryName);
+  if (!pluginDirectory) {
+    return undefined;
+  }
+  const manifestPath = resolve(pluginDirectory, "atlas-plugin.json");
+  if (!manifestPath.startsWith(pluginDirectory) || !existsSync(manifestPath)) {
     return undefined;
   }
 
@@ -3055,12 +3065,39 @@ function hasLocalPluginIndex(directoryName) {
   if (typeof directoryName !== "string" || !directoryName.trim()) {
     return false;
   }
-  const pluginDirectory = resolve(pluginRoot, directoryName.trim());
+  const pluginDirectory = resolvePluginDirectory(directoryName.trim());
+  if (!pluginDirectory) {
+    return false;
+  }
   const indexPath = resolve(pluginDirectory, "index.html");
-  return pluginDirectory.startsWith(pluginRoot)
-    && indexPath.startsWith(pluginDirectory)
+  return indexPath.startsWith(pluginDirectory)
     && existsSync(indexPath)
     && !statSync(indexPath).isDirectory();
+}
+
+function resolvePluginDirectory(directoryName) {
+  if (
+    typeof directoryName !== "string"
+    || !directoryName.trim()
+    || directoryName.includes("/")
+    || directoryName.includes("\\")
+    || directoryName === "."
+    || directoryName === ".."
+  ) {
+    return "";
+  }
+
+  for (const pluginRoot of pluginRoots) {
+    const pluginDirectory = resolve(pluginRoot, directoryName);
+    if (
+      pluginDirectory.startsWith(`${pluginRoot}${process.platform === "win32" ? "\\" : "/"}`)
+      && existsSync(pluginDirectory)
+      && statSync(pluginDirectory).isDirectory()
+    ) {
+      return pluginDirectory;
+    }
+  }
+  return "";
 }
 
 function createPluginAssetUrl(directoryName, assetPath, requestUrl) {
@@ -3078,7 +3115,11 @@ function servePluginAsset(response, pathname) {
     writeEmptyResponse(response, 404);
     return;
   }
-  const pluginDirectory = resolve(pluginRoot, directoryName);
+  const pluginDirectory = resolvePluginDirectory(directoryName);
+  if (!pluginDirectory) {
+    writeEmptyResponse(response, 404);
+    return;
+  }
   serveStaticFile(response, resolve(pluginDirectory, normalize(assetPath)), pluginDirectory);
 }
 
@@ -3101,7 +3142,7 @@ function serveStaticFile(response, filePath, baseDirectory = root) {
 }
 
 function resolveBrowserModuleFilePath(filePath, baseDirectory) {
-  if (!filePath.startsWith(baseDirectory)) {
+  if (!isPathWithinDirectory(baseDirectory, filePath)) {
     return "";
   }
   if (existsSync(filePath) && !statSync(filePath).isDirectory()) {
@@ -3112,16 +3153,22 @@ function resolveBrowserModuleFilePath(filePath, baseDirectory) {
   }
   const javascriptFilePath = `${filePath}.js`;
   if (
-    javascriptFilePath.startsWith(baseDirectory)
+    isPathWithinDirectory(baseDirectory, javascriptFilePath)
     && existsSync(javascriptFilePath)
     && !statSync(javascriptFilePath).isDirectory()
   ) {
     return javascriptFilePath;
   }
   const indexFilePath = resolve(filePath, "index.js");
-  return indexFilePath.startsWith(baseDirectory)
+  return isPathWithinDirectory(baseDirectory, indexFilePath)
     && existsSync(indexFilePath)
     && !statSync(indexFilePath).isDirectory()
     ? indexFilePath
     : "";
+}
+
+function isPathWithinDirectory(directoryPath, filePath) {
+  const relativePath = relative(directoryPath, filePath);
+  return relativePath === ""
+    || (!isAbsolute(relativePath) && relativePath !== ".." && !relativePath.startsWith(`..${sep}`));
 }
