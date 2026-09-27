@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.241
+
+- Ask whether plugin-specific browser settings should be kept or deleted during uninstall.
+
 ## 0.1.240
 
 - Keep the Plugin Manager launch button compact with a two-line label.

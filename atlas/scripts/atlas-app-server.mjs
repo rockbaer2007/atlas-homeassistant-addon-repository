@@ -133,6 +133,11 @@ const server = createServer((request, response) => {
     return;
   }
 
+  if (routePath === "/api/plugins/settings-bridge") {
+    writePluginSettingsBridgeResponse(request, response);
+    return;
+  }
+
   if (routePath.startsWith("/launch/")) {
     writePluginLaunchResponse(response, requestUrl, routePath);
     return;
@@ -3160,6 +3165,45 @@ async function writePluginUninstallResponse(request, response) {
   } catch (error) {
     writeJson(response, 400, { error: error instanceof Error ? error.message : "plugin removal failed" });
   }
+}
+
+function writePluginSettingsBridgeResponse(request, response) {
+  if (request.method !== "GET") {
+    writeJson(response, 405, { error: "method not allowed" });
+    return;
+  }
+  const allowedPorts = JSON.stringify([adminPort, editorPort, appPort]);
+  const html = `<!doctype html><meta charset="utf-8"><script>
+    const allowedPorts = new Set(${allowedPorts}.map(String));
+    window.addEventListener("message", event => {
+      if (event.source !== parent || typeof event.data?.pluginId !== "string") return;
+      let trusted = false;
+      try {
+        const origin = new URL(event.origin);
+        trusted = origin.hostname.toLowerCase() === location.hostname.toLowerCase()
+          && origin.protocol === location.protocol
+          && (origin.origin === location.origin || allowedPorts.has(origin.port));
+      } catch {}
+      if (!trusted || event.data.type !== "atlas.clear-plugin-settings") return;
+      const match = /^atlas\\.plugin\\.([a-z0-9]+(?:[.-][a-z0-9]+)*)$/.exec(event.data.pluginId);
+      if (!match) return;
+      const slug = match[1].split(".").at(-1).toLowerCase().replace(/[^a-z0-9-]/g, "-");
+      const prefixes = [\`atlas.\${slug}.\`, \`atlas.plugin.\${slug}.\`];
+      try {
+        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+          const key = localStorage.key(index);
+          if (key && prefixes.some(prefix => key.startsWith(prefix))) localStorage.removeItem(key);
+        }
+      } catch {}
+      parent.postMessage({ type: "atlas.plugin-settings-cleared", pluginId: event.data.pluginId }, event.origin);
+    });
+  </script>`;
+  response.writeHead(200, {
+    "content-type": "text/html; charset=utf-8",
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+  });
+  response.end(html);
 }
 
 function readRemovedPluginSlugs() {

@@ -90,6 +90,8 @@ const pluginUpdateList = document.querySelector("#plugin-update-list");
 const pluginManagerDialog = document.querySelector("#plugin-manager-dialog");
 const openPluginManager = document.querySelector("#open-plugin-manager");
 const closePluginManager = document.querySelector("#close-plugin-manager");
+const pluginUninstallDialog = document.querySelector("#plugin-uninstall-dialog");
+const pluginUninstallMessage = document.querySelector("#plugin-uninstall-message");
 const adminSaveState = document.querySelector("#admin-save-state");
 const pluginSummary = document.querySelector("#plugin-summary");
 const pluginManagerSummary = document.querySelector("#plugin-manager-summary");
@@ -305,6 +307,7 @@ const translations = {
     "heading.releaseTargets": "Distribution targets",
     "heading.plugins": "Installed plugins",
     "heading.pluginManager": "Plugin Manager",
+    "heading.uninstallPlugin": "Uninstall plugin",
     "heading.pluginUpdates": "External plugin updates",
     "heading.policy": "Plugin access policy",
     "heading.addPluginRepository": "Add ATLAS repository",
@@ -395,7 +398,11 @@ const translations = {
     "button.removeRepositoryPackage": "Remove",
     "button.removeImportedPackage": "Remove import",
     "button.uninstallPlugin": "Uninstall",
-    "message.confirmUninstallPlugin": "Uninstall {name}? You can install it again from its repository.",
+    "button.keepPluginSettings": "Uninstall and keep settings",
+    "button.deletePluginSettings": "Uninstall and delete settings",
+    "message.pluginSettingsChoice": "Choose whether to keep this plugin's saved settings for a later reinstall or delete them now.",
+    "message.confirmUninstallPlugin": "Uninstall {name}?",
+    "message.pluginSettingsDeletePartial": "The plugin was removed, but some browser settings could not be cleared. Open the plugin on the same site and clear its saved settings there.",
     "provider.none": "Default / fallback files",
     "provider.chatgpt": "ChatGPT / OpenAI",
     "provider.gemini": "Gemini",
@@ -542,6 +549,7 @@ const translations = {
     "heading.releaseTargets": "Ausgabeziele",
     "heading.plugins": "Installierte Plugins",
     "heading.pluginManager": "Plugin-Manager",
+    "heading.uninstallPlugin": "Plugin deinstallieren",
     "heading.pluginUpdates": "Externe Plugin-Updates",
     "heading.policy": "Plugin-Zugriffsregel",
     "heading.addPluginRepository": "ATLAS Repository hinzufügen",
@@ -632,7 +640,11 @@ const translations = {
     "button.removeRepositoryPackage": "Entfernen",
     "button.removeImportedPackage": "Import entfernen",
     "button.uninstallPlugin": "Deinstallieren",
-    "message.confirmUninstallPlugin": "{name} deinstallieren? Du kannst das Plugin anschließend erneut aus seinem Repository installieren.",
+    "button.keepPluginSettings": "Deinstallieren und Einstellungen behalten",
+    "button.deletePluginSettings": "Deinstallieren und Einstellungen löschen",
+    "message.pluginSettingsChoice": "Wähle, ob die gespeicherten Einstellungen für eine spätere Neuinstallation erhalten bleiben oder jetzt gelöscht werden sollen.",
+    "message.confirmUninstallPlugin": "{name} deinstallieren?",
+    "message.pluginSettingsDeletePartial": "Das Plugin wurde entfernt, aber einige Browsereinstellungen konnten nicht gelöscht werden. Öffne das Plugin auf derselben Website und lösche dort die gespeicherten Einstellungen.",
     "provider.none": "Standard / Fallback-Dateien",
     "provider.chatgpt": "ChatGPT / OpenAI",
     "provider.gemini": "Gemini",
@@ -2401,9 +2413,11 @@ async function removeRepositoryPluginPackage(plugin) {
   if (!isRepositoryInstalledPlugin(plugin.id)) {
     return;
   }
-  if (!window.confirm(t("message.confirmUninstallPlugin", { name: localizedPluginText(plugin, "name", plugin.id) }))) return;
+  const settingsChoice = await choosePluginUninstallSettings(plugin);
+  if (!settingsChoice) return;
   try {
     await uninstallPluginFromServer(plugin.id);
+    const settingsDeleted = settingsChoice !== "delete" || await removePluginLocalSettings(plugin.id);
     importedPluginDescriptors = importedPluginDescriptors.filter(entry =>
       !(entry.id === plugin.id && entry.source === "repository"),
     );
@@ -2413,7 +2427,9 @@ async function removeRepositoryPluginPackage(plugin) {
     serverCatalogPluginIds?.delete(plugin.id);
     renderPluginRepositoryPreview();
     renderAdministration();
-    adminSaveState.textContent = t("message.pluginRepositoryPluginRemoved", { name: localizedPluginText(plugin, "name", plugin.id) });
+    adminSaveState.textContent = settingsDeleted
+      ? t("message.pluginRepositoryPluginRemoved", { name: localizedPluginText(plugin, "name", plugin.id) })
+      : t("message.pluginSettingsDeletePartial");
   } catch {
     adminSaveState.textContent = t("message.pluginRepositoryInstallFailed", { name: localizedPluginText(plugin, "name", plugin.id) });
   }
@@ -2445,6 +2461,71 @@ async function uninstallPluginFromServer(pluginId) {
     throw new Error(result.error || "Plugin could not be removed from the Atlas server.");
   }
   return response.json();
+}
+
+function choosePluginUninstallSettings(plugin) {
+  if (!pluginUninstallDialog || !pluginUninstallMessage) {
+    return Promise.resolve(window.confirm(t("message.confirmUninstallPlugin", {
+      name: localizedPluginText(plugin, "name", plugin.id),
+    })) ? "keep" : null);
+  }
+  pluginUninstallMessage.textContent = t("message.confirmUninstallPlugin", {
+    name: localizedPluginText(plugin, "name", plugin.id),
+  });
+  pluginUninstallDialog.returnValue = "";
+  pluginUninstallDialog.showModal();
+  return new Promise(resolve => {
+    pluginUninstallDialog.addEventListener("close", () => {
+      const choice = pluginUninstallDialog.returnValue;
+      resolve(choice === "keep" || choice === "delete" ? choice : null);
+    }, { once: true });
+  });
+}
+
+async function removePluginLocalSettings(pluginId) {
+  const pluginSlug = pluginId.split(".").at(-1)?.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+  if (!pluginSlug) return;
+  const prefixes = [`atlas.${pluginSlug}.`, `atlas.plugin.${pluginSlug}.`];
+  try {
+    for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+      const key = localStorage.key(index);
+      if (key && prefixes.some(prefix => key.startsWith(prefix))) localStorage.removeItem(key);
+    }
+  } catch {
+    // Storage can be unavailable in restricted browser contexts.
+  }
+
+  const bridgeUrl = createAdminApiUrl("api/plugins/settings-bridge");
+  const bridgeOrigin = new URL(bridgeUrl, window.location.href).origin;
+  const frame = document.createElement("iframe");
+  frame.hidden = true;
+  frame.title = "Plugin settings cleanup";
+  const cleaned = new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => finish(new Error("settings cleanup timed out")), 5000);
+    const finish = error => {
+      window.clearTimeout(timeout);
+      window.removeEventListener("message", onMessage);
+      frame.remove();
+      error ? reject(error) : resolve();
+    };
+    const onMessage = event => {
+      if (event.source !== frame.contentWindow || event.origin !== bridgeOrigin) return;
+      if (event.data?.type === "atlas.plugin-settings-cleared" && event.data.pluginId === pluginId) finish();
+    };
+    window.addEventListener("message", onMessage);
+    frame.addEventListener("load", () => {
+      frame.contentWindow?.postMessage({ type: "atlas.clear-plugin-settings", pluginId }, bridgeOrigin);
+    }, { once: true });
+    frame.addEventListener("error", () => finish(new Error("settings cleanup frame could not load")), { once: true });
+    frame.src = bridgeUrl;
+    document.body.append(frame);
+  });
+  try {
+    await cleaned;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function loadServerPluginCatalog() {
@@ -3701,15 +3782,20 @@ function removeImportedPluginPackage(plugin) {
     return;
   }
   void (async () => {
+    const settingsChoice = await choosePluginUninstallSettings(plugin);
+    if (!settingsChoice) return;
     try {
       await uninstallPluginFromServer(plugin.id);
+      const settingsDeleted = settingsChoice !== "delete" || await removePluginLocalSettings(plugin.id);
       importedPluginDescriptors = importedPluginDescriptors.filter(entry => entry.id !== plugin.id);
       activePluginIds.delete(plugin.id);
       persistImportedPlugins();
       persistPluginState();
       serverCatalogPluginIds?.delete(plugin.id);
       renderAdministration();
-      adminSaveState.textContent = t("message.pluginPackageRemoved", { name: localizedPluginText(plugin, "name", plugin.id) });
+      adminSaveState.textContent = settingsDeleted
+        ? t("message.pluginPackageRemoved", { name: localizedPluginText(plugin, "name", plugin.id) })
+        : t("message.pluginSettingsDeletePartial");
     } catch {
       adminSaveState.textContent = t("message.pluginPackageImportFailed");
     }
@@ -3718,9 +3804,11 @@ function removeImportedPluginPackage(plugin) {
 
 async function uninstallManagedPlugin(plugin) {
   if (plugin.id === HomeAssistantCardEditorPluginId) return;
-  if (!window.confirm(t("message.confirmUninstallPlugin", { name: localizedPluginText(plugin, "name", plugin.id) }))) return;
+  const settingsChoice = await choosePluginUninstallSettings(plugin);
+  if (!settingsChoice) return;
   try {
     await uninstallPluginFromServer(plugin.id);
+    const settingsDeleted = settingsChoice !== "delete" || await removePluginLocalSettings(plugin.id);
     importedPluginDescriptors = importedPluginDescriptors.filter(entry => entry.id !== plugin.id);
     activePluginIds.delete(plugin.id);
     persistImportedPlugins();
@@ -3728,7 +3816,9 @@ async function uninstallManagedPlugin(plugin) {
     serverCatalogPluginIds?.delete(plugin.id);
     renderPluginRepositoryPreview();
     renderAdministration();
-    adminSaveState.textContent = t("message.pluginPackageRemoved", { name: localizedPluginText(plugin, "name", plugin.id) });
+    adminSaveState.textContent = settingsDeleted
+      ? t("message.pluginPackageRemoved", { name: localizedPluginText(plugin, "name", plugin.id) })
+      : t("message.pluginSettingsDeletePartial");
   } catch {
     adminSaveState.textContent = t("message.pluginPackageImportFailed");
   }

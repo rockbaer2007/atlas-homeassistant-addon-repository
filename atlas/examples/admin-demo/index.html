@@ -462,6 +462,12 @@
         color: var(--atlas-text);
       }
 
+      button.danger {
+        border-color: #b42332;
+        background: #b42332;
+        color: #ffffff;
+      }
+
       button.accent {
         border-color: var(--atlas-orange);
         background: var(--atlas-orange);
@@ -562,6 +568,10 @@
         width: min(1160px, calc(100vw - 32px));
         max-height: calc(100vh - 32px);
         overflow: auto;
+      }
+
+      .plugin-uninstall-dialog {
+        width: min(640px, calc(100vw - 32px));
       }
 
       .plugin-manager-dialog > .panel {
@@ -1462,6 +1472,18 @@
           </div>
           <div id="plugin-list" class="plugin-list"></div>
       </section>
+    </dialog>
+    <dialog id="plugin-uninstall-dialog" class="plugin-uninstall-dialog" aria-labelledby="plugin-uninstall-heading">
+      <form class="dialog-panel" method="dialog">
+        <h2 id="plugin-uninstall-heading" data-i18n="heading.uninstallPlugin">Uninstall plugin</h2>
+        <p id="plugin-uninstall-message"></p>
+        <p data-i18n="message.pluginSettingsChoice">Choose whether to keep this plugin's saved settings for a later reinstall or delete them now.</p>
+        <div class="dialog-actions">
+          <button class="secondary" type="submit" value="cancel" data-i18n="button.cancel">Cancel</button>
+          <button type="submit" value="keep" data-i18n="button.keepPluginSettings">Uninstall and keep settings</button>
+          <button class="danger" type="submit" value="delete" data-i18n="button.deletePluginSettings">Uninstall and delete settings</button>
+        </div>
+      </form>
     </dialog>
     <dialog id="plugin-repository-dialog" aria-labelledby="plugin-repository-dialog-heading">
       <form class="dialog-panel" method="dialog">
