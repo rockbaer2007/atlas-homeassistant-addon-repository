@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.257
+
+- Highlight the selected Plugin Manager tab with an orange border.
+
 ## 0.1.256
 
 - Open a concise GitHub issue form for debug reports and keep the full reviewed report available through the Copy report button, avoiding oversized issue URLs.
