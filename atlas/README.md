@@ -145,6 +145,6 @@ Plugin screens may still use English when the plugin does not provide French tex
 
 Home Assistant may show two versions during Add-on updates: `old` is the
 installed version, `target` is the new version from this repository. After this
-ATLAS update, `target` should be at least `0.1.260`. If Home Assistant still
+ATLAS update, `target` should be at least `0.1.261`. If Home Assistant still
 shows an older target version, reload the repository information in the Add-on
 Store and then restart the ATLAS Add-on.

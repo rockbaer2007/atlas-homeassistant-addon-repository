@@ -75,8 +75,8 @@ h1 {
 }
 
 .language-toggle {
-  display: inline-grid;
-  grid-template-columns: repeat(2, 42px);
+  display: inline-flex;
+  flex-wrap: nowrap;
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--atlas-border);
@@ -85,6 +85,8 @@ h1 {
 }
 
 .language-toggle button {
+  width: 42px;
+  flex: 0 0 42px;
   min-height: 32px;
   border: 0;
   border-radius: 5px;

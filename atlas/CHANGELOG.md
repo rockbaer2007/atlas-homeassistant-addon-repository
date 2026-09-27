@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.261
+
+- Keep Plugin Hub language buttons in one row and make the Plugin Manager launch button taller in French for its longer label.
+
+## 0.1.260
+
+- Share the saved DE/EN/FR language preference between Administration and Plugin Hub across app ports, while keeping per-URL language overrides.
+
 ## 0.1.259
 
 - Complete French translations for Administration and Plugin Hub, with a note when plugin-provided text has no French version.
