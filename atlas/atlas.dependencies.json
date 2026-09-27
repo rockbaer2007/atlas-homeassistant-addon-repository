@@ -1,0 +1,66 @@
+{
+  "rules": [
+    {
+      "package": "workspace",
+      "allowed": []
+    },
+    {
+      "package": "foundation",
+      "allowed": []
+    },
+    {
+      "package": "kernel",
+      "allowed": [
+        "foundation"
+      ]
+    },
+    {
+      "package": "notifyarchive",
+      "allowed": []
+    },
+    {
+      "package": "runtime",
+      "allowed": [
+        "kernel",
+        "foundation"
+      ]
+    },
+    {
+      "package": "core",
+      "allowed": [
+        "runtime"
+      ]
+    },
+    {
+      "package": "renderer",
+      "allowed": [
+        "core"
+      ]
+    },
+    {
+      "package": "theme",
+      "allowed": [
+        "renderer"
+      ]
+    },
+    {
+      "package": "homeassistant",
+      "allowed": [
+        "runtime",
+        "theme"
+      ]
+    },
+    {
+      "package": "file-studio",
+      "allowed": [
+        "runtime"
+      ]
+    },
+    {
+      "package": "devtools",
+      "allowed": [
+        "foundation"
+      ]
+    }
+  ]
+}

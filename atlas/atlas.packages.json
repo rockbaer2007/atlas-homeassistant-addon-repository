@@ -1,0 +1,48 @@
+{
+  "packages": [
+    {
+      "name": "@atlas/workspace",
+      "layer": 0
+    },
+    {
+      "name": "@atlas/foundation",
+      "layer": 0
+    },
+    {
+      "name": "@atlas/kernel",
+      "layer": 1
+    },
+    {
+      "name": "@atlas/notifyarchive",
+      "layer": 1
+    },
+    {
+      "name": "@atlas/runtime",
+      "layer": 2
+    },
+    {
+      "name": "@atlas/core",
+      "layer": 3
+    },
+    {
+      "name": "@atlas/renderer",
+      "layer": 4
+    },
+    {
+      "name": "@atlas/theme",
+      "layer": 5
+    },
+    {
+      "name": "@atlas/homeassistant",
+      "layer": 6
+    },
+    {
+      "name": "@atlas/file-studio",
+      "layer": 6
+    },
+    {
+      "name": "@atlas/devtools",
+      "layer": 6
+    }
+  ]
+}

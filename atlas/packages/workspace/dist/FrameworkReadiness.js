@@ -85,7 +85,7 @@ export const ATLAS_WORKSPACE_PACKAGE_INVENTORY = [
         layer: 6,
         status: "active",
         publicApi: "closed",
-        allowedDependencies: [],
+        allowedDependencies: ["foundation"],
     },
 ];
 export const ATLAS_WORKSPACE_QUALITY_GATES = ["check", "build", "tests", "documentation", "architectureReview"];

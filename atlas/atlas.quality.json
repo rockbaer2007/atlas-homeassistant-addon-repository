@@ -1,0 +1,10 @@
+{
+  "qualityGates": {
+    "check": true,
+    "build": true,
+    "tests": true,
+    "documentation": true,
+    "architectureReview": true
+  },
+  "minimumCoverage": 60
+}

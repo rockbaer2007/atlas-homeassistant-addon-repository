@@ -166,7 +166,7 @@ export const ATLAS_WORKSPACE_PACKAGE_INVENTORY: readonly AtlasWorkspacePackageDe
       layer: 6,
       status: "active",
       publicApi: "closed",
-      allowedDependencies: [],
+      allowedDependencies: ["foundation"],
     },
   ];
 
