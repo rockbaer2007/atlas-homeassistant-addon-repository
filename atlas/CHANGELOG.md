@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.256
+
+- Open a concise GitHub issue form for debug reports and keep the full reviewed report available through the Copy report button, avoiding oversized issue URLs.
+
 ## 0.1.255
 
 - Redact Home Assistant Ingress session tokens from Card Editor problem reports.

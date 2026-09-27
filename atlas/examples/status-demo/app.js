@@ -530,7 +530,8 @@ const translations = {
     "message.problemReportReady": "Problem report preview created. Review it before sharing.",
     "message.problemReportCopied": "Problem report copied to clipboard.",
     "message.problemReportCopyFailed": "Copy failed: use the preview text instead.",
-    "message.problemIssueOpened": "GitHub issue opened with the reviewed debug report.",
+    "message.problemIssueOpened": "GitHub issue opened. Copy the reviewed report and paste it into the issue body.",
+    "message.problemIssueBody": "Paste the reviewed debug report here. In ATLAS, use “Copy report” and then paste it into this issue.",
     "message.resourcesCopiedWithDependency": "ATLAS and {dependency} Lovelace resources {format} copied to clipboard.",
     "message.atlasResourceCopied": "ATLAS Lovelace resource {format} copied to clipboard.",
     "message.copyDependencyFailed": "Copy failed: use the dependency path instead.",
@@ -1009,7 +1010,8 @@ const translations = {
     "message.problemReportReady": "Problembericht-Vorschau erstellt. Bitte vor dem Teilen prüfen.",
     "message.problemReportCopied": "Problembericht in die Zwischenablage kopiert.",
     "message.problemReportCopyFailed": "Kopieren fehlgeschlagen: Nutze stattdessen den Vorschautext.",
-    "message.problemIssueOpened": "GitHub-Issue mit geprüftem Debug-Bericht geöffnet.",
+    "message.problemIssueOpened": "GitHub-Issue geöffnet. Kopiere den geprüften Bericht und füge ihn in den Text der Meldung ein.",
+    "message.problemIssueBody": "Füge hier den geprüften Debug-Bericht ein. Nutze in ATLAS „Bericht kopieren“ und füge ihn anschließend in diese Meldung ein.",
     "message.resourcesCopiedWithDependency": "ATLAS- und {dependency}-Lovelace-Ressourcen {format} in die Zwischenablage kopiert.",
     "message.atlasResourceCopied": "ATLAS-Lovelace-Ressource {format} in die Zwischenablage kopiert.",
     "message.copyDependencyFailed": "Kopieren fehlgeschlagen: Nutze stattdessen den Abhängigkeitspfad.",
@@ -7814,10 +7816,9 @@ async function copyProblemReportPreview() {
 }
 
 function openProblemReportIssue() {
-  const body = problemReportPreview.value || createProblemReportPreviewText();
   window.open(createHomeAssistantCardEditorProblemReportIssueUrl({
     baseUrl: problemReportIssueUrl,
-    body,
+    body: t("message.problemIssueBody"),
   }), "_blank", "noopener,noreferrer");
   problemReportStatus.textContent = t("message.problemIssueOpened");
 }
