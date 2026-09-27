@@ -3416,12 +3416,25 @@ function servePluginAsset(response, pathname) {
     writeEmptyResponse(response, 404);
     return;
   }
-  const pluginDirectory = resolvePluginDirectory(directoryName);
-  if (!pluginDirectory) {
-    writeEmptyResponse(response, 404);
-    return;
+  for (const pluginRoot of pluginRoots) {
+    const pluginDirectory = resolve(pluginRoot, directoryName);
+    if (
+      !isPathWithinDirectory(pluginRoot, pluginDirectory)
+      || !existsSync(pluginDirectory)
+      || !statSync(pluginDirectory).isDirectory()
+    ) {
+      continue;
+    }
+    const assetFile = resolveBrowserModuleFilePath(
+      resolve(pluginDirectory, normalize(assetPath)),
+      pluginDirectory,
+    );
+    if (assetFile) {
+      serveStaticFile(response, assetFile, pluginDirectory);
+      return;
+    }
   }
-  serveStaticFile(response, resolve(pluginDirectory, normalize(assetPath)), pluginDirectory);
+  writeEmptyResponse(response, 404);
 }
 
 function serveStaticPath(response, pathname, baseDirectory = root) {

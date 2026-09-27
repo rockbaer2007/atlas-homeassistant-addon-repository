@@ -36,6 +36,35 @@ const elements = {
 let currentLanguage = readLanguageFromLocation();
 let currentThemePreference = readThemePreferenceFromLocation() ?? "auto";
 
+const translations = {
+  de: {
+    eyebrow: "ATLAS Plugin", title: "Automation Exporter / Editor", themeLabel: "Darstellung", themeAuto: "Auto", themeLight: "Hell", themeDark: "Dunkel", languageLabel: "Sprache", pluginHub: "Plugin Hub", sourcesAndExport: "Quellen und Export", status: "Status", automations: "Automationen", entities: "Entitäten", services: "Services", conflicts: "Konflikte", warnings: "Hinweise", source: "Quelle", loadSystem: "System automations.yaml", uploadYaml: "YAML hochladen", export: "Export", exportFolder: "Export-Ordner", exportHint: "Ausgewählte Automationen werden als einzelne YAML-Dateien gespeichert. Existierende Dateien werden nicht überschrieben.", tools: "Werkzeuge", searchPlaceholder: "Alias, ID, Entität oder Service suchen", groupBy: "Gruppieren nach", groupNone: "Keine Gruppierung", domain: "Domain", area: "Bereich", device: "Gerät", filterGroup: "Gruppe filtern", allGroups: "Alle Gruppen", warningsOnly: "Nur Hinweise anzeigen", selectAll: "Alle markieren", selectNone: "Auswahl leeren", exportSelected: "Auswahl exportieren", previewConflicts: "Konflikte prüfen", emptyAutomationList: "Lade eine Systemdatei oder eine fremde YAML hoch.", details: "Details", chooseAutomation: "Wähle eine Automation aus.", exportedAutomations: "Exportierte Automationen", clearList: "Liste leeren", noExports: "Noch keine Exporte in dieser Sitzung.", ready: "Bereit. Lade die echte /config/automations.yaml oder lade eine fremde YAML hoch.", loadingSystem: "Lese /config/automations.yaml ...", systemUnreadable: "/config/automations.yaml ist nicht lesbar. Bitte /config freigeben oder YAML hochladen.", systemEmpty: "/config/automations.yaml ist leer.", systemLoaded: "{path}: {count} Automationen erkannt. Backup: {backup}", systemLoadError: "/config/automations.yaml konnte nicht gesichert oder geladen werden. Bitte File-Studio-Zugriff prüfen oder YAML hochladen.", sourceLoaded: "{source}: {count} Automationen erkannt{warning}.", noAutomationMatch: "Keine passende Automation gefunden.", selectAutomation: "{alias} auswählen", automationSelected: "{count} ausgewählt", automationCount: "{count} Automation(en)", trigger: "Trigger", condition: "Bedingungen", action: "Aktionen", domainPrefix: "Domain", areaPrefix: "Bereich", devicePrefix: "Gerät", conflictPrefix: "Konflikt", warningPrefix: "Hinweis", selectForExport: "Keine Automation für den Export ausgewählt.", exporting: "Exportiere {count} Automation(en) nach {folder} ...", exported: "{count} Automation(en) in {folder} gespeichert: Exportversion mit ID, bereinigte Importversion ohne ID.", exportFailed: "Export fehlgeschlagen: {error} Browser-Download wird als Rückfall genutzt.", saved: "gespeichert", openExport: "Export öffnen", openImport: "Import-Version öffnen", copyExport: "Export-YAML kopieren", copyImport: "Import-YAML kopieren", copied: "{filename}: YAML kopiert.", copiedImport: "{filename}: bereinigte Import-YAML kopiert.", conflictSelect: "Keine Automation für die Konfliktprüfung ausgewählt.", conflictNone: "Konfliktprüfung: {count} Automation(en), keine doppelten IDs oder Aliase in der Auswahl.", conflictFound: "Konfliktprüfung: {count} mögliche Konflikte. {summary}", withoutDomain: "Ohne Domain", withoutArea: "Ohne Bereich", withoutDevice: "Ohne Gerät", withoutGroup: "Ohne Gruppe", domains: "Domains", areas: "Bereiche", devices: "Geräte", groups: "Gruppen", selectedDetails: "{triggers} Trigger, {conditions} Bedingungen, {actions} Aktionen, {entities} Entitäten, {services} Services", exportSaved: "Export und bereinigte Import-Version gespeichert", download: "Download", browserDownload: "Browser-Download", errorOutsideRoot: "Pfad liegt außerhalb der freigegebenen Bereiche.", errorMissing: "Zielordner wurde nicht gefunden oder konnte nicht erstellt.", errorExists: "Eine Zieldatei existiert bereits.", errorInvalid: "Exportordner oder Dateiname ist ungültig.",
+  },
+  en: {
+    eyebrow: "ATLAS Plugin", title: "Automation Exporter / Editor", themeLabel: "Appearance", themeAuto: "Auto", themeLight: "Light", themeDark: "Dark", languageLabel: "Language", pluginHub: "Plugin Hub", sourcesAndExport: "Sources and export", status: "Status", automations: "Automations", entities: "Entities", services: "Services", conflicts: "Conflicts", warnings: "Warnings", source: "Source", loadSystem: "System automations.yaml", uploadYaml: "Upload YAML", export: "Export", exportFolder: "Export folder", exportHint: "Selected automations are saved as separate YAML files. Existing files are not overwritten.", tools: "Tools", searchPlaceholder: "Search alias, ID, entity or service", groupBy: "Group by", groupNone: "No grouping", domain: "Domain", area: "Area", device: "Device", filterGroup: "Filter group", allGroups: "All groups", warningsOnly: "Show warnings only", selectAll: "Select all", selectNone: "Clear selection", exportSelected: "Export selection", previewConflicts: "Check conflicts", emptyAutomationList: "Load the system file or upload another YAML file.", details: "Details", chooseAutomation: "Select an automation.", exportedAutomations: "Exported automations", clearList: "Clear list", noExports: "No exports in this session yet.", ready: "Ready. Load /config/automations.yaml or upload another YAML file.", loadingSystem: "Reading /config/automations.yaml ...", systemUnreadable: "/config/automations.yaml cannot be read. Grant access to /config or upload YAML.", systemEmpty: "/config/automations.yaml is empty.", systemLoaded: "{path}: found {count} automation(s). Backup: {backup}", systemLoadError: "Could not back up or load /config/automations.yaml. Check File Studio access or upload YAML.", sourceLoaded: "{source}: found {count} automation(s){warning}.", noAutomationMatch: "No matching automation found.", selectAutomation: "Select {alias}", automationSelected: "{count} selected", automationCount: "{count} automation(s)", trigger: "Triggers", condition: "Conditions", action: "Actions", domainPrefix: "Domain", areaPrefix: "Area", devicePrefix: "Device", conflictPrefix: "Conflict", warningPrefix: "Warning", selectForExport: "Select an automation to export.", exporting: "Exporting {count} automation(s) to {folder} ...", exported: "Saved {count} automation(s) in {folder}: export version with ID and cleaned import version without ID.", exportFailed: "Export failed: {error} Falling back to browser downloads.", saved: "saved", openExport: "Open export", openImport: "Open import version", copyExport: "Copy export YAML", copyImport: "Copy import YAML", copied: "{filename}: YAML copied.", copiedImport: "{filename}: cleaned import YAML copied.", conflictSelect: "Select an automation to check for conflicts.", conflictNone: "Conflict check: {count} automation(s); no duplicate IDs or aliases in the selection.", conflictFound: "Conflict check: {count} possible conflicts. {summary}", withoutDomain: "No domain", withoutArea: "No area", withoutDevice: "No device", withoutGroup: "No group", domains: "Domains", areas: "Areas", devices: "Devices", groups: "Groups", selectedDetails: "{triggers} triggers, {conditions} conditions, {actions} actions, {entities} entities, {services} services", exportSaved: "Export and cleaned import version saved", download: "Download", browserDownload: "Browser download", errorOutsideRoot: "The path is outside the approved locations.", errorMissing: "The target folder was not found or could not be created.", errorExists: "A target file already exists.", errorInvalid: "The export folder or file name is invalid.",
+  },
+  fr: {
+    eyebrow: "Plugin ATLAS", title: "Exportateur / Éditeur d’automatisations", themeLabel: "Apparence", themeAuto: "Auto", themeLight: "Clair", themeDark: "Sombre", languageLabel: "Langue", pluginHub: "Hub des plugins", sourcesAndExport: "Sources et exportation", status: "État", automations: "Automatisations", entities: "Entités", services: "Services", conflicts: "Conflits", warnings: "Avertissements", source: "Source", loadSystem: "Automatisations du système (automations.yaml)", uploadYaml: "Importer un fichier YAML", export: "Exportation", exportFolder: "Dossier d’exportation", exportHint: "Les automatisations sélectionnées sont enregistrées dans des fichiers YAML séparés. Les fichiers existants ne sont pas remplacés.", tools: "Outils", searchPlaceholder: "Rechercher un alias, un ID, une entité ou un service", groupBy: "Regrouper par", groupNone: "Aucun regroupement", domain: "Domaine", area: "Zone", device: "Appareil", filterGroup: "Filtrer le groupe", allGroups: "Tous les groupes", warningsOnly: "Afficher uniquement les avertissements", selectAll: "Tout sélectionner", selectNone: "Effacer la sélection", exportSelected: "Exporter la sélection", previewConflicts: "Vérifier les conflits", emptyAutomationList: "Chargez le fichier système ou importez un autre fichier YAML.", details: "Détails", chooseAutomation: "Sélectionnez une automatisation.", exportedAutomations: "Automatisations exportées", clearList: "Vider la liste", noExports: "Aucune exportation pour cette session.", ready: "Prêt. Chargez /config/automations.yaml ou importez un autre fichier YAML.", loadingSystem: "Lecture de /config/automations.yaml ...", systemUnreadable: "Impossible de lire /config/automations.yaml. Autorisez l’accès à /config ou importez un fichier YAML.", systemEmpty: "/config/automations.yaml est vide.", systemLoaded: "{path} : {count} automatisation(s) détectée(s). Sauvegarde : {backup}", systemLoadError: "Impossible de sauvegarder ou de charger /config/automations.yaml. Vérifiez l’accès à File Studio ou importez un fichier YAML.", sourceLoaded: "{source} : {count} automatisation(s) détectée(s){warning}.", noAutomationMatch: "Aucune automatisation correspondante.", selectAutomation: "Sélectionner {alias}", automationSelected: "{count} sélectionnée(s)", automationCount: "{count} automatisation(s)", trigger: "Déclencheurs", condition: "Conditions", action: "Actions", domainPrefix: "Domaine", areaPrefix: "Zone", devicePrefix: "Appareil", conflictPrefix: "Conflit", warningPrefix: "Avertissement", selectForExport: "Sélectionnez une automatisation à exporter.", exporting: "Exportation de {count} automatisation(s) vers {folder} ...", exported: "{count} automatisation(s) enregistrée(s) dans {folder} : version d’exportation avec ID et version d’importation nettoyée sans ID.", exportFailed: "Échec de l’exportation : {error} Téléchargement par le navigateur utilisé en solution de repli.", saved: "enregistré", openExport: "Ouvrir l’exportation", openImport: "Ouvrir la version d’importation", copyExport: "Copier le YAML exporté", copyImport: "Copier le YAML d’importation", copied: "{filename} : YAML copié.", copiedImport: "{filename} : YAML d’importation nettoyé copié.", conflictSelect: "Sélectionnez une automatisation pour vérifier les conflits.", conflictNone: "Vérification des conflits : {count} automatisation(s), aucun ID ni alias en double dans la sélection.", conflictFound: "Vérification des conflits : {count} conflit(s) possible(s). {summary}", withoutDomain: "Sans domaine", withoutArea: "Sans zone", withoutDevice: "Sans appareil", withoutGroup: "Sans groupe", domains: "Domaines", areas: "Zones", devices: "Appareils", groups: "Groupes", selectedDetails: "{triggers} déclencheur(s), {conditions} condition(s), {actions} action(s), {entities} entité(s), {services} service(s)", exportSaved: "Version d’exportation et version d’importation nettoyée enregistrées", download: "Téléchargement", browserDownload: "Téléchargement du navigateur", errorOutsideRoot: "Le chemin se trouve en dehors des emplacements autorisés.", errorMissing: "Le dossier cible est introuvable ou n’a pas pu être créé.", errorExists: "Un fichier cible existe déjà.", errorInvalid: "Le dossier d’exportation ou le nom du fichier est invalide.",
+  },
+};
+
+function t(key, values = {}) {
+  return (translations[currentLanguage]?.[key] ?? translations.en[key] ?? key)
+    .replace(/\{([^}]+)\}/g, (match, name) => String(values[name] ?? match));
+}
+
+function applyTranslations() {
+  document.querySelectorAll("[data-i18n]").forEach(element => {
+    element.textContent = t(element.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(element => {
+    element.placeholder = t(element.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll("[data-i18n-aria-label]").forEach(element => {
+    element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
+  });
+}
+
 function createAppUrl(path) {
   try {
     const baseUrl = new URL(window.location.href);
@@ -63,16 +92,13 @@ function readThemePreferenceFromLocation() {
 function readLanguageFromLocation() {
   try {
     const language = new URL(window.location.href).searchParams.get("language");
-    if (["de", "en", "fr"].includes(language)) {
-      return language === "de" || language === "en" ? language : "en";
-    }
+    if (["de", "en", "fr"].includes(language)) return language;
   } catch {
     // Continue with the saved shared preference.
   }
   try {
     const language = localStorage.getItem("atlas.languagePreference");
-    if (language === "de" || language === "en") return language;
-    if (language === "fr") return "en";
+    if (["de", "en", "fr"].includes(language)) return language;
   } catch {
     // Try the shared cookie when local storage is unavailable.
   }
@@ -80,12 +106,12 @@ function readLanguageFromLocation() {
     const cookie = document.cookie.split(";").map(value => value.trim())
       .find(value => value.startsWith("atlas_language_preference="));
     const language = cookie ? decodeURIComponent(cookie.slice("atlas_language_preference=".length)) : "";
-    if (language === "de" || language === "en") return language;
-    if (language === "fr") return "en";
+    if (["de", "en", "fr"].includes(language)) return language;
   } catch {
     // Fall back to the browser language.
   }
-  return navigator.language?.toLowerCase().startsWith("de") ? "de" : "en";
+  const browserLanguage = navigator.language?.toLowerCase() ?? "";
+  return browserLanguage.startsWith("fr") ? "fr" : browserLanguage.startsWith("de") ? "de" : "en";
 }
 
 function bindHubLinks() {
@@ -119,7 +145,7 @@ function applyThemePreference(preference = currentThemePreference) {
 }
 
 function applyLanguage(language = currentLanguage, persistPreference = false) {
-  currentLanguage = language === "de" ? "de" : "en";
+  currentLanguage = ["de", "en", "fr"].includes(language) ? language : "en";
   if (persistPreference) {
     try {
       localStorage.setItem("atlas.languagePreference", currentLanguage);
@@ -135,9 +161,13 @@ function applyLanguage(language = currentLanguage, persistPreference = false) {
     }
   }
   document.documentElement.lang = currentLanguage;
+  applyTranslations();
   updateChromeControls();
   updateLocationState();
   bindHubLinks();
+  document.title = `ATLAS ${t("title")}`;
+  render();
+  renderHistory();
 }
 
 function updateChromeControls() {
@@ -200,29 +230,29 @@ window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener("change", 
 
 applyLanguage(currentLanguage);
 applyThemePreference(currentThemePreference);
-setStatus("Bereit. Lade die echte /config/automations.yaml oder lade eine fremde YAML hoch.");
+setStatus(t("ready"));
 
 async function loadSystemAutomations() {
-  setStatus("Lese /config/automations.yaml ...");
+  setStatus(t("loadingSystem"));
   try {
     const url = new URL(createAppUrl("api/file-studio/file"), window.location.href);
     url.searchParams.set("path", "/config/automations.yaml");
     const response = await fetch(url.toString(), { cache: "no-store" });
     if (!response.ok) {
-      setStatus("/config/automations.yaml ist nicht lesbar. Bitte /config freigeben oder YAML hochladen.");
+      setStatus(t("systemUnreadable"));
       return;
     }
     const payload = await response.json();
     const content = typeof payload.content === "string" ? payload.content : "";
     if (!content.trim()) {
-      setStatus("/config/automations.yaml ist leer.");
+      setStatus(t("systemEmpty"));
       return;
     }
     const backup = await createSourceBackup(content);
     analyzeSource(payload.path || "/config/automations.yaml", content);
-    setStatus(`${payload.path || "/config/automations.yaml"}: ${state.automations.length} Automationen erkannt. Backup: ${backup.path}`);
+    setStatus(t("systemLoaded", { path: payload.path || "/config/automations.yaml", count: state.automations.length, backup: backup.path }));
   } catch {
-    setStatus("/config/automations.yaml konnte nicht gesichert oder geladen werden. Bitte File-Studio-Zugriff prüfen oder YAML hochladen.");
+    setStatus(t("systemLoadError"));
   }
 }
 
@@ -244,7 +274,7 @@ function analyzeSource(sourceName, content) {
   state.groupFilter = "";
   const warningCount = countWarnings(state.automations);
   const warningText = warningCount > 0 ? `, ${warningCount} Hinweis(e)` : ", keine Hinweise";
-  setStatus(`${sourceName}: ${state.automations.length} Automationen erkannt${warningText}.`);
+  setStatus(t("sourceLoaded", { source: sourceName, count: state.automations.length, warning: warningText }));
   render();
 }
 
@@ -405,7 +435,7 @@ function render() {
   elements.list.classList.toggle("empty-state", visible.length === 0);
   elements.list.innerHTML = "";
   if (visible.length === 0) {
-    elements.list.textContent = "Keine passende Automation gefunden.";
+    elements.list.textContent = t("noAutomationMatch");
   } else if (state.groupBy === "none") {
     for (const automation of visible) {
       elements.list.append(createAutomationRow(automation));
@@ -432,7 +462,7 @@ function updateGroupFilterOptions() {
   elements.groupFilter.replaceChildren();
   const allOption = document.createElement("option");
   allOption.value = "";
-  allOption.textContent = state.groupBy === "none" ? "Alle Gruppen" : `Alle ${getGroupLabelPlural(state.groupBy)}`;
+  allOption.textContent = state.groupBy === "none" ? t("allGroups") : `${t("allGroups")} (${t(getGroupLabelPlural(state.groupBy))})`;
   elements.groupFilter.append(allOption);
   for (const value of values) {
     const option = document.createElement("option");
@@ -468,7 +498,7 @@ function createGroupHeader(label, count) {
   const title = document.createElement("span");
   title.textContent = label;
   const amount = document.createElement("span");
-  amount.textContent = `${count} Automation${count === 1 ? "" : "en"}`;
+  amount.textContent = t("automationCount", { count });
   header.append(title, amount);
   return header;
 }
@@ -487,27 +517,27 @@ function createAutomationRow(automation) {
   meta.textContent = [
     `#${automation.sourceIndex}`,
     `ID ${automation.id || "-"}`,
-    `${automation.triggerCount} Trigger`,
-    `${automation.conditionCount} Conditions`,
-    `${automation.actionCount} Actions`,
-    `Domain ${automation.domains.slice(0, 3).join(", ") || "-"}`,
+    `${automation.triggerCount} ${t("trigger")}`,
+    `${automation.conditionCount} ${t("condition")}`,
+    `${automation.actionCount} ${t("action")}`,
+    `${t("domainPrefix")} ${automation.domains.slice(0, 3).join(", ") || "-"}`,
   ].join(" · ");
   const tags = document.createElement("div");
   tags.className = "tag-list";
   for (const value of [
-    ...automation.conflicts.map(conflict => `Konflikt: ${conflict}`),
-    ...automation.warnings.map(warning => `Hinweis: ${warning}`),
-    ...automation.domains.slice(0, 3).map(domain => `Domain: ${domain}`),
-    ...automation.areas.slice(0, 2).map(area => `Bereich: ${area}`),
-    ...automation.devices.slice(0, 2).map(device => `Gerät: ${device}`),
+    ...automation.conflicts.map(conflict => `${t("conflictPrefix")}: ${conflict}`),
+    ...automation.warnings.map(warning => `${t("warningPrefix")}: ${warning}`),
+    ...automation.domains.slice(0, 3).map(domain => `${t("domainPrefix")}: ${domain}`),
+    ...automation.areas.slice(0, 2).map(area => `${t("areaPrefix")}: ${area}`),
+    ...automation.devices.slice(0, 2).map(device => `${t("devicePrefix")}: ${device}`),
     ...automation.entities.slice(0, 4),
     ...automation.services.slice(0, 3),
   ]) {
     const tag = document.createElement("span");
     tag.className = "tag";
-    if (value.startsWith("Konflikt: ")) tag.classList.add("conflict");
-    if (value.startsWith("Hinweis: ")) tag.classList.add("warning");
-    if (value.startsWith("Domain: ") || value.startsWith("Bereich: ") || value.startsWith("Gerät: ")) tag.classList.add("group");
+    if (value.startsWith(`${t("conflictPrefix")}: `)) tag.classList.add("conflict");
+    if (value.startsWith(`${t("warningPrefix")}: `)) tag.classList.add("warning");
+    if (["domainPrefix", "areaPrefix", "devicePrefix"].some(key => value.startsWith(`${t(key)}: `))) tag.classList.add("group");
     tag.textContent = value;
     tags.append(tag);
   }
@@ -517,7 +547,7 @@ function createAutomationRow(automation) {
   actions.className = "automation-actions";
   const details = document.createElement("button");
   details.type = "button";
-  details.textContent = "Details";
+  details.textContent = t("details");
   details.addEventListener("click", () => {
     state.activeId = automation.localId;
     renderDetails();
@@ -525,7 +555,7 @@ function createAutomationRow(automation) {
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
   checkbox.checked = state.selectedIds.has(automation.localId);
-  checkbox.setAttribute("aria-label", `${automation.alias} auswählen`);
+  checkbox.setAttribute("aria-label", t("selectAutomation", { alias: automation.alias }));
   checkbox.addEventListener("change", () => {
     if (checkbox.checked) {
       state.selectedIds.add(automation.localId);
@@ -544,27 +574,27 @@ function renderDetails() {
   elements.details.classList.toggle("empty-state", !automation);
   elements.details.innerHTML = "";
   if (!automation) {
-    elements.details.textContent = "Wähle eine Automation aus.";
+    elements.details.textContent = t("chooseAutomation");
     return;
   }
   const title = document.createElement("strong");
   title.textContent = automation.alias;
   const meta = document.createElement("p");
   meta.className = "muted";
-  meta.textContent = `${automation.triggerCount} Trigger, ${automation.conditionCount} Conditions, ${automation.actionCount} Actions, ${automation.entities.length} Entitäten, ${automation.services.length} Services`;
+  meta.textContent = t("selectedDetails", { triggers: automation.triggerCount, conditions: automation.conditionCount, actions: automation.actionCount, entities: automation.entities.length, services: automation.services.length });
   const pre = document.createElement("pre");
   pre.className = "yaml-preview";
   pre.innerHTML = highlightYaml(automation.yaml);
   elements.details.append(
     title,
     meta,
-    createTagBlock("Konflikte", automation.conflicts, "conflict"),
-    createTagBlock("Hinweise", automation.warnings, "warning"),
-    createTagBlock("Domains", automation.domains),
-    createTagBlock("Bereiche", automation.areas),
-    createTagBlock("Geräte", automation.devices),
-    createTagBlock("Entitäten", automation.entities),
-    createTagBlock("Services", automation.services),
+    createTagBlock(t("conflicts"), automation.conflicts, "conflict"),
+    createTagBlock(t("warnings"), automation.warnings, "warning"),
+    createTagBlock(t("domains"), automation.domains),
+    createTagBlock(t("areas"), automation.areas),
+    createTagBlock(t("devices"), automation.devices),
+    createTagBlock(t("entities"), automation.entities),
+    createTagBlock(t("services"), automation.services),
     pre,
   );
 }
@@ -594,14 +624,14 @@ function renderSummary() {
   elements.countServices.textContent = String(allServices.size);
   elements.countConflicts.textContent = String(state.automations.filter(item => item.conflicts.length > 0).length);
   elements.countWarnings.textContent = String(countWarnings(state.automations));
-  elements.selectionCount.textContent = `${state.selectedIds.size} ausgewählt`;
+  elements.selectionCount.textContent = t("automationSelected", { count: state.selectedIds.size });
 }
 
 function renderHistory() {
   elements.history.classList.toggle("empty-state", state.exports.length === 0);
   elements.history.innerHTML = "";
   if (state.exports.length === 0) {
-    elements.history.textContent = "Noch keine Exporte in dieser Sitzung.";
+    elements.history.textContent = t("noExports");
     return;
   }
   for (const item of state.exports) {
@@ -610,28 +640,28 @@ function renderHistory() {
     const name = document.createElement("div");
     const groups = [
       item.domains?.length ? `Domains: ${item.domains.join(", ")}` : "",
-      item.areas?.length ? `Bereiche: ${item.areas.join(", ")}` : "",
-      item.devices?.length ? `Geräte: ${item.devices.join(", ")}` : "",
+      item.areas?.length ? `${t("areas")}: ${item.areas.join(", ")}` : "",
+      item.devices?.length ? `${t("devices")}: ${item.devices.join(", ")}` : "",
     ].filter(Boolean).join(" · ");
-    name.innerHTML = `<strong>${escapeHtml(item.filename)}</strong><div class="automation-meta">${escapeHtml(item.status ?? "gespeichert")} · ${escapeHtml(item.folder)} · ${escapeHtml(item.sourceName)}</div>${groups ? `<div class="automation-meta">${escapeHtml(groups)}</div>` : ""}`;
+    name.innerHTML = `<strong>${escapeHtml(item.filename)}</strong><div class="automation-meta">${escapeHtml(item.status ?? t("saved"))} · ${escapeHtml(item.folder)} · ${escapeHtml(item.sourceName)}</div>${groups ? `<div class="automation-meta">${escapeHtml(groups)}</div>` : ""}`;
     const actions = document.createElement("div");
     actions.className = "export-actions";
     const open = document.createElement("a");
     open.className = "ghost-link";
     open.href = createFileStudioFileUrl(item.path);
-    open.textContent = "Export öffnen";
+    open.textContent = t("openExport");
     const openImport = document.createElement("a");
     openImport.className = "ghost-link";
     openImport.href = createFileStudioFileUrl(item.importPath);
-    openImport.textContent = "Import-Version öffnen";
+    openImport.textContent = t("openImport");
     const copy = document.createElement("button");
     copy.type = "button";
-    copy.textContent = "Export-YAML kopieren";
-    copy.addEventListener("click", () => void copyText(item.yaml, `${item.filename}: YAML kopiert.`));
+    copy.textContent = t("copyExport");
+    copy.addEventListener("click", () => void copyText(item.yaml, t("copied", { filename: item.filename })));
     const copyImport = document.createElement("button");
     copyImport.type = "button";
-    copyImport.textContent = "Import-YAML kopieren";
-    copyImport.addEventListener("click", () => void copyText(item.importYaml ?? item.yaml, `${item.filename}: bereinigte Import-YAML kopiert.`));
+    copyImport.textContent = t("copyImport");
+    copyImport.addEventListener("click", () => void copyText(item.importYaml ?? item.yaml, t("copiedImport", { filename: item.filename })));
     actions.append(open, copy);
     if (item.importPath) {
       actions.append(openImport);
@@ -683,17 +713,17 @@ function getAutomationGroupValues(automation, groupBy) {
 }
 
 function getGroupLabelPlural(groupBy) {
-  if (groupBy === "domain") return "Domains";
-  if (groupBy === "area") return "Bereiche";
-  if (groupBy === "device") return "Geräte";
-  return "Gruppen";
+  if (groupBy === "domain") return "domains";
+  if (groupBy === "area") return "areas";
+  if (groupBy === "device") return "devices";
+  return "groups";
 }
 
 function getEmptyGroupLabel(groupBy) {
-  if (groupBy === "domain") return "Ohne Domain";
-  if (groupBy === "area") return "Ohne Bereich";
-  if (groupBy === "device") return "Ohne Gerät";
-  return "Ohne Gruppe";
+  if (groupBy === "domain") return t("withoutDomain");
+  if (groupBy === "area") return t("withoutArea");
+  if (groupBy === "device") return t("withoutDevice");
+  return t("withoutGroup");
 }
 
 function countWarnings(automations) {
@@ -710,7 +740,7 @@ function selectVisible() {
 async function exportSelected() {
   const selected = state.automations.filter(item => state.selectedIds.has(item.localId));
   if (selected.length === 0) {
-    setStatus("Keine Automation für den Export ausgewählt.");
+    setStatus(t("selectForExport"));
     return;
   }
   const runFolderName = createExportRunFolderName(new Date());
@@ -719,7 +749,7 @@ async function exportSelected() {
   const exportFolder = `${runFolder}/export-version`;
   const importFolder = `${runFolder}/bereinigte-import-version`;
   elements.exportSelected.disabled = true;
-  setStatus(`Exportiere ${selected.length} Automation(en) nach ${runFolder} ...`);
+  setStatus(t("exporting", { count: selected.length, folder: runFolder }));
   try {
     await ensureExportFolder(exportFolder);
     await ensureExportFolder(importFolder);
@@ -737,7 +767,7 @@ async function exportSelected() {
         importPath: importResult.path || `${importFolder}/${filename}`,
         folder: runFolder,
         sourceName: state.sourceName,
-        status: "Export und bereinigte Import-Version gespeichert",
+        status: t("exportSaved"),
         yaml: exportYaml,
         importYaml,
         id: automation.id,
@@ -749,10 +779,10 @@ async function exportSelected() {
     }
     state.exports.unshift(...exported);
     state.exports = state.exports.slice(0, 50);
-    setStatus(`${exported.length} Automation(en) in ${runFolder} gespeichert: export-version mit ID, bereinigte-import-version ohne ID.`);
+    setStatus(t("exported", { count: exported.length, folder: runFolder }));
     renderHistory();
   } catch (error) {
-    setStatus(`Export fehlgeschlagen: ${describeExportError(error)} Browser-Download wird als Rückfall genutzt.`);
+    setStatus(t("exportFailed", { error: describeExportError(error) }));
     const usedFilenames = new Set();
     for (const automation of selected) {
       const filename = createExportFilename(automation.alias, usedFilenames);
@@ -764,9 +794,9 @@ async function exportSelected() {
         filename,
         path: filename,
         importPath: "",
-        folder: "Browser-Download",
+        folder: t("browserDownload"),
         sourceName: state.sourceName,
-        status: "download",
+        status: t("download"),
         yaml: exportYaml,
         importYaml,
         id: automation.id,
@@ -806,16 +836,16 @@ function createImportAutomationYaml(yaml) {
 function previewConflicts() {
   const selected = state.automations.filter(item => state.selectedIds.has(item.localId));
   if (!selected.length) {
-    setStatus("Keine Automation für die Konfliktprüfung ausgewählt.");
+    setStatus(t("conflictSelect"));
     return;
   }
   const conflicts = findConflicts(selected);
   if (!conflicts.length) {
-    setStatus(`Konfliktprüfung: ${selected.length} Automation(en), keine doppelten IDs oder Aliase in der Auswahl.`);
+    setStatus(t("conflictNone", { count: selected.length }));
     return;
   }
   const summary = conflicts.slice(0, 5).map(conflict => `${conflict.kind} "${conflict.value}" (${conflict.count}x)`).join("; ");
-  setStatus(`Konfliktprüfung: ${conflicts.length} mögliche Konflikte. ${summary}`);
+  setStatus(t("conflictFound", { count: conflicts.length, summary }));
 }
 
 function findConflicts(automations) {
@@ -1019,10 +1049,10 @@ function encodeBase64Utf8(value) {
 
 function describeExportError(error) {
   const message = error instanceof Error ? error.message : String(error ?? "unbekannter Fehler");
-  if (/outside configured root/i.test(message)) return "Pfad liegt außerhalb der freigegebenen Bereiche.";
-  if (/not found|parent directory/i.test(message)) return "Zielordner wurde nicht gefunden oder konnte nicht erstellt werden.";
-  if (/already exists/i.test(message)) return "Eine Zieldatei existiert bereits.";
-  if (/path separators|relative path/i.test(message)) return "Exportordner oder Dateiname ist ungültig.";
+  if (/outside configured root/i.test(message)) return t("errorOutsideRoot");
+  if (/not found|parent directory/i.test(message)) return t("errorMissing");
+  if (/already exists/i.test(message)) return t("errorExists");
+  if (/path separators|relative path/i.test(message)) return t("errorInvalid");
   return message;
 }
 

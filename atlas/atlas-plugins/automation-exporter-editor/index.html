@@ -10,105 +10,106 @@
     <main class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">ATLAS Plugin</p>
-          <h1>Automation Exporter / Editor</h1>
+          <p class="eyebrow" data-i18n="eyebrow">ATLAS Plugin</p>
+          <h1 data-i18n="title">Automation Exporter / Editor</h1>
         </div>
         <div class="header-actions">
-          <div class="segmented-control theme-toggle" aria-label="Theme">
-            <button type="button" data-theme-mode="auto">Auto</button>
-            <button type="button" data-theme-mode="light">Light</button>
-            <button type="button" data-theme-mode="dark">Dark</button>
+          <div class="segmented-control theme-toggle" aria-label="Theme" data-i18n-aria-label="themeLabel">
+            <button type="button" data-theme-mode="auto" data-i18n="themeAuto">Auto</button>
+            <button type="button" data-theme-mode="light" data-i18n="themeLight">Light</button>
+            <button type="button" data-theme-mode="dark" data-i18n="themeDark">Dark</button>
           </div>
-          <div class="segmented-control language-toggle" aria-label="Sprache">
+          <div class="segmented-control language-toggle" aria-label="Sprache" data-i18n-aria-label="languageLabel">
             <button type="button" data-language="de">DE</button>
             <button type="button" data-language="en">EN</button>
+            <button type="button" data-language="fr">FR</button>
           </div>
           <a class="ghost-link" href="/plugin-assets/file-studio/index.html" data-open-file-studio>File Studio</a>
-          <a class="ghost-link" href="hub" data-open-hub>Plugin Hub</a>
+          <a class="ghost-link" href="hub" data-open-hub data-i18n="pluginHub">Plugin Hub</a>
         </div>
       </header>
 
-      <section class="source-grid" aria-label="Quellen und Export">
+      <section class="source-grid" aria-label="Quellen und Export" data-i18n-aria-label="sourcesAndExport">
         <article class="panel summary-panel">
-          <h2>Status</h2>
+          <h2 data-i18n="status">Status</h2>
           <dl class="summary-list">
-            <div><dt>Automationen</dt><dd id="count-automations">0</dd></div>
-            <div><dt>Entitäten</dt><dd id="count-entities">0</dd></div>
-            <div><dt>Services</dt><dd id="count-services">0</dd></div>
-            <div><dt>Konflikte</dt><dd id="count-conflicts">0</dd></div>
-            <div><dt>Hinweise</dt><dd id="count-warnings">0</dd></div>
+            <div><dt data-i18n="automations">Automationen</dt><dd id="count-automations">0</dd></div>
+            <div><dt data-i18n="entities">Entitäten</dt><dd id="count-entities">0</dd></div>
+            <div><dt data-i18n="services">Services</dt><dd id="count-services">0</dd></div>
+            <div><dt data-i18n="conflicts">Konflikte</dt><dd id="count-conflicts">0</dd></div>
+            <div><dt data-i18n="warnings">Hinweise</dt><dd id="count-warnings">0</dd></div>
           </dl>
         </article>
 
         <article class="panel source-panel">
-          <h2>Quelle</h2>
+          <h2 data-i18n="source">Quelle</h2>
           <div class="button-row">
-            <button id="load-system" type="button">System automations.yaml</button>
+            <button id="load-system" type="button" data-i18n="loadSystem">System automations.yaml</button>
             <label class="file-button">
-              YAML hochladen
+              <span data-i18n="uploadYaml">YAML hochladen</span>
               <input id="yaml-upload" type="file" accept=".yaml,.yml,text/yaml,text/plain">
             </label>
           </div>
-          <p id="source-status" class="status-line">Noch keine YAML geladen.</p>
+          <p id="source-status" class="status-line"></p>
         </article>
 
         <article class="panel export-panel">
-          <h2>Export</h2>
-          <label class="field-label" for="export-folder">Export-Ordner</label>
+          <h2 data-i18n="export">Export</h2>
+          <label class="field-label" for="export-folder" data-i18n="exportFolder">Export-Ordner</label>
           <input id="export-folder" type="text" value="/config/atlas_exports/automations">
-          <p class="field-hint">Ausgewählte Automationen werden als einzelne YAML-Dateien gespeichert. Existierende Dateien werden nicht überschrieben.</p>
+          <p class="field-hint" data-i18n="exportHint">Ausgewählte Automationen werden als einzelne YAML-Dateien gespeichert. Existierende Dateien werden nicht überschrieben.</p>
         </article>
       </section>
 
       <section class="workspace">
         <aside class="panel tools-panel">
-          <h2>Werkzeuge</h2>
-          <input id="search" type="search" placeholder="Alias, ID, Entität oder Service suchen">
-          <label class="field-label compact-label" for="group-by">Gruppieren nach</label>
+          <h2 data-i18n="tools">Werkzeuge</h2>
+          <input id="search" type="search" placeholder="Alias, ID, Entität oder Service suchen" data-i18n-placeholder="searchPlaceholder">
+          <label class="field-label compact-label" for="group-by" data-i18n="groupBy">Gruppieren nach</label>
           <select id="group-by">
-            <option value="none">Keine Gruppierung</option>
-            <option value="domain">Domain</option>
-            <option value="area">Bereich</option>
-            <option value="device">Gerät</option>
+            <option value="none" data-i18n="groupNone">Keine Gruppierung</option>
+            <option value="domain" data-i18n="domain">Domain</option>
+            <option value="area" data-i18n="area">Bereich</option>
+            <option value="device" data-i18n="device">Gerät</option>
           </select>
-          <label class="field-label compact-label" for="group-filter">Gruppe filtern</label>
+          <label class="field-label compact-label" for="group-filter" data-i18n="filterGroup">Gruppe filtern</label>
           <select id="group-filter">
             <option value="">Alle Gruppen</option>
           </select>
           <label class="checkbox-row">
             <input id="filter-warnings" type="checkbox">
-            <span>Nur Hinweise anzeigen</span>
+            <span data-i18n="warningsOnly">Nur Hinweise anzeigen</span>
           </label>
           <div class="stacked-actions">
-            <button id="select-all" type="button">Alle markieren</button>
-            <button id="select-none" type="button">Auswahl leeren</button>
-            <button id="export-selected" type="button" class="primary">Auswahl exportieren</button>
-            <button id="preview-conflicts" type="button">Konflikte prüfen</button>
+            <button id="select-all" type="button" data-i18n="selectAll">Alle markieren</button>
+            <button id="select-none" type="button" data-i18n="selectNone">Auswahl leeren</button>
+            <button id="export-selected" type="button" class="primary" data-i18n="exportSelected">Auswahl exportieren</button>
+            <button id="preview-conflicts" type="button" data-i18n="previewConflicts">Konflikte prüfen</button>
           </div>
         </aside>
 
-        <section class="panel table-panel" aria-label="Automationen">
+        <section class="panel table-panel" aria-label="Automationen" data-i18n-aria-label="automations">
           <div class="table-header">
-            <h2>Automationen</h2>
+            <h2 data-i18n="automations">Automationen</h2>
             <span id="selection-count">0 ausgewählt</span>
           </div>
           <div id="automation-list" class="automation-list empty-state">
-            Lade eine Systemdatei oder eine fremde YAML hoch.
+            <span data-i18n="emptyAutomationList">Lade eine Systemdatei oder eine fremde YAML hoch.</span>
           </div>
         </section>
 
         <aside class="panel details-panel">
-          <h2>Details</h2>
-          <div id="details" class="details empty-state">Wähle eine Automation aus.</div>
+          <h2 data-i18n="details">Details</h2>
+          <div id="details" class="details empty-state" data-i18n="chooseAutomation">Wähle eine Automation aus.</div>
         </aside>
       </section>
 
       <section class="panel export-history-panel">
         <div class="table-header">
-          <h2>Exportierte Automationen</h2>
-          <button id="clear-history" type="button">Liste leeren</button>
+          <h2 data-i18n="exportedAutomations">Exportierte Automationen</h2>
+          <button id="clear-history" type="button" data-i18n="clearList">Liste leeren</button>
         </div>
-        <div id="export-history" class="export-history empty-state">Noch keine Exporte in dieser Sitzung.</div>
+        <div id="export-history" class="export-history empty-state" data-i18n="noExports">Noch keine Exporte in dieser Sitzung.</div>
       </section>
     </main>
     <script src="./app.js" defer></script>

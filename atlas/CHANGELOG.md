@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.264
+
+- Add French UI support to the Automation Exporter / Editor.
+- Serve missing plugin files from the bundled plugin when a persistent copy is incomplete, restoring File Studio toolbar icons.
+- Update the bundled Automation Exporter / Editor to `0.1.25`.
+
 ## 0.1.263
 
 - Apply the shared saved language preference to the Card Editor and Automation Exporter, preserving direct URL language overrides.
