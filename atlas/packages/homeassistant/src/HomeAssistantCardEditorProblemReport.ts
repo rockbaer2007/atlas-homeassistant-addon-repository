@@ -22,7 +22,7 @@ export type HomeAssistantCardEditorProblemReportIssueRequest = Readonly<{
 
 const defaultIssueUrl = "https://github.com/rockbaer2007/atlas/issues/new";
 const defaultIssueTitle = "Home Assistant Card Editor problem report";
-const sensitiveKeyPattern = /token|secret|password|api[_-]?key|authorization|cookie|localstorage/i;
+const sensitiveKeyPattern = /token|secret|password|api[_-]?key|authorization|cookie|localstorage|signature|credential|jwt|(?:^|[_-])auth(?:$|[_-])/i;
 
 export function createHomeAssistantCardEditorProblemReport(
   data: Record<string, unknown>,
@@ -52,7 +52,7 @@ export function createHomeAssistantCardEditorProblemReportPreviewText(
     "",
     "I reviewed this opt-in debug report before sharing it.",
     "",
-    "Home Assistant tokens, provider API keys, cookies and localStorage are not included.",
+    "Home Assistant access and Ingress tokens, provider API keys, cookies and localStorage are not included.",
     "",
     "```json",
     JSON.stringify(report, null, 2),
@@ -71,9 +71,10 @@ export function createHomeAssistantCardEditorProblemReportIssueUrl(
 
 export function redactHomeAssistantCardEditorDebugText(text: string): string {
   return String(text)
-    .replace(/(authorization:\s*bearer\s+)[^\s"'`]+/gi, "$1[redacted]")
-    .replace(/((?:access_)?token\s*[:=]\s*)[^\s"'`]+/gi, "$1[redacted]")
-    .replace(/((?:api[_-]?key|secret|password)\s*[:=]\s*)[^\s"'`]+/gi, "$1[redacted]");
+    .replace(/(authorization:\s*(?:bearer|basic)\s+)[^\s"'`]+/gi, "$1[redacted]")
+    .replace(/((?:(?:access|refresh|id)[_-]?)?token\s*[:=]\s*)[^\s"'`&]+/gi, "$1[redacted]")
+    .replace(/((?:api[_-]?key|secret|password|credential|signature|jwt|auth)\s*[:=]\s*)[^\s"'`&]+/gi, "$1[redacted]")
+    .replace(/(\/api\/hassio_ingress\/)[^/?#\s"'`]+/gi, "$1[redacted]");
 }
 
 export function sanitizeHomeAssistantCardEditorDebugValue(value: unknown, key = ""): unknown {
@@ -133,6 +134,7 @@ export function sanitizeHomeAssistantCardEditorDebugUrl(value: string): string {
         url.searchParams.set(key, "[redacted]");
       }
     }
+    url.pathname = url.pathname.replace(/(\/api\/hassio_ingress\/)[^/]+/i, "$1[redacted]");
     return url.toString();
   } catch {
     return redactHomeAssistantCardEditorDebugText(value);

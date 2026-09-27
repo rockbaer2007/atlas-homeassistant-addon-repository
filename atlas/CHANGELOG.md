@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.255
+
+- Redact Home Assistant Ingress session tokens from Card Editor problem reports.
+
 ## 0.1.254
 
 - Put installed plugins in individual tabs and collapse repository and update details by default.

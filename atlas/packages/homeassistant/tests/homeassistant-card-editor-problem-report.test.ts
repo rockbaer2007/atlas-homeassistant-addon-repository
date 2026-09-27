@@ -112,4 +112,21 @@ describe("Home Assistant card editor problem reports", () => {
     expect(redactHomeAssistantCardEditorDebugText("password=secret api-key: abc"))
       .toBe("password=[redacted] api-key: [redacted]");
   });
+
+  it("redacts Home Assistant ingress tokens in URLs and embedded debug text", () => {
+    const url = sanitizeHomeAssistantCardEditorDebugUrl(
+      "http://ha.local:8123/api/hassio_ingress/private-ingress-token/editor?auth=private-auth&view=cards",
+    );
+    const report = createHomeAssistantCardEditorProblemReport({
+      app: { demoUrl: url },
+      card: { preview: { content: "http://ha.local:8123/api/hassio_ingress/embedded-ingress-token/editor" } },
+    });
+    const preview = createHomeAssistantCardEditorProblemReportPreviewText(report);
+
+    expect(url).not.toContain("private-ingress-token");
+    expect(url).not.toContain("private-auth");
+    expect(url).toContain("view=cards");
+    expect(preview).not.toContain("embedded-ingress-token");
+    expect(preview).not.toContain("private-ingress-token");
+  });
 });

@@ -49,8 +49,8 @@ The Card Editor includes an opt-in Problem melden / Report problem flow. It
 creates a sanitized debug report preview before anything is copied or opened on
 GitHub. The report can include editor mode, selected entities, export settings,
 resource status and the current card preview, but Home Assistant tokens,
-provider API keys, cookies and localStorage are recorded as intentionally
-excluded.
+provider API keys, cookies, localStorage and Home Assistant Ingress tokens in
+URL paths or query parameters are recorded as intentionally excluded.
 
 Enter one or more comma-separated Entity IDs before connecting, or use the
 domain-filtered entity picker to add known demo entities. Once a live event
