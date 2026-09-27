@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.245
+
+- Show repository plugin install progress and errors inside the Plugin Manager.
+- Clarify that the Plugin Manager follows Administration's selected language.
+
 ## 0.1.244
 
 - Accept the Home Assistant Core ingress proxy address when installing plugins.

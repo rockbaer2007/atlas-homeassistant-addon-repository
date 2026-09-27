@@ -426,7 +426,7 @@ const translations = {
     "message.geminiApiKeyLink": "Get Gemini API key:",
     "message.deeplApiKeyLink": "Get DeepL API key:",
     "message.pluginsHint": "The Home Assistant Card Editor is the built-in reference plugin. Manage other plugins independently here.",
-    "message.pluginManagerHint": "Manage installed plugins, repositories and updates in one place.",
+    "message.pluginManagerHint": "Manage installed plugins, repositories and updates in one place. The language follows Administration.",
     "message.appRuntimeHint": "Read the combined app server status exposed on port 4176.",
     "message.appRuntimeLoading": "Loading app runtime status...",
     "message.appRuntimeSummary": "{name} {version}: {status}, started {startedAt}.",
@@ -472,6 +472,7 @@ const translations = {
     "message.pluginRepositoryPluginInstalled": "{name} installed from repository.",
     "message.pluginRepositoryPluginUpdated": "{name} updated from repository.",
     "message.pluginRepositoryPluginRemoved": "{name} removed.",
+    "message.pluginRepositoryInstalling": "Installing {name} on the Atlas server...",
     "message.pluginRepositoryInstallFailed": "{name} could not be installed ({error}).",
     "message.pluginRepositoryUpdateAvailable": "Update available: {installed} -> {available}",
     "message.pluginRepositoryInstalledVersion": "Installed: {version}",
@@ -668,7 +669,7 @@ const translations = {
     "message.geminiApiKeyLink": "Gemini API-Key erhalten:",
     "message.deeplApiKeyLink": "DeepL API-Key erhalten:",
     "message.pluginsHint": "Der Home Assistant Card Editor ist das mitgelieferte Referenz-Plugin. Andere Plugins verwaltest du hier unabhängig.",
-    "message.pluginManagerHint": "Verwalte installierte Plugins, Repositories und Updates zentral an einem Ort.",
+    "message.pluginManagerHint": "Verwalte installierte Plugins, Repositories und Updates an einem Ort. Die Sprache wird aus der Administration übernommen.",
     "message.appRuntimeHint": "Liest den gemeinsamen App-Server-Status auf Port 4176.",
     "message.appRuntimeLoading": "App-Laufzeitstatus wird geladen...",
     "message.appRuntimeSummary": "{name} {version}: {status}, gestartet {startedAt}.",
@@ -714,6 +715,7 @@ const translations = {
     "message.pluginRepositoryPluginInstalled": "{name} aus Repository installiert.",
     "message.pluginRepositoryPluginUpdated": "{name} aus Repository aktualisiert.",
     "message.pluginRepositoryPluginRemoved": "{name} entfernt.",
+    "message.pluginRepositoryInstalling": "{name} wird auf dem Atlas-Server installiert...",
     "message.pluginRepositoryInstallFailed": "{name} konnte nicht installiert werden ({error}).",
     "message.pluginRepositoryUpdateAvailable": "Update verfügbar: {installed} -> {available}",
     "message.pluginRepositoryInstalledVersion": "Installiert: {version}",
@@ -2363,6 +2365,9 @@ async function installRepositoryPluginPackage(plugin) {
     return;
   }
 
+  pluginRepositoryStatus.textContent = t("message.pluginRepositoryInstalling", {
+    name: localizedPluginText(plugin, "name", plugin.id),
+  });
   try {
     const installPackage = await fetchRepositoryPluginInstallPackage(plugin);
     const descriptor = installPackage.plugin;
@@ -2400,15 +2405,19 @@ async function installRepositoryPluginPackage(plugin) {
     persistPluginState();
     renderPluginRepositoryPreview();
     renderAdministration();
-    adminSaveState.textContent = t(
+    const message = t(
       wasInstalled ? "message.pluginRepositoryPluginUpdated" : "message.pluginRepositoryPluginInstalled",
       { name: descriptor.name },
     );
+    adminSaveState.textContent = message;
+    pluginRepositoryStatus.textContent = message;
   } catch (error) {
-    adminSaveState.textContent = t("message.pluginRepositoryInstallFailed", {
+    const message = t("message.pluginRepositoryInstallFailed", {
       name: localizedPluginText(plugin, "name", plugin.id),
       error: error instanceof Error ? error.message : String(error),
     });
+    adminSaveState.textContent = message;
+    pluginRepositoryStatus.textContent = message;
   }
 }
 
@@ -2433,8 +2442,13 @@ async function removeRepositoryPluginPackage(plugin) {
     adminSaveState.textContent = settingsDeleted
       ? t("message.pluginRepositoryPluginRemoved", { name: localizedPluginText(plugin, "name", plugin.id) })
       : t("message.pluginSettingsDeletePartial");
-  } catch {
-    adminSaveState.textContent = t("message.pluginRepositoryInstallFailed", { name: localizedPluginText(plugin, "name", plugin.id) });
+  } catch (error) {
+    const message = t("message.pluginRepositoryInstallFailed", {
+      name: localizedPluginText(plugin, "name", plugin.id),
+      error: error instanceof Error ? error.message : String(error),
+    });
+    adminSaveState.textContent = message;
+    pluginRepositoryStatus.textContent = message;
   }
 }
 
