@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.247
+
+- Deduplicate identical file paths in plugin install packages to prevent staging collisions.
+
 ## 0.1.246
 
 - Install published `atlas.plugin.package` packages from external plugin repositories.
