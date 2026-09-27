@@ -1,9 +1,14 @@
 # Changelog
 
+## 0.1.244
+
+- Accept the Home Assistant Core ingress proxy address when installing plugins.
+
 ## 0.1.243
 
-- Fix external plugin installs through Home Assistant Ingress.
-- Keep detailed server installation errors visible in the Plugin Manager.
+- Fix plugin package installs through Home Assistant Ingress by validating the
+  forwarded Home Assistant origin.
+- Show the server's install error in the Plugin Manager instead of hiding it.
 
 ## 0.1.242
 

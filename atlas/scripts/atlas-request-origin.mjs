@@ -32,7 +32,7 @@ export function isTrustedAtlasOrigin(request, { adminPort, editorPort }) {
     typeof ingressPath !== "string"
     || !/^\/api\/hassio_ingress\/[^/?#]+\/?$/.test(ingressPath)
     || ingressSource !== "core.ingress"
-    || remoteAddress !== "172.30.32.2"
+    || remoteAddress !== "172.30.32.1"
     || typeof forwardedHost !== "string"
     || typeof forwardedProto !== "string"
   ) {
