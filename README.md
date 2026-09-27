@@ -23,11 +23,11 @@ ATLAS ships Administration, Plugin Hub and the Home Assistant Card Editor as its
 built-in reference plugin. File Studio, Terminal, Automation Exporter / Editor
 and other independently maintained plugins are installed and updated through
 their own repositories. The current Home Assistant App/Add-on package is
-`0.1.258`.
+`0.1.259`.
 
-Administration includes an in-progress French preview for its header and
-connection settings. Untranslated text falls back to English and is identified
-by an on-screen notice.
+Administration and Plugin Hub now include French text for every current
+interface message key. Plugin-provided names and descriptions may use another
+available language when no French version is provided.
 
 File Studio displays its active filesystem permissions in a compact, regular-weight
 notice. Each approved path has its own color so paths such as `/config/www`,

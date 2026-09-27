@@ -41,7 +41,7 @@ export function createThemeRendererStatusOutput(
     kind: "fragment",
     name: `atlas-status-${status}`,
     content:
-      `<section class="atlas-status" data-status="${status}">`
+      `<section class="atlas-status" data-status="${status}" role="status" aria-live="polite" aria-atomic="true">`
       + `<strong>${escapeHtml(options.title ?? "ATLAS")}</strong>`
       + `<span>${label}</span>${options.detail ? `<small>${escapeHtml(options.detail)}</small>` : ""}</section>`,
   });

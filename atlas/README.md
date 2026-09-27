@@ -92,9 +92,9 @@ sidebar dialog can copy either a plain plugin URL or a ready-to-use
 app routes so Hub and sidebar links work through Home Assistant Ingress and from
 other client devices.
 
-Administration includes an in-progress French preview for its header and
-connection settings. Untranslated text falls back to English and is identified
-by an on-screen notice.
+Administration and Plugin Hub include French translations for all current
+interface message keys. Plugin-provided names and descriptions may use another
+available language when no French version is provided.
 
 ## Add-on connection options
 
@@ -133,10 +133,15 @@ terminal access as administrative access to the Home Assistant Supervisor. The
 `SUPERVISOR_TOKEN` is passed only to local shell sessions, never configured SSH
 targets.
 
+## French interface
+
+Administration now has French translations for all current interface message keys.
+Plugin screens may still use English when the plugin does not provide French text.
+
 ## Update note
 
 Home Assistant may show two versions during Add-on updates: `old` is the
 installed version, `target` is the new version from this repository. After this
-ATLAS update, `target` should be at least `0.1.211`. If Home Assistant still
+ATLAS update, `target` should be at least `0.1.259`. If Home Assistant still
 shows an older target version, reload the repository information in the Add-on
 Store and then restart the ATLAS Add-on.

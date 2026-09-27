@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.259
+
+- Complete French translations for Administration and Plugin Hub, with a note when plugin-provided text has no French version.
+
 ## 0.1.258
 
 - Add a French Administration preview with an explicit English-fallback notice.

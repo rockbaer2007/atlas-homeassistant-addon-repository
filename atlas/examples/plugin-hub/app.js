@@ -13,6 +13,7 @@ const AutomationExporterPluginId = "atlas.plugin.automation-exporter-editor";
 const TerminalPluginId = "atlas.plugin.terminal";
 const translations = {
   en: {
+    "page.title": "ATLAS Plugin Hub",
     "heading.hub": "Plugin Hub",
     "heading.sidebarDialog": "Plugin sidebar entry",
     "link.admin": "Administration",
@@ -20,6 +21,7 @@ const translations = {
     "aria.surfaces": "ATLAS surfaces",
     "aria.language": "Language",
     "aria.filters": "Plugin filters",
+    "aria.sidebarHint": "Home Assistant sidebar help",
     "message.loading": "Loading plugins...",
     "message.catalogUnavailable": "Plugin catalog unavailable.",
     "message.unknownCatalogError": "Unknown plugin catalog error.",
@@ -56,6 +58,7 @@ const translations = {
     "guide.sidebarStep3": "Check YAML and reload Panel iFrames or restart Home Assistant.",
   },
   de: {
+    "page.title": "ATLAS Plugin-Hub",
     "heading.hub": "Plugin Hub",
     "heading.sidebarDialog": "Plugin als Seitenleisteneintrag",
     "link.admin": "Administration",
@@ -63,6 +66,7 @@ const translations = {
     "aria.surfaces": "ATLAS-Oberflächen",
     "aria.language": "Sprache",
     "aria.filters": "Plugin-Filter",
+    "aria.sidebarHint": "Hilfe für die Home-Assistant-Seitenleiste",
     "message.loading": "Plugins werden geladen...",
     "message.catalogUnavailable": "Plugin-Katalog nicht erreichbar.",
     "message.unknownCatalogError": "Unbekannter Plugin-Katalogfehler.",
@@ -98,6 +102,52 @@ const translations = {
     "guide.sidebarStep2": "Füge den kopierten panel_iframe-Block ein oder lege einen Webseiten-Dashboard-Eintrag an.",
     "guide.sidebarStep3": "Prüfe YAML und lade Panel-iFrames neu oder starte Home Assistant neu.",
   },
+  fr: {
+    "page.title": "Hub des plugins ATLAS",
+    "heading.hub": "Hub des plugins",
+    "heading.sidebarDialog": "Entrée du plugin dans la barre latérale",
+    "link.admin": "Administration",
+    "link.sidebarHelper": "Ouvrir l’aide de la barre latérale",
+    "aria.surfaces": "Interfaces ATLAS",
+    "aria.language": "Langue",
+    "aria.filters": "Filtres des plugins",
+    "aria.sidebarHint": "Aide pour la barre latérale Home Assistant",
+    "message.pluginTextFallback": "Les informations des plugins utilisent le texte disponible lorsque la version française manque.",
+    "message.loading": "Chargement des plugins…",
+    "message.catalogUnavailable": "Catalogue des plugins indisponible.",
+    "message.unknownCatalogError": "Erreur inconnue du catalogue des plugins.",
+    "message.noPlugins": "Aucun plugin installé",
+    "message.noPluginsHint": "Ouvrez l’administration pour ajouter un dépôt de plugins ATLAS ou importer un paquet de plugin.",
+    "message.sidebarHint": "Les plugins peuvent être ajoutés à la barre latérale Home Assistant comme tableaux de bord Page Web. Ouvrez l’aide pour copier les valeurs préparées.",
+    "message.sidebarDialogHint": "Copiez un bloc YAML panel_iframe prêt à l’emploi pour Home Assistant.",
+    "message.sidebarPluginUnavailable": "Aucune URL de lancement n’est encore disponible.",
+    "message.sidebarPluginUrlCopied": "URL de {name} copiée.",
+    "message.sidebarPluginYamlCopied": "Bloc YAML panel_iframe de {name} copié.",
+    "message.sidebarPluginCopyFallback": "{name} : la copie est bloquée par le navigateur. Le texte est sélectionné ci-dessous ; appuyez sur Ctrl+C.",
+    "label.sidebarUrl": "URL de la barre latérale",
+    "label.sidebarYaml": "configuration.yaml",
+    "label.sidebarUrlToggle": "Afficher l’URL de la barre latérale",
+    "label.capabilitiesToggle": "Afficher les capacités ({count})",
+    "label.noCapabilities": "Aucune capacité déclarée",
+    "summary.noPlugins": "Aucun plugin installé",
+    "summary.oneActive": "Un plugin actif s’ouvre directement depuis le démarrage d’ATLAS",
+    "summary.many": "{plugins} plugins détectés, {active} actif(s)",
+    "button.open": "Ouvrir",
+    "button.copyUrl": "Copier l’URL",
+    "button.copyYaml": "Copier le YAML",
+    "button.close": "Fermer",
+    "button.planned": "Prévu",
+    "button.disabled": "Désactivé",
+    "button.noLaunchPage": "Aucune page d’accueil disponible",
+    "status.active": "Actif",
+    "status.available": "Disponible",
+    "status.planned": "Prévu",
+    "status.disabled": "Désactivé",
+    "alt.pluginImage": "Image du plugin {name}",
+    "guide.sidebarStep1": "Ouvrez configuration.yaml ou Paramètres Home Assistant > Tableaux de bord.",
+    "guide.sidebarStep2": "Collez le bloc panel_iframe copié ou créez un tableau de bord Page Web.",
+    "guide.sidebarStep3": "Vérifiez le YAML, rechargez les iFrames du panneau ou redémarrez Home Assistant.",
+  },
 };
 let currentLanguage = readStoredLanguage();
 let lastPlugins = [];
@@ -111,10 +161,11 @@ loadPlugins();
 function readStoredLanguage() {
   try {
     const urlLanguage = new URL(window.location.href).searchParams.get("language");
-    if (urlLanguage === "de" || urlLanguage === "en") {
+    if (["de", "en", "fr"].includes(urlLanguage)) {
       return urlLanguage;
     }
-    return sessionStorage.getItem("atlas.pluginHub.sessionLanguage") === "en" ? "en" : "de";
+    const storedLanguage = sessionStorage.getItem("atlas.pluginHub.sessionLanguage");
+    return ["de", "en", "fr"].includes(storedLanguage) ? storedLanguage : "de";
   } catch {
     return "de";
   }
@@ -143,6 +194,7 @@ function localizedPluginText(plugin, field, fallback = "") {
 
 function applyLanguage() {
   document.documentElement.lang = currentLanguage;
+  document.title = t("page.title");
   for (const element of document.querySelectorAll("[data-i18n]")) {
     element.textContent = t(element.dataset.i18n);
   }
@@ -155,7 +207,7 @@ function applyLanguage() {
 }
 
 function setLanguage(language) {
-  currentLanguage = language === "en" ? "en" : "de";
+  currentLanguage = ["de", "en", "fr"].includes(language) ? language : "de";
   try {
     sessionStorage.setItem("atlas.pluginHub.sessionLanguage", currentLanguage);
   } catch {

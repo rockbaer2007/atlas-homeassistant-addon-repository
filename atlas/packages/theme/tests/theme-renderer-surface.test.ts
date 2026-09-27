@@ -35,7 +35,29 @@ describe("themed renderer DOM surfaces", () => {
     expect(execution.result).toMatchObject({ mounted: true, output });
     expect(execution.report.mounted).toBe(true);
     expect(element.innerHTML).toContain('data-status="ready"');
+    expect(element.innerHTML).toContain('role="status" aria-live="polite" aria-atomic="true"');
     expect(element.values.get("--atlas-color-accent")).toBe("#c2410c");
+  });
+
+  it("escapes dynamic status text before mounting accessible HTML", async () => {
+    const element = createSurfaceElement();
+    const output = createThemeRendererStatusOutput("ready", {
+      title: "<img src=x onerror=alert(1)>",
+      detail: "<script>alert(1)</script>",
+    });
+
+    const execution = await executeThemedRendererDomSurfaceScenario({
+      output,
+      target: { kind: "surface", name: "atlas-status", identifier: "atlas-status-root" },
+      element,
+      tokens: createThemeTokens(),
+    });
+
+    expect(execution.result.mounted).toBe(true);
+    expect(element.innerHTML).toContain("&lt;img src=x onerror=alert(1)&gt;");
+    expect(element.innerHTML).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(element.innerHTML).not.toContain("<script>");
+    expect(element.innerHTML).toContain('role="status" aria-live="polite"');
   });
 
   it("replaces status output while retaining the themed surface", async () => {

@@ -142,6 +142,16 @@ h1 {
   padding: 12px;
 }
 
+.french-translation-note {
+  margin: 10px 0 0;
+  color: var(--atlas-muted);
+  font-size: 0.9rem;
+}
+
+html:not([lang="fr"]) .french-translation-note {
+  display: none;
+}
+
 .sidebar-hint p {
   margin: 0;
   color: var(--atlas-muted);
