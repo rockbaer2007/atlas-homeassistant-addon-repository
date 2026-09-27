@@ -8,6 +8,7 @@ import { inflateRawSync } from "node:zlib";
 import * as tar from "tar";
 import * as pty from "node-pty";
 import { WebSocketServer } from "ws";
+import { isTrustedAtlasOrigin as isTrustedAtlasRequestOrigin } from "./atlas-request-origin.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -477,18 +478,7 @@ function isSameOriginRequest(request) {
 }
 
 function isTrustedAtlasOrigin(request) {
-  if (isSameOriginRequest(request)) return true;
-  const origin = request.headers.origin;
-  const hostHeader = request.headers.host;
-  if (typeof origin !== "string" || typeof hostHeader !== "string") return false;
-  try {
-    const originUrl = new URL(origin);
-    const requestHost = new URL(`http://${hostHeader}`);
-    return originUrl.hostname.toLowerCase() === requestHost.hostname.toLowerCase()
-      && [adminPort, editorPort].includes(Number(originUrl.port));
-  } catch {
-    return false;
-  }
+  return isTrustedAtlasRequestOrigin(request, { adminPort, editorPort });
 }
 
 function rejectTerminalUpgrade(socket, code) {

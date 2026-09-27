@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.243
+
+- Fix external plugin installs through Home Assistant Ingress.
+- Keep detailed server installation errors visible in the Plugin Manager.
+
 ## 0.1.242
 
 - Keep generated surface links inside Home Assistant Ingress so the app entry does not escape to a Home Assistant 404 route.

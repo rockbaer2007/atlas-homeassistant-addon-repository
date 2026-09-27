@@ -472,7 +472,7 @@ const translations = {
     "message.pluginRepositoryPluginInstalled": "{name} installed from repository.",
     "message.pluginRepositoryPluginUpdated": "{name} updated from repository.",
     "message.pluginRepositoryPluginRemoved": "{name} removed.",
-    "message.pluginRepositoryInstallFailed": "{name} could not be installed from repository.",
+    "message.pluginRepositoryInstallFailed": "{name} could not be installed ({error}).",
     "message.pluginRepositoryUpdateAvailable": "Update available: {installed} -> {available}",
     "message.pluginRepositoryInstalledVersion": "Installed: {version}",
     "message.pluginRepositoryBundledVersion": "Built in: {version}",
@@ -714,7 +714,7 @@ const translations = {
     "message.pluginRepositoryPluginInstalled": "{name} aus Repository installiert.",
     "message.pluginRepositoryPluginUpdated": "{name} aus Repository aktualisiert.",
     "message.pluginRepositoryPluginRemoved": "{name} entfernt.",
-    "message.pluginRepositoryInstallFailed": "{name} konnte nicht aus dem Repository installiert werden.",
+    "message.pluginRepositoryInstallFailed": "{name} konnte nicht installiert werden ({error}).",
     "message.pluginRepositoryUpdateAvailable": "Update verfügbar: {installed} -> {available}",
     "message.pluginRepositoryInstalledVersion": "Installiert: {version}",
     "message.pluginRepositoryBundledVersion": "Eingebaut: {version}",
@@ -2404,8 +2404,11 @@ async function installRepositoryPluginPackage(plugin) {
       wasInstalled ? "message.pluginRepositoryPluginUpdated" : "message.pluginRepositoryPluginInstalled",
       { name: descriptor.name },
     );
-  } catch {
-    adminSaveState.textContent = t("message.pluginRepositoryInstallFailed", { name: localizedPluginText(plugin, "name", plugin.id) });
+  } catch (error) {
+    adminSaveState.textContent = t("message.pluginRepositoryInstallFailed", {
+      name: localizedPluginText(plugin, "name", plugin.id),
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
