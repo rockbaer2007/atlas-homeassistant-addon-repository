@@ -63,10 +63,29 @@ function readThemePreferenceFromLocation() {
 function readLanguageFromLocation() {
   try {
     const language = new URL(window.location.href).searchParams.get("language");
-    return language === "de" || language === "en" ? language : "de";
+    if (["de", "en", "fr"].includes(language)) {
+      return language === "de" || language === "en" ? language : "en";
+    }
   } catch {
-    return "de";
+    // Continue with the saved shared preference.
   }
+  try {
+    const language = localStorage.getItem("atlas.languagePreference");
+    if (language === "de" || language === "en") return language;
+    if (language === "fr") return "en";
+  } catch {
+    // Try the shared cookie when local storage is unavailable.
+  }
+  try {
+    const cookie = document.cookie.split(";").map(value => value.trim())
+      .find(value => value.startsWith("atlas_language_preference="));
+    const language = cookie ? decodeURIComponent(cookie.slice("atlas_language_preference=".length)) : "";
+    if (language === "de" || language === "en") return language;
+    if (language === "fr") return "en";
+  } catch {
+    // Fall back to the browser language.
+  }
+  return navigator.language?.toLowerCase().startsWith("de") ? "de" : "en";
 }
 
 function bindHubLinks() {
@@ -99,8 +118,22 @@ function applyThemePreference(preference = currentThemePreference) {
   bindHubLinks();
 }
 
-function applyLanguage(language = currentLanguage) {
-  currentLanguage = language === "en" ? "en" : "de";
+function applyLanguage(language = currentLanguage, persistPreference = false) {
+  currentLanguage = language === "de" ? "de" : "en";
+  if (persistPreference) {
+    try {
+      localStorage.setItem("atlas.languagePreference", currentLanguage);
+      localStorage.setItem("atlas.automationExporter.language", currentLanguage);
+    } catch {
+      // Keep the in-memory language when browser storage is unavailable.
+    }
+    try {
+      const secure = window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `atlas_language_preference=${encodeURIComponent(currentLanguage)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+    } catch {
+      // Keep the in-memory language when cookies are unavailable.
+    }
+  }
   document.documentElement.lang = currentLanguage;
   updateChromeControls();
   updateLocationState();
@@ -157,7 +190,7 @@ for (const button of document.querySelectorAll("[data-theme-mode]")) {
   button.addEventListener("click", () => applyThemePreference(button.dataset.themeMode));
 }
 for (const button of document.querySelectorAll("[data-language]")) {
-  button.addEventListener("click", () => applyLanguage(button.dataset.language));
+  button.addEventListener("click", () => applyLanguage(button.dataset.language, true));
 }
 window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener("change", () => {
   if (currentThemePreference === "auto") {

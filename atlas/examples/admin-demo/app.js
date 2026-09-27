@@ -71,6 +71,7 @@ const pluginGeneratorPreview = document.querySelector("#plugin-generator-preview
 const pluginGeneratorStatus = document.querySelector("#plugin-generator-status");
 const downloadPluginGeneratorPackage = document.querySelector("#download-plugin-generator-package");
 const downloadPluginGeneratorCatalog = document.querySelector("#download-plugin-generator-catalog");
+const downloadPluginGeneratorDocumentation = document.querySelector("#download-plugin-generator-documentation");
 const openPluginRepositoryDialog = document.querySelector("#open-plugin-repository-dialog");
 const pluginRepositoryDialog = document.querySelector("#plugin-repository-dialog");
 const pluginRepositoryUrl = document.querySelector("#plugin-repository-url");
@@ -322,6 +323,7 @@ const translations = {
     "button.openPluginManager": "Open Plugin Manager",
     "button.downloadPluginPackage": "Download plugin package",
     "button.downloadPluginCatalog": "Download repository catalog",
+    "button.downloadPluginDocumentation": "Download plugin documentation",
     "label.generatorPluginId": "Plugin ID",
     "label.generatorPluginName": "Name",
     "label.generatorDescription": "Description",
@@ -339,6 +341,7 @@ const translations = {
     "message.generatorIconLoadFailed": "The local MDI icon list could not be loaded.",
     "message.pluginGeneratorHint": "Enter the plugin details. ATLAS generates an install package and repository catalog file for you to review and publish.",
     "message.generatorCapabilitiesHint": "Only declare capabilities the plugin actually needs.",
+    "message.pluginGeneratorDocumentationDownloaded": "Generated plugin documentation downloaded.",
     "message.pluginGeneratorInvalid": "Check the plugin ID, name, version and entry path.",
     "message.pluginGeneratorReady": "Preview updated. The package includes a small editable HTML/CSS/JavaScript starter.",
     "message.pluginGeneratorCatalogDownloaded": "Repository catalog downloaded. Review its package paths and add the plugin files before publishing.",
@@ -567,6 +570,7 @@ const translations = {
     "button.openPluginManager": "Plugin-Manager öffnen",
     "button.downloadPluginPackage": "Plugin-Paket herunterladen",
     "button.downloadPluginCatalog": "Repository-Katalog herunterladen",
+    "button.downloadPluginDocumentation": "Plugin-Dokumentation herunterladen",
     "label.generatorPluginId": "Plugin-ID",
     "label.generatorPluginName": "Name",
     "label.generatorDescription": "Beschreibung",
@@ -584,6 +588,7 @@ const translations = {
     "message.generatorIconLoadFailed": "Die lokale MDI-Iconliste konnte nicht geladen werden.",
     "message.pluginGeneratorHint": "Gib die Plugin-Daten ein. ATLAS erstellt ein Installationspaket und eine Repository-Katalogdatei, die du prüfen und veröffentlichen kannst.",
     "message.generatorCapabilitiesHint": "Deklariere nur Fähigkeiten, die das Plugin tatsächlich benötigt.",
+    "message.pluginGeneratorDocumentationDownloaded": "Die erzeugte Plugin-Dokumentation wurde heruntergeladen.",
     "message.pluginGeneratorInvalid": "Prüfe Plugin-ID, Name, Version und Einstiegspfad.",
     "message.pluginGeneratorReady": "Vorschau aktualisiert. Das Paket enthält ein kleines HTML/CSS/JavaScript-Grundgerüst zum Anpassen.",
     "message.pluginGeneratorCatalogDownloaded": "Repository-Katalog heruntergeladen. Prüfe die Paketpfade und füge vor der Veröffentlichung die Plugin-Dateien hinzu.",
@@ -812,6 +817,7 @@ const translations = {
     "button.openPluginManager": "Ouvrir le gestionnaire de plugins",
     "button.downloadPluginPackage": "Télécharger le paquet du plugin",
     "button.downloadPluginCatalog": "Télécharger le catalogue du dépôt",
+    "button.downloadPluginDocumentation": "Télécharger la documentation du plugin",
     "label.generatorPluginId": "Identifiant du plugin",
     "label.generatorPluginName": "Nom",
     "label.generatorDescription": "Description",
@@ -829,6 +835,7 @@ const translations = {
     "message.generatorIconLoadFailed": "La liste locale des icônes MDI n’a pas pu être chargée.",
     "message.pluginGeneratorHint": "Saisissez les détails du plugin. ATLAS génère un paquet d’installation et un fichier de catalogue à vérifier et publier.",
     "message.generatorCapabilitiesHint": "Déclarez uniquement les capacités réellement nécessaires au plugin.",
+    "message.pluginGeneratorDocumentationDownloaded": "La documentation générée du plugin a été téléchargée.",
     "message.pluginGeneratorInvalid": "Vérifiez l’identifiant, le nom, la version et le chemin d’entrée du plugin.",
     "message.pluginGeneratorReady": "Aperçu actualisé. Le paquet contient une base HTML/CSS/JavaScript facile à adapter.",
     "message.pluginGeneratorCatalogDownloaded": "Catalogue du dépôt téléchargé. Vérifiez les chemins des paquets et ajoutez les fichiers du plugin avant publication.",
@@ -3381,6 +3388,17 @@ function buildPluginGeneratorOutput() {
     preview: selectedPng ? iconAsset : "preview.svg",
     capabilities,
   };
+  const documentation = generatePluginDocumentation({
+    id,
+    name,
+    description,
+    version,
+    entry,
+    capabilities,
+    icon: iconSource === "mdi" ? `mdi:${selectedIcon.name}` : iconAsset,
+    files: ["atlas-plugin.json", "README.md", "index.html", "styles.css", "app.js", iconAsset, ...(!selectedPng ? ["logo.svg", "preview.svg", "LICENSES/mdi-icons.txt", "THIRD-PARTY-NOTICES.md"] : [])],
+    language: currentLanguage,
+  });
   const xmlName = escapePluginXml(name);
   const htmlName = escapePluginHtml(name);
   const htmlDescription = escapePluginHtml(description);
@@ -3389,7 +3407,7 @@ function buildPluginGeneratorOutput() {
     {
       path: "README.md",
       mediaType: "text/markdown",
-      content: `# ${name}\n\n${description}\n\n${selectedPng ? "The plugin uses the provided PNG icon (colors and transparency are preserved)." : `The plugin icon is mdi:${selectedIcon.name}. See THIRD-PARTY-NOTICES.md and LICENSES/mdi-icons.txt for its attribution and license information.`}\n\n## Development\n\nEdit the manifest and files in this package, then rebuild it with the ATLAS plugin template.\n`,
+      content: documentation,
     },
     {
       path: "index.html",
@@ -3483,7 +3501,91 @@ function buildPluginGeneratorOutput() {
     }],
   };
 
-  return { filename, installPackage, manifest, pluginFiles, repository };
+  return { filename, installPackage, manifest, pluginFiles, repository, documentation };
+}
+
+function generatePluginDocumentation({ id, name, description, version, entry, capabilities, icon, files, language }) {
+  const copy = {
+    de: {
+      details: "Plugin-Details", id: "Plugin-ID", version: "Version", entry: "Einstiegspunkt", icon: "Icon",
+      capabilities: "Deklarierte Fähigkeiten", none: "Keine zusätzlichen Fähigkeiten deklariert.", files: "Enthaltene Dateien",
+      install: "Installation in ATLAS", installSteps: [
+        "Öffne ATLAS Administration und den Plugin-Manager.",
+        "Importiere die heruntergeladene `.atlas-plugin.json`-Paketdatei.",
+        "Prüfe die Metadaten und Fähigkeiten, bevor du das Plugin aktivierst.",
+      ],
+      publish: "Veröffentlichung über ein Repository", publishText: "Lege das Paket und die zugehörigen Plugin-Dateien im Repository an den Pfaden ab, die in `repository.json` angegeben sind. Prüfe anschließend Paket- und Manifest-URLs im Plugin-Manager, bevor du das Repository veröffentlichst.",
+      maintain: "Weiterentwicklung", maintainText: "Passe `index.html`, `styles.css` und `app.js` an. Aktualisiere bei einer Veröffentlichung die Plugin-Version in Manifest, Paket und Repository-Katalog gemeinsam.",
+      generated: "Diese Dokumentation wurde aus den Angaben im ATLAS Plugin-Generator erstellt.",
+    },
+    en: {
+      details: "Plugin details", id: "Plugin ID", version: "Version", entry: "Entry point", icon: "Icon",
+      capabilities: "Declared capabilities", none: "No additional capabilities declared.", files: "Included files",
+      install: "Install in ATLAS", installSteps: [
+        "Open the Plugin Manager in ATLAS Administration.",
+        "Import the downloaded `.atlas-plugin.json` package file.",
+        "Review the metadata and capabilities before activating the plugin.",
+      ],
+      publish: "Publish through a repository", publishText: "Place the package and its plugin files at the paths referenced by `repository.json`. Then verify the package and manifest URLs in the Plugin Manager before publishing the repository.",
+      maintain: "Development", maintainText: "Customize `index.html`, `styles.css` and `app.js`. When publishing a release, update the plugin version in the manifest, package and repository catalog together.",
+      generated: "This documentation was generated from the details entered in the ATLAS Plugin Generator.",
+    },
+    fr: {
+      details: "Détails du plugin", id: "Identifiant du plugin", version: "Version", entry: "Point d’entrée", icon: "Icône",
+      capabilities: "Capacités déclarées", none: "Aucune capacité supplémentaire déclarée.", files: "Fichiers inclus",
+      install: "Installation dans ATLAS", installSteps: [
+        "Ouvrez le gestionnaire de plugins dans l’administration ATLAS.",
+        "Importez le fichier de paquet `.atlas-plugin.json` téléchargé.",
+        "Vérifiez les métadonnées et les capacités avant d’activer le plugin.",
+      ],
+      publish: "Publication dans un dépôt", publishText: "Placez le paquet et ses fichiers aux chemins indiqués dans `repository.json`. Vérifiez ensuite les URL du paquet et du manifeste dans le gestionnaire de plugins avant de publier le dépôt.",
+      maintain: "Développement", maintainText: "Personnalisez `index.html`, `styles.css` et `app.js`. Lors d’une publication, mettez à jour ensemble la version du plugin dans le manifeste, le paquet et le catalogue du dépôt.",
+      generated: "Cette documentation a été générée à partir des informations saisies dans le générateur de plugins ATLAS.",
+    },
+  }[language] ?? {
+    details: "Plugin details", id: "Plugin ID", version: "Version", entry: "Entry point", icon: "Icon",
+    capabilities: "Declared capabilities", none: "No additional capabilities declared.", files: "Included files",
+    install: "Install in ATLAS", installSteps: ["Open the Plugin Manager in ATLAS Administration.", "Import the downloaded `.atlas-plugin.json` package file.", "Review the metadata and capabilities before activating the plugin."],
+    publish: "Publish through a repository", publishText: "Place the package and its plugin files at the paths referenced by `repository.json`. Verify the package and manifest URLs before publishing the repository.",
+    maintain: "Development", maintainText: "Customize `index.html`, `styles.css` and `app.js`. Keep the version in the manifest, package and repository catalog in sync.",
+    generated: "Generated from the ATLAS Plugin Generator.",
+  };
+  const tableCell = value => String(value ?? "").replaceAll("|", "\\|").replaceAll("\n", " ");
+  const capabilityList = capabilities.length ? capabilities.map(value => `- \`${value}\``).join("\n") : copy.none;
+  return [
+    `# ${name}`,
+    "",
+    description,
+    "",
+    copy.generated,
+    "",
+    `## ${copy.details}`,
+    "",
+    `| ${copy.id} | ${copy.version} | ${copy.entry} | ${copy.icon} |`,
+    "| --- | --- | --- | --- |",
+    `| \`${tableCell(id)}\` | \`${tableCell(version)}\` | \`${tableCell(entry)}\` | \`${tableCell(icon)}\` |`,
+    "",
+    `## ${copy.capabilities}`,
+    "",
+    capabilityList,
+    "",
+    `## ${copy.files}`,
+    "",
+    ...files.map(file => `- \`${file}\``),
+    "",
+    `## ${copy.install}`,
+    "",
+    ...copy.installSteps.map((step, index) => `${index + 1}. ${step}`),
+    "",
+    `## ${copy.publish}`,
+    "",
+    copy.publishText,
+    "",
+    `## ${copy.maintain}`,
+    "",
+    copy.maintainText,
+    "",
+  ].join("\n");
 }
 
 function escapePluginHtml(value) {
@@ -3499,6 +3601,7 @@ function renderPluginGeneratorPreview() {
   const valid = Boolean(output);
   downloadPluginGeneratorPackage.disabled = !valid;
   downloadPluginGeneratorCatalog.disabled = !valid;
+  downloadPluginGeneratorDocumentation.disabled = !valid;
   pluginGeneratorStatus.textContent = t(valid ? "message.pluginGeneratorReady" : "message.pluginGeneratorInvalid");
   pluginGeneratorPreview.textContent = valid
     ? JSON.stringify({ manifest: output.manifest, installPackage: output.installPackage, repository: output.repository }, null, 2)
@@ -3651,6 +3754,14 @@ function downloadGeneratedPluginCatalog() {
   if (!output) return;
   downloadTextFile("repository.json", `${JSON.stringify(output.repository, null, 2)}\n`, "application/json");
   pluginGeneratorStatus.textContent = t("message.pluginGeneratorCatalogDownloaded");
+}
+
+function downloadGeneratedPluginDocumentation() {
+  const output = renderPluginGeneratorPreview();
+  if (!output) return;
+  const slug = output.manifest.id.split(".").at(-1).replace(/[^a-z0-9-]/g, "-");
+  downloadTextFile(`${slug}-README.md`, output.documentation, "text/markdown;charset=utf-8");
+  pluginGeneratorStatus.textContent = t("message.pluginGeneratorDocumentationDownloaded");
 }
 
 function createSecretSummary(secrets) {
@@ -4463,6 +4574,7 @@ for (const input of Object.values(pluginGeneratorInputs)) {
 }
 downloadPluginGeneratorPackage.addEventListener("click", downloadGeneratedPluginPackage);
 downloadPluginGeneratorCatalog.addEventListener("click", downloadGeneratedPluginCatalog);
+downloadPluginGeneratorDocumentation.addEventListener("click", downloadGeneratedPluginDocumentation);
 importPluginPackage.addEventListener("click", () => pluginPackageFile.click());
 pluginPackageFile.addEventListener("change", importSelectedPluginPackage);
 openPluginRepositoryDialog.addEventListener("click", openPluginRepositoryAddDialog);

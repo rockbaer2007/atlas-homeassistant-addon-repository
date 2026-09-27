@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.263
+
+- Apply the shared saved language preference to the Card Editor and Automation Exporter, preserving direct URL language overrides.
+- Extend the Plugin Generator with a localized README in generated packages and a separate documentation download.
+- Update the bundled Automation Exporter / Editor to `0.1.24`.
+
 ## 0.1.262
 
 - Add French interface support to ATLAS Terminal and File Studio controls.

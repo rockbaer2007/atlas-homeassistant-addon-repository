@@ -223,6 +223,8 @@ const configurationStorageKey = "atlas.homeassistant.demo.configuration";
 const entityCatalogCacheStorageKey = "atlas.homeassistant.demo.entityCatalogCache";
 const exportFilenameHistoryStorageKey = "atlas.homeassistant.demo.exportFilenameHistory";
 const atlasThemeStorageKey = "atlas.themePreference";
+const atlasLanguageStorageKey = "atlas.languagePreference";
+const atlasLanguageCookieName = "atlas_language_preference";
 const defaultAtlasExportEntityIds = ["binary_sensor.atlas_status", "sensor.atlas_temperature"];
 const problemReportIssueUrl = "https://github.com/rockbaer2007/atlas/issues/new";
 const adminOrigin = createPortOrigin(4175);
@@ -1251,6 +1253,17 @@ function applyTranslations() {
 
 function setLanguage(language) {
   currentLanguage = language === "de" ? "de" : "en";
+  try {
+    localStorage.setItem(atlasLanguageStorageKey, currentLanguage);
+  } catch {
+    // Keep the in-memory language when browser storage is unavailable.
+  }
+  try {
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${atlasLanguageCookieName}=${encodeURIComponent(currentLanguage)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+  } catch {
+    // Keep the in-memory language when cookies are unavailable.
+  }
   applyTranslations();
   renderCardTargetOptions(haCardTarget.value);
   renderExpertEditorOptions();
@@ -1280,10 +1293,32 @@ function readThemePreferenceFromLocation() {
 function readLanguageFromLocation() {
   try {
     const language = new URL(window.location.href).searchParams.get("language");
-    return language === "de" || language === "en" ? language : undefined;
+    if (language === "de" || language === "en") return language;
+    if (language === "fr") return "en";
   } catch {
-    return undefined;
+    // Continue with the saved shared preference.
   }
+  return undefined;
+}
+
+function readSharedLanguagePreference() {
+  try {
+    const language = localStorage.getItem(atlasLanguageStorageKey);
+    if (language === "de" || language === "en") return language;
+    if (language === "fr") return "en";
+  } catch {
+    // Try the shared cookie if local storage is unavailable.
+  }
+  try {
+    const cookie = document.cookie.split(";").map(value => value.trim())
+      .find(value => value.startsWith(`${atlasLanguageCookieName}=`));
+    const language = cookie ? decodeURIComponent(cookie.slice(atlasLanguageCookieName.length + 1)) : "";
+    if (language === "de" || language === "en") return language;
+    if (language === "fr") return "en";
+  } catch {
+    // Leave the current default language in place.
+  }
+  return undefined;
 }
 
 function normalizeEditorStartMode(value) {
@@ -1561,8 +1596,11 @@ restoreThemePreference();
 try {
   const savedConfiguration = JSON.parse(localStorage.getItem(configurationStorageKey) ?? "null");
   const urlLanguage = readLanguageFromLocation();
+  const sharedLanguage = readSharedLanguagePreference();
   if (urlLanguage) {
     currentLanguage = urlLanguage;
+  } else if (sharedLanguage) {
+    currentLanguage = sharedLanguage;
   } else if (savedConfiguration?.language === "de" || savedConfiguration?.language === "en") {
     currentLanguage = savedConfiguration.language;
   }
