@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.251
+
+- Add automatic tabs for installed plugins, switch to a selected plugin on install, and remove oversized preview images from manager repository listings.
+
 ## 0.1.250
 
 - Stack the Plugin Manager and access policy, reduce the manager panel's stretched height, and give runtime links more space with regular-weight URLs.

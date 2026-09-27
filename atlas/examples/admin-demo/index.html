@@ -569,6 +569,36 @@
         gap: 10px;
       }
 
+      .plugin-manager-tabs {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding: 2px 0 6px;
+        border-bottom: 1px solid var(--atlas-border);
+      }
+
+      .plugin-manager-tab {
+        flex: 0 0 auto;
+        min-height: 34px;
+        border: 1px solid var(--atlas-border-strong);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+        color: var(--atlas-text);
+        padding: 6px 11px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .plugin-manager-tab[aria-selected="true"] {
+        border-color: var(--atlas-accent);
+        background: color-mix(in srgb, var(--atlas-accent) 18%, var(--atlas-panel));
+        color: var(--atlas-accent);
+      }
+
+      .plugin-card[hidden] {
+        display: none;
+      }
+
       .plugin-manager-dialog {
         width: min(1160px, calc(100vw - 32px));
         max-height: calc(100vh - 32px);
@@ -1037,16 +1067,6 @@
         place-items: center;
       }
 
-      .plugin-preview {
-        width: 100%;
-        max-height: 150px;
-        margin-top: 10px;
-        border: 1px solid var(--atlas-border);
-        border-radius: 6px;
-        object-fit: cover;
-        background: var(--atlas-panel-soft);
-      }
-
       .danger-icon-button {
         min-width: 36px;
         width: 36px;
@@ -1484,7 +1504,8 @@
             <output id="plugin-repository-status" aria-live="polite"></output>
             <div id="plugin-repository-plugin-list" class="plugin-list"></div>
           </div>
-          <div id="plugin-list" class="plugin-list"></div>
+          <div id="plugin-manager-tabs" class="plugin-manager-tabs" role="tablist" aria-label="Installed plugins"></div>
+          <div id="plugin-list" class="plugin-list" role="tabpanel" tabindex="0"></div>
       </section>
     </dialog>
     <dialog id="plugin-uninstall-dialog" class="plugin-uninstall-dialog" aria-labelledby="plugin-uninstall-heading">

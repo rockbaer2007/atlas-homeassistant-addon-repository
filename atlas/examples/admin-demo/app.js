@@ -95,6 +95,7 @@ const pluginUninstallMessage = document.querySelector("#plugin-uninstall-message
 const adminSaveState = document.querySelector("#admin-save-state");
 const pluginSummary = document.querySelector("#plugin-summary");
 const pluginManagerSummary = document.querySelector("#plugin-manager-summary");
+const pluginManagerTabs = document.querySelector("#plugin-manager-tabs");
 const pluginList = document.querySelector("#plugin-list");
 const policySummary = document.querySelector("#policy-summary");
 const allowAddonsPath = document.querySelector("#allow-addons-path");
@@ -278,6 +279,8 @@ const defaultActivePluginIds = [
 ];
 
 let currentLanguage = "en";
+let selectedPluginManagerTab = "overview";
+let previousPluginManagerIds;
 let currentThemePreference = "auto";
 let activePluginIds = new Set(defaultActivePluginIds);
 let importedPluginDescriptors = [];
@@ -306,6 +309,7 @@ const translations = {
     "heading.releaseChecks": "Release checks",
     "heading.releaseTargets": "Distribution targets",
     "heading.plugins": "Installed plugins",
+    "tab.pluginOverview": "All plugins",
     "heading.pluginManager": "Plugin Manager",
     "heading.uninstallPlugin": "Uninstall plugin",
     "heading.pluginUpdates": "External plugin updates",
@@ -549,6 +553,7 @@ const translations = {
     "heading.releaseChecks": "Freigabe-Checks",
     "heading.releaseTargets": "Ausgabeziele",
     "heading.plugins": "Installierte Plugins",
+    "tab.pluginOverview": "Alle Plugins",
     "heading.pluginManager": "Plugin-Manager",
     "heading.uninstallPlugin": "Plugin deinstallieren",
     "heading.pluginUpdates": "Externe Plugin-Updates",
@@ -2606,13 +2611,6 @@ function renderPluginRepositoryPreview() {
     }
     titleGroup.append(title, description);
     header.append(media, titleGroup, status);
-    if (plugin.previewUrl) {
-      const preview = document.createElement("img");
-      preview.className = "plugin-preview";
-      preview.src = plugin.previewUrl;
-      preview.alt = "";
-      item.append(preview);
-    }
     details.append(
       createDetail(t("label.availableVersion"), [plugin.version || "-"]),
       createDetail(t("label.installedVersion"), [
@@ -2623,7 +2621,6 @@ function renderPluginRepositoryPreview() {
       createDetail(t("label.compatibility"), formatRepositoryPluginCompatibility(plugin.compatibility)),
       createDetail(t("label.icon"), [plugin.iconUrl || "-"]),
       createDetail(t("label.logo"), [plugin.logoUrl || "-"]),
-      createDetail(t("label.preview"), [plugin.previewUrl || "-"]),
       createDetail("Manifest", [plugin.manifestUrl || "-"]),
       createDetail("Package", [plugin.packageUrl || "-"]),
       createDetail(t("label.capabilities"), plugin.capabilities),
@@ -3897,7 +3894,55 @@ function renderAdministration() {
   renderAppReleaseReadiness();
   pluginList.replaceChildren();
 
+  const pluginIds = new Set(view.plugins.map(plugin => plugin.id));
+  if (previousPluginManagerIds) {
+    const addedPlugin = view.plugins.find(plugin => !previousPluginManagerIds.has(plugin.id));
+    if (addedPlugin) selectedPluginManagerTab = addedPlugin.id;
+  }
+  previousPluginManagerIds = pluginIds;
+  if (selectedPluginManagerTab !== "overview" && !pluginIds.has(selectedPluginManagerTab)) {
+    selectedPluginManagerTab = "overview";
+  }
+  pluginManagerTabs.replaceChildren();
+  pluginManagerTabs.setAttribute("aria-label", currentLanguage === "de" ? "Installierte Plugins" : "Installed plugins");
+
+  const createPluginTab = (id, label) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "plugin-manager-tab";
+    button.id = `plugin-tab-${pluginManagerTabs.children.length}`;
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-controls", "plugin-list");
+    button.setAttribute("aria-selected", String(selectedPluginManagerTab === id));
+    button.tabIndex = selectedPluginManagerTab === id ? 0 : -1;
+    button.textContent = label;
+    button.addEventListener("click", () => {
+      selectedPluginManagerTab = id;
+      renderAdministration();
+      pluginManagerTabs.querySelector('[aria-selected="true"]')?.focus();
+    });
+    pluginManagerTabs.append(button);
+  };
+
+  createPluginTab("overview", t("tab.pluginOverview"));
   for (const plugin of view.plugins) {
+    createPluginTab(plugin.id, localizedPluginText(plugin, "name", plugin.id));
+  }
+  pluginManagerTabs.onkeydown = event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    const tabs = Array.from(pluginManagerTabs.querySelectorAll('[role="tab"]'));
+    const currentIndex = tabs.indexOf(document.activeElement);
+    if (currentIndex < 0 || !tabs.length) return;
+    event.preventDefault();
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? tabs.length - 1
+        : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    tabs[nextIndex].focus();
+    tabs[nextIndex].click();
+  };
+  for (const [pluginIndex, plugin] of view.plugins.entries()) {
     const item = document.createElement("article");
     const header = document.createElement("div");
     const media = document.createElement("div");
@@ -3909,6 +3954,9 @@ function renderAdministration() {
     const actions = document.createElement("div");
 
     item.className = "plugin-card";
+    item.id = `plugin-panel-${pluginIndex}`;
+    item.setAttribute("role", "group");
+    item.hidden = selectedPluginManagerTab !== "overview" && selectedPluginManagerTab !== plugin.id;
     header.className = "plugin-header";
     media.className = "plugin-media";
     status.className = "plugin-status";
@@ -3956,6 +4004,10 @@ function renderAdministration() {
     item.append(header, details, actions);
     pluginList.append(item);
   }
+
+  const selectedTab = Array.from(pluginManagerTabs.querySelectorAll('[role="tab"]'))
+    .find(tab => tab.getAttribute("aria-selected") === "true");
+  if (selectedTab) pluginList.setAttribute("aria-labelledby", selectedTab.id);
 }
 
 function setLanguage(language) {
