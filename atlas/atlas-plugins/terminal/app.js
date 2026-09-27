@@ -43,6 +43,20 @@ const translations = {
     connected: "Connected", badToken: "Access denied: check the token", denied: "Terminal disabled or origin not allowed",
     failed: "Terminal connection failed",
   },
+  fr: {
+    backToHub: "Retour au hub",
+    targetLabel: "Cible", localTarget: "ATLAS local", sshTarget: "Home Assistant · SSH",
+    themeLabel: "Thème Oh My Posh", defaultTheme: "Par défaut", themesUnavailable: "Impossible de charger les thèmes",
+    fontSize: "Taille de police", connect: "Connecter", disconnect: "Déconnecter",
+    tokenSettings: "Paramètres du jeton", tokenLabel: "Jeton d’accès au terminal", tokenPlaceholder: "Saisissez le jeton configuré sur le serveur",
+    show: "Afficher", hide: "Masquer", forgetToken: "Oublier le jeton enregistré",
+    tokenHelp: "Le jeton est enregistré dans ce navigateur et envoyé au serveur uniquement lors de la connexion.",
+    disconnected: "Déconnecté", footer: "Couleurs ANSI · Invite shell inspirée d’Oh My Posh",
+    banner: "Un jeton d’accès configuré sur le serveur est nécessaire pour se connecter.", tokenRequired: "Saisissez un jeton d’accès valide",
+    disabled: "Le terminal est désactivé sur le serveur", configError: "Impossible de charger la configuration du serveur",
+    connected: "Connecté", badToken: "Accès refusé : vérifiez le jeton", denied: "Terminal désactivé ou origine non autorisée",
+    failed: "Échec de la connexion au terminal",
+  },
 };
 let currentLanguage = readLanguage();
 const socketPath = `${location.pathname.replace(/\/index\.html$/, "").replace(/\/$/, "")}/socket`;
@@ -76,9 +90,14 @@ applyLanguage();
 terminal.writeln(`\x1b[1;36mATLAS Terminal\x1b[0m  ·  \x1b[90m${translate("banner")}\x1b[0m`);
 
 function readLanguage() {
+  const requested = new URL(location.href).searchParams.get("language");
+  if (requested === "de" || requested === "en" || requested === "fr") return requested;
+  const preference = localStorage.getItem("atlas.languagePreference");
+  if (preference === "de" || preference === "en" || preference === "fr") return preference;
   const stored = localStorage.getItem("atlas.terminal.language");
-  if (stored === "de" || stored === "en") return stored;
-  return navigator.language?.toLowerCase().startsWith("en") ? "en" : "de";
+  if (stored === "de" || stored === "en" || stored === "fr") return stored;
+  const browserLanguage = navigator.language?.toLowerCase() ?? "";
+  return browserLanguage.startsWith("fr") ? "fr" : browserLanguage.startsWith("en") ? "en" : "de";
 }
 
 function translate(key) {
@@ -87,6 +106,7 @@ function translate(key) {
 
 function applyLanguage() {
   document.documentElement.lang = currentLanguage;
+  localStorage.setItem("atlas.languagePreference", currentLanguage);
   document.querySelectorAll("[data-i18n]").forEach(element => {
     element.textContent = translate(element.dataset.i18n);
   });

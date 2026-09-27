@@ -23,6 +23,7 @@
           <div class="segmented-control language-toggle" aria-label="Sprache">
             <button type="button" data-language="de">DE</button>
             <button type="button" data-language="en">EN</button>
+            <button type="button" data-language="fr">FR</button>
           </div>
           <button id="height-limit-toggle" class="button toggle-button" type="button" aria-pressed="true">
             Max. Höhe begrenzen
@@ -112,6 +113,7 @@
           <p class="file-upload-note" id="file-upload-note">
             <span id="file-upload-note-de">Upload-Limit: 64 MiB. Größere Dateien bitte über die <a href="https://github.com/home-assistant/addons/tree/master/samba" target="_blank" rel="noopener noreferrer">Home-Assistant-Samba-App</a> übertragen.</span>
             <span id="file-upload-note-en" hidden>Upload limit: 64 MiB. Transfer larger files with the <a href="https://github.com/home-assistant/addons/tree/master/samba" target="_blank" rel="noopener noreferrer">Home Assistant Samba add-on</a>.</span>
+            <span id="file-upload-note-fr" hidden>Limite d’envoi : 64 Mio. Pour les fichiers plus volumineux, utilisez l’<a href="https://github.com/home-assistant/addons/tree/master/samba" target="_blank" rel="noopener noreferrer">extension Samba de Home Assistant</a>.</span>
           </p>
           <div id="editor-input" class="editor-input" role="textbox" aria-label="Dateieditor"></div>
           <div class="status-row">
@@ -178,10 +180,10 @@
         </header>
         <div class="archive-preview-table">
           <div class="archive-preview-table-header">
-            <span>Name</span>
-            <span>Größe</span>
-            <span>Typ</span>
-            <span>Aktion</span>
+          <span>Name</span>
+          <span>Größe</span>
+          <span>Typ</span>
+          <span>Aktion</span>
           </div>
           <div id="archive-preview-list" class="archive-preview-list"></div>
         </div>
@@ -237,7 +239,10 @@
       function readLanguageFromLocation() {
         try {
           const language = new URL(window.location.href).searchParams.get("language");
-          return language === "de" || language === "en" ? language : "de";
+          if (["de", "en", "fr"].includes(language)) return language;
+          const stored = localStorage.getItem("atlas.languagePreference");
+          if (["de", "en", "fr"].includes(stored)) return stored;
+          return navigator.language?.toLowerCase().startsWith("fr") ? "fr" : "de";
         } catch {
           return "de";
         }
@@ -278,10 +283,32 @@
       }
 
       function applyLanguagePreference(language = currentLanguage) {
-        currentLanguage = language === "en" ? "en" : "de";
+        currentLanguage = ["de", "en", "fr"].includes(language) ? language : "de";
         document.documentElement.lang = currentLanguage;
-        document.querySelector("#file-upload-note-de").hidden = currentLanguage !== "de";
-        document.querySelector("#file-upload-note-en").hidden = currentLanguage !== "en";
+        try { localStorage.setItem("atlas.languagePreference", currentLanguage); } catch { /* Storage may be disabled. */ }
+        for (const locale of ["de", "en", "fr"]) {
+          const note = document.querySelector(`#file-upload-note-${locale}`);
+          if (note) note.hidden = currentLanguage !== locale;
+        }
+        const chrome = {
+          de: { subtitle: "Dateibaum, Editor, YAML-Prüfung und Transfer für freigegebene Home-Assistant-Pfade.", hub: "Plugin Hub", tree: "Dateibaum", folder: "Ordnerinhalt", editor: "Editorfläche", themeLight: "Light", themeDark: "Dark", height: "Max. Höhe begrenzen", width: "Max. Breite begrenzen", discard: "Verwerfen", validate: "YAML prüfen", checkHa: "HA prüfen", history: "Verlauf", report: "Problem melden" },
+          en: { subtitle: "File tree, editor, YAML validation and transfer for approved Home Assistant paths.", hub: "Plugin Hub", tree: "File tree", folder: "Folder contents", editor: "Editor", themeLight: "Light", themeDark: "Dark", height: "Limit max. height", width: "Limit max. width", discard: "Discard", validate: "Validate YAML", checkHa: "Check HA", history: "History", report: "Report a problem" },
+          fr: { subtitle: "Arborescence, éditeur, validation YAML et transfert dans les chemins Home Assistant autorisés.", hub: "Hub des plugins", tree: "Arborescence", folder: "Contenu du dossier", editor: "Éditeur", themeLight: "Clair", themeDark: "Sombre", height: "Limiter la hauteur", width: "Limiter la largeur", discard: "Annuler les modifications", validate: "Vérifier le YAML", checkHa: "Vérifier HA", history: "Historique", report: "Signaler un problème" },
+        }[currentLanguage];
+        document.querySelector(".studio-header > div > p:not(.eyebrow)").textContent = chrome.subtitle;
+        document.querySelector("[data-open-hub]").textContent = chrome.hub;
+        document.querySelector(".file-tree .panel-heading h2").textContent = chrome.tree;
+        document.querySelector(".folder-panel .panel-heading h2").textContent = chrome.folder;
+        document.querySelector("#editor-title").textContent = chrome.editor;
+        document.querySelector('[data-theme-mode="light"]').textContent = chrome.themeLight;
+        document.querySelector('[data-theme-mode="dark"]').textContent = chrome.themeDark;
+        document.querySelector("#height-limit-toggle").textContent = chrome.height;
+        document.querySelector("#width-limit-toggle").textContent = chrome.width;
+        document.querySelector("#discard-file").textContent = chrome.discard;
+        document.querySelector("#validate-file").textContent = chrome.validate;
+        document.querySelector("#check-ha-config").textContent = chrome.checkHa;
+        document.querySelector("#show-history").textContent = chrome.history;
+        document.querySelector("#report-problem").textContent = chrome.report;
         updateChromeControls();
         updateLocationState();
         bindHubLinks(currentThemePreference);
@@ -866,7 +893,7 @@
             const extractButton = document.createElement("button");
             extractButton.type = "button";
             extractButton.className = "archive-entry-extract";
-            extractButton.textContent = "Entpacken";
+            extractButton.textContent = currentLanguage === "en" ? "Extract" : "Entpacken";
             extractButton.setAttribute("aria-label", `${extractButton.textContent}: ${entry.path}`);
             extractButton.addEventListener("click", () => void extractArchiveEntry(entry));
             row.append(extractButton);
@@ -1892,7 +1919,11 @@
       async function extractArchiveEntry(entry) {
         if (!state.selectedFilePath || entry?.type !== "file") return;
         const defaultName = entry.name || entry.path.split("/").filter(Boolean).at(-1) || "datei";
-        const name = await showPromptDialog("ZIP-Datei entpacken", "Dateiname", defaultName);
+        const name = await showPromptDialog(
+          currentLanguage === "en" ? "Extract ZIP file" : "ZIP-Datei entpacken",
+          currentLanguage === "en" ? "File name" : "Dateiname",
+          defaultName,
+        );
         if (!name) return;
         try {
           const extracted = await apiJson("api/file-studio/extract-entry", {
@@ -1906,9 +1937,15 @@
           });
           await loadDirectoryTree({ preserveSelection: false });
           await openFile(createFileNode(extracted));
-          setStatus(`Entpackt: ${extracted.path}`, "ok");
+          setStatus(
+            currentLanguage === "en" ? `Extracted: ${extracted.path}` : `Entpackt: ${extracted.path}`,
+            "ok",
+          );
         } catch (error) {
-          setStatus(`Entpacken fehlgeschlagen: ${error instanceof Error ? error.message : "unbekannter Fehler"}`, "warning");
+          setStatus(
+            `${currentLanguage === "en" ? "Extraction failed" : "Entpacken fehlgeschlagen"}: ${describeFileStudioError(error)}`,
+            "warning",
+          );
         }
       }
 
@@ -2109,7 +2146,9 @@
         if (!oversizedFiles.length) return false;
         const message = currentLanguage === "en"
           ? "Upload not started: A selected file exceeds the 64 MiB limit. Use the Samba add-on linked above for larger files."
-          : "Upload nicht gestartet: Mindestens eine ausgewählte Datei überschreitet 64 MiB. Bitte für größere Dateien die oben verlinkte Samba-App verwenden.";
+          : currentLanguage === "fr"
+            ? "Envoi non démarré : un fichier sélectionné dépasse la limite de 64 Mio. Pour les fichiers plus volumineux, utilisez l’extension Samba indiquée ci-dessus."
+            : "Upload nicht gestartet: Mindestens eine ausgewählte Datei überschreitet 64 MiB. Bitte für größere Dateien die oben verlinkte Samba-App verwenden.";
         setStatus(message, "warning");
         return true;
       }

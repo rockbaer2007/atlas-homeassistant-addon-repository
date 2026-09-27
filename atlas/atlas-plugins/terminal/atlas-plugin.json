@@ -3,15 +3,17 @@
   "name": "ATLAS Terminal",
   "nameI18n": {
     "de": "ATLAS Terminal",
-    "en": "ATLAS Terminal"
+    "en": "ATLAS Terminal",
+    "fr": "Terminal ATLAS"
   },
   "version": "0.1.7",
   "description": "Authenticated local terminal with ANSI colors, adjustable font size, optional SSH, Oh My Posh themes and a return link to the ATLAS Hub.",
   "descriptionI18n": {
     "de": "Authentifiziertes lokales Webterminal mit ANSI-Farben, einstellbarer Schriftgröße, optionalem SSH, Oh-My-Posh-Themes und einem Rückweg zum ATLAS Hub.",
-    "en": "Authenticated local terminal with ANSI colors, adjustable font size, optional SSH, Oh My Posh themes and a return link to the ATLAS Hub."
+    "en": "Authenticated local terminal with ANSI colors, adjustable font size, optional SSH, Oh My Posh themes and a return link to the ATLAS Hub.",
+    "fr": "Terminal Web local authentifié avec couleurs ANSI, taille de police réglable, SSH en option, thèmes Oh My Posh et lien de retour vers le hub ATLAS."
   },
-  "status": "available",
+  "status": "active",
   "order": 30,
   "entry": "/plugin-assets/terminal/index.html",
   "icon": "icon.svg",

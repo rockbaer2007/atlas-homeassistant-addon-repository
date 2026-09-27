@@ -3,15 +3,17 @@
   "name": "ATLAS File Studio",
   "nameI18n": {
     "de": "ATLAS File Studio",
-    "en": "ATLAS File Studio"
+    "en": "ATLAS File Studio",
+    "fr": "ATLAS File Studio"
   },
-  "version": "0.1.39",
+  "version": "0.1.40",
   "description": "Scoped file tree, editor, image preview, ZIP inspection, backup and diagnostics plugin for Home Assistant configuration files.",
   "descriptionI18n": {
     "de": "Abgesichertes Dateibaum-, Editor-, Bildvorschau-, ZIP-, Backup- und Diagnose-Plugin für Home-Assistant-Konfigurationsdateien.",
-    "en": "Scoped file tree, editor, image preview, ZIP inspection, backup and diagnostics plugin for Home Assistant configuration files."
+    "en": "Scoped file tree, editor, image preview, ZIP inspection, backup and diagnostics plugin for Home Assistant configuration files.",
+    "fr": "Plugin sécurisé de gestion des fichiers, d’édition, d’aperçu d’images, d’inspection ZIP, de sauvegarde et de diagnostic pour Home Assistant."
   },
-  "status": "available",
+  "status": "active",
   "order": 20,
   "entry": "/plugin-assets/file-studio/index.html",
   "icon": "icon.svg",

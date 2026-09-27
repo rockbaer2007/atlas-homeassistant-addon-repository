@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.262
+
+- Add French interface support to ATLAS Terminal and File Studio controls.
+
 ## 0.1.261
 
 - Keep Plugin Hub language buttons in one row and make the Plugin Manager launch button taller in French for its longer label.
