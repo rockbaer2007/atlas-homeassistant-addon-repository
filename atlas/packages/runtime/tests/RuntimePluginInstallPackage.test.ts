@@ -114,6 +114,39 @@ describe("RuntimePluginInstallPackage", () => {
     expect(parsed.files).toHaveLength(1);
   });
 
+  it("normalizes the published ATLAS plugin-package envelope", () => {
+    const manifest = serializeRuntimePluginInstallManifest(plugin);
+    const parsed = parseRuntimePluginInstallPackage({
+      kind: "atlas.plugin.package",
+      filename: "card-editor.atlas-plugin.json",
+      atlas: { type: "plugin-package", schemaVersion: 1 },
+      plugin: {
+        ...plugin,
+        status: "active",
+        order: 30,
+        entry: "/plugin-assets/card-editor/index.html",
+      },
+      files: [
+        { path: "atlas-plugin.json", content: manifest },
+        { path: "README.md", content: "# Plugin" },
+        { path: "index.html", content: "<!doctype html>" },
+        { path: "app.js", content: "console.log('ready');" },
+        { path: "icon.svg", content: "<svg></svg>" },
+      ],
+    });
+
+    expect(parsed.kind).toBe("atlas.runtime.plugin.install-package");
+    expect(parsed.filename).toBe("card-editor.atlas-plugin.json");
+    expect(parsed.plugin).toMatchObject({ id: plugin.id, version: plugin.version });
+    expect(parsed.files.map(file => [file.path, file.mediaType])).toEqual([
+      ["atlas-plugin.json", "application/json"],
+      ["README.md", "text/markdown"],
+      ["index.html", "text/html"],
+      ["app.js", "text/javascript"],
+      ["icon.svg", "image/svg+xml"],
+    ]);
+  });
+
   it("preserves base64 encoding for binary plugin assets", () => {
     const parsed = parseRuntimePluginInstallPackage({
       kind: "atlas.runtime.plugin.install-package",
@@ -134,6 +167,22 @@ describe("RuntimePluginInstallPackage", () => {
     }]);
   });
 
+  it("deduplicates identical file paths and rejects conflicting duplicates", () => {
+    const readme = { path: "README.md", mediaType: "text/markdown", content: "# Plugin" };
+    const parsed = parseRuntimePluginInstallPackage({
+      kind: "atlas.runtime.plugin.install-package",
+      plugin,
+      files: [readme, { ...readme }],
+    });
+
+    expect(parsed.files).toEqual([readme]);
+    expect(() => parseRuntimePluginInstallPackage({
+      kind: "atlas.runtime.plugin.install-package",
+      plugin,
+      files: [readme, { ...readme, content: "# Different plugin" }],
+    })).toThrow("Runtime plugin package contains conflicting duplicate file paths: README.md.");
+  });
+
   it("rejects invalid install packages", () => {
     expect(() => parseRuntimePluginInstallPackage("{")).toThrow(
       "Runtime plugin install package JSON is invalid.",
@@ -146,5 +195,11 @@ describe("RuntimePluginInstallPackage", () => {
       kind: "other",
       plugin,
     })).toThrow("Runtime plugin install package kind is invalid.");
+    expect(() => parseRuntimePluginInstallPackage({
+      kind: "atlas.plugin.package",
+      atlas: { type: "plugin-package", schemaVersion: 2 },
+      plugin,
+      files: [],
+    })).toThrow("ATLAS plugin package schema is invalid.");
   });
 });

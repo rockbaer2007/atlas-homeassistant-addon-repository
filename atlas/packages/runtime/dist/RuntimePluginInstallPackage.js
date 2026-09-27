@@ -35,7 +35,7 @@ export function serializeRuntimePluginInstallManifest(plugin) {
     }, null, 2)}\n`;
 }
 export function parseRuntimePluginInstallPackage(value) {
-    const packageValue = typeof value === "string" ? parseJson(value) : value;
+    const packageValue = normalizePluginPackageEnvelope(typeof value === "string" ? parseJson(value) : value);
     if (!isRecord(packageValue)) {
         throw new Error("Runtime plugin install package must be an object.");
     }
@@ -48,6 +48,55 @@ export function parseRuntimePluginInstallPackage(value) {
         plugin: readRuntimePluginDescriptor(packageValue.plugin),
         files: readInstallPackageFiles(packageValue.files),
     };
+}
+function normalizePluginPackageEnvelope(value) {
+    if (!isRecord(value) || value.kind !== "atlas.plugin.package") {
+        return value;
+    }
+    if (!isRecord(value.atlas)
+        || value.atlas.type !== "plugin-package"
+        || value.atlas.schemaVersion !== 1) {
+        throw new Error("ATLAS plugin package schema is invalid.");
+    }
+    const files = value.files;
+    if (files !== undefined && !Array.isArray(files)) {
+        throw new Error("Runtime plugin install package files must be an array.");
+    }
+    return {
+        kind: "atlas.runtime.plugin.install-package",
+        filename: value.filename,
+        plugin: value.plugin,
+        files: files?.map(file => {
+            if (!isRecord(file)) {
+                throw new Error("Runtime plugin install package file is invalid.");
+            }
+            if (file.mediaType !== undefined && typeof file.mediaType !== "string") {
+                throw new Error("Runtime plugin package media type must be a string.");
+            }
+            return {
+                ...file,
+                mediaType: file.mediaType ?? inferPluginPackageMediaType(file.path),
+            };
+        }),
+    };
+}
+function inferPluginPackageMediaType(path) {
+    if (typeof path !== "string")
+        return "application/octet-stream";
+    const extension = path.split(".").at(-1)?.toLowerCase();
+    switch (extension) {
+        case "css": return "text/css";
+        case "html":
+        case "htm": return "text/html";
+        case "js":
+        case "mjs": return "text/javascript";
+        case "json": return "application/json";
+        case "md": return "text/markdown";
+        case "svg": return "image/svg+xml";
+        case "yaml":
+        case "yml": return "application/yaml";
+        default: return "application/octet-stream";
+    }
 }
 export function normalizeRuntimePluginPackageName(value) {
     const normalized = value
@@ -91,17 +140,29 @@ function readInstallPackageFiles(value) {
     if (!Array.isArray(value)) {
         throw new Error("Runtime plugin install package files must be an array.");
     }
-    return value.map(file => {
+    const files = new Map();
+    for (const file of value) {
         if (!isRecord(file)) {
             throw new Error("Runtime plugin install package file is invalid.");
         }
-        return {
+        const parsedFile = {
             path: readRequiredString(file.path, "Runtime plugin package file path is required."),
             mediaType: readRequiredString(file.mediaType, "Runtime plugin package file media type is required."),
             content: readRequiredString(file.content, "Runtime plugin package file content is required."),
             ...(readOptionalContentEncoding(file.contentEncoding) ? { contentEncoding: "base64" } : {}),
         };
-    });
+        const existing = files.get(parsedFile.path);
+        if (existing) {
+            if (existing.mediaType !== parsedFile.mediaType
+                || existing.content !== parsedFile.content
+                || existing.contentEncoding !== parsedFile.contentEncoding) {
+                throw new Error(`Runtime plugin package contains conflicting duplicate file paths: ${parsedFile.path}.`);
+            }
+            continue;
+        }
+        files.set(parsedFile.path, parsedFile);
+    }
+    return [...files.values()];
 }
 function readOptionalContentEncoding(value) {
     if (value === undefined)

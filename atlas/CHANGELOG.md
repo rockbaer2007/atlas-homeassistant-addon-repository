@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.248
+
+- Keep the current Runtime package parser in the Home Assistant Add-on build context and deduplicate identical paths again on the server before staging.
+
 ## 0.1.247
 
 - Deduplicate identical file paths in plugin install packages to prevent staging collisions.

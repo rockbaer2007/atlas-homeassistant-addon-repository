@@ -3034,6 +3034,7 @@ async function writePluginInstallResponse(request, response) {
     }
 
     const normalizedFiles = [];
+    const filesByPath = new Map();
     let totalBytes = 0;
     for (const file of files) {
       if (
@@ -3057,11 +3058,20 @@ async function writePluginInstallResponse(request, response) {
       } else {
         content = Buffer.from(file.content, "utf8");
       }
+      const existingFile = filesByPath.get(file.path);
+      if (existingFile) {
+        if (!existingFile.equals(content)) {
+          writeJson(response, 400, { error: `plugin package contains conflicting duplicate file paths: ${file.path}` });
+          return;
+        }
+        continue;
+      }
       totalBytes += content.length;
       if (totalBytes > 20_000_000) {
         writeJson(response, 413, { error: "plugin package exceeds the 20 MB limit" });
         return;
       }
+      filesByPath.set(file.path, content);
       normalizedFiles.push({ path: file.path, content });
     }
 

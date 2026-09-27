@@ -125,9 +125,11 @@ additional files into a package description that later archive builders or
 administration UIs can turn into a downloadable artifact.
 
 `parseRuntimePluginInstallPackage()` reads such a package description back into
-a validated plugin descriptor and file list. It does not execute plugin code;
-administration surfaces can use it to inspect or register imported package
-metadata safely.
+a validated plugin descriptor and file list. It accepts both the Runtime
+install-package envelope and the published `atlas.plugin.package` envelope
+(schema version 1), normalizing either to the Runtime shape. It does not execute
+plugin code; administration surfaces can use it to inspect or register
+imported package metadata safely.
 
 The package-root public API is covered by contract tests. Consumers should
 import Runtime types and values from `@atlas/runtime` rather than deep source
