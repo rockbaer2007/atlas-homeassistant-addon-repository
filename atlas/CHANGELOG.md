@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.254
+
+- Put installed plugins in individual tabs and collapse repository and update details by default.
+
 ## 0.1.253
 
 - Fix the ATLAS repository logo path when Administration is opened through Home Assistant ingress.

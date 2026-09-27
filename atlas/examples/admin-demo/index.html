@@ -577,6 +577,30 @@
         border-bottom: 1px solid var(--atlas-border);
       }
 
+      .plugin-manager-section {
+        margin: 12px 0;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+      }
+
+      .plugin-manager-section > summary {
+        cursor: pointer;
+        padding: 10px 12px;
+        color: var(--atlas-text);
+        font-weight: 700;
+      }
+
+      .plugin-manager-section[open] {
+        display: grid;
+        gap: 8px;
+        padding: 0 10px 10px;
+      }
+
+      .plugin-manager-section[open] > summary {
+        margin: 0 -10px;
+      }
+
       .plugin-manager-tab {
         flex: 0 0 auto;
         min-height: 34px;
@@ -763,11 +787,6 @@
       .plugin-update-panel {
         display: grid;
         gap: 8px;
-        margin: 12px 0;
-        border: 1px solid var(--atlas-border);
-        border-radius: 6px;
-        background: var(--atlas-panel-soft);
-        padding: 10px;
       }
 
       .plugin-update-list {
@@ -853,7 +872,6 @@
       .plugin-repository-tools {
         display: grid;
         gap: 10px;
-        margin: 12px 0;
       }
 
       dialog {
@@ -1482,30 +1500,36 @@
               </span>
             </button>
           </div>
-          <div class="plugin-update-panel" aria-labelledby="plugin-updates-heading">
-            <div class="panel-header">
-              <div>
-                <h3 id="plugin-updates-heading" data-i18n="heading.pluginUpdates">Plugin updates</h3>
-                <p data-i18n="message.pluginUpdatesHint">Atlas checks custom plugin repositories on Administration start and after reload.</p>
-              </div>
-              <button id="refresh-plugin-updates" type="button" data-i18n="button.refreshPluginUpdates">Check updates</button>
-            </div>
-            <output id="plugin-update-summary" aria-live="polite"></output>
-            <div id="plugin-update-list" class="plugin-update-list"></div>
-          </div>
-          <div class="plugin-repository-tools">
-            <div class="panel-header">
-              <div>
-                <h3 data-i18n="label.pluginRepositories">Custom repositories</h3>
-              </div>
-              <button id="refresh-plugin-repositories" type="button" data-i18n="button.refreshRepositories">Refresh repositories</button>
-            </div>
-            <div id="plugin-repository-list" class="repository-list"></div>
-            <output id="plugin-repository-status" aria-live="polite"></output>
-            <div id="plugin-repository-plugin-list" class="plugin-list"></div>
-          </div>
           <div id="plugin-manager-tabs" class="plugin-manager-tabs" role="tablist" aria-label="Installed plugins"></div>
           <div id="plugin-list" class="plugin-list" role="tabpanel" tabindex="0"></div>
+          <details class="plugin-manager-section">
+            <summary data-i18n="heading.pluginUpdates">Plugin updates</summary>
+            <div class="plugin-update-panel">
+              <div class="panel-header">
+                <div>
+                  <h3 id="plugin-updates-heading" data-i18n="heading.pluginUpdates">Plugin updates</h3>
+                  <p data-i18n="message.pluginUpdatesHint">Atlas checks custom plugin repositories on Administration start and after reload.</p>
+                </div>
+                <button id="refresh-plugin-updates" type="button" data-i18n="button.refreshPluginUpdates">Check updates</button>
+              </div>
+              <output id="plugin-update-summary" aria-live="polite"></output>
+              <div id="plugin-update-list" class="plugin-update-list"></div>
+            </div>
+          </details>
+          <details class="plugin-manager-section">
+            <summary data-i18n="label.pluginRepositoriesAndPackages">Repositories and available plugins</summary>
+            <div class="plugin-repository-tools">
+              <div class="panel-header">
+                <div>
+                  <h3 data-i18n="label.pluginRepositories">Custom repositories</h3>
+                </div>
+                <button id="refresh-plugin-repositories" type="button" data-i18n="button.refreshRepositories">Refresh repositories</button>
+              </div>
+              <div id="plugin-repository-list" class="repository-list"></div>
+              <output id="plugin-repository-status" aria-live="polite"></output>
+              <div id="plugin-repository-plugin-list" class="plugin-list"></div>
+            </div>
+          </details>
       </section>
     </dialog>
     <dialog id="plugin-uninstall-dialog" class="plugin-uninstall-dialog" aria-labelledby="plugin-uninstall-heading">

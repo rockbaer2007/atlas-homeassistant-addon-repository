@@ -279,7 +279,7 @@ const defaultActivePluginIds = [
 ];
 
 let currentLanguage = "en";
-let selectedPluginManagerTab = "overview";
+let selectedPluginManagerTab = "";
 let previousPluginManagerIds;
 let currentThemePreference = "auto";
 let activePluginIds = new Set(defaultActivePluginIds);
@@ -309,7 +309,6 @@ const translations = {
     "heading.releaseChecks": "Release checks",
     "heading.releaseTargets": "Distribution targets",
     "heading.plugins": "Installed plugins",
-    "tab.pluginOverview": "All plugins",
     "heading.pluginManager": "Plugin Manager",
     "heading.uninstallPlugin": "Uninstall plugin",
     "heading.pluginUpdates": "External plugin updates",
@@ -462,6 +461,8 @@ const translations = {
     "message.pluginPackageImportFailed": "Plugin package could not be imported.",
     "message.pluginPackageRemoved": "{name} imported package removed.",
     "message.pluginRepositoryEmpty": "Add an ATLAS repository to preview installable plugins.",
+    "message.noInstalledPlugins": "No plugins are installed yet.",
+    "label.pluginRepositoriesAndPackages": "Repositories and available plugins",
     "message.pluginRepositoryDuplicate": "This repository is already listed.",
     "message.pluginRepositoryAdded": "Repository added.",
     "message.pluginRepositoryRemoved": "Repository removed.",
@@ -553,7 +554,6 @@ const translations = {
     "heading.releaseChecks": "Freigabe-Checks",
     "heading.releaseTargets": "Ausgabeziele",
     "heading.plugins": "Installierte Plugins",
-    "tab.pluginOverview": "Alle Plugins",
     "heading.pluginManager": "Plugin-Manager",
     "heading.uninstallPlugin": "Plugin deinstallieren",
     "heading.pluginUpdates": "Externe Plugin-Updates",
@@ -706,6 +706,8 @@ const translations = {
     "message.pluginPackageImportFailed": "Plugin-Paket konnte nicht importiert werden.",
     "message.pluginPackageRemoved": "{name} importiertes Paket entfernt.",
     "message.pluginRepositoryEmpty": "Füge ein ATLAS-Repository hinzu, um installierbare Plugins anzusehen.",
+    "message.noInstalledPlugins": "Es sind noch keine Plugins installiert.",
+    "label.pluginRepositoriesAndPackages": "Repositories und verfügbare Plugins",
     "message.pluginRepositoryDuplicate": "Dieses Repository ist bereits in der Liste.",
     "message.pluginRepositoryAdded": "Repository hinzugefügt.",
     "message.pluginRepositoryRemoved": "Repository entfernt.",
@@ -2405,6 +2407,7 @@ async function installRepositoryPluginPackage(plugin) {
       ...importedPluginDescriptors.filter(entry => entry.id !== descriptor.id),
       installedPlugin,
     ];
+    selectedPluginManagerTab = descriptor.id;
     activePluginIds.add(descriptor.id);
     persistImportedPlugins();
     persistPluginState();
@@ -3870,6 +3873,7 @@ async function importSelectedPluginPackage() {
       files: installPackage.files,
       iconDataUrl,
     }];
+    selectedPluginManagerTab = plugin.id;
     persistImportedPlugins();
     renderAdministration();
     adminSaveState.textContent = t("message.pluginPackageImported", { name: localizedPluginText(plugin, "name", plugin.id) });
@@ -3900,8 +3904,8 @@ function renderAdministration() {
     if (addedPlugin) selectedPluginManagerTab = addedPlugin.id;
   }
   previousPluginManagerIds = pluginIds;
-  if (selectedPluginManagerTab !== "overview" && !pluginIds.has(selectedPluginManagerTab)) {
-    selectedPluginManagerTab = "overview";
+  if (!pluginIds.has(selectedPluginManagerTab)) {
+    selectedPluginManagerTab = view.plugins[0]?.id ?? "";
   }
   pluginManagerTabs.replaceChildren();
   pluginManagerTabs.setAttribute("aria-label", currentLanguage === "de" ? "Installierte Plugins" : "Installed plugins");
@@ -3924,7 +3928,6 @@ function renderAdministration() {
     pluginManagerTabs.append(button);
   };
 
-  createPluginTab("overview", t("tab.pluginOverview"));
   for (const plugin of view.plugins) {
     createPluginTab(plugin.id, localizedPluginText(plugin, "name", plugin.id));
   }
@@ -3956,7 +3959,7 @@ function renderAdministration() {
     item.className = "plugin-card";
     item.id = `plugin-panel-${pluginIndex}`;
     item.setAttribute("role", "group");
-    item.hidden = selectedPluginManagerTab !== "overview" && selectedPluginManagerTab !== plugin.id;
+    item.hidden = selectedPluginManagerTab !== plugin.id;
     header.className = "plugin-header";
     media.className = "plugin-media";
     status.className = "plugin-status";
@@ -4003,6 +4006,12 @@ function renderAdministration() {
 
     item.append(header, details, actions);
     pluginList.append(item);
+  }
+
+  if (!view.plugins.length) {
+    const empty = document.createElement("p");
+    empty.textContent = t("message.noInstalledPlugins");
+    pluginList.append(empty);
   }
 
   const selectedTab = Array.from(pluginManagerTabs.querySelectorAll('[role="tab"]'))
