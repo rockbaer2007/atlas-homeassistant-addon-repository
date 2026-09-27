@@ -93,8 +93,10 @@ app routes so Hub and sidebar links work through Home Assistant Ingress and from
 other client devices.
 
 Administration and Plugin Hub include French translations for all current
-interface message keys. Plugin-provided names and descriptions may use another
-available language when no French version is provided.
+interface message keys and share the saved DE/EN/FR language preference across
+the Administration and app ports.
+Plugin-provided names and descriptions may use another available language when
+no French version is provided.
 
 ## Add-on connection options
 
@@ -135,13 +137,14 @@ targets.
 
 ## French interface
 
-Administration now has French translations for all current interface message keys.
+Administration and Plugin Hub now share the saved DE/EN/FR language preference
+across app ports.
 Plugin screens may still use English when the plugin does not provide French text.
 
 ## Update note
 
 Home Assistant may show two versions during Add-on updates: `old` is the
 installed version, `target` is the new version from this repository. After this
-ATLAS update, `target` should be at least `0.1.259`. If Home Assistant still
+ATLAS update, `target` should be at least `0.1.260`. If Home Assistant still
 shows an older target version, reload the repository information in the Add-on
 Store and then restart the ATLAS Add-on.

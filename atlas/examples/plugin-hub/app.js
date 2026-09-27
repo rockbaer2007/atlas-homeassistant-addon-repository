@@ -11,6 +11,9 @@ const FileStudioPluginId = "atlas.plugin.file-studio";
 const HomeAssistantCardEditorPluginId = "atlas.plugin.homeassistant-card-editor";
 const AutomationExporterPluginId = "atlas.plugin.automation-exporter-editor";
 const TerminalPluginId = "atlas.plugin.terminal";
+const atlasLanguageStorageKey = "atlas.languagePreference";
+const atlasLanguageCookieName = "atlas_language_preference";
+const pluginHubLanguageStorageKey = "atlas.pluginHub.sessionLanguage";
 const translations = {
   en: {
     "page.title": "ATLAS Plugin Hub",
@@ -164,7 +167,22 @@ function readStoredLanguage() {
     if (["de", "en", "fr"].includes(urlLanguage)) {
       return urlLanguage;
     }
-    const storedLanguage = sessionStorage.getItem("atlas.pluginHub.sessionLanguage");
+    let sharedLanguage;
+    try {
+      sharedLanguage = localStorage.getItem(atlasLanguageStorageKey);
+    } catch {
+      sharedLanguage = undefined;
+    }
+    if (["de", "en", "fr"].includes(sharedLanguage)) {
+      return sharedLanguage;
+    }
+    const cookie = document.cookie.split("; ")
+      .find((entry) => entry.startsWith(`${atlasLanguageCookieName}=`));
+    const cookieLanguage = cookie ? decodeURIComponent(cookie.slice(atlasLanguageCookieName.length + 1)) : "";
+    if (["de", "en", "fr"].includes(cookieLanguage)) {
+      return cookieLanguage;
+    }
+    const storedLanguage = sessionStorage.getItem(pluginHubLanguageStorageKey);
     return ["de", "en", "fr"].includes(storedLanguage) ? storedLanguage : "de";
   } catch {
     return "de";
@@ -209,9 +227,20 @@ function applyLanguage() {
 function setLanguage(language) {
   currentLanguage = ["de", "en", "fr"].includes(language) ? language : "de";
   try {
-    sessionStorage.setItem("atlas.pluginHub.sessionLanguage", currentLanguage);
+    localStorage.setItem(atlasLanguageStorageKey, currentLanguage);
   } catch {
-    // Ignore storage failures in restricted browser contexts.
+    // Keep the in-memory choice and shared cookie when local storage is restricted.
+  }
+  try {
+    sessionStorage.setItem(pluginHubLanguageStorageKey, currentLanguage);
+  } catch {
+    // The shared preference remains available to other ATLAS surfaces.
+  }
+  try {
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${atlasLanguageCookieName}=${encodeURIComponent(currentLanguage)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+  } catch {
+    // Keep the in-memory choice when browser storage is unavailable.
   }
   applyLanguage();
   renderPlugins(lastPlugins);

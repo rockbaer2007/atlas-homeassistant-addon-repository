@@ -113,6 +113,8 @@ const appReleaseTargets = document.querySelector("#app-release-targets");
 const parcelProviderSummary = document.querySelector("#parcel-provider-summary");
 const parcelProviderList = document.querySelector("#parcel-provider-list");
 const adminStorageKey = "atlas.administration.configuration";
+const atlasLanguageStorageKey = "atlas.languagePreference";
+const atlasLanguageCookieName = "atlas_language_preference";
 const adminPluginStorageKey = "atlas.administration.importedPlugins";
 const adminPluginStateStorageKey = "atlas.administration.pluginState";
 const adminPluginStateVersionStorageKey = "atlas.administration.pluginStateVersion";
@@ -1113,6 +1115,39 @@ function readLanguageFromLocation() {
   }
 }
 
+function readSharedLanguagePreference() {
+  try {
+    const localPreference = localStorage.getItem(atlasLanguageStorageKey);
+    if (["de", "en", "fr"].includes(localPreference)) {
+      return localPreference;
+    }
+  } catch {
+    // The shared cookie can still carry the preference across app ports.
+  }
+  try {
+    const cookie = document.cookie.split("; ")
+      .find((entry) => entry.startsWith(`${atlasLanguageCookieName}=`));
+    const value = cookie ? decodeURIComponent(cookie.slice(atlasLanguageCookieName.length + 1)) : "";
+    return ["de", "en", "fr"].includes(value) ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function saveSharedLanguagePreference(language) {
+  try {
+    localStorage.setItem(atlasLanguageStorageKey, language);
+  } catch {
+    // Cookie storage remains available when local storage is restricted.
+  }
+  try {
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${atlasLanguageCookieName}=${encodeURIComponent(language)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+  } catch {
+    // Keep the in-memory choice when browser storage is unavailable.
+  }
+}
+
 function currentSystemTheme() {
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
@@ -1754,10 +1789,14 @@ function restoreConfiguration() {
     const saved = JSON.parse(localStorage.getItem(adminStorageKey) ?? "null");
     let migratedConfiguration = false;
     const urlLanguage = readLanguageFromLocation();
+    const sharedLanguage = readSharedLanguagePreference();
     if (urlLanguage) {
       currentLanguage = urlLanguage;
+    } else if (["de", "en", "fr"].includes(sharedLanguage)) {
+      currentLanguage = sharedLanguage;
     } else if (["de", "en", "fr"].includes(saved?.language)) {
       currentLanguage = saved.language;
+      saveSharedLanguagePreference(currentLanguage);
     }
     restoreThemePreference(saved?.themePreference);
     if (typeof saved?.url === "string") {
@@ -4271,6 +4310,7 @@ function renderAdministration() {
 
 function setLanguage(language) {
   currentLanguage = ["de", "en", "fr"].includes(language) ? language : "en";
+  saveSharedLanguagePreference(currentLanguage);
   applyTranslations();
   renderParcelProviders();
   renderPluginRepositories();
