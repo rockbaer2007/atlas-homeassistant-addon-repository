@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.253
+
+- Fix the ATLAS repository logo path when Administration is opened through Home Assistant ingress.
+
 ## 0.1.252
 
 - Refresh the Terminal plugin icon with the ATLAS overlay badge.
