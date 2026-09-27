@@ -101,6 +101,7 @@ await startSurface({
 
 const server = createServer((request, response) => {
   const requestUrl = new URL(request.url ?? "/", `http://${request.headers.host ?? `${host}:${appPort}`}`);
+  requestUrl.ingressPath = request.headers["x-ingress-path"];
   const routePath = createRoutePath(requestUrl.pathname);
 
   if (request.method === "OPTIONS") {
@@ -2331,6 +2332,13 @@ function createPublicSurfaceUrl(requestUrl, port) {
 
 function createPublicAppRouteUrl(requestUrl, pathname) {
   const url = new URL(requestUrl);
+  const ingressBasePath = getHomeAssistantIngressBasePath(requestUrl);
+  if (ingressBasePath) {
+    url.pathname = `${ingressBasePath}/${String(pathname).replace(/^\/+/, "")}`.replace(/\/{2,}/g, "/");
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  }
   const routePath = createRoutePath(url.pathname);
   const routeIndex = url.pathname.lastIndexOf(routePath);
   const basePath = routeIndex >= 0 ? url.pathname.slice(0, routeIndex) : "";
@@ -2338,6 +2346,16 @@ function createPublicAppRouteUrl(requestUrl, pathname) {
   url.search = "";
   url.hash = "";
   return url.toString();
+}
+
+function getHomeAssistantIngressBasePath(requestUrl) {
+  if (typeof requestUrl.ingressPath !== "string" || !requestUrl.ingressPath.trim()) return "";
+  try {
+    const pathname = new URL(requestUrl.ingressPath, requestUrl.origin).pathname.replace(/\/+$/, "");
+    return /^\/api\/hassio_ingress\/[^/]+$/.test(pathname) ? pathname : "";
+  } catch {
+    return "";
+  }
 }
 
 function createFileStudioAccessContext(cookieHeader = "") {

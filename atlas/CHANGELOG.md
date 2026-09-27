@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.242
+
+- Keep generated surface links inside Home Assistant Ingress so the app entry does not escape to a Home Assistant 404 route.
+
 ## 0.1.241
 
 - Ask whether plugin-specific browser settings should be kept or deleted during uninstall.
