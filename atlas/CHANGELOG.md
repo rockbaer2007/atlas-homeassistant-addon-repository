@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.252
+
+- Refresh the Terminal plugin icon with the ATLAS overlay badge.
+
 ## 0.1.251
 
 - Add automatic tabs for installed plugins, switch to a selected plugin on install, and remove oversized preview images from manager repository listings.

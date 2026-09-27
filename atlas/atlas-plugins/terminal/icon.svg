@@ -1,13 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ATLAS Terminal">
   <defs>
-    <linearGradient id="atlas-terminal" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+    <linearGradient id="terminal-panel" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
       <stop stop-color="#244c7a"/>
       <stop offset="1" stop-color="#102033"/>
     </linearGradient>
   </defs>
-  <rect x="3" y="3" width="58" height="58" rx="16" fill="url(#atlas-terminal)" stroke="#43c7bd" stroke-width="2"/>
-  <path d="M16 20h32" stroke="#78a9e9" stroke-linecap="round" stroke-width="2"/>
-  <path d="m17 29 8 7-8 7" fill="none" stroke="#42d7b1" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
-  <path d="M31 43h13" stroke="#f5a623" stroke-linecap="round" stroke-width="4"/>
-  <path d="m32 12 6 6-6 6-6-6z" fill="#eaf3ff"/>
+  <rect x="3" y="3" width="58" height="58" rx="16" fill="url(#terminal-panel)" stroke="#43c7bd" stroke-width="2"/>
+  <path d="M15 17h34" stroke="#78a9e9" stroke-linecap="round" stroke-width="2"/>
+  <path d="m14 27 8 7-8 7" fill="none" stroke="#42d7b1" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+  <path d="M27 41h13" stroke="#f5a623" stroke-linecap="round" stroke-width="4"/>
+  <g aria-label="ATLAS overlay" transform="translate(40 40) scale(.34)">
+    <rect x="0" y="0" width="58" height="58" rx="16" fill="#092633" stroke="#2dd4bf" stroke-width="3"/>
+    <path d="M29 10 10 48h9.5l3-6.8h13l3 6.8H48L29 10Zm-3.3 23.4L29 24.3l3.3 9.1h-6.6Z" fill="#f6a800"/>
+    <path d="M29 10 48 48h-9.5L29 24.3V10Z" fill="#36d8ff" opacity="0.9"/>
+    <circle cx="45" cy="17" r="4" fill="#2dd4bf"/>
+    <circle cx="45" cy="41" r="4" fill="#2dd4bf"/>
+  </g>
 </svg>
