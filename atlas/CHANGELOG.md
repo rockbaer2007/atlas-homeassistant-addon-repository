@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.240
+
+- Keep the Plugin Manager launch button compact with a two-line label.
+
 ## 0.1.239
 
 - Add a dedicated Plugin Manager with persistent install, update and uninstall support; ship only the Card Editor as the built-in reference plugin and add ATLAS Terminal branding.

@@ -469,6 +469,16 @@
         font-weight: 800;
       }
 
+      .plugin-manager-launch-button {
+        justify-self: start;
+        width: 172px;
+        max-width: 100%;
+        min-height: 44px;
+        padding: 5px 10px;
+        line-height: 1.15;
+        white-space: normal;
+      }
+
       button.accent:hover {
         border-color: var(--atlas-orange-strong);
         background: var(--atlas-orange-strong);
@@ -1365,7 +1375,7 @@
               <p data-i18n="message.pluginManagerHint">Manage installed plugins, repositories and updates in one place.</p>
             </div>
           </div>
-          <button id="open-plugin-manager" class="accent" type="button" data-i18n="button.openPluginManager">Open Plugin Manager</button>
+          <button id="open-plugin-manager" class="accent plugin-manager-launch-button" type="button" data-i18n="button.openPluginManager">Open Plugin Manager</button>
           <output id="plugin-summary" aria-live="polite"></output>
         </section>
 

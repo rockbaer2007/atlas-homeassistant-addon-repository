@@ -16,7 +16,7 @@ Aktuelles Add-on:
 
 - Name: ATLAS
 - Slug: `atlas`
-- Version: `0.1.239`
+- Version: `0.1.240`
 
 The Administration plugin generator includes an offline MDI icon search. Select an icon from the preview list and the generated plugin package includes its SVG and license notice.
 
