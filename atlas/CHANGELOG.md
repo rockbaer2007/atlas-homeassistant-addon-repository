@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.250
+
+- Stack the Plugin Manager and access policy, reduce the manager panel's stretched height, and give runtime links more space with regular-weight URLs.
+
 ## 0.1.249
 
 - Remove stale plugin staging folders when uninstalling a plugin.

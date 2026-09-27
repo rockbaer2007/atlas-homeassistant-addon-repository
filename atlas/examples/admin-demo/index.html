@@ -178,8 +178,9 @@
 
       .admin-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(260px, 0.45fr);
+        grid-template-columns: minmax(0, 1fr);
         gap: 14px;
+        align-items: start;
       }
 
       .panel,
@@ -590,6 +591,12 @@
         gap: 10px;
       }
 
+      .app-runtime-grid {
+        display: grid;
+        grid-template-columns: minmax(320px, 0.7fr) minmax(420px, 1.3fr);
+        gap: 10px;
+      }
+
       .runtime-actions {
         display: grid;
         gap: 6px;
@@ -621,6 +628,7 @@
 
       .runtime-link a {
         overflow-wrap: anywhere;
+        font-weight: 400;
       }
 
       .readiness-list {
@@ -1110,7 +1118,8 @@
       }
 
       @media (max-width: 980px) {
-        .app-release-grid {
+        .app-release-grid,
+        .app-runtime-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -1127,6 +1136,7 @@
         .admin-grid,
         .field-grid,
         .app-release-grid,
+        .app-runtime-grid,
         .runtime-link,
         .readiness-item,
         .provider-row,
@@ -1346,7 +1356,7 @@
             <output id="app-runtime-summary" aria-live="polite"></output>
           </div>
         </div>
-        <div class="app-release-grid">
+        <div class="app-runtime-grid">
           <div>
             <h3 data-i18n="heading.runtimeSurfaces">Surfaces</h3>
             <div id="app-runtime-surfaces" class="readiness-list"></div>
