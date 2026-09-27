@@ -1,134 +1,129 @@
-# ATLAS Home Assistant App
+# ATLAS Framework
 
-Dies ist das erste Home-Assistant-App/Add-on-Paket für ATLAS. Es nutzt
-dieselbe Laufzeit wie die geprüfte Standalone-Docker-Vorschau:
+## ATLAS Terminal plugin
 
-- ATLAS App-Laufzeit und Health-Endpunkt auf Port `4176`
-- ATLAS Administration auf Port `4175`
-- Home Assistant Card Editor als Referenz-Plugin auf Port `4174`
-- ATLAS File Studio als zweite unabhängige Plugin-Linie
-- ATLAS Automation Exporter / Editor als GitHub-installierbares Plugin
+The optional [ATLAS Terminal plugin](https://github.com/rockbaer2007/atlas-terminal-plugin)
+provides an ANSI-colored browser terminal with adjustable font size, optional
+server-configured SSH, and selectable Oh My Posh themes for local Bash sessions.
+It loads `MesloLGMNerdFontMono-Regular.ttf` and
+`MesloLGMNerdFontMono-Bold.ttf` from Home Assistant `/local/fonts/` (or `/local/`),
+so clients do not need a local font installation. Place them in `/config/www/fonts/`
+or directly in `/config/www/`. The terminal is disabled by default. See
+[`atlas-plugins/terminal/README.md`](atlas-plugins/terminal/README.md) for setup
+and security requirements.
 
-Home Assistant Ingress ist für den ATLAS-App-Port aktiviert. ATLAS öffnet ein
-einzelnes aktives Plugin direkt oder zeigt den Plugin-Hub, wenn mehrere Plugins
-aktiv sind. Im Plugin-Hub bleiben Fähigkeitslisten und Seitenleisten-URLs
-standardmäßig eingeklappt. Der Seitenleisten-Dialog kann wahlweise eine reine
-Plugin-URL oder einen fertigen `panel_iframe`-Block kopieren. Administration
-und Card Editor sind zusätzlich über App-Routen erreichbar, damit Hub- und
-Seitenleisten-Links auch über Home Assistant Ingress und von anderen Rechnern
-funktionieren.
+ATLAS is a modular TypeScript framework focused on stable architecture,
+explicit contracts and long-term maintainability.
 
-## Add-on-Verbindungsoptionen
+Current focus:
 
-Die Add-on-Konfiguration kann die Home-Assistant-URL, einen Long-Lived Access
-Token, die Übernahme dieses Tokens durch ATLAS Administration beim Start und
-die automatische Verbindung des Card Editors nach dem Handoff festlegen.
+**Home Assistant App/Add-on and Plugins**
 
-Außerdem steuert sie die Datei-Fähigkeiten für ATLAS File Studio. `/config`
-bleibt der Standard. Zusätzliche Freigaben für `/config/www`,
-`/config/custom_components`, `/addons` und `parent-of-config` sind getrennt
-schaltbar. Für den normalen Editorbetrieb sollten die administrativen
-Freigaben deaktiviert bleiben.
+ATLAS ships Administration, Plugin Hub and the Home Assistant Card Editor as its
+built-in reference plugin. File Studio, Terminal, Automation Exporter / Editor
+and other independently maintained plugins are installed and updated through
+their own repositories. The current Home Assistant App/Add-on package is
+`0.1.246`.
 
-Der Token wird als Passwortfeld angezeigt und von Home Assistant maskiert. Der
-Card Editor speichert den Token nicht dauerhaft.
+File Studio displays its active filesystem permissions in a compact, regular-weight
+notice. Each approved path has its own color so paths such as `/config/www`,
+`/addons` and `/parent-of-config` are easy to distinguish.
+It can preview ZIP, TAR, TAR.GZ and TGZ archives, extract supported content
+safely, or extract one selected file without unpacking the rest.
 
-## ATLAS Terminal
+The Plugin Hub opens one active plugin directly, shows a selection when several
+plugins are active and keeps capability plus sidebar URL details collapsed by
+default. Card Editor, Administration and plugin asset URLs can run through the
+ATLAS app route so Home Assistant Ingress and remote browsers do not have to
+reach the separate local development ports directly.
 
-Das Terminal-Plugin ist standardmäßig deaktiviert. Für den lokalen Shell-Zugriff
-muss `Terminal aktivieren` eingeschaltet und ein zufälliges Zugriffstoken mit
-mindestens 32 URL-sicheren Zeichen gesetzt werden. Die Shell läuft mit den
-Berechtigungen des Add-ons und kann auf die eingebundenen Pfade zugreifen.
-Aktiviere die Funktion nur, wenn du den Zugang wirklich benötigst.
-Die lokale Shell enthält außerdem Home-Assistant-CLI (`ha`) und kann mit der
-Supervisor-Rolle `manager` Befehle wie `ha core check` ausführen. Behandle den
-Terminal-Zugang daher wie administrativen Zugriff auf deinen Home-Assistant-
-Supervisor. Der `SUPERVISOR_TOKEN` wird nur an lokale Shell-Sitzungen gegeben,
-nicht an konfigurierte SSH-Ziele.
+### Home Assistant sidebar links for plugins
 
-Für ein optionales SSH-Ziel müssen Host, Benutzer, privater Schlüssel und
-`known_hosts` konfiguriert werden. Lege Schlüssel und Hostliste unter `/config`
-ab und trage ihre absoluten Containerpfade ein, zum Beispiel
-`/config/.ssh/id_ed25519` und `/config/.ssh/known_hosts`. Die Hostprüfung bleibt
-aktiv; Passwörter und beliebige Ziele aus dem Browser sind nicht erlaubt.
+Starting with App/Add-on `0.1.236`, the sidebar helper generates a stable
+plugin launch URL on port `4176`, for example
+`http://<ATLAS_HOST>:4176/launch/atlas.plugin.file-studio`. If you already added
+a plugin to the Home Assistant sidebar, reopen the sidebar dialog in ATLAS,
+copy the newly offered **URL**, and replace the old `url` in that plugin's
+`panel_iframe` configuration. Alternatively, copy and replace the complete
+YAML block. Restart Home Assistant to reload the sidebar configuration. The
+Home Assistant sidebar path itself does not change; the app's port `4176` must
+be reachable by the browser displaying Home Assistant.
 
-Die Oberfläche bietet ANSI-Farben und eine Schriftgröße von 11 bis 26 px. Die
-Schriftgröße wird lokal im Browser gespeichert. Das Zugriffstoken wird ebenfalls
-im lokalen Browserspeicher abgelegt und kann in der Terminal-Ansicht gelöscht
-werden. Skripte derselben Website können auf diesen Speicher zugreifen; verwende
-das Terminal daher nur in einem vertrauenswürdigen Browserprofil.
-
-## Update-Hinweis
-
-Home Assistant zeigt bei Add-on-Updates manchmal zwei Versionen: `old` ist die
-installierte Version, `target` ist die neue Version aus diesem Repository. Wenn
-ATLAS hier aktualisiert wurde, sollte `target` mindestens `0.1.217` anzeigen.
-Falls Home Assistant weiter eine alte Zielversion zeigt, lade im Add-on Store
-die Repository-Informationen neu und starte danach das ATLAS Add-on neu.
+ATLAS Automation Exporter / Editor is available as a GitHub-installable plugin
+at version `0.1.5`. It can analyze `/config/automations.yaml` or uploaded YAML,
+show highlighted automation details, detect modern `action:` service calls and
+export selected automations with timestamped filenames.
 
 ---
 
-# ATLAS Home Assistant App
+# Documentation
 
-This is the first Home Assistant App/Add-on packaging scaffold for ATLAS. It
-wraps the same runtime used by the standalone Docker preview:
+* `ATLAS.md` - project identity and principles
+* `ROADMAP.md` - strategic roadmap
+* `SPRINTS.md` - sprint overview
+* `SNAPSHOTS.md` - release snapshot overview
+* `docs/project/STABILIZATION_REVIEW.md` - G2.5 stabilization review
+* `CONTRIBUTING.md` - contribution process
+* `SECURITY.md` - security policy
+* `docs/adr` - architecture decision records
+* `docs/project` - project specifications
 
-- ATLAS app runtime and health endpoint on port `4176`
-- ATLAS Administration on port `4175`
-- Home Assistant Card Editor reference plugin on port `4174`
-- ATLAS File Studio as the second independent plugin line
-- ATLAS Terminal in the Administration plugin manager and Plugin Hub
-- ATLAS Automation Exporter / Editor as a GitHub-installable plugin
+---
 
-Home Assistant Ingress is enabled for the ATLAS app port. ATLAS opens the only
-active plugin directly or shows the Plugin Hub when multiple plugins are active.
-The Plugin Hub keeps capability lists and sidebar URLs collapsed by default. The
-sidebar dialog can copy either a plain plugin URL or a ready-to-use
-`panel_iframe` block. Administration and Card Editor are also available through
-app routes so Hub and sidebar links work through Home Assistant Ingress and from
-other client devices.
+# Development
 
-## Add-on connection options
+Install dependencies:
 
-The Add-on configuration can provide the Home Assistant URL, a long-lived access
-token, whether ATLAS Administration should import that token on startup and
-whether the Card Editor should auto-connect after the handoff.
+```sh
+pnpm install
+```
 
-It also controls the file capabilities for ATLAS File Studio. `/config` remains
-the default. Additional approvals for `/config/www`,
-`/config/custom_components`, `/addons` and `parent-of-config` can be enabled
-separately. Keep administrative approvals disabled for normal editor usage.
+Run quality gates:
 
-The token is shown as a password field and masked by Home Assistant. The Card
-Editor does not store it permanently.
+```sh
+pnpm check
+pnpm build
+pnpm test
+```
 
-## ATLAS Terminal
+Run the combined local app preview:
 
-The Terminal plugin is disabled by default. To enable local shell access, turn
-on `Enable terminal` and set a random access token of at least 32 URL-safe
-characters. The shell runs with the add-on's permissions and can access mounted
-paths, so enable it only when needed.
+```sh
+pnpm build
+pnpm start:app
+```
 
-For an optional SSH target, configure the host, username, private key and
-`known_hosts` file. Store the key and host list under `/config` and enter their
-absolute container paths, for example `/config/.ssh/id_ed25519` and
-`/config/.ssh/known_hosts`. Host-key verification remains enabled; passwords
-and browser-supplied arbitrary destinations are not allowed.
+Open:
 
-The UI supports ANSI colors and an 11–26 px font size, saved locally in the
-browser. The access token is also stored in this browser's local storage and can
-be cleared from the Terminal screen. Same-origin scripts can access this
-storage, so use the terminal only in a trusted browser profile.
-The local shell includes the Home Assistant CLI (`ha`) and receives the
-Supervisor `manager` role needed for commands such as `ha core check`. Treat
-terminal access as administrative access to the Home Assistant Supervisor. The
-`SUPERVISOR_TOKEN` is passed only to local shell sessions, never configured SSH
-targets.
+* App status: `http://127.0.0.1:4176/app`
+* App health: `http://127.0.0.1:4176/health`
+* Administration: `http://127.0.0.1:4175/`
+* Home Assistant Card Editor: `http://127.0.0.1:4174/`
+* Plugin Hub and installed plugin routing: `http://127.0.0.1:4176/`
 
-## Update note
+Build and run the standalone Docker preview:
 
-Home Assistant may show two versions during Add-on updates: `old` is the
-installed version, `target` is the new version from this repository. After this
-ATLAS update, `target` should be at least `0.1.217`. If Home Assistant still
-shows an older target version, reload the repository information in the Add-on
-Store and then restart the ATLAS Add-on.
+```sh
+pnpm docker:build
+pnpm docker:up
+```
+
+The container binds the app surfaces through `ATLAS_HOST=0.0.0.0` and exposes
+ports `4176`, `4175` and `4174`. Set `ATLAS_INSTANCE_ID` when a server,
+Docker host or later Home Assistant App/Add-on package needs a deliberate
+stable Administration identity.
+
+The packaged-app distribution path is documented in
+[`docs/deployment/ATLAS_APP_DISTRIBUTION.md`](docs/deployment/ATLAS_APP_DISTRIBUTION.md).
+It keeps standalone Docker first, then derives the Home Assistant App/Add-on
+and Linux VM/LXC installer from the same runtime contract.
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
+
+---
+
+© ATLAS Framework

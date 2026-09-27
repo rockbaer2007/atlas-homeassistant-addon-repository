@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.246
+
+- Install published `atlas.plugin.package` packages from external plugin repositories.
+
 ## 0.1.245
 
 - Show repository plugin install progress and errors inside the Plugin Manager.
