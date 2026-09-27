@@ -785,6 +785,31 @@ const translations = {
     "text.parcelAuthPublicTracking": "Öffentlicher Tracking-Link",
     "text.parcelAuthAccountRequired": "Konto-Anmeldung erforderlich",
   },
+  fr: {
+    "page.subtitle": "Gérez les plugins, les paquets d’installation et l’accès central à Home Assistant.",
+    "heading.access": "Paramètres de connexion",
+    "heading.haConnection": "Connexion à Home Assistant",
+    "button.verifiedPlugins": "Plugins vérifiés",
+    "button.saveSettings": "Enregistrer les paramètres",
+    "button.forgetToken": "Oublier le jeton",
+    "button.exportSettings": "Exporter les paramètres",
+    "button.openEditor": "Ouvrir le hub des plugins",
+    "label.haUrl": "URL Home Assistant",
+    "label.accessToken": "Jeton d’accès",
+    "label.editorStartMode": "Mode de démarrage de l’éditeur",
+    "label.rememberToken": "Mémoriser le jeton localement pour l’administration",
+    "label.autoConnectEditor": "Connecter automatiquement Card Editor après le transfert",
+    "mode.simple": "Simple",
+    "mode.expert": "Expert",
+    "theme.auto": "Automatique",
+    "theme.light": "Clair",
+    "theme.dark": "Sombre",
+    "aria.language": "Langue",
+    "aria.theme": "Thème",
+    "message.accessHint": "Les jetons restent dans l’administration. Les plugins ne reçoivent que les chemins et capacités autorisés.",
+    "message.connectionStandaloneHint": "En mode Docker et Linux, ces valeurs sont gérées ici.",
+    "message.frenchPreview": "La traduction française est en cours. Les textes non traduits s’affichent en anglais.",
+  },
 };
 
 function t(key, values = {}) {
@@ -806,6 +831,10 @@ function localizedPluginText(plugin, field, fallback = "") {
 
   const value = plugin?.[field];
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function languageLocale() {
+  return currentLanguage === "de" ? "de-DE" : currentLanguage === "fr" ? "fr-FR" : "en-US";
 }
 
 function normalizeLocalizedPluginText(value) {
@@ -857,7 +886,7 @@ function readThemePreferenceFromLocation() {
 function readLanguageFromLocation() {
   try {
     const language = new URL(window.location.href).searchParams.get("language");
-    return language === "de" || language === "en" ? language : undefined;
+    return ["de", "en", "fr"].includes(language) ? language : undefined;
   } catch {
     return undefined;
   }
@@ -1506,7 +1535,7 @@ function restoreConfiguration() {
     const urlLanguage = readLanguageFromLocation();
     if (urlLanguage) {
       currentLanguage = urlLanguage;
-    } else if (saved?.language === "de" || saved?.language === "en") {
+    } else if (["de", "en", "fr"].includes(saved?.language)) {
       currentLanguage = saved.language;
     }
     restoreThemePreference(saved?.themePreference);
@@ -1713,7 +1742,7 @@ async function previewPluginRepositoryEntry() {
       url: repositoryUrl,
       type,
       name: typeof repository.name === "string" && repository.name.trim() ? repository.name.trim() : url,
-      lastChecked: new Date().toLocaleString(currentLanguage === "de" ? "de-DE" : "en-US"),
+      lastChecked: new Date().toLocaleString(languageLocale()),
       plugins,
     };
     renderPluginRepositoryDialogPreview(plugins);
@@ -1839,7 +1868,7 @@ async function loadPluginRepositoriesPreview() {
         ...normalizedRepositoryEntry,
         name: typeof repository.name === "string" && repository.name.trim() ? repository.name.trim() : repositoryEntry.name,
         status: "ready",
-        lastChecked: new Date().toLocaleString(currentLanguage === "de" ? "de-DE" : "en-US"),
+        lastChecked: new Date().toLocaleString(languageLocale()),
         pluginCount: plugins.length,
         error: "",
       });
@@ -1847,7 +1876,7 @@ async function loadPluginRepositoriesPreview() {
       nextRepositories.push({
         ...repositoryEntry,
         status: "failed",
-        lastChecked: new Date().toLocaleString(currentLanguage === "de" ? "de-DE" : "en-US"),
+        lastChecked: new Date().toLocaleString(languageLocale()),
         pluginCount: 0,
         error: t(error?.message === "home-assistant-add-on-repository" || isHomeAssistantAddOnRepositoryUrl(repositoryEntry.url)
           ? "message.pluginRepositoryWrongType"
@@ -1888,7 +1917,7 @@ function deduplicateRepositoryPlugins(plugins) {
     });
   }
   return [...pluginsById.values()]
-    .sort((left, right) => left.name.localeCompare(right.name, currentLanguage === "de" ? "de" : "en", { sensitivity: "base" }));
+    .sort((left, right) => left.name.localeCompare(right.name, currentLanguage, { sensitivity: "base" }));
 }
 
 function normalizePluginRepository(repository, repositoryEntry) {
@@ -2915,7 +2944,7 @@ function formatRuntimeDate(value) {
     return value;
   }
 
-  return new Intl.DateTimeFormat(currentLanguage === "de" ? "de-DE" : "en-US", {
+  return new Intl.DateTimeFormat(languageLocale(), {
     dateStyle: "short",
     timeStyle: "medium",
   }).format(date);
@@ -3908,7 +3937,7 @@ function renderAdministration() {
     selectedPluginManagerTab = view.plugins[0]?.id ?? "";
   }
   pluginManagerTabs.replaceChildren();
-  pluginManagerTabs.setAttribute("aria-label", currentLanguage === "de" ? "Installierte Plugins" : "Installed plugins");
+  pluginManagerTabs.setAttribute("aria-label", currentLanguage === "de" ? "Installierte Plugins" : currentLanguage === "fr" ? "Plugins installés" : "Installed plugins");
 
   const createPluginTab = (id, label) => {
     const button = document.createElement("button");
@@ -4020,7 +4049,7 @@ function renderAdministration() {
 }
 
 function setLanguage(language) {
-  currentLanguage = language === "de" ? "de" : "en";
+  currentLanguage = ["de", "en", "fr"].includes(language) ? language : "en";
   applyTranslations();
   renderParcelProviders();
   renderPluginRepositories();

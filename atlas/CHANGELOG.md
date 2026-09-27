@@ -1,16 +1,12 @@
 # Changelog
 
-## 0.1.257
+## 0.1.258
 
-- Highlight the selected Plugin Manager tab with an orange border.
-
-## 0.1.256
-
-- Open a concise GitHub issue form for debug reports and keep the full reviewed report available through the Copy report button, avoiding oversized issue URLs.
+- Add a French Administration preview with an explicit English-fallback notice.
 
 ## 0.1.255
 
-- Redact Home Assistant Ingress session tokens from Card Editor problem reports.
+- Redact Home Assistant Ingress tokens from debug-report URLs and embedded text.
 
 ## 0.1.254
 

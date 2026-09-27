@@ -154,6 +154,21 @@
         color: var(--atlas-on-accent);
       }
 
+      .french-translation-note {
+        margin: -8px 0 14px;
+        padding: 9px 12px;
+        border: 1px solid var(--atlas-border-strong);
+        border-left: 3px solid var(--atlas-orange);
+        border-radius: 6px;
+        background: var(--atlas-panel);
+        color: var(--atlas-muted);
+        font-size: 13px;
+      }
+
+      html:not([lang="fr"]) .french-translation-note {
+        display: none;
+      }
+
       .header-doc-link {
         min-height: 34px;
         display: inline-flex;
@@ -1253,9 +1268,14 @@
           <div class="language-toggle" role="group" aria-label="Language" data-i18n-aria-label="aria.language">
             <button type="button" data-language="de" aria-pressed="false">DE</button>
             <button type="button" data-language="en" aria-pressed="true">EN</button>
+            <button type="button" data-language="fr" aria-pressed="false">FR</button>
           </div>
         </div>
       </header>
+
+      <p class="french-translation-note" role="status" data-i18n="message.frenchPreview">
+        La traduction française est en cours. Les textes non traduits s’affichent en anglais.
+      </p>
 
       <section class="panel" aria-labelledby="admin-access-heading">
         <div class="panel-header">
