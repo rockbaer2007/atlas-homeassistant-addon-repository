@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.269
+
+- Add theme-aware YAML colors for comments, strings, numbers and Home Assistant states; highlight SQL keywords in YAML block scalars and template delimiters.
+
 ## 0.1.268
 
 - Fix the stale `@atlas/devtools` workspace metadata that caused frozen-lockfile installs to fail during the add-on image build.
