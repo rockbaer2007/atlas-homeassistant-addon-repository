@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.270
+
+- Ensure YAML comments, numeric literals and strings use the configured light/dark colors even when the editor theme provides its own syntax styles.
+
 ## 0.1.269
 
 - Add theme-aware YAML colors for comments, strings, numbers and Home Assistant states; highlight SQL keywords in YAML block scalars and template delimiters.

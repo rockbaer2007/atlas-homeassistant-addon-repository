@@ -3,8 +3,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { json } from "@codemirror/lang-json";
 import { markdown } from "@codemirror/lang-markdown";
 import { yaml } from "@codemirror/lang-yaml";
-import { bracketMatching, defaultHighlightStyle, HighlightStyle, indentOnInput, syntaxHighlighting, syntaxTree } from "@codemirror/language";
-import { tags } from "@lezer/highlight";
+import { bracketMatching, defaultHighlightStyle, indentOnInput, syntaxHighlighting, syntaxTree } from "@codemirror/language";
 import { Compartment, EditorState } from "@codemirror/state";
 import {
   crosshairCursor,
@@ -30,15 +29,7 @@ const fontSizeCompartment = new Compartment();
 const themeCompartment = new Compartment();
 
 function atlasSyntaxHighlighting(dark) {
-  const highlightStyle = HighlightStyle.define([
-    { tag: tags.comment, color: dark ? "#4dd0e1" : "#008f87" },
-    { tag: tags.number, color: dark ? "#ffffff" : "#9a3412" },
-    { tag: tags.string, color: dark ? "#81c784" : "#16803c" },
-  ]);
-  return [
-    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-    syntaxHighlighting(highlightStyle),
-  ];
+  return [syntaxHighlighting(defaultHighlightStyle, { fallback: true })];
 }
 
 const yamlValueHighlighting = ViewPlugin.fromClass(class {
@@ -58,16 +49,31 @@ const yamlValueHighlighting = ViewPlugin.fromClass(class {
     const tree = syntaxTree(view.state);
     tree.iterate({
       enter(node) {
-        if (node.name === "Literal") {
-          const value = source.slice(node.from, node.to).trim();
+        if (node.name === "Comment") {
+          decorations.push(Decoration.mark({ class: "cm-atlas-yaml-comment" }).range(node.from, node.to));
+        }
+
+        const isKey = node.node.parent?.name === "Key";
+        if (node.name === "QuotedLiteral" && !isKey) {
+          decorations.push(Decoration.mark({ class: "cm-atlas-yaml-string" }).range(node.from, node.to));
+        }
+
+        if ((node.name === "Literal" || node.name === "QuotedLiteral") && !isKey) {
+          const quoted = node.name === "QuotedLiteral";
+          const rawValue = source.slice(node.from, node.to);
+          const value = (quoted ? rawValue.slice(1, -1) : rawValue).trim();
+          const valueFrom = node.from + (quoted ? 1 : 0);
+          const valueTo = node.to - (quoted ? 1 : 0);
           const className = /^true$/i.test(value)
             ? "cm-atlas-yaml-true"
             : /^false$/i.test(value)
               ? "cm-atlas-yaml-false"
               : /^unknown$/i.test(value)
                 ? "cm-atlas-yaml-unknown"
+                : !quoted && /^[+-]?(?:0x[\da-f_]+|0o[0-7_]+|0b[01_]+|(?:\d[\d_]*\.?[\d_]*|\.\d[\d_]*)(?:e[+-]?\d[\d_]*)?)$/i.test(value)
+                  ? "cm-atlas-yaml-number"
                 : null;
-          if (className) decorations.push(Decoration.mark({ class: className }).range(node.from, node.to));
+          if (className) decorations.push(Decoration.mark({ class: className }).range(valueFrom, valueTo));
         }
 
         if (node.name === "BlockLiteralContent") {
@@ -161,6 +167,9 @@ function createAtlasLightTheme(fontSize) {
     ".cm-atlas-template-string": { color: "#7e22ce" },
     ".cm-atlas-template-number": { color: "#9a3412" },
     ".cm-atlas-template-delimiter": { color: "#374151" },
+    ".cm-atlas-yaml-comment": { color: "#008f87" },
+    ".cm-atlas-yaml-string": { color: "#16803c" },
+    ".cm-atlas-yaml-number": { color: "#9a3412" },
     ".cm-atlas-yaml-true": { color: "#16803c", fontWeight: "600" },
     ".cm-atlas-yaml-false": { color: "#c62828", fontWeight: "600" },
     ".cm-atlas-yaml-unknown": { color: "#b45309", fontWeight: "600" },
@@ -204,6 +213,9 @@ function createAtlasDarkTheme(fontSize) {
       ".cm-atlas-template-string": { color: "#f0abfc" },
       ".cm-atlas-template-number": { color: "#ffffff" },
       ".cm-atlas-template-delimiter": { color: "#ffffff" },
+      ".cm-atlas-yaml-comment": { color: "#4dd0e1" },
+      ".cm-atlas-yaml-string": { color: "#81c784" },
+      ".cm-atlas-yaml-number": { color: "#ffffff" },
       ".cm-atlas-yaml-true": { color: "#81c784", fontWeight: "600" },
       ".cm-atlas-yaml-false": { color: "#ff8a80", fontWeight: "600" },
       ".cm-atlas-yaml-unknown": { color: "#ffb74d", fontWeight: "600" },
