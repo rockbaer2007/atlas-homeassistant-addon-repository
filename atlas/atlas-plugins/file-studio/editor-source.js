@@ -124,6 +124,15 @@ const templateStringHighlighting = ViewPlugin.fromClass(class {
         decorations.push(Decoration.mark({ class: "cm-atlas-template-string" }).range(from, to));
       }
 
+      const templateFunction = /\b(?:states|float|map|round)\b/gi;
+      let functionMatch;
+      while ((functionMatch = templateFunction.exec(body))) {
+        const from = bodyStart + functionMatch.index;
+        const to = from + functionMatch[0].length;
+        if (stringRanges.some(([stringFrom, stringTo]) => from < stringTo && to > stringFrom)) continue;
+        decorations.push(Decoration.mark({ class: "cm-atlas-template-function" }).range(from, to));
+      }
+
       const numberToken = /\b\d+(?:\.\d+)?\b/g;
       let numberMatch;
       while ((numberMatch = numberToken.exec(body))) {
@@ -167,6 +176,7 @@ function createAtlasLightTheme(fontSize) {
     ".cm-atlas-template-string": { color: "#7e22ce" },
     ".cm-atlas-template-number": { color: "#9a3412" },
     ".cm-atlas-template-delimiter": { color: "#374151" },
+    ".cm-atlas-template-function": { color: "#c2410c" },
     ".cm-atlas-yaml-comment": { color: "#008f87" },
     ".cm-atlas-yaml-string": { color: "#16803c" },
     ".cm-atlas-yaml-number": { color: "#9a3412" },
@@ -213,6 +223,7 @@ function createAtlasDarkTheme(fontSize) {
       ".cm-atlas-template-string": { color: "#f0abfc" },
       ".cm-atlas-template-number": { color: "#ffffff" },
       ".cm-atlas-template-delimiter": { color: "#ffffff" },
+      ".cm-atlas-template-function": { color: "#ffd54f" },
       ".cm-atlas-yaml-comment": { color: "#4dd0e1" },
       ".cm-atlas-yaml-string": { color: "#81c784" },
       ".cm-atlas-yaml-number": { color: "#ffffff" },

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.271
+
+- Highlight `states`, `float`, `map` and `round` inside Home Assistant template expressions.
+
 ## 0.1.270
 
 - Ensure YAML comments, numeric literals and strings use the configured light/dark colors even when the editor theme provides its own syntax styles.
