@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.268
+
+- Fix the stale `@atlas/devtools` workspace metadata that caused frozen-lockfile installs to fail during the add-on image build.
+
 ## 0.1.267
 
 - Fix a missing CodeMirror highlight-style import that prevented File Studio from loading.

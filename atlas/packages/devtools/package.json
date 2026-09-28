@@ -1,9 +1,12 @@
 {
   "name": "@atlas/devtools",
-  "version": "0.2.0-alpha.38",
+  "version": "0.2.0-alpha.39",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@atlas/foundation": "workspace:*"
+  },
   "scripts": {
     "build": "tsc -b",
     "check": "tsc --noEmit",
