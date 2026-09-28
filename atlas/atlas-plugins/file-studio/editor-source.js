@@ -106,6 +106,37 @@ const templateStringHighlighting = ViewPlugin.fromClass(class {
   build(view) {
     const source = view.state.doc.toString();
     const decorations = [];
+    const templateStatement = /\{%([\s\S]*?)%\}/g;
+    let statement;
+
+    while ((statement = templateStatement.exec(source))) {
+      const body = statement[1];
+      const bodyStart = statement.index + 2;
+      decorations.push(Decoration.mark({ class: "cm-atlas-template-delimiter" }).range(statement.index, bodyStart));
+      decorations.push(Decoration.mark({ class: "cm-atlas-template-delimiter" }).range(templateStatement.lastIndex - 2, templateStatement.lastIndex));
+
+      const stringToken = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g;
+      const stringRanges = [];
+      let stringMatch;
+      while ((stringMatch = stringToken.exec(body))) {
+        stringRanges.push([bodyStart + stringMatch.index, bodyStart + stringMatch.index + stringMatch[0].length]);
+      }
+
+      const markTokens = (pattern, className) => {
+        let match;
+        while ((match = pattern.exec(body))) {
+          const from = bodyStart + match.index;
+          const to = from + match[0].length;
+          if (stringRanges.some(([stringFrom, stringTo]) => from < stringTo && to > stringFrom)) continue;
+          decorations.push(Decoration.mark({ class: className }).range(from, to));
+        }
+      };
+
+      markTokens(/\b(?:if|elif|else|endif)\b/g, "cm-atlas-template-control");
+      markTokens(/\bset\b/g, "cm-atlas-template-set");
+      markTokens(/\b(?:and|or|not)\b/g, "cm-atlas-template-operator");
+    }
+
     const templateExpression = /\{\{([\s\S]*?)\}\}/g;
     let expression;
 
@@ -177,6 +208,9 @@ function createAtlasLightTheme(fontSize) {
     ".cm-atlas-template-number": { color: "#9a3412" },
     ".cm-atlas-template-delimiter": { color: "#374151" },
     ".cm-atlas-template-function": { color: "#c2410c" },
+    ".cm-atlas-template-control": { color: "#7e22ce", fontWeight: "600" },
+    ".cm-atlas-template-set": { color: "#0f766e", fontWeight: "600" },
+    ".cm-atlas-template-operator": { color: "#c2410c", fontWeight: "600" },
     ".cm-atlas-yaml-comment": { color: "#008f87" },
     ".cm-atlas-yaml-string": { color: "#16803c" },
     ".cm-atlas-yaml-number": { color: "#9a3412" },
@@ -224,6 +258,9 @@ function createAtlasDarkTheme(fontSize) {
       ".cm-atlas-template-number": { color: "#ffffff" },
       ".cm-atlas-template-delimiter": { color: "#ffffff" },
       ".cm-atlas-template-function": { color: "#ffd54f" },
+      ".cm-atlas-template-control": { color: "#ce93d8", fontWeight: "600" },
+      ".cm-atlas-template-set": { color: "#4dd0e1", fontWeight: "600" },
+      ".cm-atlas-template-operator": { color: "#ffb74d", fontWeight: "600" },
       ".cm-atlas-yaml-comment": { color: "#4dd0e1" },
       ".cm-atlas-yaml-string": { color: "#81c784" },
       ".cm-atlas-yaml-number": { color: "#ffffff" },

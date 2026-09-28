@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.272
+
+- Highlight Jinja control keywords (`if`, `elif`, `else`, `endif`), `set`, and logical operators (`and`, `or`, `not`) with theme-aware colors in File Studio.
+
 ## 0.1.271
 
 - Highlight `states`, `float`, `map` and `round` inside Home Assistant template expressions.
