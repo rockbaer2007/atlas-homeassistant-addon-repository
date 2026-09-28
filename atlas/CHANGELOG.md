@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.266
+
+- Improve File Studio syntax colors for YAML comments, numbers and strings inside templates in light and dark themes.
+- Update bundled File Studio metadata to `0.1.42`.
+
 ## 0.1.265
 
 - Replace File Studio toolbar PNGs with local SVG symbols.

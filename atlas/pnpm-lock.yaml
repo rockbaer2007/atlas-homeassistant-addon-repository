@@ -48,6 +48,9 @@ importers:
       '@codemirror/view':
         specifier: ^6.43.10
         version: 6.43.10
+      '@lezer/highlight':
+        specifier: ^1.2.3
+        version: 1.2.3
       '@mdi/svg':
         specifier: 7.4.47
         version: 7.4.47
@@ -76,7 +79,11 @@ importers:
         specifier: workspace:*
         version: link:../runtime
 
-  packages/devtools: {}
+  packages/devtools:
+    dependencies:
+      '@atlas/foundation':
+        specifier: workspace:*
+        version: link:../foundation
 
   packages/file-studio:
     dependencies:
