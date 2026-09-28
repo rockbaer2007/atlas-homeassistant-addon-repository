@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.265
+
+- Replace File Studio toolbar PNGs with local SVG symbols.
+- Preserve binary files in external plugin install packages using Base64 encoding.
+- Update bundled File Studio metadata to `0.1.41`.
+
 ## 0.1.264
 
 - Add French UI support to the Automation Exporter / Editor.

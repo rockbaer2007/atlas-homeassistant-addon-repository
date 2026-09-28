@@ -463,40 +463,6 @@ body.is-resizing .splitter {
   color: var(--atlas-folder);
 }
 
-.asset-icon-button {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  border-color: var(--atlas-border);
-  background: var(--atlas-panel-soft);
-}
-
-.asset-icon-button:hover,
-.asset-icon-button:focus-visible,
-.asset-icon-button[aria-pressed="true"] {
-  border-color: var(--atlas-accent);
-  background: var(--atlas-accent-soft);
-}
-
-.asset-icon-button::before {
-  inset: 4px;
-  border: 0;
-  border-radius: 0;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 22px 22px;
-}
-
-.asset-icon-button::after {
-  content: none;
-}
-
-.asset-icon-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
 .svg-icon-button {
   display: inline-flex;
   flex: 0 0 auto;
@@ -507,7 +473,7 @@ body.is-resizing .splitter {
 }
 
 .svg-icon-button::before {
-  inset: 5px;
+  inset: 4px;
   border: 0;
   border-radius: 0;
   background: currentColor;
@@ -534,117 +500,34 @@ body.is-resizing .splitter {
   mask-image: url("icons/trash.svg");
 }
 
-.asset-icon-button.icon-save::before {
-  background-image: image-set(
-    url("icons/24x24/Save.png") 1x,
-    url("icons/48x48/Save.png") 2x
-  );
+.svg-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
-.asset-icon-button.icon-save-as::before {
-  background-image: image-set(
-    url("icons/24x24/Save-all.png") 1x,
-    url("icons/48x48/Save-all.png") 2x
-  );
+.svg-icon-button:hover,
+.svg-icon-button:focus-visible,
+.svg-icon-button[aria-pressed="true"] {
+  border-color: var(--atlas-accent);
+  background: var(--atlas-accent-soft);
 }
 
-.asset-icon-button.icon-download::before {
-  background-image: image-set(
-    url("icons/24x24/Open.png") 1x,
-    url("icons/48x48/Open.png") 2x
-  );
-}
-
-.asset-icon-button.icon-word-wrap::before {
-  background-image: image-set(
-    url("icons/24x24/Word-wrap.png") 1x,
-    url("icons/48x48/Word-wrap.png") 2x
-  );
-}
-
-.asset-icon-button.icon-zoom-in::before {
-  background-image: image-set(
-    url("icons/24x24/Zoom-in.png") 1x,
-    url("icons/48x48/Zoom-in.png") 2x
-  );
-}
-
-.asset-icon-button.icon-zoom-out::before {
-  background-image: image-set(
-    url("icons/24x24/Zoom-out.png") 1x,
-    url("icons/48x48/Zoom-out.png") 2x
-  );
-}
-
-.asset-icon-button.icon-search::before {
-  background-image: image-set(
-    url("icons/24x24/Find.png") 1x,
-    url("icons/48x48/Find.png") 2x
-  );
-}
-
-.asset-icon-button.icon-hidden::before {
-  background-image: image-set(
-    url("icons/24x24/All-chars.png") 1x,
-    url("icons/48x48/All-chars.png") 2x
-  );
-}
-
-.asset-icon-button.icon-rename::before {
-  background-image: image-set(
-    url("icons/24x24/Replace.png") 1x,
-    url("icons/48x48/Replace.png") 2x
-  );
-}
-
-.asset-icon-button.icon-copy::before {
-  background-image: image-set(
-    url("icons/24x24/Copy.png") 1x,
-    url("icons/48x48/Copy.png") 2x
-  );
-}
-
-.asset-icon-button.icon-move::before {
-  background-image: image-set(
-    url("icons/24x24/Cut.png") 1x,
-    url("icons/48x48/Cut.png") 2x
-  );
-}
-
-.asset-icon-button.icon-delete::before {
-  background-image: image-set(
-    url("icons/24x24/Close.png") 1x,
-    url("icons/48x48/Close.png") 2x
-  );
-}
-
-.asset-icon-button.icon-extract::before {
-  background-image: image-set(
-    url("icons/24x24/Paste.png") 1x,
-    url("icons/48x48/Paste.png") 2x
-  );
-}
-
-.asset-icon-button.icon-replace::before {
-  background-image: image-set(
-    url("icons/24x24/Replace.png") 1x,
-    url("icons/48x48/Replace.png") 2x
-  );
-}
-
-.asset-icon-button.icon-undo::before {
-  background-image: image-set(
-    url("icons/24x24/Undo.png") 1x,
-    url("icons/48x48/Undo.png") 2x
-  );
-}
-
-.asset-icon-button.icon-redo::before {
-  background-image: image-set(
-    url("icons/24x24/Redo.png") 1x,
-    url("icons/48x48/Redo.png") 2x
-  );
-}
+.svg-icon-button.icon-save::before { mask-image: url("icons/save.svg"); }
+.svg-icon-button.icon-save-as::before { mask-image: url("icons/save-all.svg"); }
+.svg-icon-button.icon-download::before { mask-image: url("icons/download.svg"); }
+.svg-icon-button.icon-word-wrap::before { mask-image: url("icons/word-wrap.svg"); }
+.svg-icon-button.icon-zoom-in::before { mask-image: url("icons/zoom-in.svg"); }
+.svg-icon-button.icon-zoom-out::before { mask-image: url("icons/zoom-out.svg"); }
+.svg-icon-button.icon-search::before { mask-image: url("icons/search.svg"); }
+.svg-icon-button.icon-hidden::before { mask-image: url("icons/eye.svg"); }
+.svg-icon-button.icon-rename::before { mask-image: url("icons/rename.svg"); }
+.svg-icon-button.icon-copy::before { mask-image: url("icons/copy.svg"); }
+.svg-icon-button.icon-move::before { mask-image: url("icons/move.svg"); }
+.svg-icon-button.icon-delete::before { mask-image: url("icons/delete.svg"); }
+.svg-icon-button.icon-extract::before { mask-image: url("icons/extract.svg"); }
+.svg-icon-button.icon-replace::before { mask-image: url("icons/upload.svg"); }
+.svg-icon-button.icon-undo::before { mask-image: url("icons/undo.svg"); }
+.svg-icon-button.icon-redo::before { mask-image: url("icons/redo.svg"); }
 
 .tree-status,
 .tree-note {
