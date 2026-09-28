@@ -671,6 +671,30 @@
         gap: 10px;
       }
 
+      .readiness-disclosure {
+        min-width: 0;
+        border: 1px solid var(--atlas-border);
+        border-radius: 6px;
+        background: var(--atlas-panel-soft);
+        padding: 0 10px 10px;
+      }
+
+      .readiness-disclosure > summary {
+        padding: 10px 0;
+        color: var(--atlas-text);
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .readiness-disclosure > summary::marker {
+        color: #ff9800;
+      }
+
+      .readiness-disclosure[open] > summary {
+        margin-bottom: 2px;
+      }
+
       .runtime-actions {
         display: grid;
         gap: 6px;
@@ -1420,16 +1444,16 @@
           </div>
         </div>
         <div class="app-runtime-grid">
-          <div>
-            <h3 data-i18n="heading.runtimeSurfaces">Surfaces</h3>
+          <details class="readiness-disclosure">
+            <summary data-i18n="heading.runtimeSurfaces">Surfaces</summary>
             <div id="app-runtime-surfaces" class="readiness-list"></div>
-          </div>
-          <div>
-            <h3 data-i18n="heading.runtimeLinks">Links</h3>
+          </details>
+          <details class="readiness-disclosure">
+            <summary data-i18n="heading.runtimeLinks">Links</summary>
             <div id="app-runtime-links" class="runtime-links"></div>
             <h3 data-i18n="label.distributionOrder">Distribution order</h3>
             <div id="app-runtime-distribution" class="chip-list"></div>
-          </div>
+          </details>
         </div>
         <output id="app-runtime-status" aria-live="polite"></output>
       </section>
@@ -1443,14 +1467,14 @@
           <output id="app-release-summary" aria-live="polite"></output>
         </div>
         <div class="app-release-grid">
-          <div>
-            <h3 data-i18n="heading.releaseChecks">Release checks</h3>
+          <details class="readiness-disclosure">
+            <summary data-i18n="heading.releaseChecks">Release checks</summary>
             <div id="app-release-checks" class="readiness-list"></div>
-          </div>
-          <div>
-            <h3 data-i18n="heading.releaseTargets">Distribution targets</h3>
+          </details>
+          <details class="readiness-disclosure">
+            <summary data-i18n="heading.releaseTargets">Distribution targets</summary>
             <div id="app-release-targets" class="readiness-list"></div>
-          </div>
+          </details>
         </div>
       </section>
 

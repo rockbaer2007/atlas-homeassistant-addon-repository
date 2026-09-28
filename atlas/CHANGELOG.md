@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.273
+
+- Make the Administration runtime and release-readiness sections independently collapsible.
+- Align File Studio's Runtime plugin version with its published metadata at `0.1.48`.
+
 ## 0.1.272
 
 - Highlight Jinja control keywords (`if`, `elif`, `else`, `endif`), `set`, and logical operators (`and`, `or`, `not`) with theme-aware colors in File Studio.
