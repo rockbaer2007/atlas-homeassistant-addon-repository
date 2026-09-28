@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.267
+
+- Fix a missing CodeMirror highlight-style import that prevented File Studio from loading.
+
 ## 0.1.266
 
 - Improve File Studio syntax colors for YAML comments, numbers and strings inside templates in light and dark themes.
