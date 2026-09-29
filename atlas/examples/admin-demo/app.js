@@ -2320,13 +2320,37 @@ function createPluginRepositoryUrlCandidates(inputUrl) {
     return values;
   }
 
-  values.push(trimmed);
   const githubRepositoryJsonUrl = createGitHubRawRepositoryJsonUrl(trimmed);
   if (githubRepositoryJsonUrl) {
     values.push(githubRepositoryJsonUrl);
   }
+  const refQualifiedRawUrl = createRefQualifiedRawUrl(trimmed);
+  if (refQualifiedRawUrl) {
+    values.push(refQualifiedRawUrl);
+  }
+  values.push(trimmed);
 
   return [...new Set(values)];
+}
+
+function createRefQualifiedRawUrl(value) {
+  try {
+    const url = new URL(value);
+    if (url.hostname.toLowerCase() !== "raw.githubusercontent.com") {
+      return "";
+    }
+
+    const parts = url.pathname.split("/").filter(Boolean);
+    if (parts.length < 4 || parts[2] === "refs" || /^[a-f0-9]{40}$/i.test(parts[2])) {
+      return "";
+    }
+
+    const [owner, repository, branch, ...pathParts] = parts;
+    url.pathname = `/${owner}/${repository}/refs/heads/${branch}/${pathParts.join("/")}`;
+    return url.toString();
+  } catch {
+    return "";
+  }
 }
 
 function createGitHubRawRepositoryJsonUrl(value) {

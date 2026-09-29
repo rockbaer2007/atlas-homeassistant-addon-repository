@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.276
+
+- Fetch GitHub plugin repository catalogs through ref-qualified raw URLs and migrate saved branch URLs so existing repositories pick up current catalog versions.
+
 ## 0.1.275
 
 - Fetch GitHub plugin repository catalogs through ref-qualified raw URLs so updates are detected from the current branch contents.
