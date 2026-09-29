@@ -2345,13 +2345,13 @@ function createGitHubRawRepositoryJsonUrl(value) {
 
     const repositoryName = repository.replace(/\.git$/i, "");
     if (view === "blob" && branch && pathParts.length) {
-      return `https://raw.githubusercontent.com/${owner}/${repositoryName}/${branch}/${pathParts.join("/")}`;
+      return `https://raw.githubusercontent.com/${owner}/${repositoryName}/refs/heads/${branch}/${pathParts.join("/")}`;
     }
     if (view === "tree" && branch) {
-      return `https://raw.githubusercontent.com/${owner}/${repositoryName}/${branch}/repository.json`;
+      return `https://raw.githubusercontent.com/${owner}/${repositoryName}/refs/heads/${branch}/repository.json`;
     }
     if (!view) {
-      return `https://raw.githubusercontent.com/${owner}/${repositoryName}/main/repository.json`;
+      return `https://raw.githubusercontent.com/${owner}/${repositoryName}/refs/heads/main/repository.json`;
     }
   } catch {
     return "";
@@ -2392,12 +2392,12 @@ function createHomeAssistantRepositoryYamlCandidates(inputUrl) {
       const [owner, repository, view, branch] = url.pathname.split("/").filter(Boolean);
       if (owner && repository) {
         const repositoryName = repository.replace(/\.git$/i, "");
-        candidates.push(`https://raw.githubusercontent.com/${owner}/${repositoryName}/${view === "tree" && branch ? branch : "main"}/repository.yaml`);
+        candidates.push(`https://raw.githubusercontent.com/${owner}/${repositoryName}/refs/heads/${view === "tree" && branch ? branch : "main"}/repository.yaml`);
       }
     } else if (url.hostname.toLowerCase() === "raw.githubusercontent.com") {
       const parts = url.pathname.split("/").filter(Boolean);
       if (parts.length >= 3) {
-        candidates.push(`https://raw.githubusercontent.com/${parts[0]}/${parts[1]}/${parts[2]}/repository.yaml`);
+        candidates.push(`https://raw.githubusercontent.com/${parts[0]}/${parts[1]}/refs/heads/${parts[2]}/repository.yaml`);
       }
     } else {
       candidates.push(new URL("repository.yaml", url).toString());

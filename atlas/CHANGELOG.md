@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.275
+
+- Fetch GitHub plugin repository catalogs through ref-qualified raw URLs so updates are detected from the current branch contents.
+
 ## 0.1.274
 
 - Move plugin update checks into the Plugin Manager action row and show direct per-plugin update actions in installed-plugin tabs.
