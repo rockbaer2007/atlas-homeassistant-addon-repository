@@ -1,12 +1,8 @@
 # Changelog
 
-## 0.1.276
+## 0.1.277
 
-- Fetch GitHub plugin repository catalogs through ref-qualified raw URLs and migrate saved branch URLs so existing repositories pick up current catalog versions.
-
-## 0.1.275
-
-- Fetch GitHub plugin repository catalogs through ref-qualified raw URLs so updates are detected from the current branch contents.
+- Standardize ATLAS navigation buttons that open the Plugin Hub as `Plugin Hub` in every UI language.
 
 ## 0.1.274
 
@@ -14,12 +10,11 @@
 
 ## 0.1.273
 
-- Make the Administration runtime and release-readiness sections independently collapsible.
-- Align File Studio's Runtime plugin version with its published metadata at `0.1.48`.
+- Keep Administration runtime and release-readiness groups independently collapsible, and align File Studio's runtime package version with its published plugin version.
+- Bump File Studio to `0.1.48` so the Runtime plugin version matches its published plugin metadata.
+- Highlight Jinja control keywords (`if`, `elif`, `else`, `endif`), `set`, and logical operators (`and`, `or`, `not`) with theme-aware colors in File Studio.
 
 ## 0.1.272
-
-- Highlight Jinja control keywords (`if`, `elif`, `else`, `endif`), `set`, and logical operators (`and`, `or`, `not`) with theme-aware colors in File Studio.
 
 ## 0.1.271
 
@@ -32,10 +27,6 @@
 ## 0.1.269
 
 - Add theme-aware YAML colors for comments, strings, numbers and Home Assistant states; highlight SQL keywords in YAML block scalars and template delimiters.
-
-## 0.1.268
-
-- Fix the stale `@atlas/devtools` workspace metadata that caused frozen-lockfile installs to fail during the add-on image build.
 
 ## 0.1.267
 
