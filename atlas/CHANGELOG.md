@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.280
+
+- Support secure one-time handoff parameters when launching ATLAS Icon Studio from File Studio.
+
 ## 0.1.279
 
 - Add a complete French Home Assistant Card Editor interface and support saving and restoring the FR language choice.

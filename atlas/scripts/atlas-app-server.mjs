@@ -2953,6 +2953,12 @@ function writePluginLaunchResponse(response, requestUrl, routePath) {
     const value = requestUrl.searchParams.get(key);
     if (value) destination.searchParams.set(key, value);
   }
+  if (requestedId === "atlas.plugin.icon-studio") {
+    const transfer = requestUrl.searchParams.get("transfer");
+    if (/^[a-f0-9]{32}$/i.test(transfer ?? "")) {
+      destination.searchParams.set("transfer", transfer);
+    }
+  }
 
   response.writeHead(302, {
     "cache-control": "no-store",
