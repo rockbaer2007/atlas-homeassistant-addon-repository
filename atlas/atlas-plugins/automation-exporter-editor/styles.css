@@ -8,7 +8,7 @@
   --muted: #536079;
   --teal: #0f766e;
   --teal-soft: #115e59;
-  --orange: #ff9f0a;
+  --orange: #f59e0b;
   --danger: #b91c1c;
   --button-bg: #f8fafc;
   --code-bg: #eef4f7;
@@ -16,14 +16,15 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #071115;
-  --panel: #10191d;
-  --panel-strong: #13272b;
-  --line: #24434a;
-  --text: #f4fbff;
-  --muted: #b7c8ce;
-  --teal: #19d6c3;
-  --teal-soft: #7af7df;
+  --bg: #0f1417;
+  --panel: #171f23;
+  --panel-strong: #11191d;
+  --line: #2f4046;
+  --text: #f7fcfd;
+  --muted: #c3d3d8;
+  --teal: #2dd4bf;
+  --teal-soft: #7ee6c9;
+  --orange: #f59e0b;
   --danger: #ff5b57;
   --button-bg: #0b1518;
   --code-bg: #071115;
@@ -38,7 +39,7 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font-family: "Segoe UI", Arial, sans-serif;
+  font-family: system-ui, sans-serif;
 }
 
 button,
@@ -153,6 +154,38 @@ select {
 .segmented-control button[aria-pressed="true"] {
   background: var(--teal);
   color: var(--bg);
+}
+
+.plugin-hub-language {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.plugin-hub-link {
+  min-height: 40px;
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 0 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.plugin-hub-language .language-toggle {
+  min-height: 40px;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.plugin-hub-language .language-toggle button {
+  width: 42px;
+  min-width: 42px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 5px;
 }
 
 .eyebrow {

@@ -19,13 +19,15 @@
             <button type="button" data-theme-mode="light" data-i18n="themeLight">Light</button>
             <button type="button" data-theme-mode="dark" data-i18n="themeDark">Dark</button>
           </div>
-          <div class="segmented-control language-toggle" aria-label="Sprache" data-i18n-aria-label="languageLabel">
-            <button type="button" data-language="de">DE</button>
-            <button type="button" data-language="en">EN</button>
-            <button type="button" data-language="fr">FR</button>
-          </div>
           <a class="ghost-link" href="/plugin-assets/file-studio/index.html" data-open-file-studio>File Studio</a>
-          <a class="ghost-link" href="hub" data-open-hub data-i18n="pluginHub">Plugin Hub</a>
+          <div class="plugin-hub-language">
+            <a class="ghost-link plugin-hub-link" href="hub" data-open-hub>Plugin Hub</a>
+            <div class="segmented-control language-toggle" role="group" aria-label="Sprache" data-i18n-aria-label="languageLabel">
+              <button type="button" data-language="de">DE</button>
+              <button type="button" data-language="en">EN</button>
+              <button type="button" data-language="fr">FR</button>
+            </div>
+          </div>
         </div>
       </header>
 

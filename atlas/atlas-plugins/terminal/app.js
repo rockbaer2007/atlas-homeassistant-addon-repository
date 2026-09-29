@@ -16,7 +16,7 @@ const status = document.querySelector("#connection-status");
 const languageButtons = [...document.querySelectorAll("[data-language]")];
 const translations = {
   de: {
-    backToHub: "Zurück zum Hub",
+    backToHub: "Plugin Hub",
     targetLabel: "Ziel", localTarget: "ATLAS lokal", sshTarget: "Home Assistant · SSH",
     themeLabel: "Oh-My-Posh-Theme", defaultTheme: "Standard", themesUnavailable: "Themes konnten nicht geladen werden",
     fontSize: "Schriftgröße", connect: "Verbinden", disconnect: "Trennen",
@@ -30,7 +30,7 @@ const translations = {
     failed: "Terminal-Verbindung fehlgeschlagen",
   },
   en: {
-    backToHub: "Back to Hub",
+    backToHub: "Plugin Hub",
     targetLabel: "Target", localTarget: "ATLAS local", sshTarget: "Home Assistant · SSH",
     themeLabel: "Oh My Posh theme", defaultTheme: "Default", themesUnavailable: "Could not load themes",
     fontSize: "Font size", connect: "Connect", disconnect: "Disconnect",
@@ -44,7 +44,7 @@ const translations = {
     failed: "Terminal connection failed",
   },
   fr: {
-    backToHub: "Retour au hub",
+    backToHub: "Plugin Hub",
     targetLabel: "Cible", localTarget: "ATLAS local", sshTarget: "Home Assistant · SSH",
     themeLabel: "Thème Oh My Posh", defaultTheme: "Par défaut", themesUnavailable: "Impossible de charger les thèmes",
     fontSize: "Taille de police", connect: "Connecter", disconnect: "Déconnecter",

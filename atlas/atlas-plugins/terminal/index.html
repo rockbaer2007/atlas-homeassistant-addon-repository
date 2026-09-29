@@ -15,14 +15,6 @@
           <div><p class="eyebrow">ATLAS Plugin</p><h1>Terminal</h1></div>
         </div>
         <div class="toolbar-controls">
-          <a id="open-hub" class="button hub-button" href="../../hub">
-            <span aria-hidden="true">←</span><span data-i18n="backToHub">Zurück zum Hub</span>
-          </a>
-          <div class="language-control" aria-label="Language / Sprache / Langue">
-            <button type="button" data-language="de" aria-pressed="true">DE</button>
-            <button type="button" data-language="en" aria-pressed="false">EN</button>
-            <button type="button" data-language="fr" aria-pressed="false">FR</button>
-          </div>
           <label class="target-control"><span data-i18n="targetLabel">Ziel</span>
             <select id="target-select"><option value="local">ATLAS lokal</option></select>
           </label>
@@ -34,6 +26,14 @@
           </label>
           <button id="connect" class="button primary" type="button" data-i18n="connect">Verbinden</button>
           <button id="disconnect" class="button" type="button" data-i18n="disconnect" disabled>Trennen</button>
+          <div class="plugin-hub-language">
+            <a id="open-hub" class="button hub-button" href="../../hub">Plugin Hub</a>
+            <div class="language-control" role="group" aria-label="Language / Sprache / Langue">
+              <button type="button" data-language="de" aria-pressed="true">DE</button>
+              <button type="button" data-language="en" aria-pressed="false">EN</button>
+              <button type="button" data-language="fr" aria-pressed="false">FR</button>
+            </div>
+          </div>
         </div>
       </header>
       <details class="connection-panel" id="connection-panel">

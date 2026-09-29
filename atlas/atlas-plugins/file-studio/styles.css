@@ -202,6 +202,45 @@ p {
   opacity: 0.5;
 }
 
+.plugin-hub-language {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.plugin-hub-link {
+  min-height: 40px;
+  border-radius: 7px;
+  background: var(--atlas-panel);
+  color: var(--atlas-text);
+  padding: 0 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.plugin-hub-link:hover,
+.plugin-hub-link:focus-visible {
+  border-color: var(--atlas-border);
+  background: var(--atlas-panel);
+  color: var(--atlas-text);
+}
+
+.plugin-hub-language .language-toggle {
+  min-height: 40px;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.plugin-hub-language .language-toggle button {
+  width: 42px;
+  min-width: 42px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 5px;
+}
+
 .toggle-button.is-active {
   border-color: var(--atlas-accent);
   background: var(--atlas-accent);

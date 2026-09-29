@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.278
+
+- Place Plugin Hub and language controls together in the upper-right header across plugin surfaces and align the shared styling with ATLAS.
+
 ## 0.1.277
 
 - Standardize ATLAS navigation buttons that open the Plugin Hub as `Plugin Hub` in every UI language.

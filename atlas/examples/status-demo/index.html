@@ -177,6 +177,38 @@
         margin: -8px 0 14px;
       }
 
+      .plugin-hub-language {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex: 0 0 auto;
+      }
+
+      .plugin-hub-link {
+        min-height: 40px;
+        border-radius: 7px;
+        background: var(--atlas-panel);
+        color: var(--atlas-text);
+        padding: 0 14px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .plugin-hub-language .language-toggle {
+        min-height: 40px;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 8px;
+      }
+
+      .plugin-hub-language .language-toggle button {
+        width: 42px;
+        min-width: 42px;
+        min-height: 32px;
+        padding: 0;
+        border-radius: 5px;
+      }
+
       .editor-nav-button {
         display: inline-flex;
         align-items: center;
@@ -3509,16 +3541,18 @@
             <button type="button" data-theme-mode="light" aria-pressed="false" data-i18n="theme.light">Light</button>
             <button type="button" data-theme-mode="dark" aria-pressed="false" data-i18n="theme.dark">Dark</button>
           </div>
-          <div class="language-toggle" role="group" aria-label="Language" data-i18n-aria-label="aria.language">
-            <button type="button" data-language="de" aria-pressed="false">DE</button>
-            <button type="button" data-language="en" aria-pressed="true">EN</button>
+          <div class="plugin-hub-language">
+            <a class="editor-nav-button plugin-hub-link" href="/hub" data-open-hub data-i18n="link.openHub">Plugin Hub</a>
+            <div class="language-toggle" role="group" aria-label="Language" data-i18n-aria-label="aria.language">
+              <button type="button" data-language="de" aria-pressed="false">DE</button>
+              <button type="button" data-language="en" aria-pressed="true">EN</button>
+            </div>
           </div>
         </div>
       </div>
       <div id="editor-loading-notice" class="editor-loading-notice" role="status" aria-live="polite" data-i18n="message.editorLoading">Please wait, the editor is loading. This can take 5-10 seconds. The notice stays visible briefly so the editor can finish initializing.</div>
       <div class="editor-navigation-actions" aria-label="ATLAS navigation" data-i18n-aria-label="aria.atlasNavigation">
         <a class="editor-nav-button" href="admin" data-open-admin data-i18n="link.openAdmin">Open Atlas Administration</a>
-        <a class="editor-nav-button" href="/hub" data-open-hub data-i18n="link.openHub">Open Plugin Hub</a>
       </div>
       <details id="home-assistant-connection-details" class="connection-config compact-panel" open>
         <summary>

@@ -20,18 +20,20 @@
             <button type="button" data-theme-mode="light">Light</button>
             <button type="button" data-theme-mode="dark">Dark</button>
           </div>
-          <div class="segmented-control language-toggle" aria-label="Sprache">
-            <button type="button" data-language="de">DE</button>
-            <button type="button" data-language="en">EN</button>
-            <button type="button" data-language="fr">FR</button>
-          </div>
           <button id="height-limit-toggle" class="button toggle-button" type="button" aria-pressed="true">
             Max. Höhe begrenzen
           </button>
           <button id="width-limit-toggle" class="button toggle-button" type="button" aria-pressed="true">
             Max. Breite begrenzen
           </button>
-          <a class="button" href="hub" data-open-hub>Plugin Hub</a>
+          <div class="plugin-hub-language">
+            <a class="button plugin-hub-link" href="hub" data-open-hub>Plugin Hub</a>
+            <div class="segmented-control language-toggle" role="group" aria-label="Sprache">
+              <button type="button" data-language="de">DE</button>
+              <button type="button" data-language="en">EN</button>
+              <button type="button" data-language="fr">FR</button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -293,7 +295,7 @@
         const chrome = {
           de: { subtitle: "Dateibaum, Editor, YAML-Prüfung und Transfer für freigegebene Home-Assistant-Pfade.", hub: "Plugin Hub", tree: "Dateibaum", folder: "Ordnerinhalt", editor: "Editorfläche", themeLight: "Light", themeDark: "Dark", height: "Max. Höhe begrenzen", width: "Max. Breite begrenzen", discard: "Verwerfen", validate: "YAML prüfen", checkHa: "HA prüfen", history: "Verlauf", report: "Problem melden" },
           en: { subtitle: "File tree, editor, YAML validation and transfer for approved Home Assistant paths.", hub: "Plugin Hub", tree: "File tree", folder: "Folder contents", editor: "Editor", themeLight: "Light", themeDark: "Dark", height: "Limit max. height", width: "Limit max. width", discard: "Discard", validate: "Validate YAML", checkHa: "Check HA", history: "History", report: "Report a problem" },
-          fr: { subtitle: "Arborescence, éditeur, validation YAML et transfert dans les chemins Home Assistant autorisés.", hub: "Hub des plugins", tree: "Arborescence", folder: "Contenu du dossier", editor: "Éditeur", themeLight: "Clair", themeDark: "Sombre", height: "Limiter la hauteur", width: "Limiter la largeur", discard: "Annuler les modifications", validate: "Vérifier le YAML", checkHa: "Vérifier HA", history: "Historique", report: "Signaler un problème" },
+          fr: { subtitle: "Arborescence, éditeur, validation YAML et transfert dans les chemins Home Assistant autorisés.", hub: "Plugin Hub", tree: "Arborescence", folder: "Contenu du dossier", editor: "Éditeur", themeLight: "Clair", themeDark: "Sombre", height: "Limiter la hauteur", width: "Limiter la largeur", discard: "Annuler les modifications", validate: "Vérifier le YAML", checkHa: "Vérifier HA", history: "Historique", report: "Signaler un problème" },
         }[currentLanguage];
         document.querySelector(".studio-header > div > p:not(.eyebrow)").textContent = chrome.subtitle;
         document.querySelector("[data-open-hub]").textContent = chrome.hub;
