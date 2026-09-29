@@ -649,6 +649,17 @@
         overflow: auto;
       }
 
+      .plugin-update-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        background: #ff9800;
+        color: #17202a;
+        padding: 2px 7px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
       .plugin-uninstall-dialog {
         width: min(640px, calc(100vw - 32px));
       }
@@ -822,20 +833,19 @@
         gap: 8px;
       }
 
+      .plugin-update-tool {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .plugin-update-tool output { font-size: 12px; }
+
       .plugin-manager-header-actions {
         display: flex;
         align-items: center;
         gap: 10px;
-      }
-
-      .plugin-update-panel {
-        display: grid;
-        gap: 8px;
-      }
-
-      .plugin-update-list {
-        display: grid;
-        gap: 8px;
       }
 
       .sidebar-dialog {
@@ -1538,8 +1548,12 @@
           </div>
         </div>
           <div class="plugin-tools">
-            <button id="open-plugin-generator" type="button" data-i18n="button.createPlugin">Create plugin</button>
             <button id="import-plugin-package" type="button" data-i18n="button.importPackage">Import package</button>
+            <button id="open-plugin-generator" type="button" data-i18n="button.createPlugin">Create plugin</button>
+            <div class="plugin-update-tool">
+              <button id="refresh-plugin-updates" type="button" data-i18n="button.refreshPluginUpdates">Check updates</button>
+              <output id="plugin-update-summary" aria-live="polite"></output>
+            </div>
             <input id="plugin-package-file" class="visually-hidden" type="file" accept=".json,.atlas-plugin.json,application/json">
             <button id="open-plugin-repository-dialog" class="atlas-repository-button" type="button">
               <span data-i18n="button.openRepositoryDialog">Add ATLAS repository</span>
@@ -1551,20 +1565,6 @@
           </div>
           <div id="plugin-manager-tabs" class="plugin-manager-tabs" role="tablist" aria-label="Installed plugins"></div>
           <div id="plugin-list" class="plugin-list" role="tabpanel" tabindex="0"></div>
-          <details class="plugin-manager-section">
-            <summary data-i18n="heading.pluginUpdates">Plugin updates</summary>
-            <div class="plugin-update-panel">
-              <div class="panel-header">
-                <div>
-                  <h3 id="plugin-updates-heading" data-i18n="heading.pluginUpdates">Plugin updates</h3>
-                  <p data-i18n="message.pluginUpdatesHint">Atlas checks custom plugin repositories on Administration start and after reload.</p>
-                </div>
-                <button id="refresh-plugin-updates" type="button" data-i18n="button.refreshPluginUpdates">Check updates</button>
-              </div>
-              <output id="plugin-update-summary" aria-live="polite"></output>
-              <div id="plugin-update-list" class="plugin-update-list"></div>
-            </div>
-          </details>
           <details class="plugin-manager-section">
             <summary data-i18n="label.pluginRepositoriesAndPackages">Repositories and available plugins</summary>
             <div class="plugin-repository-tools">

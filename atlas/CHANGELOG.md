@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.274
+
+- Move plugin update checks into the Plugin Manager action row and show direct per-plugin update actions in installed-plugin tabs.
+
 ## 0.1.273
 
 - Make the Administration runtime and release-readiness sections independently collapsible.

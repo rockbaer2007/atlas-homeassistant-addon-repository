@@ -87,7 +87,6 @@ const pluginRepositoryList = document.querySelector("#plugin-repository-list");
 const pluginRepositoryPluginList = document.querySelector("#plugin-repository-plugin-list");
 const refreshPluginUpdates = document.querySelector("#refresh-plugin-updates");
 const pluginUpdateSummary = document.querySelector("#plugin-update-summary");
-const pluginUpdateList = document.querySelector("#plugin-update-list");
 const pluginManagerDialog = document.querySelector("#plugin-manager-dialog");
 const openPluginManager = document.querySelector("#open-plugin-manager");
 const closePluginManager = document.querySelector("#close-plugin-manager");
@@ -314,7 +313,6 @@ const translations = {
     "heading.plugins": "Installed plugins",
     "heading.pluginManager": "Plugin Manager",
     "heading.uninstallPlugin": "Uninstall plugin",
-    "heading.pluginUpdates": "External plugin updates",
     "heading.policy": "Plugin access policy",
     "heading.addPluginRepository": "Add ATLAS repository",
     "heading.pluginGenerator": "Plugin generator",
@@ -492,12 +490,13 @@ const translations = {
     "message.sidebarPluginDialogHint": "Prepare a Home Assistant sidebar entry and copy the panel_iframe YAML block.",
     "message.sidebarPluginCopied": "{name} panel_iframe YAML copied.",
     "message.sidebarPluginUnavailable": "No launch URL available yet.",
-    "message.pluginUpdatesHint": "Atlas checks only external custom plugin repositories here, not the bundled plugins installed below.",
     "message.pluginUpdatesChecking": "Checking plugin repositories for updates...",
-    "message.pluginUpdatesNoRepositories": "No external custom plugin repositories configured yet.",
-    "message.pluginUpdatesNone": "No external plugin updates found. Last checked: {checkedAt}.",
-    "message.pluginUpdatesFound": "{count} external plugin update(s) found. Last checked: {checkedAt}.",
-    "message.pluginUpdatesPending": "External plugin update check has not run yet.",
+    "message.pluginUpdatesNoRepositories": "No custom plugin repositories configured yet.",
+    "message.pluginUpdatesNone": "No plugin updates found. Last checked: {checkedAt}.",
+    "message.pluginUpdatesFound": "{count} plugin update(s) found. Last checked: {checkedAt}.",
+    "message.pluginUpdatesPending": "Plugin update check has not run yet.",
+    "message.pluginUpdatesFailed": "Could not check plugin updates. Review the repository status below.",
+    "message.pluginTabUpdate": "Update: {version}",
     "type.plugin": "Plugin",
     "type.card": "Card",
     "type.integration": "Integration",
@@ -561,7 +560,6 @@ const translations = {
     "heading.plugins": "Installierte Plugins",
     "heading.pluginManager": "Plugin-Manager",
     "heading.uninstallPlugin": "Plugin deinstallieren",
-    "heading.pluginUpdates": "Externe Plugin-Updates",
     "heading.policy": "Plugin-Zugriffsregel",
     "heading.addPluginRepository": "ATLAS Repository hinzufügen",
     "heading.pluginGenerator": "Plugin-Generator",
@@ -739,12 +737,13 @@ const translations = {
     "message.sidebarPluginDialogHint": "Bereitet einen Home-Assistant-Seitenleisteneintrag vor und kopiert den panel_iframe-YAML-Block.",
     "message.sidebarPluginCopied": "{name}: panel_iframe-YAML kopiert.",
     "message.sidebarPluginUnavailable": "Noch keine Start-URL verfügbar.",
-    "message.pluginUpdatesHint": "Atlas prüft hier nur externe benutzerdefinierte Plugin-Repositories, nicht die unten installierten mitgelieferten Plugins.",
     "message.pluginUpdatesChecking": "Plugin-Repositories werden auf Updates geprüft...",
-    "message.pluginUpdatesNoRepositories": "Noch keine externen Plugin-Repositories eingerichtet.",
-    "message.pluginUpdatesNone": "Keine externen Plugin-Updates gefunden. Zuletzt geprüft: {checkedAt}.",
-    "message.pluginUpdatesFound": "{count} externe Plugin-Update(s) gefunden. Zuletzt geprüft: {checkedAt}.",
-    "message.pluginUpdatesPending": "Externe Plugin-Update-Prüfung wurde noch nicht ausgeführt.",
+    "message.pluginUpdatesNoRepositories": "Noch keine benutzerdefinierten Plugin-Repositories eingerichtet.",
+    "message.pluginUpdatesNone": "Keine Plugin-Updates gefunden. Zuletzt geprüft: {checkedAt}.",
+    "message.pluginUpdatesFound": "{count} Plugin-Update(s) gefunden. Zuletzt geprüft: {checkedAt}.",
+    "message.pluginUpdatesPending": "Die Plugin-Update-Prüfung wurde noch nicht ausgeführt.",
+    "message.pluginUpdatesFailed": "Plugin-Updates konnten nicht geprüft werden. Prüfe den Status der Repositories unten.",
+    "message.pluginTabUpdate": "Update: {version}",
     "type.plugin": "Plugin",
     "type.card": "Card",
     "type.integration": "Integration",
@@ -808,7 +807,6 @@ const translations = {
     "heading.plugins": "Plugins installés",
     "heading.pluginManager": "Gestionnaire de plugins",
     "heading.uninstallPlugin": "Désinstaller le plugin",
-    "heading.pluginUpdates": "Mises à jour des plugins externes",
     "heading.policy": "Règles d’accès des plugins",
     "heading.addPluginRepository": "Ajouter un dépôt ATLAS",
     "heading.pluginGenerator": "Générateur de plugins",
@@ -969,12 +967,13 @@ const translations = {
     "message.sidebarPluginDialogHint": "Prépare une entrée de barre latérale Home Assistant et copie le bloc YAML panel_iframe.",
     "message.sidebarPluginCopied": "Bloc YAML panel_iframe de {name} copié.",
     "message.sidebarPluginUnavailable": "Aucune URL de lancement n’est encore disponible.",
-    "message.pluginUpdatesHint": "ATLAS vérifie ici uniquement les dépôts personnalisés de plugins externes, pas les plugins intégrés installés ci-dessous.",
     "message.pluginUpdatesChecking": "Recherche de mises à jour dans les dépôts de plugins…",
-    "message.pluginUpdatesNoRepositories": "Aucun dépôt externe personnalisé n’est encore configuré.",
-    "message.pluginUpdatesNone": "Aucune mise à jour de plugin externe trouvée. Dernière vérification : {checkedAt}.",
-    "message.pluginUpdatesFound": "{count} mise(s) à jour de plugin externe trouvée(s). Dernière vérification : {checkedAt}.",
-    "message.pluginUpdatesPending": "La vérification des mises à jour externes n’a pas encore été lancée.",
+    "message.pluginUpdatesNoRepositories": "Aucun dépôt personnalisé de plugins n’est encore configuré.",
+    "message.pluginUpdatesNone": "Aucune mise à jour de plugin trouvée. Dernière vérification : {checkedAt}.",
+    "message.pluginUpdatesFound": "{count} mise(s) à jour de plugin trouvée(s). Dernière vérification : {checkedAt}.",
+    "message.pluginUpdatesPending": "La vérification des mises à jour de plugins n’a pas encore été lancée.",
+    "message.pluginUpdatesFailed": "Impossible de vérifier les mises à jour. Vérifiez l’état des dépôts ci-dessous.",
+    "message.pluginTabUpdate": "Mise à jour : {version}",
     "type.plugin": "Plugin",
     "type.card": "Carte",
     "type.integration": "Intégration",
@@ -2117,6 +2116,7 @@ async function loadPluginRepositoriesPreview() {
     renderPluginRepositories();
     pluginRepositoryStatus.textContent = t("message.pluginRepositoryEmpty");
     renderPluginUpdateStatus();
+    renderAdministration();
     return;
   }
 
@@ -2159,6 +2159,7 @@ async function loadPluginRepositoriesPreview() {
   renderPluginRepositories();
   renderPluginRepositoryPreview();
   renderPluginUpdateStatus();
+  renderAdministration();
   pluginRepositoryStatus.textContent = t("message.pluginRepositoryLoaded", {
     count: repositoryPluginDescriptors.length,
     countRepositories: pluginRepositories.length,
@@ -2472,7 +2473,12 @@ function repositoryPluginInstallState(plugin) {
     : findInstalledPlugin(plugin.id);
   const bundled = Boolean(installed && bundledPluginIds.has(plugin.id) && imported?.source !== "repository");
   const installedVersion = installed?.version ?? "";
-  const updateAvailable = Boolean(installed && comparePluginVersions(plugin.version, installedVersion) > 0);
+  const updateAvailable = Boolean(
+    installed
+    && !bundled
+    && imported?.source === "repository"
+    && comparePluginVersions(plugin.version, installedVersion) > 0,
+  );
 
   return {
     installed,
@@ -2530,8 +2536,6 @@ function collectPluginUpdates() {
 }
 
 function renderPluginUpdateStatus(options = {}) {
-  pluginUpdateList.replaceChildren();
-
   if (options.checking) {
     pluginUpdateSummary.textContent = t("message.pluginUpdatesChecking");
     return;
@@ -2542,43 +2546,27 @@ function renderPluginUpdateStatus(options = {}) {
     return;
   }
 
+  if (pluginRepositories.every(repository => repository.status === "failed")) {
+    pluginUpdateSummary.textContent = t("message.pluginUpdatesFailed");
+    return;
+  }
+
   const updates = collectPluginUpdates();
   const savedCheck = persistLastPluginUpdateCheck(updates);
   const checkedAt = formatRuntimeDate(savedCheck.checkedAt);
   pluginUpdateSummary.textContent = updates.length
     ? t("message.pluginUpdatesFound", { count: updates.length, checkedAt })
     : t("message.pluginUpdatesNone", { checkedAt });
-
-  for (const update of updates) {
-    const item = document.createElement("div");
-    const title = document.createElement("div");
-    const reason = document.createElement("div");
-    const status = document.createElement("span");
-
-    item.className = "readiness-item";
-    title.className = "readiness-title";
-    reason.className = "readiness-reason";
-    status.className = "readiness-status";
-    status.dataset.status = "in-progress";
-    title.textContent = update.name;
-    reason.textContent = [
-      t("message.pluginRepositoryUpdateAvailable", {
-        installed: update.installedVersion,
-        available: update.availableVersion,
-      }),
-      update.repositoryName,
-    ].filter(Boolean).join(" · ");
-    status.textContent = t("button.updateRepositoryPackage");
-    item.append(title, reason, status);
-    pluginUpdateList.append(item);
-  }
 }
 
 function renderPersistedPluginUpdateStatus() {
+  if (!pluginRepositories.length) {
+    pluginUpdateSummary.textContent = t("message.pluginUpdatesNoRepositories");
+    return;
+  }
   const savedCheck = readLastPluginUpdateCheck();
   if (!savedCheck) {
     pluginUpdateSummary.textContent = t("message.pluginUpdatesPending");
-    pluginUpdateList.replaceChildren();
     return;
   }
 
@@ -2586,7 +2574,6 @@ function renderPersistedPluginUpdateStatus() {
   pluginUpdateSummary.textContent = savedCheck.updateCount
     ? t("message.pluginUpdatesFound", { count: savedCheck.updateCount, checkedAt })
     : t("message.pluginUpdatesNone", { checkedAt });
-  pluginUpdateList.replaceChildren();
 }
 
 async function fetchRepositoryPluginInstallPackage(plugin) {
@@ -4310,7 +4297,7 @@ function renderAdministration() {
   pluginManagerTabs.replaceChildren();
   pluginManagerTabs.setAttribute("aria-label", currentLanguage === "de" ? "Installierte Plugins" : currentLanguage === "fr" ? "Plugins installés" : "Installed plugins");
 
-  const createPluginTab = (id, label) => {
+  const createPluginTab = (id, label, availableVersion = "") => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "plugin-manager-tab";
@@ -4319,7 +4306,14 @@ function renderAdministration() {
     button.setAttribute("aria-controls", "plugin-list");
     button.setAttribute("aria-selected", String(selectedPluginManagerTab === id));
     button.tabIndex = selectedPluginManagerTab === id ? 0 : -1;
-    button.textContent = label;
+    button.append(document.createTextNode(label));
+    if (availableVersion) {
+      const badge = document.createElement("span");
+      badge.className = "plugin-update-badge";
+      badge.textContent = t("message.pluginTabUpdate", { version: availableVersion });
+      button.append(badge);
+      button.setAttribute("aria-label", `${label}, ${badge.textContent}`);
+    }
     button.addEventListener("click", () => {
       selectedPluginManagerTab = id;
       renderAdministration();
@@ -4329,7 +4323,16 @@ function renderAdministration() {
   };
 
   for (const plugin of view.plugins) {
-    createPluginTab(plugin.id, localizedPluginText(plugin, "name", plugin.id));
+    const repositoryPlugin = repositoryPluginDescriptors.find(entry => entry.id === plugin.id);
+    const imported = findImportedPlugin(plugin.id);
+    const updateState = repositoryPlugin && imported?.source === "repository"
+      ? repositoryPluginInstallState(repositoryPlugin)
+      : undefined;
+    createPluginTab(
+      plugin.id,
+      localizedPluginText(plugin, "name", plugin.id),
+      updateState?.updateAvailable ? repositoryPlugin.version || "-" : "",
+    );
   }
   pluginManagerTabs.onkeydown = event => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
@@ -4346,6 +4349,12 @@ function renderAdministration() {
     tabs[nextIndex].click();
   };
   for (const [pluginIndex, plugin] of view.plugins.entries()) {
+    const repositoryPlugin = repositoryPluginDescriptors.find(entry => entry.id === plugin.id);
+    const imported = findImportedPlugin(plugin.id);
+    const updateState = repositoryPlugin && imported?.source === "repository"
+      ? repositoryPluginInstallState(repositoryPlugin)
+      : undefined;
+    const updateAvailable = Boolean(updateState?.updateAvailable);
     const item = document.createElement("article");
     const header = document.createElement("div");
     const media = document.createElement("div");
@@ -4382,10 +4391,22 @@ function renderAdministration() {
 
     details.append(
       createDetail(t("label.version"), [plugin.version]),
+      ...(updateAvailable ? [createDetail(t("label.availableVersion"), [repositoryPlugin.version || "-"])] : []),
       createDetail(t("label.logo"), [resolvePluginDisplayAssetUrl(plugin, "logo") || "-"]),
       createDetail(t("label.extensionPoints"), plugin.extensionPoints),
       createDetail(t("label.capabilities"), plugin.provides),
     );
+
+    if (updateAvailable) {
+      const updateButton = document.createElement("button");
+      updateButton.type = "button";
+      updateButton.className = "accent";
+      updateButton.textContent = t("button.updateRepositoryPackage");
+      updateButton.addEventListener("click", () => {
+        void installRepositoryPluginPackage(repositoryPlugin);
+      });
+      actions.append(updateButton);
+    }
 
     for (const action of plugin.actions) {
       const button = document.createElement("button");
