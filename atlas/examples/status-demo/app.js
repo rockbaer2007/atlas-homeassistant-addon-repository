@@ -1,3 +1,4 @@
+import { cardEditorFrenchTranslations } from "./card-editor-fr.js";
 import {
   createThemeTokens,
 } from "@atlas/theme";
@@ -1199,6 +1200,7 @@ const translations = {
     "template.state-button": "Status-Button",
     "template.switch-button": "Switch-Button",
   },
+  fr: cardEditorFrenchTranslations,
 };
 let emptyEntitySelectionMessage = translations.en["message.emptySelection"];
 
@@ -1252,7 +1254,7 @@ function applyTranslations() {
 }
 
 function setLanguage(language) {
-  currentLanguage = language === "de" ? "de" : "en";
+  currentLanguage = Object.hasOwn(translations, language) ? language : "en";
   try {
     localStorage.setItem(atlasLanguageStorageKey, currentLanguage);
   } catch {
@@ -1293,8 +1295,7 @@ function readThemePreferenceFromLocation() {
 function readLanguageFromLocation() {
   try {
     const language = new URL(window.location.href).searchParams.get("language");
-    if (language === "de" || language === "en") return language;
-    if (language === "fr") return "en";
+    if (Object.hasOwn(translations, language)) return language;
   } catch {
     // Continue with the saved shared preference.
   }
@@ -1304,8 +1305,7 @@ function readLanguageFromLocation() {
 function readSharedLanguagePreference() {
   try {
     const language = localStorage.getItem(atlasLanguageStorageKey);
-    if (language === "de" || language === "en") return language;
-    if (language === "fr") return "en";
+    if (Object.hasOwn(translations, language)) return language;
   } catch {
     // Try the shared cookie if local storage is unavailable.
   }
@@ -1313,8 +1313,7 @@ function readSharedLanguagePreference() {
     const cookie = document.cookie.split(";").map(value => value.trim())
       .find(value => value.startsWith(`${atlasLanguageCookieName}=`));
     const language = cookie ? decodeURIComponent(cookie.slice(atlasLanguageCookieName.length + 1)) : "";
-    if (language === "de" || language === "en") return language;
-    if (language === "fr") return "en";
+    if (Object.hasOwn(translations, language)) return language;
   } catch {
     // Leave the current default language in place.
   }
@@ -1601,7 +1600,7 @@ try {
     currentLanguage = urlLanguage;
   } else if (sharedLanguage) {
     currentLanguage = sharedLanguage;
-  } else if (savedConfiguration?.language === "de" || savedConfiguration?.language === "en") {
+  } else if (Object.hasOwn(translations, savedConfiguration?.language)) {
     currentLanguage = savedConfiguration.language;
   }
   restoreThemePreference(savedConfiguration?.themePreference);
@@ -2793,7 +2792,8 @@ async function fetchLovelaceResourcesViaRestFallback(initialReason = "") {
 }
 
 function addLovelaceResourceDebugEvent(message) {
-  const time = new Date().toLocaleTimeString(currentLanguage === "de" ? "de-DE" : "en-US", {
+  const locale = { de: "de-DE", en: "en-US", fr: "fr-FR" }[currentLanguage] ?? "en-US";
+  const time = new Date().toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -7900,7 +7900,7 @@ function createEntityTableEntry(entityId) {
 }
 
 function compareTextValues(left, right) {
-  return String(left).localeCompare(String(right), currentLanguage === "de" ? "de" : "en", {
+  return String(left).localeCompare(String(right), currentLanguage, {
     numeric: true,
     sensitivity: "base",
   });

@@ -24,7 +24,12 @@ describe("Home Assistant card editor plugin", () => {
     expect(plugin.manifest).toMatchObject({
       id: HomeAssistantCardEditorPluginId,
       name: "ATLAS Home Assistant Card Editor",
-      version: "0.2.0-alpha.93",
+      version: "0.2.0-alpha.94",
+      nameI18n: {
+        de: "ATLAS Home Assistant Karten-Editor",
+        en: "ATLAS Home Assistant Card Editor",
+        fr: "ATLAS – Éditeur de cartes Home Assistant",
+      },
       extensionPoints: [
         HomeAssistantCardEditorExtensionPoints.cardEditor,
         HomeAssistantCardEditorExtensionPoints.cardTarget,

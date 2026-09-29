@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.279
+
+- Add a complete French Home Assistant Card Editor interface and support saving and restoring the FR language choice.
+
 ## 0.1.278
 
 - Place Plugin Hub and language controls together in the upper-right header across plugin surfaces and align the shared styling with ATLAS.
