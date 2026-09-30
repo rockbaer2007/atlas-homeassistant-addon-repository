@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.284
+
+- Resolve nested File Studio roots such as `/config/www` before the broader `/config` root so file-tree paths and reads point to the same files.
+
 ## 0.1.283
 
 - Remove the ATLAS prefix from Plugin Manager tabs.

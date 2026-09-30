@@ -2473,8 +2473,16 @@ function resolveFileStudioRootScope(value, access) {
   if (!displayPath) {
     return enabledFileStudioRootScopes(access)[0];
   }
-  return enabledFileStudioRootScopes(access)
-    .find(scope => displayPath === scope.displayPath || displayPath.startsWith(`${scope.displayPath}/`));
+  let matchedScope;
+  for (const scope of enabledFileStudioRootScopes(access)) {
+    if (
+      (displayPath === scope.displayPath || displayPath.startsWith(`${scope.displayPath}/`))
+      && (!matchedScope || scope.displayPath.length > matchedScope.displayPath.length)
+    ) {
+      matchedScope = scope;
+    }
+  }
+  return matchedScope;
 }
 
 function resolveFileStudioPath(value, access) {
