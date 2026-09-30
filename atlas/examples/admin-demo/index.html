@@ -460,6 +460,18 @@
         gap: 8px;
       }
 
+      .plugin-action-status {
+        grid-column: 1 / -1;
+        min-height: 0;
+        color: var(--atlas-muted);
+        font-size: 13px;
+        overflow-wrap: anywhere;
+      }
+
+      .plugin-action-status:empty { display: none; }
+      .plugin-action-status.is-error { color: var(--atlas-danger, #ef6b73); }
+      button[aria-busy="true"] { cursor: progress; opacity: 0.75; }
+
       button {
         min-height: 36px;
         border: 1px solid var(--atlas-accent);

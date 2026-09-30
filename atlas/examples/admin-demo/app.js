@@ -481,6 +481,7 @@ const translations = {
     "message.pluginRepositoryPluginUpdated": "{name} updated from repository.",
     "message.pluginRepositoryPluginRemoved": "{name} removed.",
     "message.pluginRepositoryInstalling": "Installing {name} on the Atlas server...",
+    "message.pluginRepositoryUpdating": "Updating {name} from its repository...",
     "message.pluginRepositoryInstallFailed": "{name} could not be installed ({error}).",
     "message.pluginRepositoryUpdateAvailable": "Update available: {installed} -> {available}",
     "message.pluginRepositoryInstalledVersion": "Installed: {version}",
@@ -728,6 +729,7 @@ const translations = {
     "message.pluginRepositoryPluginUpdated": "{name} aus Repository aktualisiert.",
     "message.pluginRepositoryPluginRemoved": "{name} entfernt.",
     "message.pluginRepositoryInstalling": "{name} wird auf dem Atlas-Server installiert...",
+    "message.pluginRepositoryUpdating": "{name} wird aus dem Repository aktualisiert...",
     "message.pluginRepositoryInstallFailed": "{name} konnte nicht installiert werden ({error}).",
     "message.pluginRepositoryUpdateAvailable": "Update verfügbar: {installed} -> {available}",
     "message.pluginRepositoryInstalledVersion": "Installiert: {version}",
@@ -958,6 +960,7 @@ const translations = {
     "message.pluginRepositoryPluginUpdated": "{name} mis à jour depuis le dépôt.",
     "message.pluginRepositoryPluginRemoved": "{name} supprimé.",
     "message.pluginRepositoryInstalling": "Installation de {name} sur le serveur ATLAS…",
+    "message.pluginRepositoryUpdating": "Mise à jour de {name} depuis son dépôt…",
     "message.pluginRepositoryInstallFailed": "Impossible d’installer {name} ({error}).",
     "message.pluginRepositoryUpdateAvailable": "Mise à jour disponible : {installed} -> {available}",
     "message.pluginRepositoryInstalledVersion": "Installé : {version}",
@@ -2670,7 +2673,7 @@ function normalizeRepositoryPluginManifest(manifest, fallbackPlugin) {
   };
 }
 
-async function installRepositoryPluginPackage(plugin) {
+async function installRepositoryPluginPackage(plugin, { button, status } = {}) {
   const existing = findInstalledPlugin(plugin.id);
   const imported = findImportedPlugin(plugin.id);
 
@@ -2679,9 +2682,21 @@ async function installRepositoryPluginPackage(plugin) {
     return;
   }
 
-  pluginRepositoryStatus.textContent = t("message.pluginRepositoryInstalling", {
+  const progressMessage = t(imported?.source === "repository"
+    ? "message.pluginRepositoryUpdating"
+    : "message.pluginRepositoryInstalling", {
     name: localizedPluginText(plugin, "name", plugin.id),
   });
+  pluginRepositoryStatus.textContent = progressMessage;
+  if (status) {
+    status.classList.remove("is-error");
+    status.textContent = progressMessage;
+  }
+  if (button) {
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+  }
+  let completed = false;
   try {
     const installPackage = await fetchRepositoryPluginInstallPackage(plugin);
     const descriptor = installPackage.plugin;
@@ -2724,8 +2739,10 @@ async function installRepositoryPluginPackage(plugin) {
       wasInstalled ? "message.pluginRepositoryPluginUpdated" : "message.pluginRepositoryPluginInstalled",
       { name: descriptor.name },
     );
+    completed = true;
     adminSaveState.textContent = message;
     pluginRepositoryStatus.textContent = message;
+    pluginUpdateSummary.textContent = message;
   } catch (error) {
     const message = t("message.pluginRepositoryInstallFailed", {
       name: localizedPluginText(plugin, "name", plugin.id),
@@ -2733,6 +2750,15 @@ async function installRepositoryPluginPackage(plugin) {
     });
     adminSaveState.textContent = message;
     pluginRepositoryStatus.textContent = message;
+    if (status) {
+      status.classList.add("is-error");
+      status.textContent = message;
+    }
+  } finally {
+    if (button) {
+      button.removeAttribute("aria-busy");
+      if (!completed && button.isConnected) button.disabled = false;
+    }
   }
 }
 
@@ -2887,6 +2913,7 @@ function renderPluginRepositoryPreview() {
     const actions = document.createElement("div");
     const installButton = document.createElement("button");
     const removeButton = document.createElement("button");
+    const actionStatus = document.createElement("output");
 
     item.className = "plugin-card";
     header.className = "plugin-header";
@@ -2894,6 +2921,8 @@ function renderPluginRepositoryPreview() {
     status.className = "plugin-status";
     details.className = "plugin-details";
     actions.className = "action-grid";
+    actionStatus.className = "plugin-action-status";
+    actionStatus.setAttribute("aria-live", "polite");
 
     title.textContent = localizedPluginText(plugin, "name", plugin.id);
     description.textContent = localizedPluginText(plugin, "description", plugin.id);
@@ -2950,7 +2979,7 @@ function renderPluginRepositoryPreview() {
       installButton.title = t("message.pluginRepositoryNoPackage");
     }
     installButton.addEventListener("click", () => {
-      void installRepositoryPluginPackage(plugin);
+      void installRepositoryPluginPackage(plugin, { button: installButton, status: actionStatus });
     });
     actions.append(installButton);
     if (installState.removable) {
@@ -2960,6 +2989,7 @@ function renderPluginRepositoryPreview() {
       removeButton.addEventListener("click", () => removeRepositoryPluginPackage(plugin));
       actions.append(removeButton);
     }
+    actions.append(actionStatus);
     item.append(header, details, actions);
     pluginRepositoryPluginList.append(item);
   }
@@ -4388,6 +4418,7 @@ function renderAdministration() {
     const status = document.createElement("span");
     const details = document.createElement("div");
     const actions = document.createElement("div");
+    const actionStatus = document.createElement("output");
 
     item.className = "plugin-card";
     item.id = `plugin-panel-${pluginIndex}`;
@@ -4398,6 +4429,8 @@ function renderAdministration() {
     status.className = "plugin-status";
     details.className = "plugin-details";
     actions.className = "action-grid";
+    actionStatus.className = "plugin-action-status";
+    actionStatus.setAttribute("aria-live", "polite");
 
     title.textContent = localizedPluginText(plugin, "name", plugin.id);
     description.textContent = localizedPluginText(plugin, "description", plugin.id);
@@ -4427,7 +4460,7 @@ function renderAdministration() {
       updateButton.className = "accent";
       updateButton.textContent = t("button.updateRepositoryPackage");
       updateButton.addEventListener("click", () => {
-        void installRepositoryPluginPackage(repositoryPlugin);
+        void installRepositoryPluginPackage(repositoryPlugin, { button: updateButton, status: actionStatus });
       });
       actions.append(updateButton);
     }
@@ -4448,6 +4481,8 @@ function renderAdministration() {
       removeButton.addEventListener("click", () => void uninstallManagedPlugin(plugin));
       actions.append(removeButton);
     }
+
+    if (updateAvailable) actions.append(actionStatus);
 
     item.append(header, details, actions);
     pluginList.append(item);

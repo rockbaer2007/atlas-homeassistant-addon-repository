@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.281
+
+- Show per-plugin update progress and failures directly beside the update button.
+- Disable update buttons while a package is being fetched and installed.
+
 ## 0.1.280
 
 - Support secure one-time handoff parameters when launching ATLAS Icon Studio from File Studio.
