@@ -2503,7 +2503,7 @@ function repositoryPluginInstallState(plugin) {
   const updateAvailable = Boolean(
     installed
     && !bundled
-    && imported?.source === "repository"
+    && imported
     && comparePluginVersions(plugin.version, installedVersion) > 0,
   );
 
@@ -2677,7 +2677,7 @@ async function installRepositoryPluginPackage(plugin, { button, status } = {}) {
   const existing = findInstalledPlugin(plugin.id);
   const imported = findImportedPlugin(plugin.id);
 
-  if (existing && !bundledPluginIds.has(plugin.id) && imported?.source !== "repository") {
+  if (existing && !bundledPluginIds.has(plugin.id) && !imported) {
     adminSaveState.textContent = t("message.pluginPackageDuplicate", { name: existing.name });
     return;
   }
@@ -2971,7 +2971,6 @@ function renderPluginRepositoryPreview() {
         ? t("button.bundledRepositoryPackage")
         : t("button.installRepositoryPackage");
     installButton.disabled = installState.bundled
-      || Boolean(installState.installed && !installState.removable)
       || Boolean(installState.installed && !installState.updateAvailable)
       || (!plugin.packageUrl && !plugin.manifestUrl);
     if (!plugin.packageUrl && !plugin.manifestUrl) {
@@ -4388,13 +4387,14 @@ function renderAdministration() {
 
   for (const plugin of view.plugins) {
     const repositoryPlugin = repositoryPluginDescriptors.find(entry => entry.id === plugin.id);
-    const imported = findImportedPlugin(plugin.id);
-    const updateState = repositoryPlugin && imported?.source === "repository"
+    const updateState = repositoryPlugin
       ? repositoryPluginInstallState(repositoryPlugin)
       : undefined;
     createPluginTab(
       plugin.id,
-      localizedPluginText(plugin, "name", plugin.id),
+      localizedPluginText(plugin, "name", plugin.id)
+        .replace(/^ATLAS\s+/i, "")
+        .replace(/\s+ATLAS$/i, ""),
       updateState?.updateAvailable ? repositoryPlugin.version || "-" : "",
     );
   }
@@ -4414,8 +4414,7 @@ function renderAdministration() {
   };
   for (const [pluginIndex, plugin] of view.plugins.entries()) {
     const repositoryPlugin = repositoryPluginDescriptors.find(entry => entry.id === plugin.id);
-    const imported = findImportedPlugin(plugin.id);
-    const updateState = repositoryPlugin && imported?.source === "repository"
+    const updateState = repositoryPlugin
       ? repositoryPluginInstallState(repositoryPlugin)
       : undefined;
     const updateAvailable = Boolean(updateState?.updateAvailable);

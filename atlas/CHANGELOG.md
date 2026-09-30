@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.283
+
+- Remove the ATLAS prefix from Plugin Manager tabs.
+- Detect repository updates for plugins previously imported from package files.
+
 ## 0.1.282
 
 - Store only plugin metadata in browser storage; keep package files on the ATLAS server.
