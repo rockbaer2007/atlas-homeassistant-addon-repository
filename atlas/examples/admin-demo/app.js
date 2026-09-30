@@ -2720,7 +2720,6 @@ async function installRepositoryPluginPackage(plugin, { button, status } = {}) {
       entry: plugin.entry,
       slug: plugin.slug,
       compatibility: plugin.compatibility,
-      files: installPackage.files,
       installedAt: new Date().toISOString(),
     };
     const wasInstalled = Boolean(imported);
@@ -3060,7 +3059,10 @@ function restoreImportedPlugins() {
       )
       : [];
     importedPluginDescriptors = removeBundledImportedPlugins(restoredPlugins);
-    if (importedPluginDescriptors.length !== restoredPlugins.length) {
+    if (
+      importedPluginDescriptors.length !== restoredPlugins.length
+      || restoredPlugins.some(plugin => Array.isArray(plugin.files) || typeof plugin.iconDataUrl === "string")
+    ) {
       persistImportedPlugins();
     }
   } catch {
@@ -3070,6 +3072,7 @@ function restoreImportedPlugins() {
 }
 
 function persistImportedPlugins() {
+  importedPluginDescriptors = importedPluginDescriptors.map(({ files, iconDataUrl, ...plugin }) => plugin);
   localStorage.setItem(adminPluginStorageKey, JSON.stringify(importedPluginDescriptors));
   persistSharedPluginCatalogCookie();
 }
@@ -4300,19 +4303,26 @@ async function importSelectedPluginPackage() {
 
     await persistPluginPackageOnServer(installPackage);
 
-    const iconFile = installPackage.files.find(entry => entry.path === plugin.icon && entry.mediaType === "image/png");
-    const iconDataUrl = iconFile?.contentEncoding === "base64"
-      && typeof iconFile.content === "string"
-      && /^[A-Za-z0-9+/]+={0,2}$/.test(iconFile.content)
-      ? `data:image/png;base64,${iconFile.content}`
-      : undefined;
+    const manifestFile = installPackage.files.find(entry => entry.path === "atlas-plugin.json");
+    let manifest = {};
+    try {
+      manifest = manifestFile ? JSON.parse(manifestFile.content) : {};
+    } catch {
+      manifest = {};
+    }
+    const slug = plugin.id.split(".").at(-1).toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    const assetUrl = assetPath => typeof assetPath === "string" && assetPath.trim()
+      ? createAppRouteNavigationUrl(`/plugin-assets/${encodeURIComponent(slug)}/${assetPath.split("/").map(encodeURIComponent).join("/")}`)
+      : "";
     importedPluginDescriptors = [...importedPluginDescriptors, {
       ...plugin,
       source: "package",
       capabilities: plugin.provides ?? [],
-      slug: plugin.id.split(".").at(-1),
-      files: installPackage.files,
-      iconDataUrl,
+      slug,
+      entry: typeof manifest.entry === "string" ? manifest.entry : "",
+      iconUrl: assetUrl(plugin.icon ?? manifest.icon),
+      logoUrl: assetUrl(plugin.logo ?? manifest.logo),
+      previewUrl: assetUrl(plugin.preview ?? manifest.preview),
     }];
     selectedPluginManagerTab = plugin.id;
     persistImportedPlugins();

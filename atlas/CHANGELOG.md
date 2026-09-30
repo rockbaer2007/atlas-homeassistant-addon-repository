@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.282
+
+- Store only plugin metadata in browser storage; keep package files on the ATLAS server.
+- Remove legacy embedded package files and image data from saved plugin descriptors.
+
 ## 0.1.281
 
 - Show per-plugin update progress and failures directly beside the update button.
