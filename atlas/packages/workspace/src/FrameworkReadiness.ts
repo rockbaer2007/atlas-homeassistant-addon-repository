@@ -165,7 +165,7 @@ export const ATLAS_WORKSPACE_PACKAGE_INVENTORY: readonly AtlasWorkspacePackageDe
       directory: "devtools",
       layer: 6,
       status: "active",
-      publicApi: "closed",
+      publicApi: "open",
       allowedDependencies: ["foundation"],
     },
   ];
@@ -174,16 +174,7 @@ export const ATLAS_WORKSPACE_QUALITY_GATES: readonly AtlasWorkspaceQualityGate[]
   ["check", "build", "tests", "documentation", "architectureReview"];
 
 export const ATLAS_PLANNED_INTEGRATION_CLOSURES: readonly AtlasPlannedIntegrationClosure[] =
-  [
-    {
-      name: "@atlas/devtools",
-      directory: "devtools",
-      status: "planned",
-      publicApi: "closed",
-      reason:
-        "Devtools activation waits for stable framework diagnostic inspection points.",
-    },
-  ];
+  [];
 
 export function createAtlasFrameworkReadiness(): AtlasFrameworkReadiness {
   return {

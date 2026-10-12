@@ -40,7 +40,7 @@ describe("Atlas framework capability direction", () => {
       selected: true,
       id: "homeassistant-status-panel",
       ownerPackages: ["@atlas/theme", "@atlas/homeassistant"],
-      protectedIntegrations: ["@atlas/devtools"],
+      protectedIntegrations: [],
       requiredQualityGates: [
         "check",
         "build",
@@ -56,14 +56,10 @@ describe("Atlas framework capability direction", () => {
     });
   });
 
-  it("keeps planned integrations closed while selecting the capability", () => {
+  it("keeps capability direction independent of planned integration closures", () => {
     const direction = createAtlasFrameworkCapabilityDirection();
 
-    expect(
-      direction.protectedIntegrationClosures.every(
-        (closure) => closure.publicApi === "closed",
-      ),
-    ).toBe(true);
+    expect(direction.protectedIntegrationClosures).toEqual([]);
   });
 
   it("rejects unselected capability directions", () => {
@@ -78,21 +74,10 @@ describe("Atlas framework capability direction", () => {
     );
   });
 
-  it("rejects capability directions that open planned integrations", () => {
+  it("does not list active integrations as protected planned closures", () => {
     const direction = createAtlasFrameworkCapabilityDirection();
-    const openedIntegrationDirection = {
-      ...direction,
-      protectedIntegrationClosures: [
-        {
-          ...direction.protectedIntegrationClosures[0],
-          publicApi: "open",
-        },
-      ],
-    };
-
-    expect(() =>
-      assertAtlasFrameworkCapabilityDirection(openedIntegrationDirection),
-    ).toThrow("Atlas framework capability direction is not selected.");
+    expect(direction.protectedIntegrationClosures).toEqual([]);
+    expect(() => assertAtlasFrameworkCapabilityDirection(direction)).not.toThrow();
   });
 
   it("copies capability direction report arrays away from source direction arrays", () => {

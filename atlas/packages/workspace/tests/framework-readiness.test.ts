@@ -104,7 +104,7 @@ describe("Atlas framework readiness", () => {
       activePackages: ATLAS_WORKSPACE_PACKAGE_INVENTORY.map(
         (workspacePackage) => workspacePackage.name,
       ),
-      closedIntegrations: ["@atlas/devtools"],
+      closedIntegrations: [],
       requiredQualityGates: [
         "check",
         "build",
@@ -119,12 +119,11 @@ describe("Atlas framework readiness", () => {
     const readiness = createAtlasFrameworkReadiness();
     const incompleteReadiness = {
       ...readiness,
-      plannedIntegrationClosures: [
-        {
-          ...readiness.plannedIntegrationClosures[0],
-          publicApi: "open",
-        },
-      ],
+      packages: readiness.packages.map((workspacePackage) =>
+        workspacePackage.name === "@atlas/devtools"
+          ? { ...workspacePackage, status: "inactive" as const }
+          : workspacePackage,
+      ),
     };
 
     expect(() => assertAtlasFrameworkReadiness(incompleteReadiness)).toThrow(

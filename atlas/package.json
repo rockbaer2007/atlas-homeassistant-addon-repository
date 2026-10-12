@@ -11,6 +11,8 @@
     "test": "pnpm -r test",
     "start:app": "node scripts/atlas-app-server.mjs",
     "ha:app:prepare": "node scripts/prepare-home-assistant-app.mjs",
+    "ha:app:sync": "node scripts/sync-home-assistant-app.mjs",
+    "ha:app:check": "node scripts/sync-home-assistant-app.mjs --check",
     "docker:build": "docker build -t atlas:local .",
     "docker:up": "docker compose up --build",
     "clean": "pnpm -r exec rimraf dist"

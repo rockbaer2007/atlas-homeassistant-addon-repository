@@ -50,9 +50,9 @@ export const ATLAS_NEXT_FRAMEWORK_CAPABILITY_DIRECTION: AtlasFrameworkCapability
     goal:
       "Provide a themed Home Assistant status panel on the active Renderer surface path without transport coupling.",
     ownerPackages: ["@atlas/theme", "@atlas/homeassistant"],
-    protectedIntegrationClosures: ATLAS_PLANNED_INTEGRATION_CLOSURES.map(
-      (closure) => ({ ...closure }),
-    ),
+    protectedIntegrationClosures: ATLAS_PLANNED_INTEGRATION_CLOSURES.map((closure) => ({
+      ...closure,
+    })),
     requiredQualityGates: [...ATLAS_WORKSPACE_QUALITY_GATES],
     risks: [
       "integration-api-drift",

@@ -1,6 +1,2 @@
-/**
- * @package @atlas/devtools
- * @since 0.2.0-alpha.1
- */
-
-export {};
+/** Read-only tools for summarizing ATLAS diagnostic reports. */
+export * from "./DiagnosticSummary";

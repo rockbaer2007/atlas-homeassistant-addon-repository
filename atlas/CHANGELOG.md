@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.285
+
+- Generate both repository packages from the same canonical configuration and runtime sources; verify versions and file contents before publishing.
+- Preserve existing option names, defaults, plugin storage paths and the packaged reference-plugin selection.
+- Exclude local dependency and build directories from generated source packages.
+
 ## 0.1.284
 
 - Resolve nested File Studio roots such as `/config/www` before the broader `/config` root so file-tree paths and reads point to the same files.

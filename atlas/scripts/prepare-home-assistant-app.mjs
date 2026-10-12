@@ -1,5 +1,6 @@
-import { cp, mkdir, rm } from "node:fs/promises";
-import { relative, resolve } from "node:path";
+import { cp, mkdir, readdir, rm, stat } from "node:fs/promises";
+import { dirname, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const root = resolve(import.meta.dirname, "..");
 const sourceApp = resolve(root, "packaging", "home-assistant-app", "atlas");
@@ -18,15 +19,51 @@ const sourceEntries = [
   { from: "scripts", to: "scripts" },
 ];
 
-await resetOutputDirectory();
-await cp(sourceApp, outputApp, { recursive: true });
+// All published copies use this inventory; local build output and dependencies
+// must never replace the sources installed by the package Dockerfile.
+const excludedDirectories = new Set(["node_modules", "dist", "build", "coverage", ".git", "output", "tmp"]);
 
-for (const entry of sourceEntries) {
-  await cp(resolve(root, entry.from), resolve(outputApp, entry.to), { recursive: true });
+export async function collectPackageFiles() {
+  const files = await collectFiles(sourceApp, "");
+  for (const entry of sourceEntries) {
+    const source = resolve(root, entry.from);
+    if ((await stat(source)).isFile()) {
+      files.push({ source, destination: entry.to });
+    } else {
+      files.push(...await collectFiles(source, entry.to));
+    }
+  }
+  return files;
 }
 
-console.log(`Prepared Home Assistant app package at ${relative(root, outputApp)}`);
-console.log("Copy that atlas folder into a Home Assistant /addons directory for local testing.");
+async function collectFiles(directory, prefix) {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const source = resolve(directory, entry.name);
+    const destination = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory() && !excludedDirectories.has(entry.name)) {
+      files.push(...await collectFiles(source, destination));
+    } else if (entry.isFile() && !entry.name.endsWith(".tsbuildinfo") && !entry.name.endsWith(".log")) {
+      files.push({ source, destination });
+    }
+  }
+  return files;
+}
+
+export async function copyPackageFiles(target) {
+  for (const file of await collectPackageFiles()) {
+    const destination = resolve(target, file.destination);
+    await mkdir(dirname(destination), { recursive: true });
+    await cp(file.source, destination);
+  }
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await resetOutputDirectory();
+  await copyPackageFiles(outputApp);
+  console.log(`Prepared Home Assistant app package at ${relative(root, outputApp)}`);
+  console.log("Copy that atlas folder into a Home Assistant /addons directory for local testing.");
+}
 
 async function resetOutputDirectory() {
   if (!outputApp.startsWith(outputRoot)) {

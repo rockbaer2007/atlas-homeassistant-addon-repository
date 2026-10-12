@@ -1,34 +1,26 @@
 # @atlas/devtools
 
-Developer tooling package for future diagnostics, validation and project
-workflow utilities.
+Developer tooling package for read-only diagnostic summaries and future
+validation and project workflow utilities.
 
 ---
 
-# Status
+# Current API
 
-Planned developer experience package.
+`summarizeDiagnostics(reports)` builds a compact status from Foundation
+`DiagnosticReport` values. It returns `unavailable` when there are no reports,
+`healthy` when all reports pass, and `issues` when at least one report fails.
+It also returns report and issue totals and counts by severity. Inputs are not
+modified.
 
-Tooling work will follow the stabilization of core framework contracts and the
-active diagnostic boundaries it needs to inspect. This package remains a
-placeholder until its public tooling contracts are defined.
+The API is inspection-only. It does not read Home Assistant state, change
+workspace files, or start development servers.
 
-The package now carries internal activation-readiness checks for future
-diagnostics tooling. These checks define the required Foundation, Kernel,
-Runtime and Core layers, keep Devtools inspection-only before activation, and
-verify that the package root remains closed.
+# Future work
 
-The activation boundary remains planned and inspection-only. Required layers are
-kept in Foundation, Kernel, Runtime and Core order, activation gate reports copy
-missing layer lists away from source boundary objects, and dependency boundary
-reports preserve forbidden dependency order while staying independent from
-caller-owned arrays. The package root intentionally exports no concrete
-diagnostics panels, workspace mutation helpers or dev-server controls before
-activation.
-
-Concrete workspace mutation, Renderer coupling, Theme integration and build
-tool dependencies remain outside this package until the activation gate is
-opened in a later sprint.
+Interactive diagnostics panels, workspace mutation, Renderer/Theme integration
+and dev-server controls require separate contracts and are not part of the
+current package API.
 
 ---
 
