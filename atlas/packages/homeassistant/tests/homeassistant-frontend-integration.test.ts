@@ -38,6 +38,41 @@ import {
 } from "../src";
 
 describe("Home Assistant frontend integration planning", () => {
+  it("preserves template and resize metadata through JSON and HACS package round trips", () => {
+    const editorPlan = createHomeAssistantCardEditorPackagePlan({
+      cardName: "Temperature",
+      editorMode: "expert",
+      fields: [{
+        id: "Temperature", target: "sensor", entityId: "sensor.temperature",
+        column: 2, row: 3, width: 6, height: 4,
+        templateId: "sensor-card", resizeBaseWidth: 3, resizeBaseHeight: 2,
+      }],
+    });
+    const restored = createHomeAssistantCardEditorPackagePlan(JSON.parse(JSON.stringify(editorPlan)));
+    expect(restored.fields).toEqual(editorPlan.fields);
+    expect(restored.fields[0]).toMatchObject({ templateId: "sensor-card", resizeBaseWidth: 3, resizeBaseHeight: 2 });
+    const cardPackage = createHomeAssistantCardExportPackage({
+      card: createHomeAssistantCardConfiguration({ target: "sensor", title: "First card title", entityIds: ["sensor.temperature"] }),
+      format: "json", name: "Temperature", editorPlan,
+    });
+    const archive = createHomeAssistantCardEditorHacsBundleArchive(createHomeAssistantCardEditorHacsBundle(cardPackage));
+    const read = readHomeAssistantCardEditorHacsBundleArchivePackage(archive.content);
+    expect(read.importable, JSON.stringify(read)).toBe(true);
+    expect(read.summary?.title).toBe("First card title");
+    expect(read.hacsMetadata?.nameMatchesPackage).toBe(true);
+    expect(read.summary?.card.name).toBe("First card title");
+    expect(read.summary?.editorPlan?.fields).toEqual(editorPlan.fields);
+    expect(read.summary?.card).not.toHaveProperty("templateId");
+  });
+
+  it("ignores invalid resize metadata without adding properties to legacy fields", () => {
+    const base = { id: "Legacy", target: "sensor" as const, entityId: "sensor.temperature", column: 0, row: 0, width: 3, height: 2 };
+    const legacy = createHomeAssistantCardEditorPackagePlan({ fields: [base] }).fields[0];
+    const invalid = createHomeAssistantCardEditorPackagePlan({ fields: [{ ...base, templateId: " ", resizeBaseWidth: NaN, resizeBaseHeight: -1 }] }).fields[0];
+    expect(invalid).toEqual(legacy);
+    expect(legacy).not.toHaveProperty("resizeBaseWidth");
+    expect(legacy).not.toHaveProperty("templateId");
+  });
   it("creates a self-hosted ATLAS frontend resource with a normalized resource path", () => {
     expect(createAtlasFrontendResource("server", "https://atlas.local/local/atlas/panel.js?v=1")).toEqual({
       id: "atlas-server",

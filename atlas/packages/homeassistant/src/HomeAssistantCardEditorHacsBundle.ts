@@ -583,7 +583,12 @@ export function readHomeAssistantCardEditorHacsBundleArchivePackage(
     }
 
     const packageScriptFilename = summary.script?.filename ?? summary.editorPlan?.scriptFilename;
-    const packageName = summary.title;
+    // The project manifest and the first nested card can have different names.
+    // Validate manifests against each other without changing the card summary.
+    const embeddedPackage = JSON.parse(packageContent);
+    const manifestName = embeddedPackage.manifest?.name;
+    const packageName = typeof manifestName === "string" && manifestName.trim()
+      ? manifestName.trim() : summary.title;
     const checkedHacsMetadata = {
       ...hacsMetadata,
       nameMatchesPackage: hacsMetadata.name === packageName,

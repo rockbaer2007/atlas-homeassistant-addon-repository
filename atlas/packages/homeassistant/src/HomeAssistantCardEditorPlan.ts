@@ -89,6 +89,9 @@ export interface HomeAssistantCardEditorSurfaceField {
   readonly row: number;
   readonly width: number;
   readonly height: number;
+  readonly templateId?: string;
+  readonly resizeBaseWidth?: number;
+  readonly resizeBaseHeight?: number;
 }
 
 export interface HomeAssistantCardEditorPackagePlanInput {
@@ -597,6 +600,11 @@ function normalizeSurfaceField(field: HomeAssistantCardEditorSurfaceField): Home
     ...(field.target === "custom-card" && customType ? { customType } : {}),
     ...(field.target === "custom-card" && resourceUrl ? { resourceUrl } : {}),
     ...(field.rawCard ? { rawCard: field.rawCard } : {}),
+    ...(typeof field.templateId === "string" && field.templateId.trim() ? { templateId: field.templateId.trim() } : {}),
+    ...(typeof field.resizeBaseWidth === "number" && Number.isFinite(field.resizeBaseWidth) && field.resizeBaseWidth > 0
+      ? { resizeBaseWidth: Math.max(1, Math.floor(field.resizeBaseWidth)) } : {}),
+    ...(typeof field.resizeBaseHeight === "number" && Number.isFinite(field.resizeBaseHeight) && field.resizeBaseHeight > 0
+      ? { resizeBaseHeight: Math.max(1, Math.floor(field.resizeBaseHeight)) } : {}),
     entityId: field.entityId.trim(),
     layout: field.layout ?? "card",
     entries: (field.entries ?? []).map(normalizeSurfaceFieldEntry),

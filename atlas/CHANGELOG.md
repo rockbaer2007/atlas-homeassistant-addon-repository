@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.286
+
+- Preserve editor template IDs and resize reference dimensions when reloading or importing saved card projects.
+- Use the exported project name when validating HACS bundles, allowing multi-card projects whose first card has a different title to be imported again.
+- Verify the Administration-to-HACS workflow in an isolated browser with DE/EN/FR, reloads and an installed-plugin preservation fixture.
+
 ## 0.1.285
 
 - Generate both repository packages from the same canonical configuration and runtime sources; verify versions and file contents before publishing.
