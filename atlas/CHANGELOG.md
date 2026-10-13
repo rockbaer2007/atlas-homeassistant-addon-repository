@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.289
+
+- Fit Administration fields and Card Editor layouts to phone and tablet widths, including landscape orientation.
+- Keep problem-report, YAML-import and export dialogs inside mobile viewports.
+- Preserve saved projects, Administration settings and installed plugins; extend isolated checks with touch, mobile layouts and DE/EN/FR dialogs.
+
 ## 0.1.288
 
 - Show the installed Home Assistant app version in Administration runtime status and the `/app` endpoint instead of `0.0.0-local`.
