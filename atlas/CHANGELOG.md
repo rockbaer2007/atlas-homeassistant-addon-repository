@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.290
+
+- Show tablet Card Editor palette actions in two columns instead of full-width rows.
+- Show two palette cards side by side in one scrollable row, adapting the row height to translated content.
+- Preserve phone and desktop layouts, saved cards, favorites, settings and installed plugins.
+
 ## 0.1.289
 
 - Fit Administration fields and Card Editor layouts to phone and tablet widths, including landscape orientation.

@@ -182,6 +182,13 @@ const arrangeExpertFields = document.querySelector("#arrange-expert-fields");
 const resetExpertSurfaceSize = document.querySelector("#reset-expert-surface-size");
 const clearExpertFields = document.querySelector("#clear-expert-fields");
 const expertTemplatePalette = document.querySelector("#expert-template-palette");
+const expertPaletteRowObserver = new ResizeObserver(() => {
+  const cards = [...expertTemplatePalette.querySelectorAll(".expert-template-card")].slice(0, 2);
+  const height = Math.ceil(Math.max(0, ...cards.map(card => card.getBoundingClientRect().height)));
+  if (height > 0) {
+    expertTemplatePalette.style.setProperty("--expert-palette-row-height", `${height}px`);
+  }
+});
 const expertPaletteSearch = document.querySelector("#expert-palette-search");
 const saveExpertPaletteFavorites = document.querySelector("#save-expert-palette-favorites");
 const showAllExpertPaletteCards = document.querySelector("#show-all-expert-palette-cards");
@@ -3850,6 +3857,8 @@ function expertPaletteCardMatchesSearch(card, template, query) {
 
 function renderExpertTemplatePalette() {
   normalizeExpertPaletteVisibilityState();
+  expertPaletteRowObserver.disconnect();
+  expertTemplatePalette.style.removeProperty("--expert-palette-row-height");
   expertTemplatePalette.replaceChildren();
   const baseCards = expertPaletteFavoriteIds.size && !expertPaletteShowAllCards
     ? expertPaletteCards.filter(card => expertPaletteFavoriteIds.has(card.id))
@@ -4000,6 +4009,9 @@ function renderExpertTemplatePalette() {
       item.classList.remove("dragging");
     });
     expertTemplatePalette.append(item);
+  }
+  for (const card of [...expertTemplatePalette.querySelectorAll(".expert-template-card")].slice(0, 2)) {
+    expertPaletteRowObserver.observe(card);
   }
 }
 
