@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.294
+
+- Continue reconnecting after network outages longer than the initial three attempts, with a retry delay capped at 30 seconds.
+- Stop automatic retries after authentication or protocol failures until connection settings are corrected.
+- Translate reconnect progress in DE/EN/FR and preserve existing credentials, projects, settings and installed plugins.
+
 ## 0.1.293
 
 - Process HA snapshots and live events in wire order so large entity catalogs cannot overwrite newer live values with older snapshots.

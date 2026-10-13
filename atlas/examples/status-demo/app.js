@@ -436,7 +436,7 @@ const translations = {
     "message.connectionState": "Connection: {state}",
     "message.connectionStateWithReason": "Connection: {state} ({reason})",
     "message.connectionStateWithSubscription": "Connection: {state}, subscription {subscription}",
-    "message.reconnecting": "Reconnecting in {seconds}s ({attempt}/3).",
+    "message.reconnecting": "Reconnecting in {seconds}s (attempt {attempt}).",
     "message.stackSelectedEntities": "Stack-selected entities: {selected}/{total}{entities}",
     "message.stackEntitySuffix": " - {entities}",
     "message.simpleUsesFirstEntity": "Simple uses the first entity: {entityId}",
@@ -917,7 +917,7 @@ const translations = {
     "message.connectionState": "Verbindung: {state}",
     "message.connectionStateWithReason": "Verbindung: {state} ({reason})",
     "message.connectionStateWithSubscription": "Verbindung: {state}, Subscription {subscription}",
-    "message.reconnecting": "Verbinde erneut in {seconds}s ({attempt}/3).",
+    "message.reconnecting": "Verbinde erneut in {seconds}s (Versuch {attempt}).",
     "message.stackSelectedEntities": "Für Stapel ausgewählte Entitäten: {selected}/{total}{entities}",
     "message.stackEntitySuffix": " - {entities}",
     "message.simpleUsesFirstEntity": "Simple nutzt die erste Entität: {entityId}",
@@ -1559,6 +1559,7 @@ let adminTranslationApiKeyConfiguredByProvider = {};
 let reconnectToken;
 let reconnectTimer;
 let reconnectAttempts = 0;
+let reconnectStoppedByFailure = false;
 let connectionLifecycleState = "closed";
 let activeConnectionSignature = "";
 let lovelaceResources = [];
@@ -2223,7 +2224,7 @@ function renderConnectionLifecycle(lifecycle) {
   connectionLifecycleState = lifecycle.state;
   if (
     lifecycle.state === "failed"
-    || (lifecycle.state === "closed" && (!reconnectToken || reconnectAttempts >= 3))
+    || (lifecycle.state === "closed" && (!reconnectToken || reconnectStoppedByFailure))
   ) {
     activeConnectionSignature = "";
   }
@@ -2247,6 +2248,13 @@ function renderConnectionLifecycle(lifecycle) {
     reconnectTimer = undefined;
     bindSelectedEntity(connection?.getClient()?.transport);
   } else if (lifecycle.state === "closed" || lifecycle.state === "failed") {
+    if (lifecycle.state === "failed") {
+      // Authentication/protocol failures need corrected Admin settings, not
+      // repeated requests with the same credentials.
+      reconnectStoppedByFailure = true;
+      clearTimeout(reconnectTimer);
+      reconnectTimer = undefined;
+    }
     setEntityCatalogSyncStatus(cachedHomeAssistantEntityIds.size
       ? { state: "cached", count: cachedHomeAssistantEntityIds.size }
       : { state: "idle", count: 0 });
@@ -2272,12 +2280,12 @@ function hasMatchingActiveConnectionAttempt(connectionSignature) {
 }
 
 function scheduleReconnect() {
-  if (!connection || !reconnectToken || reconnectTimer || reconnectAttempts >= 3) {
+  if (!connection || !reconnectToken || reconnectTimer || reconnectStoppedByFailure) {
     return;
   }
 
   reconnectAttempts += 1;
-  const delay = reconnectAttempts * 1000;
+  const delay = Math.min(reconnectAttempts * 1000, 30000);
   statusMessage.textContent = t("message.reconnecting", { seconds: delay / 1000, attempt: reconnectAttempts });
   reconnectTimer = window.setTimeout(() => {
     reconnectTimer = undefined;
@@ -8499,6 +8507,7 @@ async function connectHomeAssistant() {
   reconnectTimer = undefined;
   reconnectAttempts = 0;
   reconnectToken = undefined;
+  reconnectStoppedByFailure = false;
   connection?.disconnect();
   connection = createHomeAssistantRuntimeConnection(configuration, createBrowserHomeAssistantWebSocket);
   removeLifecycleListener = connection.subscribeLifecycle(renderConnectionLifecycle);

@@ -181,7 +181,7 @@ export const cardEditorFrenchTranslations = {
   "message.connectionState": "Connexion : {state}",
   "message.connectionStateWithReason": "Connexion : {state} ({reason})",
   "message.connectionStateWithSubscription": "Connexion : {state}, abonnement {subscription}",
-  "message.reconnecting": "Reconnexion dans les {seconds} ({attempt}/3).",
+  "message.reconnecting": "Reconnexion dans {seconds} s (tentative {attempt}).",
   "message.stackSelectedEntities": "Entités sélectionnées dans la pile : {selected}/{total}{entities}",
   "message.stackEntitySuffix": "- {entities}",
   "message.simpleUsesFirstEntity": "Le mode Simple utilise la première entité : {entityId}",
