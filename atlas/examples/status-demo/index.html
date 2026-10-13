@@ -3553,6 +3553,41 @@
           overflow-wrap: anywhere;
         }
       }
+      .expert-grid-settings > summary {
+        display: none;
+        cursor: pointer;
+        font-weight: 700;
+        padding: 8px 0;
+      }
+
+      @media (max-width: 1180px) {
+        .expert-grid-settings > summary {
+          display: list-item;
+          margin-left: 18px;
+          min-height: 24px;
+        }
+
+        .expert-title-row {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .expert-title-row button {
+          min-height: 40px;
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+      }
+
+      @media (min-width: 521px) and (max-width: 1180px) {
+        .expert-title-row {
+          grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 1fr));
+          align-items: stretch;
+        }
+
+        .expert-title-row input {
+          grid-column: auto;
+        }
+      }
     </style>
     <script type="importmap">
       {
@@ -3815,6 +3850,8 @@
               </div>
               <div class="expert-output-column">
                 <div class="expert-control-panel">
+                  <details id="expert-grid-settings" class="expert-grid-settings" open>
+                    <summary data-i18n="label.gridSettings">Grid &amp; zoom</summary>
                   <div class="expert-grid-top-controls">
                     <div class="expert-grid-axis-control expert-grid-columns-control">
                       <label for="expert-grid-columns" data-i18n="label.gridColumns">X</label>
@@ -3832,6 +3869,7 @@
                       <output id="expert-grid-zoom-output" for="expert-grid-zoom">100%</output>
                     </div>
                   </div>
+                  </details>
                   <div class="expert-editor-controls">
                     <div class="field-pair">
                       <label for="expert-card-name" data-i18n="label.expertCardName">Expert card name</label>

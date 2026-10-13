@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.291
+
+- Collapse Grid & zoom controls by default on phones and tablets; keep all values when opening or closing the group.
+- Place the title field and both title actions in one row on tablets; keep paired title buttons below the field on phones.
+- Translate the new control group in DE/EN/FR and preserve saved projects, settings and plugins.
+
 ## 0.1.290
 
 - Show tablet Card Editor palette actions in two columns instead of full-width rows.

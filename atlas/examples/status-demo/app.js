@@ -176,6 +176,12 @@ const expertGridZoomControl = document.querySelector("#expert-grid-zoom");
 const expertGridColumnsOutput = document.querySelector("#expert-grid-columns-output");
 const expertGridRowsOutput = document.querySelector("#expert-grid-rows-output");
 const expertGridZoomOutput = document.querySelector("#expert-grid-zoom-output");
+const expertGridSettings = document.querySelector("#expert-grid-settings");
+const compactExpertControls = window.matchMedia("(max-width: 1180px)");
+expertGridSettings.open = !compactExpertControls.matches;
+compactExpertControls.addEventListener("change", event => {
+  expertGridSettings.open = !event.matches;
+});
 const addExpertField = document.querySelector("#add-expert-field");
 const editExpertField = document.querySelector("#edit-expert-field");
 const arrangeExpertFields = document.querySelector("#arrange-expert-fields");
@@ -292,6 +298,7 @@ const translations = {
     "label.gridColumns": "X",
     "label.gridRows": "Y",
     "label.gridZoom": "Zoom",
+    "label.gridSettings": "Grid & zoom",
     "button.connect": "Connect",
     "button.disconnect": "Disconnect",
     "button.saveGroup": "Save group",
@@ -772,6 +779,7 @@ const translations = {
     "label.gridColumns": "X",
     "label.gridRows": "Y",
     "label.gridZoom": "Zoom",
+    "label.gridSettings": "Raster & Zoom",
     "button.connect": "Verbinden",
     "button.disconnect": "Trennen",
     "button.saveGroup": "Gruppe speichern",

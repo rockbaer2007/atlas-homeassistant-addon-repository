@@ -43,6 +43,7 @@ export const cardEditorFrenchTranslations = {
   "label.gridColumns": "X",
   "label.gridRows": "Y",
   "label.gridZoom": "Zoom",
+  "label.gridSettings": "Grille et zoom",
   "button.connect": "Connecter",
   "button.disconnect": "Déconnecter",
   "button.saveGroup": "Enregistrer le groupe",
