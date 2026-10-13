@@ -27,6 +27,7 @@ const sensitiveKeyPattern = /token|secret|password|api[_-]?key|authorization|coo
 export function createHomeAssistantCardEditorProblemReport(
   data: Record<string, unknown>,
   generatedAt = new Date(),
+  sensitiveValues: readonly string[] = [],
 ): HomeAssistantCardEditorProblemReport {
   const report = {
     ...data,
@@ -41,7 +42,7 @@ export function createHomeAssistantCardEditorProblemReport(
     },
   };
 
-  return sanitizeHomeAssistantCardEditorDebugValue(report) as HomeAssistantCardEditorProblemReport;
+  return sanitizeHomeAssistantCardEditorDebugValue(report, "", sensitiveValues) as HomeAssistantCardEditorProblemReport;
 }
 
 export function createHomeAssistantCardEditorProblemReportPreviewText(
@@ -71,28 +72,30 @@ export function createHomeAssistantCardEditorProblemReportIssueUrl(
 
 export function redactHomeAssistantCardEditorDebugText(text: string): string {
   return String(text)
+    .replace(/\b(?:https?|wss?):\/\/[^\s<>"'`]+/gi, candidate => {
+      try { return sanitizeParsedDebugUrl(new URL(candidate)); } catch { return candidate; }
+    })
     .replace(/(authorization:\s*(?:bearer|basic)\s+)[^\s"'`]+/gi, "$1[redacted]")
-    .replace(/((?:(?:access|refresh|id)[_-]?)?token\s*[:=]\s*)[^\s"'`&]+/gi, "$1[redacted]")
-    .replace(/((?:api[_-]?key|secret|password|credential|signature|jwt|auth)\s*[:=]\s*)[^\s"'`&]+/gi, "$1[redacted]")
+    .replace(/((?:set-)?cookie:\s*)[^\r\n]*/gi, "$1[redacted]")
+    .replace(/(["']?[\w.-]*(?:token|api[_-]?key|secret|password|credential|signature|jwt|auth|cookie|localstorage)[\w.-]*["']?\s*[:=]\s*)(?:\[redacted\]|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s"'`&,}\]]+)/gi, (match, prefix) => {
+      // The preceding header rule already removed the credential; keep its scheme.
+      if (/^authorization:\s*$/i.test(prefix) && /:\s*(?:bearer|basic)\b/i.test(match)) return match;
+      return `${prefix}[redacted]`;
+    })
     .replace(/(\/api\/hassio_ingress\/)[^/?#\s"'`]+/gi, "$1[redacted]");
 }
 
-export function sanitizeHomeAssistantCardEditorDebugValue(value: unknown, key = ""): unknown {
-  if (/configured/i.test(key)) {
-    if (Array.isArray(value)) {
-      return value.map(item => sanitizeHomeAssistantCardEditorDebugValue(item));
-    }
+export function sanitizeHomeAssistantCardEditorDebugValue(value: unknown, key = "", sensitiveValues: readonly string[] = []): unknown {
+  if (/configured/i.test(key) && sensitiveKeyPattern.test(key)) {
     if (isRecord(value)) {
       return Object.fromEntries(
         Object.entries(value).map(([entryKey, entryValue]) => [
           entryKey,
-          typeof entryValue === "boolean"
-            ? entryValue
-            : sanitizeHomeAssistantCardEditorDebugValue(entryValue, entryKey),
+          typeof entryValue === "boolean" ? entryValue : "[redacted]",
         ]),
       );
     }
-    return typeof value === "boolean" ? value : sanitizeHomeAssistantCardEditorDebugValue(value);
+    return typeof value === "boolean" ? value : "[redacted]";
   }
 
   if (sensitiveKeyPattern.test(key)) {
@@ -101,18 +104,24 @@ export function sanitizeHomeAssistantCardEditorDebugValue(value: unknown, key = 
   }
 
   if (typeof value === "string") {
-    return redactHomeAssistantCardEditorDebugText(value);
+    let sanitized = redactHomeAssistantCardEditorDebugText(value);
+    for (const secret of sensitiveValues.filter(value => typeof value === "string" && value.length > 0)) {
+      // Exact replacement avoids interpreting credentials as regular expressions.
+      sanitized = sanitized.split(secret).join("[redacted]");
+      sanitized = sanitized.split(encodeURIComponent(secret)).join("[redacted]");
+    }
+    return sanitized;
   }
 
   if (Array.isArray(value)) {
-    return value.map(item => sanitizeHomeAssistantCardEditorDebugValue(item));
+    return value.map(item => sanitizeHomeAssistantCardEditorDebugValue(item, "", sensitiveValues));
   }
 
   if (isRecord(value)) {
     return Object.fromEntries(
       Object.entries(value).map(([entryKey, entryValue]) => [
         entryKey,
-        sanitizeHomeAssistantCardEditorDebugValue(entryValue, entryKey),
+        sanitizeHomeAssistantCardEditorDebugValue(entryValue, entryKey, sensitiveValues),
       ]),
     );
   }
@@ -126,7 +135,13 @@ export function sanitizeHomeAssistantCardEditorDebugUrl(value: string): string {
   }
 
   try {
-    const url = new URL(value.trim());
+    return sanitizeParsedDebugUrl(new URL(value.trim()));
+  } catch {
+    return redactHomeAssistantCardEditorDebugText(value);
+  }
+}
+
+function sanitizeParsedDebugUrl(url: URL): string {
     url.username = "";
     url.password = "";
     for (const key of [...url.searchParams.keys()]) {
@@ -135,10 +150,13 @@ export function sanitizeHomeAssistantCardEditorDebugUrl(value: string): string {
       }
     }
     url.pathname = url.pathname.replace(/(\/api\/hassio_ingress\/)[^/]+/i, "$1[redacted]");
+    if (url.hash) {
+      // Fragments are not sent to servers, but can still contain browser tokens.
+      let fragment = url.hash.slice(1);
+      try { fragment = decodeURIComponent(fragment); } catch { /* Keep malformed fragments inspectable. */ }
+      if (sensitiveKeyPattern.test(fragment)) url.hash = "[redacted]";
+    }
     return url.toString();
-  } catch {
-    return redactHomeAssistantCardEditorDebugText(value);
-  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

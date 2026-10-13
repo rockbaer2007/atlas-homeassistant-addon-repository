@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.287
+
+- Harden opt-in problem reports: redact quoted JSON/YAML credentials, embedded URL credentials and token-bearing fragments.
+- Retain only boolean secret-configured flags; redact the known HA session token even in unrelated card text.
+- Verify preview, clipboard and offline GitHub issue links in DE/EN/FR without sending reports or changing plugin settings.
+
 ## 0.1.286
 
 - Preserve editor template IDs and resize reference dimensions when reloading or importing saved card projects.

@@ -9,6 +9,46 @@ import {
 } from "../src";
 
 describe("Home Assistant card editor problem reports", () => {
+  it("redacts known session credentials even under harmless keys and in card text", () => {
+    const secret = "session+credential/test";
+    const report = createHomeAssistantCardEditorProblemReport({
+      card: { name: secret, preview: `title: ${secret}` },
+      events: [encodeURIComponent(secret)], tokenConfigured: true,
+    }, new Date("2026-10-13T00:00:00Z"), [secret]);
+    const preview = createHomeAssistantCardEditorProblemReportPreviewText(report);
+    expect(preview).not.toContain(secret);
+    expect(preview).not.toContain(encodeURIComponent(secret));
+    expect(report.tokenConfigured).toBe(true);
+  });
+  it("never treats strings or objects marked configured as safe flags", () => {
+    const result = sanitizeHomeAssistantCardEditorDebugValue({
+      tokenConfigured: "configured-secret",
+      apiKeyConfiguredByProvider: { chatgpt: true, gemini: "provider-secret", custom: { value: "nested-secret" } },
+    });
+    expect(result).toEqual({
+      tokenConfigured: "[redacted]",
+      apiKeyConfiguredByProvider: { chatgpt: true, gemini: "[redacted]", custom: "[redacted]" },
+    });
+  });
+
+  it.each([
+    ['{"apiKey": "quoted secret with spaces"}', "quoted secret with spaces"],
+    ["password: 'quoted secret with spaces'", "quoted secret with spaces"],
+    ["https://private-user:private-password@example.test/path", "private-password"],
+    ["https://example.test/?%74oken=encoded-query-secret", "encoded-query-secret"],
+    ["https://example.test/#access_token=fragment-secret", "fragment-secret"],
+    ["Cookie: session=cookie-secret", "cookie-secret"],
+    ["Cookie: session=first; other=second-cookie-secret", "second-cookie-secret"],
+    ['{"password":"escaped \\"quote\\" secret"}', "secret"],
+  ])("redacts embedded debug text %s", (text, secret) => {
+    expect(redactHomeAssistantCardEditorDebugText(text)).not.toContain(secret);
+  });
+
+  it("removes URL fragment credentials as well as query and userinfo credentials", () => {
+    const result = sanitizeHomeAssistantCardEditorDebugUrl("https://user:pass@example.test/#token=fragment-secret");
+    expect(result).not.toContain("fragment-secret");
+    expect(result).not.toContain("user:pass");
+  });
   it("redacts tokens, authorization headers and provider keys in nested debug data", () => {
     const sanitized = sanitizeHomeAssistantCardEditorDebugValue({
       connection: {

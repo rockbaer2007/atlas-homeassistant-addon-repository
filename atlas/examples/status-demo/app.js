@@ -7778,7 +7778,7 @@ function createProblemReportData() {
       importedStyleBlocks: importedSimpleStyleInspection ? {
         global: importedSimpleStyleInspection.globalStyles.length,
         cards: importedSimpleStyleInspection.cardStyles.length,
-        layout: importedSimpleStyleInspection.layoutStyles.length,
+        layout: importedSimpleStyleInspection.layoutOptions.length,
       } : undefined,
     },
     expert: {
@@ -7825,7 +7825,7 @@ function createProblemReportData() {
       translationModuleState: adminTranslationModuleState.textContent,
       importReview: haCardImportReview.textContent,
     },
-  });
+  }, new Date(), [adminConnectionToken, reconnectToken].filter(value => typeof value === "string" && value));
 }
 
 function createProblemReportPreviewText() {
