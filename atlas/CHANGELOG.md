@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.288
+
+- Show the installed Home Assistant app version in Administration runtime status and the `/app` endpoint instead of `0.0.0-local`.
+- Pass the Supervisor build version into the runtime; preserve all existing options, installation identity and persistent plugin paths.
+
 ## 0.1.287
 
 - Harden opt-in problem reports: redact quoted JSON/YAML credentials, embedded URL credentials and token-bearing fragments.

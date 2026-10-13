@@ -725,7 +725,7 @@ async function writeAppResponse(response, requestUrl, cookieHeader) {
   writeJson(response, ready ? 200 : 503, {
     kind: "atlas.app.runtime",
     name: "ATLAS",
-    version: packageJson.version ?? "0.0.0-local",
+    version: process.env.ATLAS_APP_VERSION?.trim() || packageJson.version || "0.0.0-local",
     status: ready ? "ok" : "degraded",
     startedAt,
     urls: {
