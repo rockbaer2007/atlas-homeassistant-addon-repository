@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.293
+
+- Process HA snapshots and live events in wire order so large entity catalogs cannot overwrite newer live values with older snapshots.
+- Ignore queued messages after a connection closes and report the current failure when a replacement socket cannot open.
+- Add isolated A5 checks for 100-card projects, 2001 entities, repeated reconnection, live-event bursts and DE/EN/FR project imports.
+- Preserve existing projects, credentials, settings and installed plugins.
+
 ## 0.1.292
 
 - Remove the obsolete editor start-mode option from Home Assistant app configuration and Administration.

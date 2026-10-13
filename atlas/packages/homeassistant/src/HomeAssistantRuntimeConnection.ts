@@ -46,7 +46,9 @@ export function createHomeAssistantRuntimeConnection(
     }
 
     removeClientLifecycleListener?.();
+    removeClientLifecycleListener = undefined;
     client?.disconnect();
+    client = undefined;
     try {
       client = createHomeAssistantWebSocketClient(createSocket(url), accessToken);
     } catch (error) {
@@ -72,7 +74,7 @@ export function createHomeAssistantRuntimeConnection(
       updateLifecycle({ state: "closed" });
     },
     getLifecycle(): HomeAssistantWebSocketLifecycle {
-      return client?.getLifecycle() ?? lifecycle;
+      return lifecycle;
     },
     subscribeLifecycle(listener): () => void {
       lifecycleListeners.add(listener);

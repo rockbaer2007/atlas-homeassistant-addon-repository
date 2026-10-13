@@ -2244,6 +2244,7 @@ function renderConnectionLifecycle(lifecycle) {
   if (lifecycle.state === "connected") {
     reconnectAttempts = 0;
     clearTimeout(reconnectTimer);
+    reconnectTimer = undefined;
     bindSelectedEntity(connection?.getClient()?.transport);
   } else if (lifecycle.state === "closed" || lifecycle.state === "failed") {
     setEntityCatalogSyncStatus(cachedHomeAssistantEntityIds.size

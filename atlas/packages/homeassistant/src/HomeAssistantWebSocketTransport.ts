@@ -92,13 +92,16 @@ export function createHomeAssistantWebSocketClient(
   const pendingServiceCommands = new Map<number, HomeAssistantServiceCommand>();
   const pendingEntityStateRequests = new Set<number>();
   const pendingLovelaceResourceRequests = new Map<number, HomeAssistantLovelaceResourceCommand>();
+  let closed = false;
+  let messageQueue = Promise.resolve();
   const updateLifecycle = (nextLifecycle: HomeAssistantWebSocketLifecycle): void => {
     lifecycle = nextLifecycle;
     for (const listener of lifecycleListeners) {
       listener(lifecycle);
     }
   };
-  const removeMessageListener = socket.onMessage(async data => {
+  const processMessage = async (data: string): Promise<void> => {
+    if (closed) return;
     const message = parseHomeAssistantWebSocketMessage(data);
     if (!message) {
       return;
@@ -136,8 +139,10 @@ export function createHomeAssistantWebSocketClient(
         pendingEntityStateRequests.delete(message.id);
         const entities = message.success ? mapHomeAssistantStateResult(message.result) : [];
         for (const entity of entities) {
+          if (closed) return;
           await transport.publish(entity);
         }
+        if (closed) return;
         const result: HomeAssistantEntityStateListResult = {
           requestId: message.id,
           entities,
@@ -186,8 +191,14 @@ export function createHomeAssistantWebSocketClient(
     }
 
     await transport.publish(mapHomeAssistantStateChangedEvent(message));
+  };
+  const removeMessageListener = socket.onMessage(data => {
+    // Preserve wire order even when publishing a large snapshot yields to listeners.
+    messageQueue = messageQueue.then(() => processMessage(data), () => processMessage(data));
+    return messageQueue;
   });
   const removeCloseListener = socket.onClose(reason => {
+    closed = true;
     updateLifecycle({ state: "closed", ...(reason ? { reason } : {}) });
   });
 
@@ -271,6 +282,7 @@ export function createHomeAssistantWebSocketClient(
       return () => serviceResultListeners.delete(listener);
     },
     disconnect(): void {
+      closed = true;
       removeMessageListener();
       removeCloseListener();
       socket.close();

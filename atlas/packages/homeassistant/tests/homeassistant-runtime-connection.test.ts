@@ -121,4 +121,23 @@ describe("Home Assistant runtime connection", () => {
       reason: "WebSocket is unavailable.",
     });
   });
+
+  it("reports the failed replacement instead of retaining the previous client's status", async () => {
+    const socket = createSocket();
+    let attempts = 0;
+    const connection = createHomeAssistantRuntimeConnection(
+      { url: "http://home.example.test:80" },
+      () => {
+        if (attempts++ > 0) throw new Error("Network unavailable.");
+        return socket;
+      },
+    );
+    connection.connect("test-token");
+    await socket.emitMessage('{"type":"auth_ok"}');
+    const failure = connection.reconnect("test-token");
+    expect(failure).toEqual({ state: "failed", reason: "Network unavailable." });
+    expect(connection.getLifecycle()).toEqual(failure);
+    expect(connection.getClient()).toBeUndefined();
+    expect(socket.closed()).toBe(true);
+  });
 });

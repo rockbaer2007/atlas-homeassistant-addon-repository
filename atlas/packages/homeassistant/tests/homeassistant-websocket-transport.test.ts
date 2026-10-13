@@ -52,6 +52,38 @@ function createTestSocket(): HomeAssistantWebSocket & {
 }
 
 describe("Home Assistant WebSocket transport", () => {
+  it("does not revive a closed connection with queued authentication", async () => {
+    const socket = createTestSocket();
+    const client = createHomeAssistantWebSocketClient(socket, "test-token");
+    const pending = socket.emitMessage('{"type":"auth_ok"}');
+    socket.emitClose("Network lost.");
+    await pending;
+    expect(client.getLifecycle()).toEqual({ state: "closed", reason: "Network lost." });
+    expect(socket.sent).toEqual([]);
+  });
+
+  it("finishes an older snapshot before applying newer live events", async () => {
+    const socket = createTestSocket();
+    const client = createHomeAssistantWebSocketClient(socket, "test-token");
+    await socket.emitMessage('{"type":"auth_ok"}');
+    const request = client.requestEntityStates();
+    let displayedValue: string | undefined;
+    client.transport.subscribe(entity => {
+      if (entity.entityId === "sensor.test") displayedValue = entity.value;
+    });
+    client.subscribeEntityStateList(result => {
+      displayedValue = result.entities.find(entity => entity.entityId === "sensor.test")?.value;
+    });
+    await Promise.all([
+      socket.emitMessage(JSON.stringify({ type: "result", id: request.requestId, success: true,
+        result: [{ entity_id: "sensor.test", state: "20" }, { entity_id: "sensor.other", state: "0" }] })),
+      socket.emitMessage(JSON.stringify({ type: "event", id: 1, event: { event_type: "state_changed",
+        data: { entity_id: "sensor.test", new_state: { state: "30" } } } })),
+    ]);
+    expect(displayedValue).toBe("30");
+    expect(client.transport.getLatest("sensor.test")?.value).toBe("30");
+  });
+
   it("parses authentication and state change protocol messages safely", () => {
     expect(parseHomeAssistantWebSocketMessage('{"type":"auth_required"}')).toEqual({
       type: "auth_required",
