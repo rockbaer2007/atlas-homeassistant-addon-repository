@@ -1,5 +1,5 @@
 name: "ATLAS"
-version: "0.1.291"
+version: "0.1.292"
 slug: "atlas"
 description: "ATLAS Administration and Home Assistant Plugins preview"
 url: "https://github.com/rockbaer2007/atlas"
@@ -28,7 +28,6 @@ options:
   home_assistant_token: ""
   remember_home_assistant_token: false
   auto_connect_editor: false
-  editor_start_mode: "simple"
   allow_addons_path: false
   allow_www_path: false
   allow_custom_components_path: false
@@ -47,7 +46,6 @@ schema:
   home_assistant_token: "password"
   remember_home_assistant_token: "bool"
   auto_connect_editor: "bool"
-  editor_start_mode: "list(simple|expert)"
   allow_addons_path: "bool"
   allow_www_path: "bool"
   allow_custom_components_path: "bool"

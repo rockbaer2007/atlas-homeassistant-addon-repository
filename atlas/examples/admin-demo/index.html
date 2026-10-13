@@ -1353,13 +1353,7 @@
                 <label for="home-assistant-token" data-i18n="label.accessToken">Access token</label>
                 <input id="home-assistant-token" type="password" autocomplete="off" spellcheck="false">
               </div>
-              <div class="field-pair">
-                <label for="editor-start-mode" data-i18n="label.editorStartMode">Editor start mode</label>
-                <select id="editor-start-mode">
-                  <option value="simple" data-i18n="mode.simple">Simple</option>
-                  <option value="expert" data-i18n="mode.expert">Expert</option>
-                </select>
-              </div>
+              <input id="editor-start-mode" type="hidden" value="expert">
               <p id="admin-connection-mode-hint" class="field-hint wide" data-i18n="message.connectionStandaloneHint">In Docker and Linux mode these values are managed here.</p>
             </div>
           </details>

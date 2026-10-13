@@ -688,7 +688,7 @@ function createInitialAdminConnectionSettingsFromEnv() {
   const editorStartMode = normalizeEditorStartMode(process.env.ATLAS_ADMIN_EDITOR_START_MODE);
   const tokenUsable = isPlausibleHomeAssistantAccessToken(token);
 
-  if (!url && (!rememberToken || !token) && !autoConnectEditor && editorStartMode === "simple") {
+  if (!url && (!rememberToken || !token) && !autoConnectEditor) {
     return undefined;
   }
 
@@ -734,7 +734,7 @@ function normalizeFileStudioAccessSettings(settings = {}) {
 }
 
 function normalizeEditorStartMode(value) {
-  return value === "expert" ? "expert" : "simple";
+  return "expert";
 }
 
 function isPlausibleHomeAssistantAccessToken(token) {

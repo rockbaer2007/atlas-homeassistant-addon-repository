@@ -507,7 +507,6 @@ const translations = {
     "guide.sidebarStep2": "Add a dashboard of type Webpage.",
     "guide.sidebarStep3": "Paste the copied panel_iframe block into configuration.yaml or create a matching Webpage dashboard entry.",
     "guide.sidebarStep4": "Check the YAML configuration, reload Panel iFrames or restart Home Assistant.",
-    "mode.simple": "Simple",
     "mode.expert": "Expert",
     "policy.token": "The Card Editor receives the token only as a browser session handoff.",
     "policy.paths": "Plugins receive approved URLs, WebSocket paths and resource paths.",
@@ -755,7 +754,6 @@ const translations = {
     "guide.sidebarStep2": "Füge ein Dashboard vom Typ Webseite hinzu.",
     "guide.sidebarStep3": "Füge den kopierten panel_iframe-Block in configuration.yaml ein oder lege einen passenden Webseiten-Dashboard-Eintrag an.",
     "guide.sidebarStep4": "Prüfe die YAML-Konfiguration und lade Panel-iFrames neu oder starte Home Assistant neu.",
-    "mode.simple": "Simple",
     "mode.expert": "Expert",
     "policy.token": "Der Card Editor erhält den Token nur als Browser-Sitzungsübergabe.",
     "policy.paths": "Plugins erhalten freigegebene URLs, WebSocket-Pfade und Ressourcenpfade.",
@@ -1031,7 +1029,6 @@ const translations = {
     "label.editorStartMode": "Mode de démarrage de l’éditeur",
     "label.rememberToken": "Mémoriser le jeton localement pour l’administration",
     "label.autoConnectEditor": "Connecter automatiquement Card Editor après le transfert",
-    "mode.simple": "Simple",
     "mode.expert": "Expert",
     "theme.auto": "Automatique",
     "theme.light": "Clair",
@@ -1197,7 +1194,7 @@ function normalizeDistributionTarget(value) {
 }
 
 function normalizeEditorStartMode(value) {
-  return value === "expert" ? "expert" : "simple";
+  return "expert";
 }
 
 function isHomeAssistantAppDistribution(value = currentDistributionTarget) {

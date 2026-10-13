@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.292
+
+- Remove the obsolete editor start-mode option from Home Assistant app configuration and Administration.
+- Normalize older saved Simple preferences to Expert without changing connection credentials, other settings or projects.
+- Preserve the standalone encrypted-credential fallback when no Home Assistant environment settings are provided.
+
 ## 0.1.291
 
 - Collapse Grid & zoom controls by default on phones and tablets; keep all values when opening or closing the group.
