@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.297
+
+- Render the exported Expert layout in generated custom-card scripts and HACS bundles using Home Assistant card helpers.
+- Preserve nested Core and Community cards, remap configured entities and forward live Home Assistant state without rebuilding child cards.
+- Keep legacy script exports and existing projects/settings compatible.
+
 ## 0.1.296
 
 - Keep blocked and pending renderer status colors distinct in dark mode instead of overriding them with the ready accent color.

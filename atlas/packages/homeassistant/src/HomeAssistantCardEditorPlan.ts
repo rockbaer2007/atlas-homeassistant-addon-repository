@@ -452,7 +452,8 @@ export function createHomeAssistantCardEditorScriptExport(
     cardType,
     resourcePath: `/hacsfiles/atlas/${editorPlan.scriptFilename}`,
     defaultConfig,
-    source: createHomeAssistantCardEditorScriptSource(customElementName, defaultConfig),
+    source: createHomeAssistantCardEditorScriptSource(customElementName, defaultConfig,
+      editorPlan.editorMode === "expert" ? createHomeAssistantCardEditorConfiguration(editorPlan) : undefined),
   };
 }
 
@@ -960,9 +961,60 @@ function defaultEntityForTarget(target: HomeAssistantCardTarget): string {
 function createHomeAssistantCardEditorScriptSource(
   customElementName: string,
   defaultConfig: HomeAssistantCardEditorScriptExport["defaultConfig"],
+  expertCard?: HomeAssistantCardConfiguration,
 ): string {
   const className = createHomeAssistantCardEditorClassName(customElementName);
   const sourceConfig = JSON.stringify(defaultConfig, null, 2);
+  if (expertCard) {
+    return `const DEFAULT_CONFIG = ${sourceConfig};
+const DEFAULT_CARD = ${JSON.stringify(expertCard, null, 2)};
+class ${className} extends HTMLElement {
+  setConfig(config) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.config.entities = Array.isArray(config?.entities) && config.entities.length
+      ? [...config.entities] : [...DEFAULT_CONFIG.entities];
+    this.createCard();
+  }
+  set hass(value) {
+    this._hass = value;
+    if (this._card) this._card.hass = value;
+  }
+  getCardSize() { return this._card?.getCardSize?.() ?? 3; }
+  static getStubConfig() { return { ...DEFAULT_CONFIG, entities: [...DEFAULT_CONFIG.entities] }; }
+  async createCard() {
+    const generation = this._generation = (this._generation ?? 0) + 1;
+    const root = this.shadowRoot ?? this.attachShadow({ mode: "open" });
+    this._card = undefined;
+    root.replaceChildren();
+    const replacements = new Map(DEFAULT_CONFIG.entities.map((id, i) => [id, this.config.entities[i] ?? id]));
+    const replace = value => typeof value === "string" ? replacements.get(value) ?? value
+      : Array.isArray(value) ? value.map(replace)
+      : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, replace(item)]))
+      : value;
+    const cardConfig = replace(DEFAULT_CARD);
+    try {
+      const helpers = await window.loadCardHelpers();
+      if (generation !== this._generation) return;
+      const card = helpers.createCardElement(cardConfig);
+      this._card = card;
+      if (this._hass) card.hass = this._hass;
+      root.replaceChildren(card);
+    } catch (error) {
+      if (generation !== this._generation) return;
+      const message = document.createElement("ha-card");
+      message.textContent = String(error?.message ?? error);
+      root.replaceChildren(message);
+    }
+  }
+}
+if (!customElements.get("${customElementName}")) customElements.define("${customElementName}", ${className});
+window.customCards = window.customCards ?? [];
+if (!window.customCards.some(card => card.type === "${customElementName}")) window.customCards.push({
+  type: "${customElementName}", name: ${JSON.stringify(defaultConfig.title)}, preview: true,
+  description: ${JSON.stringify(defaultConfig.replacement_hint)},
+});
+`;
+  }
   return [
     `const DEFAULT_CONFIG = ${sourceConfig};`,
     "",
