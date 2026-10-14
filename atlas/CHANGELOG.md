@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.300
+
+- Add shared server-side plugin repositories, imported plugin metadata and activation state for App/Ingress and Runtime access.
+- Provide DE/EN/FR migration preview, explicit conflict preference, downloadable metadata backups and revision checks.
+- Back up previous server state before atomic saves; retain original browser data and legacy behavior until explicit adoption.
+- Do not migrate credentials, editor projects or external plugin settings, install packages automatically, or replace plugin files.
+
 ## 0.1.299
 
 - Add the optional HACS-compatible ATLAS Runtime integration with an administrator-only Home Assistant sidebar panel.

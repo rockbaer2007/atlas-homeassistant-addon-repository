@@ -160,6 +160,7 @@ window.matchMedia?.("(prefers-color-scheme: dark)")?.addEventListener("change", 
 applyLanguage();
 
 loadPlugins();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) void loadPlugins(); });
 
 function readStoredLanguage() {
   try {

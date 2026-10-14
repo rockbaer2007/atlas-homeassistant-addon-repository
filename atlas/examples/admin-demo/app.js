@@ -17,6 +17,7 @@ import {
   createFileStudioPluginInstallPackage,
   FileStudioPluginId,
 } from "@atlas/file-studio";
+import { createSharedPluginManagement } from "./plugin-management-client.mjs";
 
 const languageButtons = Array.from(document.querySelectorAll("[data-language]"));
 const themeButtons = Array.from(document.querySelectorAll("[data-theme-mode]"));
@@ -131,6 +132,7 @@ const adminConnectionApiPath = createAdminApiUrl("api/admin-connection");
 const pluginInstallApiPath = createAdminApiUrl("api/plugins/install");
 const pluginUninstallApiPath = createAdminApiUrl("api/plugins/uninstall");
 const adminDeviceApiPath = createAdminApiUrl("api/admin-device");
+let sharedPluginManagement;
 const defaultTranslationApiEndpoint = "https://api.deepl.com/v2/translate";
 const translationProviderValues = ["none", "chatgpt", "gemini", "deepl-free", "deepl-pro", "custom-ai"];
 const pluginRepositoryTypeValues = ["plugin", "card", "integration", "tool", "theme"];
@@ -287,6 +289,7 @@ let currentThemePreference = "auto";
 let activePluginIds = new Set(defaultActivePluginIds);
 let importedPluginDescriptors = [];
 let serverCatalogPluginIds;
+let serverCatalogPlugins = new Map();
 let pluginRepositories = [];
 let repositoryPluginDescriptors = [];
 let pendingRepositoryPreview;
@@ -1548,7 +1551,9 @@ function persistConfiguration() {
     translationApiKeyConfiguredByProvider: createTranslationApiKeyConfiguredByProvider(translationApiKeys),
     parcelProviders: readParcelProviderSettings(),
     fileStudioAccess: readFileStudioAccessSettings(),
-    pluginRepositories,
+    pluginRepositories: sharedPluginManagement?.initialized
+      ? JSON.parse(localStorage.getItem(adminStorageKey) || "{}").pluginRepositories ?? []
+      : pluginRepositories,
     editorStartMode: normalizeEditorStartMode(editorStartMode.value),
     rememberToken: rememberAdminToken.checked,
     autoConnectEditor: autoConnectEditor.checked,
@@ -1850,6 +1855,7 @@ function restoreConfiguration() {
 }
 
 function persistPluginRepositories() {
+  if (sharedPluginManagement?.initialized) { sharedPluginManagement.changed(); return; }
   try {
     localStorage.setItem(adminPluginRepositoryStorageKey, JSON.stringify(pluginRepositories));
   } catch {
@@ -2889,6 +2895,7 @@ async function loadServerPluginCatalog() {
     const catalog = await response.json();
     if (!Array.isArray(catalog.plugins)) return;
     serverCatalogPluginIds = new Set(catalog.plugins.map(plugin => plugin.id).filter(Boolean));
+    serverCatalogPlugins = new Map(catalog.plugins.map(plugin => [plugin.id, plugin]));
   } catch {
     serverCatalogPluginIds = undefined;
   }
@@ -3068,6 +3075,7 @@ function restoreImportedPlugins() {
 }
 
 function persistImportedPlugins() {
+  if (sharedPluginManagement?.initialized) { sharedPluginManagement.changed(); return; }
   importedPluginDescriptors = importedPluginDescriptors.map(({ files, iconDataUrl, ...plugin }) => plugin);
   localStorage.setItem(adminPluginStorageKey, JSON.stringify(importedPluginDescriptors));
   persistSharedPluginCatalogCookie();
@@ -3097,6 +3105,7 @@ function restorePluginState() {
 }
 
 function persistPluginState() {
+  if (sharedPluginManagement?.initialized) { sharedPluginManagement.changed(); return; }
   localStorage.setItem(adminPluginStateStorageKey, JSON.stringify({
     activePluginIds: [...activePluginIds],
   }));
@@ -4508,6 +4517,7 @@ function renderAdministration() {
 
 function setLanguage(language) {
   currentLanguage = ["de", "en", "fr"].includes(language) ? language : "en";
+  sharedPluginManagement?.labels();
   saveSharedLanguagePreference(currentLanguage);
   applyTranslations();
   renderParcelProviders();
@@ -4532,6 +4542,29 @@ async function initializeAdministration() {
   await loadServerPluginCatalog();
   restoreImportedPlugins();
   restorePluginState();
+  sharedPluginManagement = createSharedPluginManagement({
+    root: document.querySelector("#shared-plugin-management"),
+    url: createAdminApiUrl("api/plugins/state"), language: () => currentLanguage,
+    getState: () => ({ repositories: pluginRepositories, plugins: importedPluginDescriptors, activePluginIds: [...activePluginIds] }),
+    applyState: state => {
+      pluginRepositories = normalizeStoredPluginRepositories(state.repositories);
+      const withAssets = plugin => {
+        const installed = serverCatalogPlugins.get(plugin.id);
+        return installed ? { ...plugin, iconUrl: installed.iconUrl, logoUrl: installed.logoUrl,
+          previewUrl: installed.previewUrl, entry: installed.entryUrl } : plugin;
+      };
+      importedPluginDescriptors = state.plugins.map(withAssets);
+      activePluginIds = new Set(state.activePluginIds);
+      persistSharedPluginCatalogCookie();
+      renderPluginRepositories(); renderAdministration();
+      void loadPluginRepositoriesPreview();
+      void loadServerPluginCatalog().then(() => {
+        importedPluginDescriptors = importedPluginDescriptors.map(withAssets);
+        renderAdministration();
+      });
+    },
+  });
+  await sharedPluginManagement.start();
   persistSharedPluginCatalogCookie();
   if (
     (rememberAdminToken.checked && homeAssistantToken.value.trim())

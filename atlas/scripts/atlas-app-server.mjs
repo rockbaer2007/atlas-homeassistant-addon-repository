@@ -9,6 +9,7 @@ import * as tar from "tar";
 import * as pty from "node-pty";
 import { WebSocketServer } from "ws";
 import { isTrustedAtlasOrigin as isTrustedAtlasRequestOrigin } from "./atlas-request-origin.mjs";
+import { createPluginManagementStore } from "./atlas-plugin-management-store.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -25,6 +26,7 @@ const bundledPluginRoot = resolve(root, "atlas-plugins");
 const persistentPluginRoot = resolve(process.env.ATLAS_PLUGIN_DATA_ROOT ?? join(homedir(), ".atlas", "plugins"));
 const removedPluginSlugsPath = resolve(persistentPluginRoot, ".removed-plugins.json");
 const pluginRoots = [...new Set([persistentPluginRoot, bundledPluginRoot])];
+const pluginManagementStore = createPluginManagementStore(join(persistentPluginRoot, ".management", "state.json"));
 const fileStudioConfigRoot = resolve(process.env.ATLAS_FILE_STUDIO_CONFIG_ROOT ?? "/config");
 const fileStudioAddonsRoot = resolve(process.env.ATLAS_FILE_STUDIO_ADDONS_ROOT ?? "/addons");
 const fileStudioAllowAddons = process.env.ATLAS_FILE_STUDIO_ALLOW_ADDONS === "1";
@@ -117,6 +119,11 @@ const server = createServer((request, response) => {
 
   if (routePath === "/app") {
     void writeAppResponse(response, requestUrl, request.headers.cookie);
+    return;
+  }
+
+  if (routePath === "/api/plugins/state") {
+    void writePluginManagementResponse(request, response);
     return;
   }
 
@@ -759,6 +766,41 @@ async function writePluginCatalogResponse(response, requestUrl, cookieHeader) {
     kind: "atlas.plugin.catalog",
     plugins: readPluginCatalog(requestUrl, cookieHeader),
   });
+}
+
+async function writePluginManagementResponse(request, response) {
+  try {
+    if (request.headers.origin && !isTrustedAtlasOrigin(request)) {
+      writeJson(response, 403, { error: "plugin management requires a trusted Atlas origin" });
+      return;
+    }
+    if (request.method === "GET") {
+      writeJson(response, 200, pluginManagementStore.read());
+      return;
+    }
+    if (request.method !== "POST") {
+      writeJson(response, 405, { error: "method not allowed" });
+      return;
+    }
+    if (!isTrustedAtlasOrigin(request)) {
+      writeJson(response, 403, { error: "plugin management requires a trusted Atlas origin" });
+      return;
+    }
+    if (!String(request.headers["content-type"] || "").startsWith("application/json")) {
+      writeJson(response, 415, { error: "JSON metadata required" }); return;
+    }
+    const chunks = []; let bytes = 0;
+    for await (const chunk of request) {
+      bytes += chunk.length;
+      if (bytes > 1024 * 1024) { writeJson(response, 413, { error: "plugin management metadata too large" }); return; }
+      chunks.push(chunk);
+    }
+    const body = Buffer.concat(chunks);
+    const result = pluginManagementStore.change(JSON.parse(body.toString("utf8")));
+    writeJson(response, result.conflict ? 409 : 200, result);
+  } catch (error) {
+    writeJson(response, 400, { error: error instanceof Error ? error.message : "plugin management unavailable" });
+  }
 }
 
 async function proxyAdminApiRequest(request, response, requestUrl, routePath) {
@@ -2897,6 +2939,14 @@ function readPluginCatalog(requestUrl, cookieHeader = "") {
   const localPlugins = pluginDirectoryNames
     .map(directoryName => readPluginManifest(directoryName, requestUrl))
     .filter(Boolean);
+  let management;
+  try { management = pluginManagementStore.read(); } catch { /* Preserve legacy access if the state file needs repair. */ }
+  if (management?.initialized) {
+    // Execution/assets come only from installed server manifests, never imported metadata.
+    return localPlugins.map(plugin => ({ ...plugin,
+      status: management.state.activePluginIds.includes(plugin.id) ? "active" : "available",
+    })).sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || a.name.localeCompare(b.name));
+  }
   const sharedPlugins = readSharedPluginCatalog(cookieHeader, requestUrl);
   const pluginsById = new Map(localPlugins.map(plugin => [plugin.id, plugin]));
 

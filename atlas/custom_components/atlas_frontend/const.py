@@ -5,7 +5,7 @@ from urllib.parse import urlsplit, urlunsplit
 DOMAIN = "atlas_frontend"
 PANEL_PATH = "atlas-runtime"
 CONF_RUNTIME_URL = "runtime_url"
-VERSION = "0.1.299"
+VERSION = "0.1.300"
 
 
 def normalize_runtime_url(value: str) -> str:

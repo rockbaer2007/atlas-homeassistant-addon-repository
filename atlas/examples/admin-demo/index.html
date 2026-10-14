@@ -660,6 +660,11 @@
         display: none;
       }
 
+      .shared-plugin-tools { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; }
+      .shared-plugin-tools button { flex: 1; min-width: 140px; }
+      #shared-plugin-management output { display: block; }
+      #shared-plugin-management section { border-top: 1px solid var(--atlas-border); margin-top: 8px; }
+      #shared-plugin-management ul { max-height: 140px; overflow: auto; overflow-wrap: anywhere; }
       .plugin-manager-dialog {
         width: min(1160px, calc(100vw - 32px));
         max-height: calc(100vh - 32px);
@@ -1574,6 +1579,7 @@
               </span>
             </button>
           </div>
+          <details id="shared-plugin-management" class="plugin-manager-section" open></details>
           <div id="plugin-manager-tabs" class="plugin-manager-tabs" role="tablist" aria-label="Installed plugins"></div>
           <div id="plugin-list" class="plugin-list" role="tabpanel" tabindex="0"></div>
           <details class="plugin-manager-section">

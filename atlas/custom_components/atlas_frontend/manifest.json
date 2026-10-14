@@ -1,7 +1,7 @@
 {
   "domain": "atlas_frontend",
   "name": "ATLAS Runtime",
-  "version": "0.1.299",
+  "version": "0.1.300",
   "codeowners": ["@rockbaer2007"],
   "config_flow": true,
   "dependencies": ["frontend", "http", "panel_custom"],

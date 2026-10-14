@@ -149,6 +149,30 @@ test("isolated app-server plugin lifecycle preserves projects and rejected updat
       assert.deepEqual(await readFile(projectPath), projectBefore);
       assert.deepEqual(await readFile(settingsPath), settingsBefore);
     });
+    await t.test("shared management is origin-checked, restart-safe and independent of browser cookies", async () => {
+      const state = { repositories: [{ id: "fixture", name: "Fixture", url: "https://example.org/fixture.json", type: "plugin" }],
+        plugins: [{ id: pluginId, name: "Fixture", version: "1.0.0", source: "package" }],
+        activePluginIds: ["atlas.plugin.homeassistant-card-editor", pluginId] };
+      assert.equal((await request("/api/plugins/state").then(r => r.json())).initialized, false);
+      const rejected = await fetch(`${base}/api/plugins/state`, { method: "POST", headers: { origin: "https://other.invalid", "content-type": "application/json" },
+        body: JSON.stringify({ action: "merge", revision: 0, state }) });
+      assert.equal(rejected.status, 403);
+      const preview = await request("/api/plugins/state", { action: "preview", revision: 0, state }).then(r => r.json());
+      assert.equal(preview.preview.repositories.length, 1);
+      assert.equal((await request("/api/plugins/state").then(r => r.json())).initialized, false);
+      assert.equal((await request("/api/plugins/state", { action: "merge", revision: 0, state })).status, 200);
+      assert.equal((await request(`/launch/${pluginId}`, undefined, statusCookie("disabled"))).status, 302);
+      await stop(); await start();
+      const loaded = await request("/api/plugins/state").then(r => r.json());
+      assert.equal(loaded.revision, 1);
+      assert.equal(loaded.state.repositories.length, 1);
+      assert.equal((await request("/api/plugins/state", { action: "update", revision: 0, state })).status, 409);
+      state.activePluginIds = ["atlas.plugin.homeassistant-card-editor"];
+      assert.equal((await request("/api/plugins/state", { action: "update", revision: 1, state })).status, 200);
+      assert.equal((await request(`/launch/${pluginId}`, undefined, statusCookie("active"))).status, 404);
+      assert.deepEqual(await readFile(projectPath), projectBefore);
+      assert.deepEqual(await readFile(settingsPath), settingsBefore);
+    });
     await stop();
   } finally {
     if (child && child.exitCode === null && child.signalCode === null) {
