@@ -1,6 +1,6 @@
 {
   "name": "atlas",
-  "version": "0.1.300",
+  "version": "0.1.301",
   "private": true,
   "packageManager": "pnpm@11.9.0",
   "engines": {
@@ -10,7 +10,7 @@
     "build": "pnpm -r build && node scripts/build-mdi-icon-catalog.mjs && node scripts/build-file-studio-editor.mjs && node scripts/build-terminal-plugin.mjs",
     "check": "pnpm -r check",
     "test": "pnpm -r test",
-    "test:app": "node --test scripts/atlas-plugin-lifecycle.test.mjs scripts/atlas-plugin-management.test.mjs scripts/atlas-request-origin.test.mjs scripts/home-assistant-package.test.mjs",
+    "test:app": "node --test scripts/atlas-plugin-lifecycle.test.mjs scripts/atlas-plugin-management.test.mjs scripts/atlas-editor-projects.test.mjs scripts/atlas-request-origin.test.mjs scripts/home-assistant-package.test.mjs",
     "start:app": "node scripts/atlas-app-server.mjs",
     "linux:prepare": "node scripts/atlas-linux-installer.mjs prepare --output output/linux-runtime",
     "test:linux": "node --test scripts/atlas-linux-installer.test.mjs",

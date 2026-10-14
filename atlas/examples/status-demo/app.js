@@ -1,4 +1,5 @@
 import { cardEditorFrenchTranslations } from "./card-editor-fr.js";
+import { createSharedProjects } from "./shared-projects.mjs";
 import {
   createThemeTokens,
 } from "@atlas/theme";
@@ -234,6 +235,8 @@ const stackSelectionSummary = document.querySelector("#stack-selection-summary")
 const groupSummary = document.querySelector("#group-summary");
 const groupIssues = document.querySelector("#group-issues");
 const configurationStorageKey = "atlas.homeassistant.demo.configuration";
+let sharedProjects;
+let sharedProjectActive = false;
 const entityCatalogCacheStorageKey = "atlas.homeassistant.demo.entityCatalogCache";
 const exportFilenameHistoryStorageKey = "atlas.homeassistant.demo.exportFilenameHistory";
 const atlasThemeStorageKey = "atlas.themePreference";
@@ -1270,6 +1273,7 @@ function applyTranslations() {
 
 function setLanguage(language) {
   currentLanguage = Object.hasOwn(translations, language) ? language : "en";
+  sharedProjects?.labels();
   try {
     localStorage.setItem(atlasLanguageStorageKey, currentLanguage);
   } catch {
@@ -2297,7 +2301,7 @@ function scheduleReconnect() {
 function persistConfiguration() {
   try {
     normalizeExpertPaletteVisibilityState();
-    localStorage.setItem(configurationStorageKey, JSON.stringify({
+    localStorage.setItem(sharedProjectActive ? "atlas.homeassistant.sharedProjectDraft" : configurationStorageKey, JSON.stringify({
       themePreference: currentThemePreference,
       url: homeAssistantUrl.value,
       entities: homeAssistantEntity.value,
@@ -9312,6 +9316,30 @@ renderEditorMode(initialEditorMode);
 syncTemporaryResourceDebugVisibility();
 renderTemporaryHaCardResourceList();
 hideEditorLoadingNotice();
+sharedProjects = createSharedProjects({
+  root: document.querySelector("#shared-editor-projects"), language: () => currentLanguage,
+  url: isHomeAssistantAppSurface() ? createAppRouteNavigationUrl("/api/editor-projects") : createPortNavigationUrl(4176, "/api/editor-projects"),
+  capture: () => ({ name: currentExpertCardName(), fields: normalizedExpertEditorFields(),
+    surfaceSize: expertEditorSurfaceSize, gridCellSize: expertGridCellSize, scriptFilename: haCardScriptFilename.value }),
+  readDraft: () => {
+    const draft = JSON.parse(localStorage.getItem("atlas.homeassistant.sharedProjectDraft") || "null");
+    if (!draft) throw new Error("No local draft");
+    return { name: draft.expertCardName || "ATLAS Expert card", fields: draft.expertEditorFields,
+      surfaceSize: draft.expertEditorSurfaceSize, gridCellSize: draft.expertGridCellSize, scriptFilename: draft.cardScriptFilename };
+  },
+  onShared: () => { sharedProjectActive = true; persistConfiguration(); },
+  apply: project => {
+    const fields = createHomeAssistantCardEditorPackagePlan({ editorMode: "expert", fields: project.fields }).fields;
+    if (fields.some(field => ![field.column, field.row, field.width, field.height].every(Number.isFinite))) throw new Error("Invalid project geometry");
+    sharedProjectActive = true;
+    expertEditorFields.splice(0, expertEditorFields.length, ...fields);
+    expertEditorSurfaceSize = { columns: clampExpertEditorSurfaceDelta(project.surfaceSize?.columns), rows: clampExpertEditorSurfaceDelta(project.surfaceSize?.rows, expertGridMaxExtraRows) };
+    expertGridCellSize = clampExpertGridCellSize(project.gridCellSize);
+    expertCardName.value = project.name; haCardScriptFilename.value = project.scriptFilename || "";
+    selectedExpertFieldIndex = fields.length ? 0 : -1; selectedContainerCardRef = undefined; expertFieldEditing = false;
+    renderExpertEditorPreview();
+  },
+});
 
 let adminHandoffRequestAttempts = 0;
 const adminHandoffRequestTimer = window.setInterval(() => {

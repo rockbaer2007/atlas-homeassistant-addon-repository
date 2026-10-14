@@ -10,6 +10,7 @@ import * as pty from "node-pty";
 import { WebSocketServer } from "ws";
 import { isTrustedAtlasOrigin as isTrustedAtlasRequestOrigin } from "./atlas-request-origin.mjs";
 import { createPluginManagementStore } from "./atlas-plugin-management-store.mjs";
+import { createEditorProjectStore } from "./atlas-editor-project-store.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -27,6 +28,7 @@ const persistentPluginRoot = resolve(process.env.ATLAS_PLUGIN_DATA_ROOT ?? join(
 const removedPluginSlugsPath = resolve(persistentPluginRoot, ".removed-plugins.json");
 const pluginRoots = [...new Set([persistentPluginRoot, bundledPluginRoot])];
 const pluginManagementStore = createPluginManagementStore(join(persistentPluginRoot, ".management", "state.json"));
+const editorProjectStore = createEditorProjectStore(join(persistentPluginRoot, ".projects", "projects.json"));
 const fileStudioConfigRoot = resolve(process.env.ATLAS_FILE_STUDIO_CONFIG_ROOT ?? "/config");
 const fileStudioAddonsRoot = resolve(process.env.ATLAS_FILE_STUDIO_ADDONS_ROOT ?? "/addons");
 const fileStudioAllowAddons = process.env.ATLAS_FILE_STUDIO_ALLOW_ADDONS === "1";
@@ -124,6 +126,11 @@ const server = createServer((request, response) => {
 
   if (routePath === "/api/plugins/state") {
     void writePluginManagementResponse(request, response);
+    return;
+  }
+
+  if (routePath === "/api/editor-projects") {
+    void writeEditorProjectResponse(request, response, requestUrl);
     return;
   }
 
@@ -588,6 +595,7 @@ server.listen(appPort, host, () => {
 
 function createRoutePath(pathname) {
   const knownPrefixes = [
+    "/api/editor-projects",
     "/api/admin-connection",
     "/api/admin-device",
     "/api/card-translation",
@@ -801,6 +809,31 @@ async function writePluginManagementResponse(request, response) {
   } catch (error) {
     writeJson(response, 400, { error: error instanceof Error ? error.message : "plugin management unavailable" });
   }
+}
+
+async function writeEditorProjectResponse(request, response, requestUrl) {
+  try {
+    if (request.headers.origin && !isTrustedAtlasOrigin(request)) { writeJson(response, 403, { error: "trusted Atlas origin required" }); return; }
+    if (request.method === "GET") {
+      const id = requestUrl.searchParams.get("id"), projects = editorProjectStore.read().projects;
+      if (id) {
+        const entry = projects.find(item => item.id === id);
+        writeJson(response, entry ? 200 : 404, entry ? { entry } : { error: "project not found" });
+      } else writeJson(response, 200, { projects: projects.map(entry => ({ id: entry.id, revision: entry.revision, name: entry.project.name, fields: entry.project.fields.length, updatedAt: entry.updatedAt })) });
+      return;
+    }
+    if (request.method !== "POST") { writeJson(response, 405, { error: "method not allowed" }); return; }
+    if (!isTrustedAtlasOrigin(request)) { writeJson(response, 403, { error: "trusted Atlas origin required" }); return; }
+    if (!String(request.headers["content-type"] || "").startsWith("application/json")) { writeJson(response, 415, { error: "JSON required" }); return; }
+    const chunks = []; let size = 0;
+    for await (const chunk of request) { size += chunk.length; if (size > 5 * 1024 * 1024) { writeJson(response, 413, { error: "project too large" }); return; } chunks.push(chunk); }
+    const input = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    if (input.action === "backup") { writeJson(response, 200, editorProjectStore.backup(input.project)); return; }
+    if (!["preview", "save"].includes(input.action)) throw new Error("Invalid project action");
+    const result = input.action === "preview" ? editorProjectStore.inspect(input) : editorProjectStore.save(input);
+    writeJson(response, result.conflict ? 409 : 200, input.action === "preview" && !result.conflict
+      ? { project: result.project, previous: result.previous ? { name: result.previous.project.name, fields: result.previous.project.fields.length } : null } : result);
+  } catch (error) { writeJson(response, 400, { error: error instanceof Error ? error.message : "project storage unavailable" }); }
 }
 
 async function proxyAdminApiRequest(request, response, requestUrl, routePath) {

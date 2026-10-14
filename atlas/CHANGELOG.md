@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.301
+
+- Share named Expert editor projects between App/Ingress and Runtime with explicit save/open previews.
+- Preserve original browser projects; retain shared edits in a separate local draft and offer draft/backup recovery.
+- Back up workspaces before replacement and server projects before version-checked atomic updates.
+- Keep credentials, Administration settings and plugin management outside project snapshots; no automatic migration or overwrite.
+
 ## 0.1.300
 
 - Add shared server-side plugin repositories, imported plugin metadata and activation state for App/Ingress and Runtime access.

@@ -694,6 +694,9 @@
         text-align: center;
       }
 
+      .shared-project-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+      .shared-project-tools button, .shared-project-tools select { flex: 1; min-width: 150px; }
+      #shared-editor-projects section[hidden] { display: none; }
       .expert-editor-actions {
         gap: 6px;
       }
@@ -3843,6 +3846,7 @@
         </div>
         <div id="expert-editor-section">
           <h2 class="entity-section-title" data-i18n="heading.expertEditor">Expert editor preview</h2>
+          <details id="shared-editor-projects" open style="padding:10px;margin-bottom:12px;border:1px solid var(--atlas-border);border-radius:6px"></details>
           <div class="expert-editor-workbench">
           <aside class="expert-editor-sidebar" aria-label="Available Home Assistant cards" data-i18n-aria-label="aria.availableCards">
             <div class="expert-palette-toolbar">

@@ -173,6 +173,21 @@ test("isolated app-server plugin lifecycle preserves projects and rejected updat
       assert.deepEqual(await readFile(projectPath), projectBefore);
       assert.deepEqual(await readFile(settingsPath), settingsBefore);
     });
+    await t.test("project API keeps distinct projects, checks revisions and preserves plugin state", async () => {
+      const pluginsBefore = await request("/api/plugins/state").then(r => r.json());
+      const project = { name: "Existing project", fields: [{ id: "field", target: "button", title: "Keep me" }] };
+      assert.equal((await request("/api/editor-projects", { action: "preview", id: "first", revision: 0, project })).status, 200);
+      assert.equal((await request("/api/editor-projects").then(r => r.json())).projects.length, 0);
+      assert.equal((await request("/api/editor-projects", { action: "save", id: "first", revision: 0, project })).status, 200);
+      assert.equal((await request("/api/editor-projects", { action: "save", id: "second", revision: 0, project })).status, 200);
+      assert.equal((await request("/api/editor-projects", { action: "save", id: "first", revision: 0, project })).status, 409);
+      await stop(); await start();
+      const list = await request("/api/editor-projects").then(r => r.json()); assert.equal(list.projects.length, 2); assert.equal(list.projects[0].project, undefined);
+      assert.equal((await request("/api/editor-projects?id=first").then(r => r.json())).entry.project.fields[0].title, "Keep me");
+      const denied = await fetch(`${base}/api/editor-projects`, { headers: { origin: "https://other.invalid" } }); assert.equal(denied.status, 403);
+      assert.deepEqual(await request("/api/plugins/state").then(r => r.json()), pluginsBefore);
+      assert.deepEqual(await readFile(projectPath), projectBefore);
+    });
     await stop();
   } finally {
     if (child && child.exitCode === null && child.signalCode === null) {
