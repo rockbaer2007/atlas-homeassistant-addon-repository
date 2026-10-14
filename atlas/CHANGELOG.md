@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.298
+
+- Add a Linux/systemd installer using the existing ATLAS app runtime.
+- Separate runtime releases from persistent data, preserve configuration and installed plugins during updates, and back up data before deployment.
+- Check runtime architecture/Node ABI and readiness; restore the previous runtime after a failed update.
+- No Home Assistant data migration or configuration change is required.
+
 ## 0.1.297
 
 - Render the exported Expert layout in generated custom-card scripts and HACS bundles using Home Assistant card helpers.

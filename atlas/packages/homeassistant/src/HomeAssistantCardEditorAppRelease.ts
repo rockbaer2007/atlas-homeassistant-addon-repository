@@ -95,8 +95,8 @@ const targets: readonly HomeAssistantCardEditorAppReleaseTarget[] = [
   {
     id: "linux-installer",
     label: "Linux VM / LXC installer",
-    status: "planned",
-    reason: "Add a systemd-based installer for VM, LXC or bare Linux after the container path is stable.",
+    status: "in-progress",
+    reason: "The systemd installer passes native Debian 12 LXC installation, update, backup and rollback checks. Other Linux hosts still need qualification.",
   },
   {
     id: "atlas-plugin",
@@ -145,6 +145,6 @@ export function createHomeAssistantCardEditorAppReleaseReadiness(): HomeAssistan
     ],
     checks,
     targets,
-    recommendedNextStep: "Install the prepared Home Assistant App/Add-on package in a local Home Assistant /addons directory, then add the Linux installer after the container contract stays stable.",
+    recommendedNextStep: "Continue native ATLAS Home Assistant/HACS frontend integration and qualify additional Linux hosts; preserve existing data and installation identity.",
   };
 }
