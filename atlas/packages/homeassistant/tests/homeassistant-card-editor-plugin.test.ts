@@ -124,8 +124,8 @@ describe("Home Assistant card editor plugin", () => {
       releaseChannel: "local-preview",
       summary: {
         ready: 3,
-        inProgress: 1,
-        planned: 1,
+        inProgress: 2,
+        planned: 0,
       },
       recommendedNextStep: "Continue native ATLAS Home Assistant/HACS frontend integration and qualify additional Linux hosts; preserve existing data and installation identity.",
     });
@@ -139,7 +139,7 @@ describe("Home Assistant card editor plugin", () => {
       ["home-assistant-app", "in-progress"],
       ["linux-installer", "in-progress"],
       ["atlas-plugin", "ready"],
-      ["home-assistant-hacs", "planned"],
+      ["home-assistant-hacs", "in-progress"],
     ]);
   });
 });

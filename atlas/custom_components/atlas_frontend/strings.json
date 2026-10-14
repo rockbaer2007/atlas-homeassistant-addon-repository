@@ -1,0 +1,12 @@
+{
+  "title": "ATLAS Runtime",
+  "config": {
+    "step": {"user": {"title": "Connect ATLAS Runtime", "description": "Enter the browser-accessible base URL of your existing ATLAS runtime, including any reverse-proxy prefix. ATLAS must already run as an App/Add-on, Docker container or Linux service. Tokens and plugins stay in ATLAS Administration. Use HTTPS when Home Assistant uses HTTPS.", "data": {"runtime_url": "ATLAS runtime URL"}}},
+    "error": {"invalid_runtime_url": "Use an HTTP/HTTPS base URL without credentials, query parameters or fragment."},
+    "abort": {"already_configured": "ATLAS Runtime is already configured."}
+  },
+  "options": {
+    "step": {"init": {"title": "ATLAS Runtime address", "description": "Changing the address opens a different browser storage context. Keep the previous ATLAS address to preserve local projects and encrypted settings. Export them in ATLAS before deliberately moving to another address.", "data": {"runtime_url": "ATLAS runtime URL"}}},
+    "error": {"invalid_runtime_url": "Use an HTTP/HTTPS base URL without credentials, query parameters or fragment."}
+  }
+}

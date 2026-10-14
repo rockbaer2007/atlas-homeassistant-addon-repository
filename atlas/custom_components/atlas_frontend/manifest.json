@@ -1,0 +1,13 @@
+{
+  "domain": "atlas_frontend",
+  "name": "ATLAS Runtime",
+  "version": "0.1.299",
+  "codeowners": ["@rockbaer2007"],
+  "config_flow": true,
+  "dependencies": ["frontend", "http", "panel_custom"],
+  "documentation": "https://opensource.ugso-software.de/projects/atlas/frontend",
+  "issue_tracker": "https://github.com/rockbaer2007/atlas/issues",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "requirements": []
+}

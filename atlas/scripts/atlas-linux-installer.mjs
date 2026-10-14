@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { createServer, isIP } from "node:net";
 
 const repository = resolve(import.meta.dirname, "..");
-const runtimeEntries = ["package.json", "scripts", "examples/admin-demo", "examples/plugin-hub", "examples/status-demo", "packages", "atlas-plugins/homeassistant-card-editor", "node_modules"];
+const runtimeEntries = ["package.json", "scripts", "custom_components/atlas_frontend", "examples/admin-demo", "examples/plugin-hub", "examples/status-demo", "packages", "atlas-plugins/homeassistant-card-editor", "node_modules"];
 const requiredFiles = ["scripts/atlas-app-server.mjs", "examples/admin-demo/server.mjs", "examples/status-demo/app.js", "examples/admin-demo/mdi-icons.json", "packages/homeassistant/dist/index.js"];
 
 function run(command, args, options = {}) {

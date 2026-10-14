@@ -14,6 +14,7 @@ test("source package preserves destination data and excludes local build artifac
     assert.ok(files.some((file) => file.destination === "config.yaml"));
     assert.ok(files.some((file) => file.destination === "atlas-plugins/homeassistant-card-editor/atlas-plugin.json"));
     assert.ok(files.some((file) => file.destination === "scripts/atlas-app-server.mjs"));
+    assert.ok(files.some((file) => file.destination === "custom_components/atlas_frontend/frontend/atlas-homeassistant-panel.js"));
     assert.ok(files.every((file) => !/(^|\/)(node_modules|dist|\.git|coverage)(\/|$)/.test(file.destination)));
     await copyPackageFiles(target);
     assert.equal(await readFile(resolve(target, "existing-user-data.json"), "utf8"), "preserve me");

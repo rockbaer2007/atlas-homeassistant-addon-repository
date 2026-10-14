@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.299
+
+- Add the optional HACS-compatible ATLAS Runtime integration with an administrator-only Home Assistant sidebar panel.
+- Configure an existing runtime URL through Home Assistant; open Hub, Editor and Administration without forwarding HA credentials.
+- Preserve the embedded application during ordinary HA state updates and explain HTTP/HTTPS embedding restrictions in DE/EN/FR.
+- Existing App/Add-on, settings and plugins remain in their current runtime; no automatic migration is performed.
+
 ## 0.1.298
 
 - Add a Linux/systemd installer using the existing ATLAS app runtime.

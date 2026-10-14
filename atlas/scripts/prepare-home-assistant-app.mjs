@@ -17,11 +17,12 @@ const sourceEntries = [
   { from: "examples/plugin-hub", to: "examples/plugin-hub" },
   { from: "examples/status-demo", to: "examples/status-demo" },
   { from: "scripts", to: "scripts" },
+  { from: "custom_components/atlas_frontend", to: "custom_components/atlas_frontend" },
 ];
 
 // All published copies use this inventory; local build output and dependencies
 // must never replace the sources installed by the package Dockerfile.
-const excludedDirectories = new Set(["node_modules", "dist", "build", "coverage", ".git", "output", "tmp"]);
+const excludedDirectories = new Set(["node_modules", "dist", "build", "coverage", ".git", "output", "tmp", "__pycache__"]);
 
 export async function collectPackageFiles() {
   const files = await collectFiles(sourceApp, "");

@@ -1,0 +1,12 @@
+{
+  "title": "ATLAS Runtime",
+  "config": {
+    "step": {"user": {"title": "ATLAS-Laufzeit verbinden", "description": "Gib die im Browser erreichbare Basisadresse deiner vorhandenen ATLAS-Laufzeit einschließlich eines Reverse-Proxy-Präfixes an. ATLAS muss bereits als App/Add-on, Docker-Container oder Linux-Dienst laufen. Tokens und Plugins bleiben in der ATLAS-Administration. Verwende HTTPS, wenn Home Assistant HTTPS verwendet.", "data": {"runtime_url": "ATLAS-Laufzeitadresse"}}},
+    "error": {"invalid_runtime_url": "Verwende eine HTTP-/HTTPS-Basisadresse ohne Zugangsdaten, Abfrageparameter oder Fragment."},
+    "abort": {"already_configured": "ATLAS Runtime ist bereits eingerichtet."}
+  },
+  "options": {
+    "step": {"init": {"title": "ATLAS-Laufzeitadresse", "description": "Eine andere Adresse verwendet einen anderen Browser-Speicher. Behalte die bisherige ATLAS-Adresse bei, um lokale Projekte und verschlüsselte Einstellungen zu erhalten. Exportiere diese vor einem bewussten Adresswechsel in ATLAS.", "data": {"runtime_url": "ATLAS-Laufzeitadresse"}}},
+    "error": {"invalid_runtime_url": "Verwende eine HTTP-/HTTPS-Basisadresse ohne Zugangsdaten, Abfrageparameter oder Fragment."}
+  }
+}

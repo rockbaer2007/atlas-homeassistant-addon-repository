@@ -1,6 +1,6 @@
 {
   "name": "atlas",
-  "version": "0.1.298",
+  "version": "0.1.299",
   "private": true,
   "packageManager": "pnpm@11.9.0",
   "engines": {
@@ -14,6 +14,7 @@
     "start:app": "node scripts/atlas-app-server.mjs",
     "linux:prepare": "node scripts/atlas-linux-installer.mjs prepare --output output/linux-runtime",
     "test:linux": "node --test scripts/atlas-linux-installer.test.mjs",
+    "test:frontend": "node --test scripts/atlas-frontend-panel.test.mjs",
     "ha:app:prepare": "node scripts/prepare-home-assistant-app.mjs",
     "ha:app:sync": "node scripts/sync-home-assistant-app.mjs",
     "ha:app:check": "node scripts/sync-home-assistant-app.mjs --check",

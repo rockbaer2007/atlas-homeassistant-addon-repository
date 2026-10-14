@@ -2160,6 +2160,7 @@ function isHomeAssistantAppSurface() {
   try {
     const url = new URL(window.location.href);
     return url.port === "4176"
+      || /\/(?:editor|admin|hub)\/?$/.test(url.pathname)
       || url.pathname.includes("/api/hassio_ingress/")
       || url.pathname.includes("/ingress/");
   } catch {

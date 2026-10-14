@@ -19,6 +19,7 @@ COPY packages ./packages
 COPY atlas-plugins ./atlas-plugins
 COPY examples ./examples
 COPY scripts ./scripts
+COPY custom_components ./custom_components
 
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
@@ -66,6 +67,7 @@ RUN apk add --no-cache openssh-client curl bash \
 
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/custom_components ./custom_components
 COPY --from=builder /app/examples ./examples
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/atlas-plugins/homeassistant-card-editor ./atlas-plugins/homeassistant-card-editor

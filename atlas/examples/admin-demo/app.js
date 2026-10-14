@@ -528,7 +528,7 @@ const translations = {
     "release.hacs-card-bundle.label": "HACS card bundle export",
     "release.hacs-card-bundle.reason": "Card bundles can be exported and imported, while the final installable repository flow still needs release wiring.",
     "release.home-assistant-frontend.label": "Home Assistant frontend integration",
-    "release.home-assistant-frontend.reason": "The local app and reference plugin path come before the later native Home Assistant/HACS frontend integration.",
+    "release.home-assistant-frontend.reason": "The optional ATLAS Runtime integration registers an administrator-only panel for the existing runtime. Native host and HACS distribution qualification remain separate checks.",
     "release.standalone-docker.label": "Standalone Docker container",
     "release.standalone-docker.reason": "Dockerfile and Compose wiring build the local image, start the app surfaces and pass the container health check.",
     "release.home-assistant-app.label": "Home Assistant App / Add-on",
@@ -538,7 +538,7 @@ const translations = {
     "release.atlas-plugin.label": "ATLAS reference plugin",
     "release.atlas-plugin.reason": "The Card Editor is registered as the first official ATLAS reference plugin and can be exported as a plugin package.",
     "release.home-assistant-hacs.label": "Home Assistant / HACS integration",
-    "release.home-assistant-hacs.reason": "HACS-oriented card bundles exist first; native Home Assistant frontend installation remains a later integration target.",
+    "release.home-assistant-hacs.reason": "A HACS-compatible custom integration and configuration flow are provided. HACS catalog inclusion and broader host qualification are not implied.",
     "text.parcelStatusReady": "Ready",
     "text.parcelStatusManualAccount": "Account required",
     "text.parcelAuthPublicTracking": "Public tracking link",
@@ -775,7 +775,7 @@ const translations = {
     "release.hacs-card-bundle.label": "HACS-Card-Bundle-Export",
     "release.hacs-card-bundle.reason": "Card-Bundles können exportiert und importiert werden; der finale installierbare Repository-Flow braucht noch Release-Verdrahtung.",
     "release.home-assistant-frontend.label": "Home-Assistant-Frontend-Integration",
-    "release.home-assistant-frontend.reason": "Der lokale App- und Referenz-Plugin-Pfad kommt vor der späteren nativen Home-Assistant/HACS-Frontend-Integration.",
+    "release.home-assistant-frontend.reason": "Die optionale Integration ATLAS Runtime registriert ein Administrationspanel für die vorhandene Laufzeit. Native Systeme und HACS-Verteilung werden separat geprüft.",
     "release.standalone-docker.label": "Standalone-Docker-Container",
     "release.standalone-docker.reason": "Dockerfile und Compose-Verdrahtung bauen das lokale Image, starten die App-Oberflächen und bestehen den Container-Healthcheck.",
     "release.home-assistant-app.label": "Home Assistant App / Add-on",
@@ -785,7 +785,7 @@ const translations = {
     "release.atlas-plugin.label": "ATLAS-Referenz-Plugin",
     "release.atlas-plugin.reason": "Der Card Editor ist als erstes offizielles ATLAS-Referenz-Plugin registriert und kann als Plugin-Paket exportiert werden.",
     "release.home-assistant-hacs.label": "Home Assistant / HACS-Integration",
-    "release.home-assistant-hacs.reason": "HACS-orientierte Card-Bundles existieren zuerst; die native Home-Assistant-Frontend-Installation bleibt ein späteres Integrationsziel.",
+    "release.home-assistant-hacs.reason": "Eine HACS-kompatible Integration mit Konfigurationsdialog ist vorhanden. HACS-Katalogaufnahme und weitere Systeme sind separat zu prüfen.",
     "text.parcelStatusReady": "Fertig",
     "text.parcelStatusManualAccount": "Konto noetig",
     "text.parcelAuthPublicTracking": "Öffentlicher Tracking-Link",
@@ -1004,7 +1004,7 @@ const translations = {
     "release.hacs-card-bundle.label": "Exportation de bundle de cartes HACS",
     "release.hacs-card-bundle.reason": "Les bundles de cartes peuvent être exportés et importés ; la publication finale via un dépôt installable reste à intégrer.",
     "release.home-assistant-frontend.label": "Intégration au frontend Home Assistant",
-    "release.home-assistant-frontend.reason": "Le parcours de l’application locale et du plugin de référence précède l’intégration native ultérieure au frontend Home Assistant/HACS.",
+    "release.home-assistant-frontend.reason": "L’intégration facultative ATLAS Runtime enregistre un panneau administrateur pour le Runtime existant. Les systèmes natifs et la distribution HACS restent à vérifier séparément.",
     "release.standalone-docker.label": "Conteneur Docker autonome",
     "release.standalone-docker.reason": "Dockerfile et Compose construisent l’image locale, démarrent les interfaces de l’application et réussissent le contrôle de santé du conteneur.",
     "release.home-assistant-app.label": "Application / extension Home Assistant",
@@ -1014,7 +1014,7 @@ const translations = {
     "release.atlas-plugin.label": "Plugin de référence ATLAS",
     "release.atlas-plugin.reason": "Card Editor est enregistré comme premier plugin de référence officiel ATLAS et peut être exporté en paquet.",
     "release.home-assistant-hacs.label": "Intégration Home Assistant / HACS",
-    "release.home-assistant-hacs.reason": "Les bundles de cartes compatibles HACS sont disponibles en premier ; l’installation native dans le frontend Home Assistant reste prévue ultérieurement.",
+    "release.home-assistant-hacs.reason": "Une intégration compatible HACS avec un dialogue de configuration est disponible. L’inclusion au catalogue HACS et les autres systèmes restent à vérifier.",
     "text.parcelStatusReady": "Prêt",
     "text.parcelStatusManualAccount": "Compte requis",
     "text.parcelAuthPublicTracking": "Lien de suivi public",
@@ -4156,6 +4156,7 @@ function isAppRouteSurface() {
   try {
     const url = new URL(window.location.href);
     return url.port === "4176"
+      || /\/(?:editor|admin|hub)\/?$/.test(url.pathname)
       || url.pathname.includes("/api/hassio_ingress/")
       || url.pathname.includes("/ingress/");
   } catch {

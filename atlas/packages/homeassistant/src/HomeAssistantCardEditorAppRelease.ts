@@ -74,8 +74,8 @@ const checks: readonly HomeAssistantCardEditorAppReleaseCheck[] = [
   {
     id: "home-assistant-frontend",
     label: "Home Assistant frontend integration",
-    status: "planned",
-    reason: "The local app and reference plugin path come before the later native Home Assistant/HACS frontend integration.",
+    status: "in-progress",
+    reason: "The optional ATLAS Runtime integration registers an administrator-only panel for the existing runtime. Native host and HACS distribution qualification remain separate checks.",
   },
 ];
 
@@ -107,8 +107,8 @@ const targets: readonly HomeAssistantCardEditorAppReleaseTarget[] = [
   {
     id: "home-assistant-hacs",
     label: "Home Assistant / HACS integration",
-    status: "planned",
-    reason: "HACS-oriented card bundles exist first; native Home Assistant frontend installation remains a later integration target.",
+    status: "in-progress",
+    reason: "A HACS-compatible custom integration and configuration flow are provided. HACS catalog inclusion and broader host qualification are not implied.",
   },
 ];
 
