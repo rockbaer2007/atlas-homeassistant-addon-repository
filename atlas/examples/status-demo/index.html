@@ -2676,7 +2676,7 @@
 
       .expert-field-list p {
         margin: 0;
-        color: #536079;
+        color: var(--atlas-muted);
       }
 
       .expert-field-row {
@@ -2686,9 +2686,10 @@
         gap: 8px;
         min-height: 36px;
         padding: 8px 10px;
-        border: 1px solid #cbd5e1;
+        border: 1px solid var(--atlas-border-soft);
         border-radius: 6px;
-        background: #ffffff;
+        background: var(--atlas-panel);
+        color: var(--atlas-text);
       }
 
       .expert-field-row.selected {
@@ -2706,9 +2707,9 @@
         min-height: 30px;
         display: inline-grid;
         place-items: center;
-        border: 1px solid #cbd5e1;
+        border: 1px solid var(--atlas-border-soft);
         border-radius: 4px;
-        background: #ffffff;
+        background: var(--atlas-panel);
         color: #b91c1c;
       }
 
@@ -3495,6 +3496,22 @@
 
       :root[data-theme="dark"] .atlas-status span {
         color: var(--atlas-accent);
+      }
+
+      :root[data-theme="dark"] .atlas-status[data-status="blocked"] {
+        border-color: #ef4444;
+      }
+
+      :root[data-theme="dark"] .atlas-status[data-status="blocked"] span {
+        color: #fca5a5;
+      }
+
+      :root[data-theme="dark"] .atlas-status[data-status="pending"] span {
+        color: #fcd34d;
+      }
+
+      :root[data-theme="dark"] .expert-field-row .icon-button {
+        color: #fca5a5;
       }
 
       @media (max-width: 720px) {

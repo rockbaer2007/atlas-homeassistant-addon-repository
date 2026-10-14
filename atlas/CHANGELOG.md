@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.296
+
+- Keep blocked and pending renderer status colors distinct in dark mode instead of overriding them with the ready accent color.
+- Make the Expert field list and delete controls inherit readable light/dark theme colors.
+- Verify theme changes and reload with mixed Core/Bubble/Mushroom editor previews while preserving existing projects, settings and plugins.
+
 ## 0.1.295
 
 - Respect the browser's Administration plugin status when opening direct plugin launch links, matching the Plugin Hub.
