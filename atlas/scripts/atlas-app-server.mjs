@@ -141,7 +141,7 @@ const server = createServer((request, response) => {
   }
 
   if (routePath.startsWith("/launch/")) {
-    writePluginLaunchResponse(response, requestUrl, routePath);
+    writePluginLaunchResponse(response, requestUrl, routePath, request.headers.cookie);
     return;
   }
 
@@ -2924,7 +2924,7 @@ function readLaunchablePluginCatalog(requestUrl, cookieHeader = "") {
   );
 }
 
-function writePluginLaunchResponse(response, requestUrl, routePath) {
+function writePluginLaunchResponse(response, requestUrl, routePath, cookieHeader = "") {
   let requestedId;
   try {
     requestedId = decodeURIComponent(routePath.slice("/launch/".length)).trim();
@@ -2940,7 +2940,7 @@ function writePluginLaunchResponse(response, requestUrl, routePath) {
     return;
   }
 
-  const plugin = readLaunchablePluginCatalog(requestUrl)
+  const plugin = readLaunchablePluginCatalog(requestUrl, cookieHeader)
     .find(candidate => candidate.id === requestedId || candidate.slug === requestedId);
   if (!plugin) {
     response.writeHead(404, { "cache-control": "no-store", "content-type": "text/plain; charset=utf-8" });

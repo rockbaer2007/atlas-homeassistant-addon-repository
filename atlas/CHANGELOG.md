@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.295
+
+- Respect the browser's Administration plugin status when opening direct plugin launch links, matching the Plugin Hub.
+- Verify plugin installation, rejected updates, replacement, restart, uninstall and package restore against an isolated app server.
+- Preserve existing configuration, projects and other installed plugins; no data migration is required.
+
 ## 0.1.294
 
 - Continue reconnecting after network outages longer than the initial three attempts, with a retry delay capped at 30 seconds.

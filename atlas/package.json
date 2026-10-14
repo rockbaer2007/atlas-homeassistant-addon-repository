@@ -9,6 +9,7 @@
     "build": "pnpm -r build && node scripts/build-mdi-icon-catalog.mjs && node scripts/build-file-studio-editor.mjs && node scripts/build-terminal-plugin.mjs",
     "check": "pnpm -r check",
     "test": "pnpm -r test",
+    "test:app": "node --test scripts/atlas-plugin-lifecycle.test.mjs scripts/atlas-request-origin.test.mjs scripts/home-assistant-package.test.mjs",
     "start:app": "node scripts/atlas-app-server.mjs",
     "ha:app:prepare": "node scripts/prepare-home-assistant-app.mjs",
     "ha:app:sync": "node scripts/sync-home-assistant-app.mjs",
