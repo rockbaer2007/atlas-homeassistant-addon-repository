@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.302
+
+- Check plugin compatibility before installation/update and again on the server before replacing files.
+- Block declared incompatible runtime/host requirements; review unknown or legacy metadata explicitly in DE/EN/FR.
+- Preserve package/manifest declarations; evaluate catalog, descriptor and embedded manifest together with SemVer ranges.
+- Keep installed plugins, settings and projects intact on cancellation or rejection; no automatic data migration.
+- Home Assistant version requirements remain unknown until verified manually; no HA version is inferred from the browser.
+
 ## 0.1.301
 
 - Share named Expert editor projects between App/Ingress and Runtime with explicit save/open previews.

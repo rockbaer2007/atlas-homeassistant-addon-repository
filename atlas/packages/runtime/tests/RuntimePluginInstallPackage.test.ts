@@ -114,6 +114,13 @@ describe("RuntimePluginInstallPackage", () => {
     expect(parsed.files).toHaveLength(1);
   });
 
+  it("preserves compatibility declarations through package parsing and serialization", () => {
+    const compatibility = { atlas: ">=0.1.302", host: ["linux", "docker"], homeAssistant: ">=2026.8" };
+    const value = createRuntimePluginInstallPackage({ plugin: { ...plugin, compatibility } });
+    expect(parseRuntimePluginInstallPackage(JSON.stringify(value)).plugin.compatibility).toEqual(compatibility);
+    expect(JSON.parse(value.files[0]!.content).compatibility).toEqual(compatibility);
+  });
+
   it("normalizes the published ATLAS plugin-package envelope", () => {
     const manifest = serializeRuntimePluginInstallManifest(plugin);
     const parsed = parseRuntimePluginInstallPackage({

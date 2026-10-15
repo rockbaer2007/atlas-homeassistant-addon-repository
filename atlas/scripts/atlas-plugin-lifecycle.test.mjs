@@ -93,7 +93,7 @@ test("isolated app-server plugin lifecycle preserves projects and rejected updat
       method: body ? "POST" : "GET", redirect: "manual",
       headers: { origin: base, ...(body ? { "content-type": "application/json" } : {}),
         ...(cookie ? { cookie } : {}) },
-      ...(body ? { body: JSON.stringify(body) } : {}),
+      ...(body ? { body: JSON.stringify({ ...(path === "/api/plugins/install" ? { allowUnknown: true } : {}), ...body }) } : {}),
     });
     await start();
     const catalogBefore = await request("/api/plugins").then(r => r.json());
@@ -131,8 +131,33 @@ test("isolated app-server plugin lifecycle preserves projects and rejected updat
       assert.equal((await readdir(join(dataRoot, "plugins"))).some(p => p.startsWith(".install-")), false);
     });
 
+    await t.test("compatibility preview is read-only and rejected candidates preserve assets and data", async () => {
+      const candidate = installPackage("2.0.0");
+      const addRequirement = compatibility => {
+        candidate.files[0].content = JSON.stringify({ ...JSON.parse(candidate.files[0].content), compatibility });
+      };
+      const filesBefore = await readdir(join(dataRoot, "plugins"));
+      const legacy = await request("/api/plugins/check-compatibility", { installPackage: candidate }).then(r => r.json());
+      assert.equal(legacy.compatibility.status, "unknown");
+      assert.equal((await request("/api/plugins/install", { installPackage: candidate, allowUnknown: false })).status, 409);
+      addRequirement({ atlas: ">=99.0.0" });
+      const preview = await request("/api/plugins/check-compatibility", { installPackage: candidate, catalogCompatibility: { atlas: "*" } }).then(r => r.json());
+      assert.equal(preview.compatibility.status, "unsupported");
+      assert.equal((await request("/api/plugins/install", { installPackage: candidate, allowUnknown: true })).status, 422);
+      addRequirement({ atlas: ">=0.1.0 <0.2.0" });
+      assert.equal((await request("/api/plugins/check-compatibility", { installPackage: candidate }).then(r => r.json())).compatibility.status, "supported");
+      assert.equal((await request("/api/plugins/install", { installPackage: candidate, catalogCompatibility: { atlas: ">=99" } })).status, 422);
+      assert.equal((await request("/api/plugins/install", { installPackage: { ...candidate, plugin: { ...candidate.plugin, compatibility: { host: "other-host" } } } })).status, 422);
+      assert.equal(await readFile(join(dataRoot, "plugins", slug, "index.html"), "utf8"), "<h1>fixture 1.0.0</h1>");
+      assert.deepEqual(await readdir(join(dataRoot, "plugins")), filesBefore);
+      assert.deepEqual(await readFile(projectPath), projectBefore);
+      assert.deepEqual(await readFile(settingsPath), settingsBefore);
+    });
+
     await t.test("updates and app restarts retain installed assets and status", async () => {
-      assert.equal((await request("/api/plugins/install", { installPackage: installPackage("2.0.0") })).status, 200);
+      const compatible = installPackage("2.0.0");
+      compatible.files[0].content = JSON.stringify({ ...JSON.parse(compatible.files[0].content), compatibility: { atlas: ">=0.1.0 <0.2.0", host: "administration-local" } });
+      assert.equal((await request("/api/plugins/install", { installPackage: compatible, allowUnknown: false })).status, 200);
       await stop();
       await start();
       assert.equal(await request(`/plugin-assets/${slug}/index.html`).then(r => r.text()), "<h1>fixture 2.0.0</h1>");

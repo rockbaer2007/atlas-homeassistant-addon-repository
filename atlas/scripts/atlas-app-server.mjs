@@ -11,6 +11,7 @@ import { WebSocketServer } from "ws";
 import { isTrustedAtlasOrigin as isTrustedAtlasRequestOrigin } from "./atlas-request-origin.mjs";
 import { createPluginManagementStore } from "./atlas-plugin-management-store.mjs";
 import { createEditorProjectStore } from "./atlas-editor-project-store.mjs";
+import { checkPluginCompatibility, compatibilityHostContext } from "./atlas-plugin-compatibility.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -141,6 +142,11 @@ const server = createServer((request, response) => {
 
   if (routePath === "/api/plugins/install") {
     void writePluginInstallResponse(request, response);
+    return;
+  }
+
+  if (routePath === "/api/plugins/check-compatibility") {
+    void writePluginInstallResponse(request, response, true);
     return;
   }
 
@@ -3091,7 +3097,7 @@ function readPluginManifest(directoryName, requestUrl) {
   }
 }
 
-async function writePluginInstallResponse(request, response) {
+async function writePluginInstallResponse(request, response, previewOnly = false) {
   let stagingDirectory = "";
   let backupDirectory = "";
   try {
@@ -3181,6 +3187,23 @@ async function writePluginInstallResponse(request, response) {
       return;
     }
 
+    const compatibility = checkPluginCompatibility({
+      catalog: body.catalogCompatibility,
+      package: plugin.compatibility,
+      manifest: manifest.compatibility,
+    }, { atlas: packageJson.version, hosts: compatibilityHostContext(process.env.ATLAS_DISTRIBUTION_TARGET ?? "local-runtime") });
+    if (previewOnly) {
+      writeJson(response, 200, { pluginId: plugin.id, version: plugin.version, compatibility });
+      return;
+    }
+    if (compatibility.status === "unsupported" || (compatibility.status === "unknown" && body.allowUnknown !== true)) {
+      writeJson(response, compatibility.status === "unsupported" ? 422 : 409, {
+        error: "Plugin compatibility check requires attention", compatibility,
+        code: compatibility.status === "unsupported" ? "plugin-incompatible" : "compatibility-review-required",
+      });
+      return;
+    }
+
     mkdirSync(persistentPluginRoot, { recursive: true });
     stagingDirectory = mkdtempSync(join(persistentPluginRoot, `.install-${slug}-`));
     for (const file of normalizedFiles) {
@@ -3219,7 +3242,7 @@ async function writePluginInstallResponse(request, response) {
     const removedPluginSlugs = readRemovedPluginSlugs();
     removedPluginSlugs.delete(slug);
     writeFileSync(removedPluginSlugsPath, JSON.stringify([...removedPluginSlugs].sort(), null, 2));
-    writeJson(response, 200, { ok: true, pluginId: plugin.id, slug, version: plugin.version });
+    writeJson(response, 200, { ok: true, pluginId: plugin.id, slug, version: plugin.version, compatibility });
   } catch (error) {
     if (stagingDirectory && existsSync(stagingDirectory)) rmSync(stagingDirectory, { recursive: true, force: true });
     if (backupDirectory && existsSync(backupDirectory)) rmSync(backupDirectory, { recursive: true, force: true });

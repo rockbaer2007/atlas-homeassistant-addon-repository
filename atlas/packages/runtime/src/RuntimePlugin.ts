@@ -12,6 +12,7 @@ export type RuntimePluginManifest = Readonly<{
   name: string;
   nameI18n?: Readonly<Record<string, string>>;
   version: string;
+  compatibility?: Readonly<Record<string, unknown>>;
   description?: string;
   descriptionI18n?: Readonly<Record<string, string>>;
   icon?: string;

@@ -51,6 +51,7 @@ export function serializeRuntimePluginInstallManifest(
     name: plugin.name,
     nameI18n: plugin.nameI18n,
     version: plugin.version,
+    compatibility: plugin.compatibility,
     description: plugin.description,
     descriptionI18n: plugin.descriptionI18n,
     icon: plugin.icon,
@@ -164,6 +165,7 @@ function readRuntimePluginDescriptor(value: unknown): RuntimePluginDescriptor {
     name: readRequiredString(value.name, "Runtime plugin name is required."),
     nameI18n: readOptionalLocalizedText(value.nameI18n),
     version: readRequiredString(value.version, "Runtime plugin version is required."),
+    compatibility: readCompatibility(value.compatibility),
     description: readOptionalString(value.description),
     descriptionI18n: readOptionalLocalizedText(value.descriptionI18n),
     icon: readOptionalString(value.icon),
@@ -173,6 +175,12 @@ function readRuntimePluginDescriptor(value: unknown): RuntimePluginDescriptor {
     extensionPoints: readStringList(value.extensionPoints),
     provides: readStringList(value.provides),
   };
+}
+
+function readCompatibility(value: unknown): Readonly<Record<string, unknown>> | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) throw new Error("Runtime plugin compatibility must be an object.");
+  return value;
 }
 
 function readInstallPackageFiles(value: unknown): readonly RuntimePluginInstallPackageFile[] {

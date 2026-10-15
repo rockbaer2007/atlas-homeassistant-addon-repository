@@ -486,6 +486,14 @@ const translations = {
     "message.pluginRepositoryInstalling": "Installing {name} on the Atlas server...",
     "message.pluginRepositoryUpdating": "Updating {name} from its repository...",
     "message.pluginRepositoryInstallFailed": "{name} could not be installed ({error}).",
+    "compatibility.blocked": "Plugin incompatible. The installed version remains unchanged.",
+    "compatibility.review": "Compatibility is not fully verified. Review the details below. Continue with this package?",
+    "compatibility.cancelled": "Plugin update cancelled; installed version unchanged.",
+    "compatibility.missing": "Compatibility metadata missing (legacy package).",
+    "compatibility.unavailable": "Host version unavailable; verify the requirement manually.",
+    "compatibility.invalid": "Invalid compatibility declaration.",
+    "compatibility.mismatch": "Requirement does not match this runtime.",
+    "compatibility.unknown-field": "Unknown compatibility field; manual review needed.",
     "message.pluginRepositoryUpdateAvailable": "Update available: {installed} -> {available}",
     "message.pluginRepositoryInstalledVersion": "Installed: {version}",
     "message.pluginRepositoryBundledVersion": "Built in: {version}",
@@ -733,6 +741,14 @@ const translations = {
     "message.pluginRepositoryInstalling": "{name} wird auf dem Atlas-Server installiert...",
     "message.pluginRepositoryUpdating": "{name} wird aus dem Repository aktualisiert...",
     "message.pluginRepositoryInstallFailed": "{name} konnte nicht installiert werden ({error}).",
+    "compatibility.blocked": "Plugin inkompatibel. Die installierte Version bleibt erhalten.",
+    "compatibility.review": "Die Kompatibilität ist nicht vollständig geprüft. Bitte die Angaben unten prüfen. Mit diesem Paket fortfahren?",
+    "compatibility.cancelled": "Plugin-Update abgebrochen; installierte Version unverändert.",
+    "compatibility.missing": "Kompatibilitätsangaben fehlen (älteres Paket).",
+    "compatibility.unavailable": "Host-Version nicht verfügbar; Voraussetzung bitte selbst prüfen.",
+    "compatibility.invalid": "Ungültige Kompatibilitätsangabe.",
+    "compatibility.mismatch": "Voraussetzung passt nicht zu dieser Laufzeit.",
+    "compatibility.unknown-field": "Unbekanntes Kompatibilitätsfeld; Prüfung erforderlich.",
     "message.pluginRepositoryUpdateAvailable": "Update verfügbar: {installed} -> {available}",
     "message.pluginRepositoryInstalledVersion": "Installiert: {version}",
     "message.pluginRepositoryBundledVersion": "Eingebaut: {version}",
@@ -963,6 +979,14 @@ const translations = {
     "message.pluginRepositoryInstalling": "Installation de {name} sur le serveur ATLAS…",
     "message.pluginRepositoryUpdating": "Mise à jour de {name} depuis son dépôt…",
     "message.pluginRepositoryInstallFailed": "Impossible d’installer {name} ({error}).",
+    "compatibility.blocked": "Plugin incompatible. La version installée est conservée.",
+    "compatibility.review": "La compatibilité n'est pas entièrement vérifiée. Vérifiez les détails ci-dessous. Continuer avec ce paquet ?",
+    "compatibility.cancelled": "Mise à jour annulée ; version installée inchangée.",
+    "compatibility.missing": "Métadonnées de compatibilité absentes (ancien paquet).",
+    "compatibility.unavailable": "Version de l'hôte indisponible ; vérifier la condition manuellement.",
+    "compatibility.invalid": "Déclaration de compatibilité invalide.",
+    "compatibility.mismatch": "Condition incompatible avec ce runtime.",
+    "compatibility.unknown-field": "Champ de compatibilité inconnu ; vérification nécessaire.",
     "message.pluginRepositoryUpdateAvailable": "Mise à jour disponible : {installed} -> {available}",
     "message.pluginRepositoryInstalledVersion": "Installé : {version}",
     "message.pluginRepositoryBundledVersion": "Intégré : {version}",
@@ -2240,15 +2264,8 @@ function normalizeRepositoryPlugin(plugin, repositoryEntry, index) {
 }
 
 function normalizeRepositoryPluginCompatibility(compatibility) {
-  if (!compatibility || typeof compatibility !== "object" || Array.isArray(compatibility)) {
-    return {};
-  }
-
-  return {
-    atlas: typeof compatibility.atlas === "string" ? compatibility.atlas : "",
-    host: typeof compatibility.host === "string" ? compatibility.host : "",
-    homeAssistant: typeof compatibility.homeAssistant === "string" ? compatibility.homeAssistant : "",
-  };
+  // Preserve declarations for the server instead of silently dropping invalid fields.
+  return compatibility === undefined ? {} : compatibility;
 }
 
 function formatRepositoryPluginCompatibility(compatibility) {
@@ -2703,10 +2720,10 @@ async function installRepositoryPluginPackage(plugin, { button, status } = {}) {
   try {
     const installPackage = await fetchRepositoryPluginInstallPackage(plugin);
     const descriptor = installPackage.plugin;
-    if (descriptor.id !== plugin.id) {
-      throw new Error("Repository plugin id does not match descriptor.");
+    if (descriptor.id !== plugin.id || descriptor.version !== plugin.version) {
+      throw new Error("Repository plugin identity/version does not match descriptor.");
     }
-    await persistPluginPackageOnServer(installPackage);
+    await persistPluginPackageOnServer(installPackage, plugin.compatibility);
 
     const installedPlugin = {
       ...descriptor,
@@ -2795,15 +2812,34 @@ async function removeRepositoryPluginPackage(plugin) {
   }
 }
 
-async function persistPluginPackageOnServer(installPackage) {
+function compatibilityDetails(report) {
+  return report.checks.filter(check => check.status !== "supported").map(check =>
+    `${t(`compatibility.${check.reason}`)} ${check.field}: ${JSON.stringify(check.required ?? "-")} / ${check.actual ?? "?"}`,
+  ).join("\n");
+}
+
+async function persistPluginPackageOnServer(installPackage, catalogCompatibility) {
+  const preview = await fetch(createAdminApiUrl("api/plugins/check-compatibility"), {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ installPackage, catalogCompatibility }),
+  });
+  const inspected = await preview.json();
+  if (!preview.ok || !inspected.compatibility) throw new Error(inspected.error || "Compatibility check unavailable.");
+  const report = inspected.compatibility;
+  if (report.status === "unsupported") throw new Error(`${t("compatibility.blocked")}\n${compatibilityDetails(report)}`);
+  const allowUnknown = report.status === "unknown";
+  if (allowUnknown && !window.confirm(`${t("compatibility.review")}\n\n${compatibilityDetails(report)}`)) {
+    throw new Error(t("compatibility.cancelled"));
+  }
   const response = await fetch(pluginInstallApiPath, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ installPackage }),
+    body: JSON.stringify({ installPackage, catalogCompatibility, allowUnknown }),
   });
   if (!response.ok) {
     const result = await response.json().catch(() => ({}));
-    throw new Error(result.error || "Plugin package could not be installed on the Atlas server.");
+    throw new Error(result.compatibility ? `${t("compatibility.blocked")}\n${compatibilityDetails(result.compatibility)}`
+      : result.error || "Plugin package could not be installed on the Atlas server.");
   }
   const result = await response.json();
   serverCatalogPluginIds?.add(result.pluginId);
@@ -4334,8 +4370,10 @@ async function importSelectedPluginPackage() {
     persistImportedPlugins();
     renderAdministration();
     adminSaveState.textContent = t("message.pluginPackageImported", { name: localizedPluginText(plugin, "name", plugin.id) });
-  } catch {
-    adminSaveState.textContent = t("message.pluginPackageImportFailed");
+  } catch (error) {
+    const message = `${t("message.pluginPackageImportFailed")} ${error instanceof Error ? error.message : String(error)}`;
+    adminSaveState.textContent = message;
+    pluginUpdateSummary.textContent = message;
   } finally {
     pluginPackageFile.value = "";
   }
