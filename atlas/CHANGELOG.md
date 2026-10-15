@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.306
+
+- Qualify the HACS Runtime integration release update independently from the App version; keep the existing config-entry schema 1.1 and runtime address unchanged.
+- Refuse unknown config-entry schemas without rewriting stored entries during downgrade/migration checks.
+- Report invalid saved runtime URLs as integration setup errors before registering a panel; allow valid options to recover a missing original URL.
+- Preserve Administration credentials, editor projects, external plugin files and shared management state outside the HA integration.
+
 ## 0.1.305
 
 - Persist Linux/systemd Administration connections in a private AES-GCM encrypted installation store when saving settings.

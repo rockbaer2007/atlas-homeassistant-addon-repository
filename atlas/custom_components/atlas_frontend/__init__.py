@@ -11,7 +11,11 @@ from .const import CONF_RUNTIME_URL, DOMAIN, PANEL_PATH, VERSION, normalize_runt
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    runtime_url = normalize_runtime_url(entry.options.get(CONF_RUNTIME_URL, entry.data[CONF_RUNTIME_URL]))
+    try:
+        runtime_url = normalize_runtime_url(entry.options.get(CONF_RUNTIME_URL, entry.data.get(CONF_RUNTIME_URL)))
+    except ValueError:
+        # Do not log the rejected value: a manually edited URL could contain secrets.
+        raise ConfigEntryError("Invalid ATLAS runtime URL; check integration options") from None
     # Never replace the add-on's Ingress entry or another integration's panel.
     if ha_frontend.async_panel_exists(hass, PANEL_PATH):
         raise ConfigEntryError("ATLAS panel path is already in use")
@@ -34,6 +38,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     state["entry_id"] = entry.entry_id
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Keep schema 1 unchanged and refuse unknown schemas without rewriting data.
+
+    Integration releases and config-entry schemas have separate versions. There
+    is no data migration for a release that still uses schema 1.1. In particular,
+    a downgrade must never relabel an entry written by a future schema.
+    """
+    return entry.version == 1 and entry.minor_version == 1
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

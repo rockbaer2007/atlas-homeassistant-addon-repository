@@ -1,5 +1,6 @@
 """Isolated contract checks, executed with the actual HA Python dependencies."""
 import asyncio
+from copy import deepcopy
 import json
 from pathlib import Path
 import sys
@@ -9,8 +10,9 @@ from unittest.mock import AsyncMock, Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from custom_components.atlas_frontend import async_setup_entry, async_unload_entry
-from custom_components.atlas_frontend.const import DOMAIN, PANEL_PATH, normalize_runtime_url
+from homeassistant.exceptions import ConfigEntryError
+from custom_components.atlas_frontend import async_migrate_entry, async_setup_entry, async_unload_entry
+from custom_components.atlas_frontend.const import DOMAIN, PANEL_PATH, VERSION, normalize_runtime_url
 from custom_components.atlas_frontend.config_flow import AtlasFrontendConfigFlow
 
 
@@ -32,6 +34,7 @@ class UrlTests(unittest.TestCase):
         for locale in ("de", "en", "fr"):
             self.assertEqual(keys(source), keys(json.loads((component / f"translations/{locale}.json").read_text())))
         manifest = json.loads((component / "manifest.json").read_text())
+        self.assertEqual(manifest["version"], VERSION)
         self.assertEqual(manifest["version"], json.loads((ROOT / "package.json").read_text())["version"])
 
 
@@ -39,6 +42,45 @@ class PanelTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.hass = SimpleNamespace(data={}, http=SimpleNamespace(async_register_static_paths=AsyncMock()))
         self.entry = SimpleNamespace(entry_id="own-test-entry", data={"runtime_url": "http://atlas.local:4176/"}, options={}, async_on_unload=Mock(), add_update_listener=Mock())
+
+    async def test_release_update_keeps_entry_identity_options_and_schema(self):
+        self.entry.version = 1
+        self.entry.minor_version = 1
+        self.entry.unique_id = DOMAIN
+        self.entry.data["preserve_future_key"] = {"value": [1, 2]}
+        self.entry.options = {"runtime_url": "https://atlas.local/proxy/", "preserve_option": True}
+        before = deepcopy(vars(self.entry))
+        self.assertTrue(await async_migrate_entry(self.hass, self.entry))
+        for key in ("entry_id", "unique_id", "data", "options", "version", "minor_version"):
+            self.assertEqual(getattr(self.entry, key), before[key])
+        self.assertEqual(AtlasFrontendConfigFlow.VERSION, 1)
+        self.assertEqual(AtlasFrontendConfigFlow.MINOR_VERSION, 1)
+
+    async def test_unknown_schema_is_rejected_without_rewriting_entry(self):
+        for major, minor in ((2, 1), (1, 2), (0, 1), (1, 0)):
+            self.entry.version, self.entry.minor_version = major, minor
+            before = deepcopy(self.entry.data), deepcopy(self.entry.options)
+            self.assertFalse(await async_migrate_entry(self.hass, self.entry))
+            self.assertEqual((self.entry.version, self.entry.minor_version), (major, minor))
+            self.assertEqual((self.entry.data, self.entry.options), before)
+        self.hass.http.async_register_static_paths.assert_not_called()
+
+    async def test_invalid_saved_url_fails_before_registering_any_panel(self):
+        for value in (None, "http://user:secret@host", "http://host:invalid", "file:///config"):
+            self.entry.options = {"runtime_url": value}
+            with self.assertRaises(ConfigEntryError) as raised:
+                await async_setup_entry(self.hass, self.entry)
+            self.assertNotIn("secret", str(raised.exception))
+        self.hass.http.async_register_static_paths.assert_not_called()
+        self.assertEqual(self.hass.data, {})
+
+    async def test_options_can_recover_a_missing_data_url(self):
+        self.entry.data = {}
+        self.entry.options = {"runtime_url": "https://atlas.local/proxy/"}
+        with patch("custom_components.atlas_frontend.ha_frontend.async_panel_exists", return_value=False), patch("custom_components.atlas_frontend.panel_custom.async_register_panel", new_callable=AsyncMock) as register:
+            self.assertTrue(await async_setup_entry(self.hass, self.entry))
+            self.assertEqual(register.call_args.kwargs["config"], self.entry.options)
+            self.assertEqual(self.entry.data, {})
 
     async def test_registration_is_admin_only_and_contains_no_token(self):
         with patch("custom_components.atlas_frontend.ha_frontend.async_panel_exists", return_value=False), patch("custom_components.atlas_frontend.panel_custom.async_register_panel", new_callable=AsyncMock) as register:
