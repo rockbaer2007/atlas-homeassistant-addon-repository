@@ -34,8 +34,8 @@ class UrlTests(unittest.TestCase):
         for locale in ("de", "en", "fr"):
             self.assertEqual(keys(source), keys(json.loads((component / f"translations/{locale}.json").read_text())))
         manifest = json.loads((component / "manifest.json").read_text())
+        # HACS integration and Node App releases have independent versions.
         self.assertEqual(manifest["version"], VERSION)
-        self.assertEqual(manifest["version"], json.loads((ROOT / "package.json").read_text())["version"])
 
 
 class PanelTests(unittest.IsolatedAsyncioTestCase):
