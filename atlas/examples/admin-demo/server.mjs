@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { homedir } from "node:os";
 import { dirname, extname, join, normalize, resolve } from "node:path";
 import { discoverHomeAssistantVersion } from "../../scripts/atlas-homeassistant-version.mjs";
+import { createAdminConnectionStore } from "../../scripts/atlas-admin-connection-store.mjs";
 
 const root = resolve(import.meta.dirname, "..", "..");
 const host = process.env.ATLAS_ADMIN_HOST ?? process.env.ATLAS_HOST ?? "127.0.0.1";
@@ -100,6 +101,17 @@ const mimeTypes = {
 };
 let adminConnectionSettings = createInitialAdminConnectionSettingsFromEnv();
 let adminDeviceBinding;
+const adminConnectionStore = process.env.ATLAS_DISTRIBUTION_TARGET === "linux-installer"
+  ? createAdminConnectionStore(join(dirname(adminDeviceFilePath), "admin-connection.enc.json"), getAdminDeviceBinding().bindingFingerprint)
+  : undefined;
+let adminConnectionStoreFailed = false;
+try {
+  const saved = adminConnectionStore?.load();
+  if (saved) adminConnectionSettings = normalizeAdminConnectionSettings(saved);
+} catch {
+  adminConnectionStoreFailed = true;
+  console.error("ATLAS could not restore the encrypted administration connection; existing files were retained.");
+}
 
 createServer((request, response) => {
   const requestUrl = new URL(request.url ?? "/", "http://localhost");
@@ -175,9 +187,18 @@ async function handleAdminConnectionRequest(request, response) {
   }
 
   if (request.method === "PUT") {
-    const body = await readRequestBody(request);
-    const settings = JSON.parse(body || "{}");
-    adminConnectionSettings = normalizeAdminConnectionSettings(settings, adminConnectionSettings);
+    try {
+      const body = await readRequestBody(request);
+      const settings = JSON.parse(body || "{}");
+      const next = normalizeAdminConnectionSettings(settings, adminConnectionSettings);
+      // Do not silently overwrite unreadable credentials during page startup.
+      if (adminConnectionStoreFailed) throw new Error("Administration store requires recovery");
+      adminConnectionStore?.save({ ...next, token: next.rememberToken ? next.token : "" });
+      adminConnectionSettings = next;
+    } catch {
+      writeJsonResponse(response, 503, { error: "Administration connection could not be saved; previous data retained." });
+      return;
+    }
     response.writeHead(200, {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
@@ -187,6 +208,8 @@ async function handleAdminConnectionRequest(request, response) {
   }
 
   if (request.method === "DELETE") {
+    try { adminConnectionStore?.clear(); adminConnectionStoreFailed = false; }
+    catch { writeJsonResponse(response, 503, { error: "Administration connection could not be removed." }); return; }
     adminConnectionSettings = undefined;
     response.writeHead(200, {
       "content-type": "application/json; charset=utf-8",

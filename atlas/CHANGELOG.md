@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.305
+
+- Persist Linux/systemd Administration connections in a private AES-GCM encrypted installation store when saving settings.
+- Restore the remembered HA token before serving the Editor after a service/host restart, including LAN HTTP operation without browser Web Crypto.
+- Keep tokens out of plaintext settings files; honor token forgetting and refuse to overwrite an unreadable encrypted store.
+- Restore server settings before browser initialization can save empty credentials and report failed saves in DE/EN/FR.
+- HA App environment-owned credentials retain their existing configuration path; no HA integration schema change.
+
 ## 0.1.304
 
 - Preview existing-plugin package replacement and retained recovery in Administration (DE/EN/FR), including upgrade/downgrade direction and declared capabilities.

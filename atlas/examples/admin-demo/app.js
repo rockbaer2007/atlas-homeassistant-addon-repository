@@ -465,6 +465,7 @@ const translations = {
     "message.policySummary": "Current approved context: Home Assistant URL {url}, WebSocket path {websocket}.",
     "message.saved": "Settings saved.",
     "message.savedWithToken": "Token saved.",
+    "message.saveFailed": "Connection could not be saved. Previous server settings are retained.",
     "message.tokenForgotten": "Token forgotten.",
     "message.settingsExported": "Settings exported.",
     "message.secretsInvalidForDevice": "Saved secrets belong to another Atlas Administration instance and were ignored.",
@@ -720,6 +721,7 @@ const translations = {
     "message.policySummary": "Aktuell freigegebener Kontext: Home-Assistant-URL {url}, WebSocket-Pfad {websocket}.",
     "message.saved": "Einstellungen gespeichert.",
     "message.savedWithToken": "Token gespeichert.",
+    "message.saveFailed": "Verbindung konnte nicht gespeichert werden. Bisherige Servereinstellungen bleiben erhalten.",
     "message.tokenForgotten": "Token vergessen.",
     "message.settingsExported": "Einstellungen exportiert.",
     "message.secretsInvalidForDevice": "Gespeicherte Secrets gehoeren zu einer anderen Atlas-Administration-Instanz und wurden ignoriert.",
@@ -958,6 +960,7 @@ const translations = {
     "message.policySummary": "Contexte actuellement autorisé : URL Home Assistant {url}, chemin WebSocket {websocket}.",
     "message.saved": "Paramètres enregistrés.",
     "message.savedWithToken": "Jeton enregistré.",
+    "message.saveFailed": "La connexion n’a pas pu être enregistrée. Les paramètres précédents du serveur sont conservés.",
     "message.tokenForgotten": "Jeton oublié.",
     "message.settingsExported": "Paramètres exportés.",
     "message.secretsInvalidForDevice": "Les secrets enregistrés appartiennent à une autre instance de l’administration ATLAS et ont été ignorés.",
@@ -1601,15 +1604,19 @@ function persistConfiguration() {
   localStorage.setItem(adminStorageKey, JSON.stringify(configuration));
   void persistEncryptedAdminSecretsCookie(secrets);
   persistSharedConnectionCookie(configuration);
-  void persistServerConnectionSettings({
+  if (!adminConnectionReady) return Promise.resolve(false);
+  return persistServerConnectionSettings({
     ...configuration,
     token: secrets.token,
     translationApiKeys: secrets.translationApiKeys,
+  }).then(() => true).catch(() => {
+    adminSaveState.textContent = t("message.saveFailed");
+    return false;
   });
 }
 
 async function persistServerConnectionSettings(configuration) {
-  await fetch(adminConnectionApiPath, {
+  const response = await fetch(adminConnectionApiPath, {
     method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -1625,6 +1632,7 @@ async function persistServerConnectionSettings(configuration) {
       fileStudioAccess: configuration.fileStudioAccess,
     }),
   });
+  if (!response.ok) throw new Error("Administration connection save failed");
 }
 
 function persistSharedConnectionCookie(configuration) {
@@ -1821,17 +1829,18 @@ async function restoreLegacyEncryptedTranslationApiKeysCookie() {
   }
 }
 
-function saveConnectionSettings() {
+async function saveConnectionSettings() {
   const token = homeAssistantToken.value.trim();
   if (token) {
     rememberAdminToken.checked = true;
   }
+  const saved = await persistConfiguration();
+  if (!saved) return;
   if (autoConnectEditor.checked && !token) {
     adminSaveState.textContent = t("message.autoConnectNeedsToken");
   } else {
     adminSaveState.textContent = token ? t("message.savedWithToken") : t("message.saved");
   }
-  persistConfiguration();
 }
 
 function restoreConfiguration() {
@@ -4594,6 +4603,7 @@ function setLanguage(language) {
   persistConfiguration();
 }
 
+let adminConnectionReady = false;
 void initializeAdministration();
 
 async function initializeAdministration() {
@@ -4604,6 +4614,8 @@ async function initializeAdministration() {
   }
   await restoreAdminDeviceBinding();
   await restoreEncryptedAdminSecretsCookie();
+  await restoreServerConnectionSettings();
+  adminConnectionReady = true;
   await loadServerPluginCatalog();
   restoreImportedPlugins();
   restorePluginState();
@@ -4646,7 +4658,6 @@ async function initializeAdministration() {
   pluginRepositoryStatus.textContent = t("message.pluginRepositoryEmpty");
   void loadPluginRepositoriesPreview();
   void loadAppRuntimeStatus();
-  void restoreServerConnectionSettings();
   if (shouldOpenSidebarPluginEntryDialog()) {
     openSidebarPluginEntryDialog();
   }
