@@ -43,7 +43,10 @@ export function normalizePluginManagement(value) {
     // Local asset URLs are rebuilt from the server catalog for each browser address.
     for (const key of ["repositoryUrl", "manifestUrl", "packageUrl"]) result[key] = publicUrl(plugin[key]);
     if (plugin.compatibility && typeof plugin.compatibility === "object") {
-      result.compatibility = Object.fromEntries(["atlas", "host", "homeassistant"].filter(key => typeof plugin.compatibility[key] === "string").map(key => [key, text(plugin.compatibility[key])]));
+      result.compatibility = Object.fromEntries(["atlas", "host", "homeassistant", "homeAssistant"].filter(key => typeof plugin.compatibility[key] === "string"
+        || (key === "host" && Array.isArray(plugin.compatibility[key]) && plugin.compatibility[key].length <= 32
+          && plugin.compatibility[key].every(host => typeof host === "string" && host.length <= 128)))
+        .map(key => [key, typeof plugin.compatibility[key] === "string" ? text(plugin.compatibility[key]) : [...plugin.compatibility[key]]]));
     }
     return result;
   });

@@ -257,6 +257,44 @@ test("isolated app-server plugin lifecycle preserves projects and rejected updat
       assert.deepEqual(await request("/api/plugins/state").then(r => r.json()), pluginsBefore);
       assert.deepEqual(await readFile(projectPath), projectBefore);
     });
+    await t.test("retained recovery rejects stale previews, rechecks HA and preserves shared activation and projects", async () => {
+      haVersionMetadata = { status: "available", source: "admin-rest", version: "2026.10.1" };
+      const pkg = version => ({ ...installPackage(version), plugin: { ...installPackage(version).plugin, compatibility: { homeAssistant: ">=2026.10 <2027" } } });
+      const original = await request("/api/plugins/state").then(r => r.json());
+      const projects = await request("/api/editor-projects").then(r => r.json());
+      const preview = await request("/api/plugins/check-compatibility", { installPackage: pkg("2.0.0") }).then(r => r.json());
+      assert.equal((await request("/api/plugins/install", { installPackage: pkg("3.0.0") })).status, 200);
+      assert.equal((await request("/api/plugins/install", { installPackage: pkg("2.0.0"), expected: preview.replacement.expected })).status, 409);
+      const fresh = await request("/api/plugins/check-compatibility", { installPackage: pkg("2.0.0") }).then(r => r.json());
+      assert.equal(fresh.replacement.direction, "downgrade");
+      const installed = await request("/api/plugins/install", { installPackage: pkg("2.0.0"), expected: fresh.replacement.expected }).then(r => r.json());
+      assert.equal(installed.managed, true); assert.ok(installed.backupId);
+      assert.equal((await request("/api/plugins/state").then(r => r.json())).state.plugins.find(p => p.id === pluginId).version, "2.0.0");
+      const backups = await request(`/api/plugins/recovery?pluginId=${pluginId}`).then(r => r.json());
+      assert.ok(backups.backups.some(b => b.backupId === installed.backupId && b.version === "3.0.0"));
+      const body = { action: "preview", pluginId, backupId: installed.backupId };
+      const recoveryPreview = await request("/api/plugins/recovery", body).then(r => r.json());
+      assert.equal((await request("/api/plugins/recovery", { ...body, action: "restore" })).status, 400);
+      haVersionMetadata.version = "2027.1.0";
+      assert.equal((await request("/api/plugins/recovery", { ...body, action: "restore", expected: recoveryPreview.replacement.expected, allowUnknown: true })).status, 422);
+      assert.equal(await request(`/plugin-assets/${slug}/index.html`).then(r => r.text()), "<h1>fixture 2.0.0</h1>");
+      haVersionMetadata.version = "2026.10.1";
+      const restored = await request("/api/plugins/recovery", { ...body, action: "restore", expected: recoveryPreview.replacement.expected }).then(r => r.json());
+      assert.ok(restored.backupId);
+      const final = await request("/api/plugins/state").then(r => r.json());
+      assert.equal(final.state.plugins.find(p => p.id === pluginId).version, "3.0.0");
+      assert.deepEqual(final.state.repositories, original.state.repositories); assert.deepEqual(final.state.activePluginIds, original.state.activePluginIds);
+      assert.deepEqual(await request("/api/editor-projects").then(r => r.json()), projects);
+      assert.deepEqual(await readFile(settingsPath), settingsBefore);
+      const denied = await fetch(`${base}/api/plugins/recovery`, { method: "POST", headers: { origin: "https://other.invalid", "content-type": "application/json" }, body: JSON.stringify(body) });
+      assert.equal(denied.status, 403);
+      assert.equal((await request(`/plugin-assets/.recovery/${slug}/${installed.backupId}/backup.json`)).status, 404);
+      assert.equal((await request(`/plugin-assets/x%2f..%2f.recovery/${slug}/${installed.backupId}/backup.json`)).status, 404);
+      assert.equal((await request(`/plugin-assets/x%5c..%5c.recovery/${slug}/${installed.backupId}/backup.json`)).status, 404);
+      assert.equal((await request("/plugin-assets/.management/state.json")).status, 404);
+      await stop(); await start();
+      assert.ok((await request(`/api/plugins/recovery?pluginId=${pluginId}`).then(r => r.json())).backups.length > 0);
+    });
     await stop();
   } finally {
     if (child && child.exitCode === null && child.signalCode === null) {

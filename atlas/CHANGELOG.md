@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.304
+
+- Preview existing-plugin package replacement and retained recovery in Administration (DE/EN/FR), including upgrade/downgrade direction and declared capabilities.
+- Retain checked package backups privately before replacement; recheck compatibility, installed bytes and shared-state revision before applying.
+- Update shared plugin metadata with files, preserve activation/repositories, and roll back a failed commit. Keep a new backup when restoring an older version.
+- Keep credentials, editor projects and plugin browser data outside code recovery. Full backups and tested data-format compatibility remain necessary.
+- No HA integration or data schema migration; native 0.1.304 qualification is pending.
+
 ## 0.1.303
 
 - Detect the connected Home Assistant version through Administration's authenticated REST API connection before plugin compatibility checks.

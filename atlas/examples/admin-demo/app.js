@@ -18,6 +18,7 @@ import {
   FileStudioPluginId,
 } from "@atlas/file-studio";
 import { createSharedPluginManagement } from "./plugin-management-client.mjs";
+import { createPluginRecoveryClient } from "./plugin-recovery-client.mjs";
 
 const languageButtons = Array.from(document.querySelectorAll("[data-language]"));
 const themeButtons = Array.from(document.querySelectorAll("[data-theme-mode]"));
@@ -45,6 +46,20 @@ const adminConnectionModeHint = document.querySelector("#admin-connection-mode-h
 const editorStartMode = document.querySelector("#editor-start-mode");
 const importPluginPackage = document.querySelector("#import-plugin-package");
 const pluginPackageFile = document.querySelector("#plugin-package-file");
+const pluginRecoveryUi = createPluginRecoveryClient({ api: createAdminApiUrl, language: () => currentLanguage,
+  dirty: () => Boolean(sharedPluginManagement?.dirty), notify: message => { adminSaveState.textContent = message; pluginUpdateSummary.textContent = message; },
+  refreshed: async (result, installPackage) => {
+    await loadServerPluginCatalog();
+    if (sharedPluginManagement?.initialized) await sharedPluginManagement.refresh();
+    else {
+      const installed = serverCatalogPlugins.get(result.pluginId);
+      importedPluginDescriptors = importedPluginDescriptors.map(plugin => plugin.id === result.pluginId
+        ? { ...plugin, ...(installPackage?.plugin ?? {}), version: result.version, ...(installed ?? {}) } : plugin);
+      persistImportedPlugins();
+    }
+    renderAdministration();
+  },
+});
 const openPluginGenerator = document.querySelector("#open-plugin-generator");
 const pluginGeneratorDialog = document.querySelector("#plugin-generator-dialog");
 const closePluginGenerator = document.querySelector("#close-plugin-generator");
@@ -2723,7 +2738,15 @@ async function installRepositoryPluginPackage(plugin, { button, status } = {}) {
     if (descriptor.id !== plugin.id || descriptor.version !== plugin.version) {
       throw new Error("Repository plugin identity/version does not match descriptor.");
     }
-    await persistPluginPackageOnServer(installPackage, plugin.compatibility);
+    const applied = await persistPluginPackageOnServer(installPackage, plugin.compatibility);
+    if (applied.managed) {
+      await loadServerPluginCatalog(); await sharedPluginManagement?.refresh();
+      completed = true;
+      const message = t("message.pluginRepositoryPluginUpdated", { name: descriptor.name });
+      adminSaveState.textContent = message; pluginRepositoryStatus.textContent = message; pluginUpdateSummary.textContent = message;
+      if (status) status.textContent = message;
+      return;
+    }
 
     const installedPlugin = {
       ...descriptor,
@@ -2834,7 +2857,7 @@ async function persistPluginPackageOnServer(installPackage, catalogCompatibility
   const response = await fetch(pluginInstallApiPath, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ installPackage, catalogCompatibility, allowUnknown }),
+    body: JSON.stringify({ installPackage, catalogCompatibility, allowUnknown, expected: inspected.replacement?.expected }),
   });
   if (!response.ok) {
     const result = await response.json().catch(() => ({}));
@@ -4339,7 +4362,7 @@ async function importSelectedPluginPackage() {
     const existing = currentPluginDescriptors().find(entry => entry.id === plugin.id);
 
     if (existing) {
-      adminSaveState.textContent = t("message.pluginPackageDuplicate", { name: existing.name });
+      await pluginRecoveryUi.replace(installPackage);
       return;
     }
 
@@ -4528,6 +4551,10 @@ function renderAdministration() {
     }
 
     if (plugin.id !== HomeAssistantCardEditorPluginId) {
+      const recoverButton = document.createElement("button");
+      recoverButton.type = "button"; recoverButton.textContent = pluginRecoveryUi.label();
+      recoverButton.addEventListener("click", () => void pluginRecoveryUi.restore(plugin.id));
+      actions.append(recoverButton);
       const removeButton = document.createElement("button");
       removeButton.type = "button";
       removeButton.className = "secondary";

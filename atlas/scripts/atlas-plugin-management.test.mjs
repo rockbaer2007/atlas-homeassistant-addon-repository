@@ -72,3 +72,9 @@ test("metadata excludes credentials, files, browser assets and retains case-sens
     assert.throws(() => normalizePluginManagement({ ...state(), repositories: [{ url }] }));
   }
 });
+
+test("saved compatibility retains both HA spellings and host alternatives for recovery", () => {
+  const incoming = state();
+  incoming.plugins[0].compatibility = { homeAssistant: ">=2026.10", homeassistant: "<2027", host: ["homeassistant", "docker"] };
+  assert.deepEqual(normalizePluginManagement(incoming).plugins[0].compatibility, incoming.plugins[0].compatibility);
+});

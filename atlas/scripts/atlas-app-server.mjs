@@ -13,6 +13,7 @@ import { createPluginManagementStore } from "./atlas-plugin-management-store.mjs
 import { createEditorProjectStore } from "./atlas-editor-project-store.mjs";
 import { checkPluginCompatibility, compatibilityHostContext } from "./atlas-plugin-compatibility.mjs";
 import { normalizeHomeAssistantVersion } from "./atlas-homeassistant-version.mjs";
+import { createPluginRecovery, pluginCandidateDigest } from "./atlas-plugin-recovery.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -31,6 +32,9 @@ const removedPluginSlugsPath = resolve(persistentPluginRoot, ".removed-plugins.j
 const pluginRoots = [...new Set([persistentPluginRoot, bundledPluginRoot])];
 const pluginManagementStore = createPluginManagementStore(join(persistentPluginRoot, ".management", "state.json"));
 const editorProjectStore = createEditorProjectStore(join(persistentPluginRoot, ".projects", "projects.json"));
+const pluginRecovery = createPluginRecovery({ pluginRoot: persistentPluginRoot, bundledRoot: bundledPluginRoot,
+  managementStore: pluginManagementStore, managementPath: join(persistentPluginRoot, ".management", "state.json"),
+  removedPath: removedPluginSlugsPath });
 const fileStudioConfigRoot = resolve(process.env.ATLAS_FILE_STUDIO_CONFIG_ROOT ?? "/config");
 const fileStudioAddonsRoot = resolve(process.env.ATLAS_FILE_STUDIO_ADDONS_ROOT ?? "/addons");
 const fileStudioAllowAddons = process.env.ATLAS_FILE_STUDIO_ALLOW_ADDONS === "1";
@@ -143,6 +147,11 @@ const server = createServer((request, response) => {
 
   if (routePath === "/api/plugins/install") {
     void writePluginInstallResponse(request, response);
+    return;
+  }
+
+  if (routePath === "/api/plugins/recovery") {
+    void writePluginRecoveryResponse(request, response, requestUrl);
     return;
   }
 
@@ -3114,15 +3123,33 @@ function readPluginManifest(directoryName, requestUrl) {
   }
 }
 
-async function writePluginInstallResponse(request, response, previewOnly = false) {
+async function writePluginRecoveryResponse(request, response, requestUrl) {
+  try {
+    if (request.method === "GET") {
+      if (request.headers.origin && !isTrustedAtlasOrigin(request)) { writeJson(response, 403, { error: "Trusted Atlas origin required" }); return; }
+      writeJson(response, 200, { backups: pluginRecovery.list(requestUrl.searchParams.get("pluginId") || "") });
+      return;
+    }
+    if (request.method !== "POST" || !isTrustedAtlasOrigin(request)) { writeJson(response, 403, { error: "Trusted Atlas origin required" }); return; }
+    const body = await readJsonRequestBody(request, 16_384);
+    if (!["preview", "restore"].includes(body.action)) throw new Error("Invalid recovery action");
+    const backup = pluginRecovery.read(body.pluginId, body.backupId);
+    if (body.action === "restore" && !body.expected) throw new Error("Preview recovery before applying");
+    await writePluginInstallResponse(request, response, body.action === "preview", {
+      body: { installPackage: backup.payload.installPackage, catalogCompatibility: backup.payload.catalogCompatibility,
+        expected: body.expected, allowUnknown: body.allowUnknown }, restoreMetadata: backup.payload.previousMetadata,
+    });
+  } catch (error) { writeJson(response, error.statusCode || 400, { error: error.message }); }
+}
+
+async function writePluginInstallResponse(request, response, previewOnly = false, recovery) {
   let stagingDirectory = "";
-  let backupDirectory = "";
   try {
     if (!isTrustedAtlasOrigin(request)) {
       writeJson(response, 403, { error: "plugin management requests must come from an Atlas web surface" });
       return;
     }
-    const body = await readJsonRequestBody(request, 24_000_000);
+    const body = recovery?.body ?? await readJsonRequestBody(request, 24_000_000);
     const installPackage = body?.installPackage;
     const plugin = installPackage?.plugin;
     const files = installPackage?.files;
@@ -3218,8 +3245,12 @@ async function writePluginInstallResponse(request, response, previewOnly = false
       hosts: compatibilityHostContext(process.env.ATLAS_DISTRIBUTION_TARGET ?? "local-runtime"),
       homeAssistant,
     });
+    const current = pluginRecovery.inspect(plugin.id);
+    const candidateDigest = pluginCandidateDigest(plugin, normalizedFiles, body.catalogCompatibility);
     if (previewOnly) {
-      writeJson(response, 200, { pluginId: plugin.id, version: plugin.version, compatibility });
+      writeJson(response, 200, { pluginId: plugin.id, version: plugin.version, compatibility,
+        replacement: pluginRecovery.preview(current, plugin, candidateDigest),
+        capabilities: manifest.capabilities ?? plugin.provides ?? [] });
       return;
     }
     if (compatibility.status === "unsupported" || (compatibility.status === "unknown" && body.allowUnknown !== true)) {
@@ -3241,38 +3272,15 @@ async function writePluginInstallResponse(request, response, previewOnly = false
       writeFileSync(filePath, file.content, { flag: "wx" });
     }
 
-    const destination = resolve(persistentPluginRoot, slug);
-    if (existsSync(destination)) {
-      const existingManifestPath = resolve(destination, "atlas-plugin.json");
-      if (!existsSync(existingManifestPath) || JSON.parse(readFileSync(existingManifestPath, "utf8")).id !== plugin.id) {
-        rmSync(stagingDirectory, { recursive: true, force: true });
-        stagingDirectory = "";
-        writeJson(response, 409, { error: "another plugin already uses this plugin folder" });
-        return;
-      }
-      backupDirectory = join(persistentPluginRoot, `.previous-${slug}-${Date.now()}`);
-      renameSync(destination, backupDirectory);
-    }
-    try {
-      renameSync(stagingDirectory, destination);
-      stagingDirectory = "";
-    } catch (error) {
-      if (backupDirectory && existsSync(backupDirectory)) renameSync(backupDirectory, destination);
-      backupDirectory = "";
-      throw error;
-    }
-    if (backupDirectory) {
-      rmSync(backupDirectory, { recursive: true, force: true });
-      backupDirectory = "";
-    }
-    const removedPluginSlugs = readRemovedPluginSlugs();
-    removedPluginSlugs.delete(slug);
-    writeFileSync(removedPluginSlugsPath, JSON.stringify([...removedPluginSlugs].sort(), null, 2));
-    writeJson(response, 200, { ok: true, pluginId: plugin.id, slug, version: plugin.version, compatibility });
+    const retained = pluginRecovery.commit({ id: plugin.id, plugin, manifest, current, stagingDirectory,
+      expected: body.expected, candidateDigest, catalogCompatibility: body.catalogCompatibility,
+      restoreMetadata: recovery?.restoreMetadata });
+    stagingDirectory = "";
+    writeJson(response, 200, { ok: true, pluginId: plugin.id, slug, version: plugin.version, compatibility,
+      ...retained, managed: current.state.initialized && current.state.state.plugins.some(item => item.id === plugin.id) });
   } catch (error) {
     if (stagingDirectory && existsSync(stagingDirectory)) rmSync(stagingDirectory, { recursive: true, force: true });
-    if (backupDirectory && existsSync(backupDirectory)) rmSync(backupDirectory, { recursive: true, force: true });
-    writeJson(response, 400, { error: error instanceof Error ? error.message : "plugin installation failed" });
+    writeJson(response, error.statusCode || 400, { error: error instanceof Error ? error.message : "plugin installation failed" });
   }
 }
 
@@ -3550,7 +3558,7 @@ function servePluginAsset(response, pathname) {
   const parts = pathname.split("/").filter(Boolean);
   const directoryName = parts[1] ? decodeURIComponent(parts[1]) : "";
   const assetPath = parts.slice(2).join("/");
-  if (!directoryName || !assetPath) {
+  if (!directoryName || directoryName.startsWith(".") || directoryName.includes("/") || directoryName.includes("\\") || !assetPath) {
     writeEmptyResponse(response, 404);
     return;
   }

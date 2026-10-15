@@ -129,7 +129,13 @@ export function createSharedPluginManagement({ root, url, getState, applyState, 
       finally { busy = false; }
     }, 200);
   }
-  return { get initialized() { return initialized; }, changed, labels,
+  return { get initialized() { return initialized; }, get dirty() { return dirty; },
+    async refresh() {
+      // A polling read must finish before a post-commit refresh can replace it.
+      for (let retry = 0; busy && retry < 60; retry++) await new Promise(resolve => setTimeout(resolve, 50));
+      if (busy || dirty) throw new Error(tr("unsaved"));
+      await refresh(true);
+    }, changed, labels,
     async start() {
       labels();
       try { original = normalizePluginManagement(getState()); }
