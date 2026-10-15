@@ -40,7 +40,15 @@ test("isolated app-server plugin lifecycle preserves projects and rejected updat
   const dataRoot = await mkdtemp(join(tmpdir(), "atlas-a5-lifecycle-"));
   // These readiness stubs keep the app server from starting child surfaces.
   // No installed Admin process, real Home Assistant or user data is involved.
-  const surfaces = [createServer((req, res) => res.end("fixture admin")),
+  let haVersionMetadata = { status: "unavailable", reason: "not-configured" };
+  let haVersionRequests = 0;
+  const surfaces = [createServer((req, res) => {
+    if (req.url === "/api/homeassistant/version") {
+      haVersionRequests++;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify(haVersionMetadata));
+    } else res.end("fixture admin");
+  }),
     createServer((req, res) => res.end("fixture editor"))];
   let child;
   let base;
@@ -152,6 +160,42 @@ test("isolated app-server plugin lifecycle preserves projects and rejected updat
       assert.deepEqual(await readdir(join(dataRoot, "plugins")), filesBefore);
       assert.deepEqual(await readFile(projectPath), projectBefore);
       assert.deepEqual(await readFile(settingsPath), settingsBefore);
+    });
+
+    await t.test("HA requirements use fresh server metadata at preview and replacement, never client claims", async () => {
+      const candidate = installPackage("2.0.0");
+      candidate.plugin.compatibility = { homeAssistant: ">=2026.10 <2027" };
+      candidate.files[0].content = JSON.stringify({ ...JSON.parse(candidate.files[0].content),
+        compatibility: { homeassistant: ">=2026.10 <2027" } });
+      const assetPath = join(dataRoot, "plugins", slug, "index.html");
+      const assetBefore = await readFile(assetPath);
+      const filesBefore = await readdir(join(dataRoot, "plugins"));
+      haVersionMetadata = { status: "available", source: "admin-rest", version: "2026.10.1" };
+      const preview = await request("/api/plugins/check-compatibility", { installPackage: candidate }).then(r => r.json());
+      assert.equal(preview.compatibility.status, "supported");
+      assert.equal(preview.compatibility.checks[0].actual, "2026.10.1");
+      haVersionMetadata.version = "2027.1.0";
+      const afterPreviewRequests = haVersionRequests;
+      const mismatch = await request("/api/plugins/install", { installPackage: candidate,
+        homeAssistant: "2026.10.1", homeAssistantVersion: "2026.10.1", allowUnknown: true });
+      assert.equal(mismatch.status, 422);
+      assert.ok(haVersionRequests > afterPreviewRequests);
+      assert.equal((await mismatch.json()).compatibility.checks[0].actual, "2027.1.0");
+      haVersionMetadata = { status: "unavailable", reason: "unauthorized" };
+      assert.equal((await request("/api/plugins/install", { installPackage: candidate,
+        allowUnknown: false, homeAssistant: "2026.10.1" })).status, 409);
+      haVersionMetadata = { status: "available", source: "unverified-client", version: "2026.10.1" };
+      assert.equal((await request("/api/plugins/check-compatibility", { installPackage: candidate }).then(r => r.json())).compatibility.status, "unknown");
+      assert.deepEqual(await readFile(assetPath), assetBefore);
+      assert.deepEqual(await readdir(join(dataRoot, "plugins")), filesBefore);
+      assert.deepEqual(await readFile(projectPath), projectBefore);
+      assert.deepEqual(await readFile(settingsPath), settingsBefore);
+      haVersionMetadata = { status: "available", source: "admin-rest", version: "2026.10.1" };
+      assert.equal((await request("/api/plugins/check-compatibility", { installPackage: candidate,
+        catalogCompatibility: { homeAssistant: ">=2027" } }).then(r => r.json())).compatibility.status, "unsupported");
+      assert.equal((await request("/api/plugins/install", { installPackage: candidate, allowUnknown: false })).status, 200);
+      assert.equal(await readFile(assetPath, "utf8"), "<h1>fixture 2.0.0</h1>");
+      haVersionMetadata = { status: "unavailable", reason: "not-configured" };
     });
 
     await t.test("updates and app restarts retain installed assets and status", async () => {

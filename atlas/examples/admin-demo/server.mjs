@@ -3,6 +3,7 @@ import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeF
 import { createServer } from "node:http";
 import { homedir } from "node:os";
 import { dirname, extname, join, normalize, resolve } from "node:path";
+import { discoverHomeAssistantVersion } from "../../scripts/atlas-homeassistant-version.mjs";
 
 const root = resolve(import.meta.dirname, "..", "..");
 const host = process.env.ATLAS_ADMIN_HOST ?? process.env.ATLAS_HOST ?? "127.0.0.1";
@@ -114,6 +115,10 @@ createServer((request, response) => {
     void handleHomeAssistantLovelaceResourcesRequest(request, response);
     return;
   }
+  if (requestUrl.pathname === "/api/homeassistant/version") {
+    void handleHomeAssistantVersionRequest(request, response);
+    return;
+  }
   if (requestUrl.pathname === "/api/admin-device") {
     void handleAdminDeviceRequest(request, response);
     return;
@@ -215,6 +220,16 @@ async function handleAdminDeviceRequest(request, response) {
     "cache-control": "no-store",
   });
   response.end(JSON.stringify(getAdminDeviceBinding()));
+}
+
+async function handleHomeAssistantVersionRequest(request, response) {
+  writeCorsHeaders(request, response);
+  if (request.method === "OPTIONS") { response.writeHead(204); response.end(); return; }
+  if (request.method !== "GET") { writeJsonResponse(response, 405, { error: "method not allowed" }); return; }
+  const settings = adminConnectionSettings;
+  const result = await discoverHomeAssistantVersion(settings);
+  writeJsonResponse(response, 200, settings === adminConnectionSettings
+    ? result : { status: "unavailable", reason: "connection-changed" });
 }
 
 async function handleHomeAssistantLovelaceResourcesRequest(request, response) {

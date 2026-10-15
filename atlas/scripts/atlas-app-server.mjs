@@ -12,6 +12,7 @@ import { isTrustedAtlasOrigin as isTrustedAtlasRequestOrigin } from "./atlas-req
 import { createPluginManagementStore } from "./atlas-plugin-management-store.mjs";
 import { createEditorProjectStore } from "./atlas-editor-project-store.mjs";
 import { checkPluginCompatibility, compatibilityHostContext } from "./atlas-plugin-compatibility.mjs";
+import { normalizeHomeAssistantVersion } from "./atlas-homeassistant-version.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -181,6 +182,7 @@ const server = createServer((request, response) => {
     || routePath === "/api/admin-device"
     || routePath === "/api/card-translation"
     || routePath === "/api/homeassistant/lovelace-resources"
+    || routePath === "/api/homeassistant/version"
   ) {
     void proxyAdminApiRequest(request, response, requestUrl, routePath);
     return;
@@ -840,6 +842,21 @@ async function writeEditorProjectResponse(request, response, requestUrl) {
     writeJson(response, result.conflict ? 409 : 200, input.action === "preview" && !result.conflict
       ? { project: result.project, previous: result.previous ? { name: result.previous.project.name, fields: result.previous.project.fields.length } : null } : result);
   } catch (error) { writeJson(response, 400, { error: error instanceof Error ? error.message : "project storage unavailable" }); }
+}
+
+async function readVerifiedHomeAssistantVersion() {
+  try {
+    // Use only the server-owned Administration connection, never a version,
+    // token or target URL supplied in a plugin install/preview request.
+    const response = await fetch(new URL("/api/homeassistant/version", adminUrl), {
+      redirect: "error", signal: AbortSignal.timeout(4000),
+    });
+    if (!response.ok) return undefined;
+    const result = await response.json();
+    const version = normalizeHomeAssistantVersion(result?.version);
+    return result?.status === "available" && result.source === "admin-rest"
+      && version === result.version ? version : undefined;
+  } catch { return undefined; }
 }
 
 async function proxyAdminApiRequest(request, response, requestUrl, routePath) {
@@ -3187,11 +3204,20 @@ async function writePluginInstallResponse(request, response, previewOnly = false
       return;
     }
 
-    const compatibility = checkPluginCompatibility({
+    const compatibilitySources = {
       catalog: body.catalogCompatibility,
       package: plugin.compatibility,
       manifest: manifest.compatibility,
-    }, { atlas: packageJson.version, hosts: compatibilityHostContext(process.env.ATLAS_DISTRIBUTION_TARGET ?? "local-runtime") });
+    };
+    const needsHaVersion = Object.values(compatibilitySources).some(value => value && typeof value === "object"
+      && Object.entries(value).some(([key, requirement]) => ["homeAssistant", "homeassistant"].includes(key)
+        && requirement !== "" && requirement !== undefined));
+    const homeAssistant = needsHaVersion ? await readVerifiedHomeAssistantVersion() : undefined;
+    const compatibility = checkPluginCompatibility(compatibilitySources, {
+      atlas: packageJson.version,
+      hosts: compatibilityHostContext(process.env.ATLAS_DISTRIBUTION_TARGET ?? "local-runtime"),
+      homeAssistant,
+    });
     if (previewOnly) {
       writeJson(response, 200, { pluginId: plugin.id, version: plugin.version, compatibility });
       return;

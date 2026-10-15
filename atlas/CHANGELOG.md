@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.303
+
+- Detect the connected Home Assistant version through Administration's authenticated REST API connection before plugin compatibility checks.
+- Refresh discovery before preview and again before replacement; never trust browser-supplied HA versions or reuse a stale success after connection errors.
+- Keep unavailable, unauthorized or malformed HA responses unknown and subject to explicit review; known mismatches remain blocked.
+- Preserve prerelease boundaries for HA beta, release-candidate and development builds; keep tokens and private HA configuration on the server.
+- No settings, project, plugin-state or HA-integration schema migration.
+
 ## 0.1.302
 
 - Check plugin compatibility before installation/update and again on the server before replacing files.
