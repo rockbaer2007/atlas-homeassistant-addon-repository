@@ -285,6 +285,7 @@ export const cardEditorFrenchTranslations = {
   "message.defaultAtlasEntitiesUsed": "Aucune entité sélectionnée. ATLAS exemples d'entités ont été insérés pour cet export : {entities}.",
   "message.exportCancelled": "Exportation annulée.",
   "message.exportFailed": "Échec de l'exportation.",
+  "message.hacsFilenameBoundary": "HACS 2.0.5 ne peut pas installer les langues de façon fiable si le nom du script commence par dist. Choisissez un autre nom de script HACS ; votre projet reste intact.",
   "message.exportPathHint": "Choisissez un emplacement de sauvegarde si votre navigateur le prend en charge ou utilisez la solution de secours de téléchargement normale.",
   "message.savePickerUnavailable": "Votre navigateur ne peut pas choisir un emplacement d'enregistrement ici. Utilisez plutôt Télécharger.",
   "message.copyPreviewFailed": "Échec de la copie : utilisez plutôt le texte d'aperçu.",

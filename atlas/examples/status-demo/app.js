@@ -543,6 +543,7 @@ const translations = {
     "message.defaultAtlasEntitiesUsed": "No entities selected. ATLAS example entities were inserted for this export: {entities}.",
     "message.exportCancelled": "Export cancelled.",
     "message.exportFailed": "Export failed.",
+    "message.hacsFilenameBoundary": "HACS 2.0.5 cannot reliably install language files when the script filename starts with dist. Choose another HACS script filename; your project is unchanged.",
     "message.exportPathHint": "Choose a save location if your browser supports it, or use the normal download fallback.",
     "message.savePickerUnavailable": "Your browser cannot choose a save location here. Use Download instead.",
     "message.copyPreviewFailed": "Copy failed: use the preview text instead.",
@@ -1024,6 +1025,7 @@ const translations = {
     "message.defaultAtlasEntitiesUsed": "Keine Entitäten ausgewählt. ATLAS-Beispielentitäten wurden für diesen Export eingesetzt: {entities}.",
     "message.exportCancelled": "Export abgebrochen.",
     "message.exportFailed": "Export fehlgeschlagen.",
+    "message.hacsFilenameBoundary": "HACS 2.0.5 kann Sprachdateien bei Script-Dateinamen mit dem Anfang dist nicht zuverlässig installieren. Wähle einen anderen HACS-Script-Dateinamen; dein Projekt bleibt unverändert.",
     "message.exportPathHint": "Wähle einen Speicherort, wenn dein Browser das unterstützt, oder nutze den normalen Download-Fallback.",
     "message.savePickerUnavailable": "Dein Browser kann hier keinen Speicherort wählen. Nutze stattdessen Download.",
     "message.copyPreviewFailed": "Kopieren fehlgeschlagen: Nutze stattdessen den Vorschautext.",
@@ -8923,6 +8925,10 @@ exportHaCardBundle.addEventListener("click", async () => {
     return;
   }
 
+  if (createHomeAssistantCardEditorScriptExport(createActiveCardEditorPlan({ useExportFallback: true })).filename.startsWith("dist")) {
+    statusMessage.textContent = t("message.hacsFilenameBoundary");
+    return;
+  }
   const cardPackage = await prepareCardExportTranslations(createHaCardExportPackage());
   const bundle = createHomeAssistantCardEditorHacsBundle(cardPackage);
   const archive = createHomeAssistantCardEditorHacsBundleArchive(bundle);
@@ -8935,8 +8941,8 @@ exportHaCardBundle.addEventListener("click", async () => {
     count: String(bundle.files.length),
     filename: archive.filename,
     languages: bundle.files
-      .filter(file => file.path.startsWith("locales/") && file.path.endsWith(".json"))
-      .map(file => file.path.replace(/^locales\/|\.json$/g, ""))
+      .filter(file => file.path.startsWith("dist/locales/") && file.path.endsWith(".json"))
+      .map(file => file.path.replace(/^dist\/locales\/|\.json$/g, ""))
       .join(", "),
   }) + (usesDefaultAtlasExportEntities() ? ` ${defaultAtlasExportMessage()}` : "");
 });

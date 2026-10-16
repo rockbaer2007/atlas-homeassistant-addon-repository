@@ -1410,34 +1410,36 @@ describe("Home Assistant frontend integration planning", () => {
       scriptFilename: "energy-kitchen.js",
       customElementName: "energy-kitchen",
       cardType: "custom:energy-kitchen",
-      resourcePath: "/hacsfiles/atlas/energy-kitchen.js",
+      resourcePath: "/hacsfiles/energy-kitchen/energy-kitchen.js",
       installSteps: [
-        "Create a HACS frontend repository with these files.",
+        "Extract this bundle into a HACS frontend repository, keeping the dist/ directory intact.",
+        "Use a dedicated GitHub repository named energy-kitchen; HACS uses the repository name in its resource URL.",
+        "Keep the generated script only in dist/; do not attach a standalone JavaScript release asset.",
         "Install the generated script as energy-kitchen.js.",
-        "Register the Lovelace resource /hacsfiles/atlas/energy-kitchen.js as a JavaScript module.",
+        "Register the Lovelace resource /hacsfiles/energy-kitchen/energy-kitchen.js as a JavaScript module.",
         "Add custom:energy-kitchen to a dashboard view.",
         "Replace the demo entities with your own Home Assistant entities.",
       ],
     });
     expect(bundle.files.map(file => file.path)).toEqual([
       "hacs.json",
-      "energy-kitchen.js",
+      "dist/energy-kitchen.js",
       "README.md",
       "examples/lovelace-card.json",
       "atlas/energy-kitchen.atlas-card.json",
-      "locales/en.json",
-      "locales/de.json",
-      "locales/fr.json",
+      "dist/locales/en.json",
+      "dist/locales/de.json",
+      "dist/locales/fr.json",
     ]);
     expect(JSON.parse(bundle.files.find(file => file.path === "hacs.json")?.content ?? "{}")).toEqual({
       name: "Energy Kitchen",
       render_readme: true,
       filename: "energy-kitchen.js",
     });
-    expect(bundle.files.find(file => file.path === "energy-kitchen.js")?.content).toContain("customElements.define(\"energy-kitchen\"");
-    expect(bundle.files.find(file => file.path === "README.md")?.content).toContain("/hacsfiles/atlas/energy-kitchen.js");
+    expect(bundle.files.find(file => file.path === "dist/energy-kitchen.js")?.content).toContain("customElements.define(\"energy-kitchen\"");
+    expect(bundle.files.find(file => file.path === "README.md")?.content).toContain("/hacsfiles/energy-kitchen/energy-kitchen.js");
     expect(bundle.files.find(file => file.path === "README.md")?.content).toContain("Fallback language files: de, fr.");
-    expect(JSON.parse(bundle.files.find(file => file.path === "locales/de.json")?.content ?? "{}")._meta).toMatchObject({
+    expect(JSON.parse(bundle.files.find(file => file.path === "dist/locales/de.json")?.content ?? "{}")._meta).toMatchObject({
       language: "de",
       status: "fallback",
     });
@@ -1680,7 +1682,7 @@ describe("Home Assistant frontend integration planning", () => {
       },
       readmeReadiness: {
         path: "README.md",
-        expectedResourcePath: "/hacsfiles/atlas/energy-kitchen.js",
+        expectedResourcePath: "/hacsfiles/energy-kitchen/energy-kitchen.js",
         expectedCardType: "custom:energy-kitchen",
         mentionsResourcePath: true,
         mentionsCardType: true,
@@ -2176,7 +2178,7 @@ describe("Home Assistant frontend integration planning", () => {
       importable: false,
       readmeReadiness: {
         path: "README.md",
-        expectedResourcePath: "/hacsfiles/atlas/energy-kitchen.js",
+        expectedResourcePath: "/hacsfiles/energy-kitchen/energy-kitchen.js",
         expectedCardType: "custom:energy-kitchen",
         mentionsResourcePath: false,
         mentionsCardType: true,
@@ -2186,7 +2188,7 @@ describe("Home Assistant frontend integration planning", () => {
       reason: "The README does not document the embedded ATLAS card package correctly: missing-resource-path.",
     });
     expect(formatHomeAssistantCardEditorHacsBundlePackageReadReviewLines(packageRead)).toContain(
-      "Invalid README README.md: missing /hacsfiles/atlas/energy-kitchen.js (missing-resource-path)",
+      "Invalid README README.md: missing /hacsfiles/energy-kitchen/energy-kitchen.js (missing-resource-path)",
     );
   });
 
@@ -2258,7 +2260,7 @@ describe("Home Assistant frontend integration planning", () => {
     }));
     const archive = createHomeAssistantCardEditorHacsBundleArchive({
       ...bundle,
-      files: bundle.files.map(file => file.path === "energy-kitchen.js"
+      files: bundle.files.map(file => file.path === "dist/energy-kitchen.js"
         ? {
             ...file,
             content: file.content.replace(
@@ -2355,7 +2357,7 @@ describe("Home Assistant frontend integration planning", () => {
     }));
     const archive = createHomeAssistantCardEditorHacsBundleArchive({
       ...bundle,
-      files: bundle.files.filter(file => file.path !== "locales/de.json"),
+      files: bundle.files.filter(file => file.path !== "dist/locales/de.json"),
     });
 
     const packageRead = readHomeAssistantCardEditorHacsBundleArchivePackage(archive.content);
@@ -2404,7 +2406,7 @@ describe("Home Assistant frontend integration planning", () => {
     }));
     const archive = createHomeAssistantCardEditorHacsBundleArchive({
       ...bundle,
-      files: bundle.files.map(file => file.path === "locales/de.json"
+      files: bundle.files.map(file => file.path === "dist/locales/de.json"
         ? {
             ...file,
             content: JSON.stringify({
@@ -2466,13 +2468,13 @@ describe("Home Assistant frontend integration planning", () => {
     const archive = createHomeAssistantCardEditorHacsBundleArchive({
       ...bundle,
       files: bundle.files.map(file => {
-        if (file.path === "locales/de.json") {
+        if (file.path === "dist/locales/de.json") {
           return {
             ...file,
             content: "{not-json",
           };
         }
-        if (file.path === "locales/fr.json") {
+        if (file.path === "dist/locales/fr.json") {
           return {
             ...file,
             content: JSON.stringify({

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.309
+
+- HACS Card bundles place the generated script and sibling locales in dist/ for automatic installation together.
+- Preserve legacy root-layout imports and reject ambiguous root/dist aliases and unsafe archive paths.
+- Document repository extraction, release-asset precedence and the HACS 2.0.5 filename boundary; no stored settings, files, projects or plugins are migrated.
+
 ## 0.1.308
 
 - Exported card modules load sibling locale JSON files using the HA language or an explicit card language, with external EN and embedded English fallbacks.
