@@ -14,6 +14,61 @@ function element() {
 }
 
 describe("generated Expert card runtime", () => {
+  it("warns for an unselected missing export locale, keeps live cards and clears the warning after repair and reload", async () => {
+    const exported = createHomeAssistantCardEditorScriptExport({
+      cardName: "Integrity card", editorMode: "expert", defaultEntityIds: ["sensor.demo"],
+      fields: [{ id: "field", target: "entity", entityId: "sensor.demo", column: 0, row: 0, width: 4, height: 2 }],
+    }, ["en", "de", "fr"]);
+    for (const repaired of [false, true]) {
+      let Card: any, nodes: any[] = [], child: any;
+      const requests: string[] = [];
+      execute(exported.source, {
+        HTMLElement: class { shadowRoot: any; attachShadow() { return this.shadowRoot = { replaceChildren: (...items: any[]) => { nodes = items; } }; } },
+        document: { createElement: element }, AbortController, setTimeout, clearTimeout,
+        fetch: async (url: URL) => {
+          const language = url.pathname.split("/").at(-1)!.replace(".json", "");
+          requests.push(language);
+          return language === "fr" && !repaired ? new Response("missing", { status: 404 })
+            : new Response(JSON.stringify({ _meta: { language }, card: { title: "Readable " + language } }));
+        },
+        customElements: { get: () => undefined, define: (_name: string, value: any) => { Card = value; } },
+        window: { customCards: [], loadCardHelpers: async () => ({ createCardElement: () => child = {} }) },
+      });
+      const card = new Card(); card.hass = { language: "de", states: {} }; card.setConfig({ title: "Own title" });
+      await new Promise(resolve => setImmediate(resolve));
+      expect(requests.sort()).toEqual(["de", "en", "fr"]);
+      expect(card.localizedTitle()).toBe("Own title");
+      const notices = nodes.filter(node => node.className === "atlas-card-integrity");
+      expect(notices).toHaveLength(repaired ? 0 : 1);
+      if (!repaired) {
+        expect(notices[0].textContent).toContain("locales/fr.json");
+        expect(notices[0].textContent).toContain("vollständige Card-Paket erneut herunterladen");
+      }
+      card.hass = { language: "de", states: { "sensor.demo": { state: "42" } } };
+      expect(child.hass.states["sensor.demo"].state).toBe("42");
+      expect(requests).toHaveLength(3);
+    }
+  });
+
+  it.each(["en", "de", "fr"])("shows a built-in %s repair notice for missing EN and malformed locales without exposing response text", async language => {
+    const exported = createHomeAssistantCardEditorScriptExport({ cardName: "Embedded", editorMode: "expert" }, ["en", "de", "fr"]);
+    let Card: any, nodes: any[] = [];
+    execute(exported.source, {
+      HTMLElement: class { shadowRoot: any; attachShadow() { return this.shadowRoot = { replaceChildren: (...items: any[]) => { nodes = items; } }; } },
+      document: { createElement: element }, AbortController, setTimeout, clearTimeout,
+      fetch: async (url: URL) => new Response("private diagnostic <script>", { status: url.pathname.endsWith("en.json") ? 404 : 200 }),
+      customElements: { get: () => undefined, define: (_name: string, value: any) => { Card = value; } },
+      window: { customCards: [], loadCardHelpers: async () => ({ createCardElement: () => ({}) }) },
+    });
+    const card = new Card(); card.hass = { language, states: {} }; card.setConfig({});
+    await new Promise(resolve => setImmediate(resolve));
+    expect(card.localizedTitle()).toBe("Embedded");
+    const notice = nodes.find(node => node.className === "atlas-card-integrity");
+    expect(notice.textContent).toContain("locales/en.json, locales/de.json, locales/fr.json");
+    expect(notice.textContent).not.toContain("private diagnostic");
+    expect(notice.textContent).toContain({ en: "redownload", de: "erneut herunterladen", fr: "retélécharger" }[language]);
+  });
+
   it("mounts the exported layout, remaps entities and forwards live updates without recreating cards", async () => {
     const exported = createHomeAssistantCardEditorScriptExport({
       editorMode: "expert", defaultEntityIds: ["sensor.demo"],

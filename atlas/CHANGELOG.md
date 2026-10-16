@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.310
+
+- New Card exports check declared language files, including inactive selected languages.
+- Show a compact EN/DE/FR repair notice for missing or unreadable files while retaining English fallback and live Card rendering.
+- Redownload the complete package and reload after repair. Existing exports need re-exporting; no stored settings, files, projects or plugins are migrated. Integration remains0.1.306.
+
 ## 0.1.309
 
 - HACS Card bundles place the generated script and sibling locales in dist/ for automatic installation together.

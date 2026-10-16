@@ -7717,7 +7717,7 @@ function createHaCardExportPackage() {
     name: currentHaCardExportName(),
     languages: selectedCardExportLanguages(),
     editorPlan,
-    script: createHomeAssistantCardEditorScriptExport(editorPlan),
+    script: createHomeAssistantCardEditorScriptExport(editorPlan, selectedCardExportLanguages()),
   });
   if (activeEditorMode === "simple" && haCardFormat.value === "yaml" && importedSimpleCodePreview) {
     return { ...cardPackage, content: importedSimpleCodePreview };
@@ -8908,7 +8908,7 @@ exportHaCardScript.addEventListener("click", () => {
     return;
   }
 
-  const scriptExport = createHomeAssistantCardEditorScriptExport(createActiveCardEditorPlan({ useExportFallback: true }));
+  const scriptExport = createHomeAssistantCardEditorScriptExport(createActiveCardEditorPlan({ useExportFallback: true }), selectedCardExportLanguages());
   const link = document.createElement("a");
   link.href = URL.createObjectURL(new Blob([scriptExport.source], { type: "text/javascript" }));
   link.download = scriptExport.filename;

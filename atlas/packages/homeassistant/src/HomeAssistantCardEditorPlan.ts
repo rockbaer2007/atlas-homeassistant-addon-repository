@@ -434,6 +434,7 @@ export function createHomeAssistantCardEditorDependencyPlan(
 
 export function createHomeAssistantCardEditorScriptExport(
   input: HomeAssistantCardEditorPackagePlan | HomeAssistantCardEditorPackagePlanInput = {},
+  languages: readonly string[] = ["en"],
 ): HomeAssistantCardEditorScriptExport {
   const editorPlan = "resourcePath" in input
     ? input
@@ -454,7 +455,7 @@ export function createHomeAssistantCardEditorScriptExport(
     resourcePath: `/hacsfiles/atlas/${editorPlan.scriptFilename}`,
     defaultConfig,
     source: createHomeAssistantCardEditorScriptSource(customElementName, defaultConfig,
-      editorPlan.editorMode === "expert" ? createHomeAssistantCardEditorConfiguration(editorPlan) : undefined),
+      editorPlan.editorMode === "expert" ? createHomeAssistantCardEditorConfiguration(editorPlan) : undefined, languages),
   };
 }
 
@@ -963,10 +964,11 @@ function createHomeAssistantCardEditorScriptSource(
   customElementName: string,
   defaultConfig: HomeAssistantCardEditorScriptExport["defaultConfig"],
   expertCard?: HomeAssistantCardConfiguration,
+  languages: readonly string[] = ["en"],
 ): string {
   const className = createHomeAssistantCardEditorClassName(customElementName);
   const sourceConfig = JSON.stringify(defaultConfig, null, 2);
-  const localeRuntime = createHomeAssistantCardLocaleRuntime(defaultConfig.title, defaultConfig.replacement_hint);
+  const localeRuntime = createHomeAssistantCardLocaleRuntime(defaultConfig.title, defaultConfig.replacement_hint, languages);
   if (expertCard) {
     return `${localeRuntime}const DEFAULT_CONFIG = ${sourceConfig};
 const DEFAULT_CARD = ${JSON.stringify(expertCard, null, 2)};
@@ -1002,7 +1004,8 @@ ${homeAssistantCardLocaleMethods}
     try {
       const locale = await atlasLoadLocale(language);
       if (generation !== this._generation) return;
-      this._locale = locale;
+      this._locale = locale.text;
+      this._localeIssues = locale.issues;
       const title = this.localizedTitle();
       if (cardConfig.title === DEFAULT_CONFIG.title) cardConfig.title = title;
       const helpers = await window.loadCardHelpers();
@@ -1021,13 +1024,13 @@ ${homeAssistantCardLocaleMethods}
       hint.style.cssText = "padding:4px;font-size:14px;color:var(--secondary-text-color)";
       hint.textContent = this.localizedHint();
       this.updateHint();
-      root.replaceChildren(...(cardConfig.title === title ? [] : [heading]), card, hint);
+      root.replaceChildren(...(cardConfig.title === title ? [] : [heading]), card, hint, ...this.integrityNotice());
     } catch (error) {
       if (generation !== this._generation) return;
       const message = document.createElement("ha-card");
       this._card = undefined;
       message.textContent = this.translated("unavailable");
-      root.replaceChildren(message);
+      root.replaceChildren(message, ...this.integrityNotice());
     }
   }
 }
@@ -1066,7 +1069,8 @@ if (!window.customCards.some(card => card.type === "${customElementName}")) wind
     "    const generation = this._generation = (this._generation ?? 0) + 1;",
     "    const locale = await atlasLoadLocale(language);",
     "    if (generation !== this._generation) return;",
-    "    this._locale = locale;",
+    "    this._locale = locale.text;",
+    "    this._localeIssues = locale.issues;",
     "    this.render();",
     "  }",
     "",
@@ -1098,6 +1102,7 @@ if (!window.customCards.some(card => card.type === "${customElementName}")) wind
     "    body.append(list);",
     "    wrapper.append(body);",
     "    root.append(wrapper);",
+    "    for (const notice of this.integrityNotice()) root.append(notice);",
     "  }",
     "}",
     "",

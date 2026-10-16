@@ -334,7 +334,7 @@ export function createHomeAssistantCardEditorHacsBundle(
   cardPackage: HomeAssistantCardExportPackage,
 ): HomeAssistantCardEditorHacsBundle {
   const sourceScript = cardPackage.script
-    ?? (cardPackage.editorPlan ? createHomeAssistantCardEditorScriptExport(cardPackage.editorPlan) : undefined);
+    ?? (cardPackage.editorPlan ? createHomeAssistantCardEditorScriptExport(cardPackage.editorPlan, cardPackage.manifest.languages) : undefined);
   if (!sourceScript) {
     throw new Error("A HACS card bundle requires an editor plan or script export.");
   }
@@ -1375,6 +1375,7 @@ function createHomeAssistantCardEditorBundleReadme(
     "Keep the script and its sibling `locales/` directory together on the same Home Assistant origin; register the script as a JavaScript module.",
     "The script uses the Home Assistant language, or an explicit card `language` such as `de` or `fr`. Regional variants use their base language.",
     "Missing, invalid or incomplete translations fall back to `locales/en.json`, then embedded English defaults. Locale requests send no credentials.",
+    "Newly generated scripts check their declared export languages, including inactive languages. Missing or unreadable files produce a built-in EN/DE/FR repair notice while the Card keeps rendering. Redownload the complete package and reload the browser after repair; restore your backup if needed. This checks locale availability/format, not cryptographic integrity or automatic rollback. Existing scripts need re-exporting to gain this check.",
     "The localized project title, missing-entity hint and runtime failure text are applied without changing authored child-card names or entity IDs. A distinct explicit `title` or `replacement_hint` takes priority.",
     "A script-only installation works with embedded English defaults. This repository bundle places the script and locales in dist/ so HACS installs them together. Keep dist/ intact; do not copy the script to the repository root or attach a standalone JavaScript release asset, which HACS can prefer over dist/.",
     ...(fallbackLanguages.length > 0
