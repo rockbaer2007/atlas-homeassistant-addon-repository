@@ -141,6 +141,24 @@ Administration and Plugin Hub now share the saved DE/EN/FR language preference
 across app ports.
 Plugin screens may still use English when the plugin does not provide French text.
 
+## Persistent File Studio retention / Dauerhafte Ablagen
+
+From0.1.312, trash/history default to `/data/atlas-plugins/.file-studio/` inside
+the persistent App data. Explicit custom/Linux paths remain in use and need their
+own backup coverage. Before the FIRST update from an older container, back up
+its `/app/.atlas-file-studio-trash` and `/app/.atlas-file-studio-history`, pause
+File Studio writes and run the new standalone `scripts/atlas-file-studio-retention.mjs`
+helper INSIDE the still-existing old container with `--app-root /app --plugin-root
+/data/atlas-plugins`. Copy that helper from the reviewed release first. Back up
+the prepared persistent data before replacing the container. It copies once,
+retains sources/IDs and refuses conflicts. Already discarded files need a backup.
+
+Ab0.1.312 liegen Papierkorb/Historie standardmäßig in den persistenten App-Daten.
+Vor dem ersten Update aus einem alten Container dessen bisherige Ablagen sichern,
+Schreibaktionen pausieren und den neuen Helfer dort vor dem Containerersatz
+ausführen. Danach die übernommene persistente Ablage sichern. Vorhandene eigene
+Pfade bleiben gültig. Bereits verlorene Dateien benötigen eine Sicherung.
+
 ## Update note
 
 Home Assistant may show two versions during Add-on updates: `old` is the

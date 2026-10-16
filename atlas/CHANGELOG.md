@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.312
+
+- Store File Studio trash and history inside persistent ATLAS plugin data by default; keep existing explicit Linux/custom paths.
+- Migrate accessible legacy stores once without overwriting differing files, preserving source copies and entry identities. Restored items are not re-imported on restart.
+- Before the first update from an older container, back up and run the standalone retention helper inside that old container while File Studio writes are paused. The new container cannot recover already discarded files.
+- Existing settings, active files, projects and plugins are unchanged. Integration remains0.1.306.
+
 ## 0.1.311
 
 - New Card exports pair script and language files with a deterministic package marker.

@@ -14,6 +14,7 @@ import { createEditorProjectStore } from "./atlas-editor-project-store.mjs";
 import { checkPluginCompatibility, compatibilityHostContext } from "./atlas-plugin-compatibility.mjs";
 import { normalizeHomeAssistantVersion } from "./atlas-homeassistant-version.mjs";
 import { createPluginRecovery, pluginCandidateDigest } from "./atlas-plugin-recovery.mjs";
+import { prepareFileStudioRetention } from "./atlas-file-studio-retention.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
@@ -41,8 +42,10 @@ const fileStudioAllowAddons = process.env.ATLAS_FILE_STUDIO_ALLOW_ADDONS === "1"
 const fileStudioAllowWww = process.env.ATLAS_FILE_STUDIO_ALLOW_WWW === "1";
 const fileStudioAllowCustomComponents = process.env.ATLAS_FILE_STUDIO_ALLOW_CUSTOM_COMPONENTS === "1";
 const fileStudioAllowParentOfConfig = process.env.ATLAS_FILE_STUDIO_ALLOW_PARENT_OF_CONFIG === "1";
-const fileStudioHistoryRoot = resolve(process.env.ATLAS_FILE_STUDIO_HISTORY_ROOT ?? ".atlas-file-studio-history");
-const fileStudioTrashRoot = resolve(process.env.ATLAS_FILE_STUDIO_TRASH_ROOT ?? ".atlas-file-studio-trash");
+const fileStudioRetention = prepareFileStudioRetention({ appRoot: root, pluginRoot: persistentPluginRoot,
+  historyRoot: process.env.ATLAS_FILE_STUDIO_HISTORY_ROOT, trashRoot: process.env.ATLAS_FILE_STUDIO_TRASH_ROOT });
+const fileStudioHistoryRoot = fileStudioRetention.history;
+const fileStudioTrashRoot = fileStudioRetention.trash;
 const maxFileStudioArchiveEntryBytes = 64 * 1024 * 1024;
 const maxFileStudioUploadBytes = 64 * 1024 * 1024;
 const maxFileStudioArchiveEntries = 500;
