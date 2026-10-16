@@ -13,12 +13,28 @@ test("preview does not write; save and restart preserve nested card data", t => 
   assert.deepEqual(createEditorProjectStore(path).read().projects[0].project, project);
   const before = readFileSync(path); assert.equal(store.save({ ...input, project: { ...project, fields: [] } }).conflict, true); assert.deepEqual(readFileSync(path), before);
 });
-test("updates back up the previous file; independent projects remain intact", t => {
+test("same-millisecond updates back up the previous file; independent projects and older backups remain intact", t => {
+  t.mock.method(Date, "now", () => 1792144800000);
   const { store, path, root } = fixture(t); store.save({ id: "first", revision: 0, project });
   store.save({ id: "second", revision: 0, project: { ...project, name: "Other" } }); const before = readFileSync(path);
+  const secondBefore = store.read().projects.find(entry => entry.id === "second");
+  const backupsRoot = join(root, "backups");
+  const previousBackups = new Map(readdirSync(backupsRoot).map(folder => [folder,
+    Object.fromEntries(readdirSync(join(backupsRoot, folder)).map(file => [file, readFileSync(join(backupsRoot, folder, file))])),
+  ]));
   store.save({ id: "first", revision: 1, project: { ...project, name: "Changed" } });
-  assert.equal(store.read().projects.find(entry => entry.id === "second").project.name, "Other");
-  const backups = readdirSync(join(root, "backups")).sort(); assert.deepEqual(readFileSync(join(root, "backups", backups.at(-1), "projects.json")), before);
+  assert.deepEqual(store.read().projects.find(entry => entry.id === "second"), secondBefore);
+  assert.equal(store.read().projects.find(entry => entry.id === "first").revision, 2);
+  assert.equal(store.read().projects.find(entry => entry.id === "first").project.name, "Changed");
+  // Random suffixes do not order backups created at the same timestamp.
+  const backups = readdirSync(backupsRoot);
+  assert.equal(backups.length, previousBackups.size + 1);
+  const added = backups.filter(folder => !previousBackups.has(folder));
+  assert.equal(added.length, 1);
+  assert.deepEqual(readFileSync(join(backupsRoot, added[0], "projects.json")), before);
+  for (const [folder, files] of previousBackups) {
+    assert.deepEqual(Object.fromEntries(readdirSync(join(backupsRoot, folder)).map(file => [file, readFileSync(join(backupsRoot, folder, file))])), files);
+  }
   store.backup(project); const backup = JSON.parse(readFileSync(join(root, "workspaces", readdirSync(join(root, "workspaces"))[0]), "utf8")); assert.deepEqual(backup.project, project);
 });
 test("invalid and corrupt data do not overwrite projects; Admin secrets excluded", t => {

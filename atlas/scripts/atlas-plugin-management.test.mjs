@@ -44,10 +44,12 @@ test("merge retains server-only entries; conflicts default to existing activatio
   assert.equal(saved.state.plugins[0].version, "1.0.0");
   assert.equal(saved.state.repositories.length, 2);
   const before = readFileSync(path);
+  const previousBackups = new Set(readdirSync(join(root, "backups")));
   const local = store.change({ action: "merge", revision: 2, state: incoming, preference: "local" });
   assert.deepEqual(local.state.activePluginIds, [plugin.id]);
-  const backups = readdirSync(join(root, "backups")).sort();
-  assert.deepEqual(readFileSync(join(root, "backups", backups.at(-1), "state.json")), before);
+  const addedBackups = readdirSync(join(root, "backups")).filter(folder => !previousBackups.has(folder));
+  assert.equal(addedBackups.length, 1);
+  assert.deepEqual(readFileSync(join(root, "backups", addedBackups[0], "state.json")), before);
   const empty = { repositories: [], plugins: [], activePluginIds: [] };
   assert.deepEqual(store.change({ action: "merge", revision: 3, state: empty }).state, local.state);
 });
