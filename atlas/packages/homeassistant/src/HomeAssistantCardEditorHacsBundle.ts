@@ -1353,6 +1353,11 @@ function createHomeAssistantCardEditorBundleReadme(
     "## Languages",
     "",
     `Included language files: ${languages.join(", ")}.`,
+    "Keep the script and its sibling `locales/` directory together on the same Home Assistant origin; register the script as a JavaScript module.",
+    "The script uses the Home Assistant language, or an explicit card `language` such as `de` or `fr`. Regional variants use their base language.",
+    "Missing, invalid or incomplete translations fall back to `locales/en.json`, then embedded English defaults. Locale requests send no credentials.",
+    "The localized project title, missing-entity hint and runtime failure text are applied without changing authored child-card names or entity IDs. A distinct explicit `title` or `replacement_hint` takes priority.",
+    "A script-only installation works with embedded English defaults. Verify that your HACS distribution also installs the locale files; the filename-only manifest does not establish that delivery.",
     ...(fallbackLanguages.length > 0
       ? [
           "",

@@ -7,6 +7,7 @@ import type {
   HomeAssistantCardTarget,
 } from "./HomeAssistantCardConfiguration";
 import { createHomeAssistantCardConfiguration, inspectHomeAssistantCardDependency } from "./HomeAssistantCardConfiguration";
+import { createHomeAssistantCardLocaleRuntime, homeAssistantCardLocaleMethods } from "./HomeAssistantCardLocaleRuntime";
 
 export type HomeAssistantCardEditorMode = "simple" | "expert";
 export type HomeAssistantCardEditorSurfaceFieldLayout = "card" | "grid" | "horizontal-stack" | "vertical-stack";
@@ -965,10 +966,12 @@ function createHomeAssistantCardEditorScriptSource(
 ): string {
   const className = createHomeAssistantCardEditorClassName(customElementName);
   const sourceConfig = JSON.stringify(defaultConfig, null, 2);
+  const localeRuntime = createHomeAssistantCardLocaleRuntime(defaultConfig.title, defaultConfig.replacement_hint);
   if (expertCard) {
-    return `const DEFAULT_CONFIG = ${sourceConfig};
+    return `${localeRuntime}const DEFAULT_CONFIG = ${sourceConfig};
 const DEFAULT_CARD = ${JSON.stringify(expertCard, null, 2)};
 class ${className} extends HTMLElement {
+${homeAssistantCardLocaleMethods}
   setConfig(config) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.config.entities = Array.isArray(config?.entities) && config.entities.length
@@ -978,14 +981,18 @@ class ${className} extends HTMLElement {
   set hass(value) {
     this._hass = value;
     if (this._card) this._card.hass = value;
+    this.updateHint();
+    if (this.config && this.cardLanguage() !== this._requestedLanguage) this.createCard();
   }
   getCardSize() { return this._card?.getCardSize?.() ?? 3; }
   static getStubConfig() { return { ...DEFAULT_CONFIG, entities: [...DEFAULT_CONFIG.entities] }; }
+  updateHint() {
+    if (this._hint) this._hint.hidden = !this._hass || !this.config.entities.some(id => !this._hass.states?.[id]);
+  }
   async createCard() {
     const generation = this._generation = (this._generation ?? 0) + 1;
+    const language = this._requestedLanguage = this.cardLanguage();
     const root = this.shadowRoot ?? this.attachShadow({ mode: "open" });
-    this._card = undefined;
-    root.replaceChildren();
     const replacements = new Map(DEFAULT_CONFIG.entities.map((id, i) => [id, this.config.entities[i] ?? id]));
     const replace = value => typeof value === "string" ? replacements.get(value) ?? value
       : Array.isArray(value) ? value.map(replace)
@@ -993,16 +1000,33 @@ class ${className} extends HTMLElement {
       : value;
     const cardConfig = replace(DEFAULT_CARD);
     try {
+      const locale = await atlasLoadLocale(language);
+      if (generation !== this._generation) return;
+      this._locale = locale;
+      const title = this.localizedTitle();
+      if (cardConfig.title === DEFAULT_CONFIG.title) cardConfig.title = title;
       const helpers = await window.loadCardHelpers();
       if (generation !== this._generation) return;
       const card = helpers.createCardElement(cardConfig);
       this._card = card;
       if (this._hass) card.hass = this._hass;
-      root.replaceChildren(card);
+      const heading = document.createElement("div");
+      heading.className = "atlas-card-title";
+      heading.setAttribute("role", "heading");
+      heading.setAttribute("aria-level", "2");
+      heading.style.cssText = "padding:8px 4px;font-size:20px;font-weight:500;color:var(--primary-text-color)";
+      heading.textContent = title;
+      const hint = this._hint = document.createElement("p");
+      hint.className = "atlas-card-hint";
+      hint.style.cssText = "padding:4px;font-size:14px;color:var(--secondary-text-color)";
+      hint.textContent = this.localizedHint();
+      this.updateHint();
+      root.replaceChildren(...(cardConfig.title === title ? [] : [heading]), card, hint);
     } catch (error) {
       if (generation !== this._generation) return;
       const message = document.createElement("ha-card");
-      message.textContent = String(error?.message ?? error);
+      this._card = undefined;
+      message.textContent = this.translated("unavailable");
       root.replaceChildren(message);
     }
   }
@@ -1016,9 +1040,11 @@ if (!window.customCards.some(card => card.type === "${customElementName}")) wind
 `;
   }
   return [
+    localeRuntime,
     `const DEFAULT_CONFIG = ${sourceConfig};`,
     "",
     `class ${className} extends HTMLElement {`,
+    homeAssistantCardLocaleMethods,
     "  setConfig(config) {",
     "    const configuredEntities = Array.isArray(config?.entities) ? config.entities.filter(Boolean) : [];",
     "    this.config = {",
@@ -1027,10 +1053,20 @@ if (!window.customCards.some(card => card.type === "${customElementName}")) wind
     "      entities: configuredEntities.length > 0 ? configuredEntities : DEFAULT_CONFIG.entities,",
     "    };",
     "    this.render();",
+    "    this.updateLanguage();",
     "  }",
     "",
     "  set hass(value) {",
     "    this._hass = value;",
+    "    this.render();",
+    "    if (this.config && this.cardLanguage() !== this._requestedLanguage) this.updateLanguage();",
+    "  }",
+    "  async updateLanguage() {",
+    "    const language = this._requestedLanguage = this.cardLanguage();",
+    "    const generation = this._generation = (this._generation ?? 0) + 1;",
+    "    const locale = await atlasLoadLocale(language);",
+    "    if (generation !== this._generation) return;",
+    "    this._locale = locale;",
     "    this.render();",
     "  }",
     "",
@@ -1046,17 +1082,17 @@ if (!window.customCards.some(card => card.type === "${customElementName}")) wind
     "    const root = this.shadowRoot ?? this.attachShadow({ mode: \"open\" });",
     "    root.innerHTML = \"\";",
     "    const wrapper = document.createElement(\"ha-card\");",
-    "    wrapper.header = this.config?.title ?? DEFAULT_CONFIG.title;",
+    "    wrapper.header = this.localizedTitle();",
     "    const body = document.createElement(\"div\");",
     "    body.style.padding = \"0 16px 16px\";",
     "    const hint = document.createElement(\"p\");",
-    "    hint.textContent = this.config?.replacement_hint ?? DEFAULT_CONFIG.replacement_hint;",
+    "    hint.textContent = this.localizedHint();",
     "    body.append(hint);",
     "    const list = document.createElement(\"ul\");",
     "    for (const entityId of this.config?.entities ?? DEFAULT_CONFIG.entities) {",
     "      const item = document.createElement(\"li\");",
     "      const state = this._hass?.states?.[entityId];",
-    "      item.textContent = state ? `${entityId}: ${state.state}` : `${entityId} (set your own entity)`;",
+    "      item.textContent = `${entityId}: ${state && state.state !== 'unavailable' && state.state !== 'unknown' ? state.state : this.translated('unavailable')}`;",
     "      list.append(item);",
     "    }",
     "    body.append(list);",

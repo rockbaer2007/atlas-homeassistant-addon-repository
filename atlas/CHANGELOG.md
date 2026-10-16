@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.308
+
+- Exported card modules load sibling locale JSON files using the HA language or an explicit card language, with external EN and embedded English fallbacks.
+- Apply localized project titles, missing-entity hints and runtime failure messages; retain explicit title/hint overrides and authored child-card names/entities.
+- Cache bounded same-origin, credential-free locale requests; ordinary state updates preserve the mounted Expert cards. Existing data schemas and HA integration0.1.306 are unchanged.
+
 ## 0.1.307
 
 - Compare exported HACS bundle script/example titles with the checked project manifest, preserving distinct names of nested Expert cards.
