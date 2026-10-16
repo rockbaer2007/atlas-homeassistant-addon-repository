@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.307
+
+- Compare exported HACS bundle script/example titles with the checked project manifest, preserving distinct names of nested Expert cards.
+- Keep existing data formats, settings, files, projects and plugin activation unchanged. HA integration remains independently versioned at 0.1.306.
+
 ## 0.1.306
 
 - Qualify the HACS Runtime integration release update independently from the App version; keep the existing config-entry schema 1.1 and runtime address unchanged.

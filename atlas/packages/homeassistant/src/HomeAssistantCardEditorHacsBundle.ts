@@ -834,6 +834,9 @@ export function createHomeAssistantCardEditorHacsBundleReadinessReport(
   const summary = packageRead.summary;
   const script = summary?.script;
   const editorPlan = summary?.editorPlan;
+  // A stack's first child title is not the exported project's manifest name.
+  const packageTitle = hacsMetadata?.nameMatchesPackage
+    ? hacsMetadata.name : editorPlan?.cardName ?? summary?.title;
   const defaultConfig = script?.defaultConfig;
   const archivePaths = inspection.files.map(file => file.path);
   const zipReadable = inspection.reason !== "The archive is not a readable ZIP file.";
@@ -932,7 +935,7 @@ export function createHomeAssistantCardEditorHacsBundleReadinessReport(
   add("script-card-type-matches-element", scriptKnown ? (script.cardType === `custom:${script.customElementName}` ? "pass" : "fail") : "pending", "Script card type matches element", script && script.cardType === `custom:${script.customElementName}` ? "Script card type matches custom element name." : "Script card type has not been matched to element.");
   add("script-card-type-custom-prefix", scriptKnown ? (script.cardType.startsWith("custom:") ? "pass" : "fail") : "pending", "Script card type custom prefix", script?.cardType.startsWith("custom:") ? "Script card type starts with custom:." : "Script card type has not been verified.");
   add("script-default-config-present", scriptKnown ? (defaultConfig ? "pass" : "fail") : "pending", "Script default config present", defaultConfig ? "Script default config is present." : "Script default config has not been read.");
-  add("script-default-title-matches-package", scriptKnown && summaryKnown ? (defaultConfig?.title === summary.title ? "pass" : "fail") : "pending", "Script default title matches package", defaultConfig?.title === summary?.title ? "Default config title matches package title." : "Default config title has not been matched to package title.");
+  add("script-default-title-matches-package", scriptKnown && summaryKnown ? (defaultConfig?.title === packageTitle ? "pass" : "fail") : "pending", "Script default title matches package", defaultConfig?.title === packageTitle ? "Default config title matches package title." : "Default config title has not been matched to package title.");
   add("script-default-config-type-matches-card", scriptKnown ? (defaultConfig?.type === script.cardType ? "pass" : "fail") : "pending", "Script default type matches card", defaultConfig?.type === script?.cardType ? "Default config type matches script card type." : "Default config type has not been matched to card type.");
   add("script-source-nonempty", scriptKnown ? (script.source.trim().length > 0 ? "pass" : "fail") : "pending", "Script source non-empty", script?.source.trim() ? "Script source is non-empty." : "Script source has not been read.");
   add("script-source-registers-custom-cards", scriptKnown ? (script.source.includes("window.customCards") ? "pass" : "fail") : "pending", "Script registers customCards", script?.source.includes("window.customCards") ? "Script registers customCards metadata." : "Script customCards metadata has not been found.");
@@ -941,7 +944,7 @@ export function createHomeAssistantCardEditorHacsBundleReadinessReport(
   add("script-source-has-ha-card", scriptKnown ? (script.source.includes("ha-card") ? "pass" : "fail") : "pending", "Script renders ha-card", script?.source.includes("ha-card") ? "Script creates a ha-card wrapper." : "Script ha-card wrapper has not been found.");
   add("script-source-has-shadow-dom", scriptKnown ? (script.source.includes("attachShadow") ? "pass" : "fail") : "pending", "Script uses shadow DOM", script?.source.includes("attachShadow") ? "Script attaches a shadow DOM." : "Script shadow DOM setup has not been found.");
   add("example-title-present", exampleKnown && defaultConfig ? (defaultConfig.title.length > 0 ? "pass" : "fail") : "pending", "Example title present", defaultConfig?.title ? `Example title: ${defaultConfig.title}` : "Example title has not been read.");
-  add("example-title-matches-package", exampleKnown && summaryKnown && defaultConfig ? (defaultConfig.title === summary.title ? "pass" : "fail") : "pending", "Example title matches package", defaultConfig?.title === summary?.title ? "Example title matches package title." : "Example title has not been matched to package title.");
+  add("example-title-matches-package", exampleKnown && summaryKnown && defaultConfig ? (defaultConfig.title === packageTitle ? "pass" : "fail") : "pending", "Example title matches package", defaultConfig?.title === packageTitle ? "Example title matches package title." : "Example title has not been matched to package title.");
   add("example-entities-present", exampleKnown && defaultConfig ? (Array.isArray(defaultConfig.entities) ? "pass" : "fail") : "pending", "Example entities present", defaultConfig ? `Example entities: ${defaultConfig.entities.join(", ")}` : "Example entities have not been read.");
   add("example-entities-nonempty", exampleKnown && defaultConfig ? (defaultConfig.entities.length > 0 ? "pass" : "fail") : "pending", "Example entities non-empty", defaultConfig?.entities.length ? `Example entity count: ${defaultConfig.entities.length}` : "Example entities have not been read.");
   add("example-first-entity-safe", exampleKnown && defaultConfig ? (safeEntityPattern.test(defaultConfig.entities[0] ?? "") ? "pass" : "fail") : "pending", "Example first entity safe", defaultConfig?.entities[0] ? `First example entity: ${defaultConfig.entities[0]}` : "Example first entity has not been read.");

@@ -63,6 +63,42 @@ describe("Home Assistant frontend integration planning", () => {
     expect(read.summary?.card.name).toBe("First card title");
     expect(read.summary?.editorPlan?.fields).toEqual(editorPlan.fields);
     expect(read.summary?.card).not.toHaveProperty("templateId");
+    const report = createHomeAssistantCardEditorHacsBundleReadinessReport(read);
+    expect(report.checks.find(check => check.code === "script-default-title-matches-package")?.status).toBe("pass");
+    expect(report.checks.find(check => check.code === "example-title-matches-package")?.status).toBe("pass");
+    const mismatched = createHomeAssistantCardEditorHacsBundleReadinessReport({
+      ...read,
+      summary: { ...read.summary!, script: { ...read.summary!.script!,
+        defaultConfig: { ...read.summary!.script!.defaultConfig, title: "Wrong project" } } },
+    });
+    expect(mismatched.checks.find(check => check.code === "script-default-title-matches-package")?.status).toBe("fail");
+    expect(mismatched.checks.find(check => check.code === "example-title-matches-package")?.status).toBe("fail");
+  });
+
+  it("preserves a mixed Expert HACS bundle across import and re-export with explicit locale fallbacks", () => {
+    const editorPlan = createHomeAssistantCardEditorPackagePlan({
+      cardName: "Mixed project", scriptFilename: "mixed-project.js", editorMode: "expert",
+      defaultEntityIds: ["sensor.temperature", "input_boolean.lamp"],
+      fields: [
+        { id: "Core temperature", target: "entity", entityId: "sensor.temperature", column: 0, row: 0, width: 4, height: 2 },
+        { id: "Bubble lamp", target: "bubble", bubbleButtonType: "switch", entityId: "input_boolean.lamp", column: 4, row: 0, width: 4, height: 2 },
+        { id: "Mushroom lamp", target: "mushroom-template", entityId: "input_boolean.lamp", column: 0, row: 2, width: 8, height: 2 },
+      ],
+    });
+    const card = createHomeAssistantCardEditorConfiguration(editorPlan);
+    const archive = createHomeAssistantCardEditorHacsBundleArchive(createHomeAssistantCardExportPackage({
+      card, format: "json", name: editorPlan.cardName, languages: ["de", "fr"], editorPlan,
+      script: createHomeAssistantCardEditorScriptExport(editorPlan),
+    }));
+    const imported = readHomeAssistantCardEditorHacsBundleArchivePackage(archive.content);
+    expect(imported.importable).toBe(true);
+    expect(imported.summary?.card).toEqual(card);
+    expect(imported.summary?.editorPlan?.fields).toEqual(editorPlan.fields);
+    expect(imported.localeReadiness?.manifestLanguages).toEqual(["en", "de", "fr"]);
+    expect(imported.localeReadiness?.fallbackLanguages).toEqual(["de", "fr"]);
+    expect(createHomeAssistantCardEditorHacsBundleReadinessReport(imported).ready).toBe(true);
+    const reexported = createHomeAssistantCardEditorHacsBundleArchive(JSON.parse(imported.packageContent!));
+    expect(reexported.content).toEqual(archive.content);
   });
 
   it("ignores invalid resize metadata without adding properties to legacy fields", () => {
