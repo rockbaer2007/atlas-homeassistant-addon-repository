@@ -7704,7 +7704,15 @@ function mergeTranslatedCardLocales(cardPackage, translatedLocales) {
       ...cardPackage.manifest,
       fallbackLanguages: cardPackage.manifest.fallbackLanguages.filter(language => !translatedLanguages.has(language)),
     },
-    locales: cardPackage.locales.map(locale => translatedByLanguage.get(locale.language) ?? locale),
+    locales: cardPackage.locales.map(locale => {
+      const translated = translatedByLanguage.get(locale.language);
+      return translated ? {
+        ...translated,
+        content: { ...translated.content, _meta: { ...translated.content._meta,
+          ...(locale.content._meta.packageId ? { packageId: locale.content._meta.packageId } : {}),
+        } },
+      } : locale;
+    }),
   };
 }
 

@@ -1,8 +1,9 @@
 // This code runs in the exported HA module, independently of the ATLAS server.
-export function createHomeAssistantCardLocaleRuntime(title: string, replacementHint: string, languages: readonly string[] = ["en"]): string {
+export function createHomeAssistantCardLocaleRuntime(title: string, replacementHint: string, languages: readonly string[] = ["en"], packageId: string | null = null): string {
   const expected = [...new Set(["en", ...languages.filter(language => /^[a-z]{2}$/.test(language))])].slice(0, 32);
   return `const ATLAS_EN = ${JSON.stringify({ title, unavailable: "Unavailable", replaceDemoEntities: replacementHint })};
 const ATLAS_EXPECTED_LOCALES = ${JSON.stringify(expected)};
+const ATLAS_PACKAGE_ID = ${JSON.stringify(packageId)};
 const ATLAS_LOCALE_BASE = new URL("./locales/", import.meta.url);
 const ATLAS_LOCALES = new Map();
 function atlasReadLocale(language) {
@@ -20,6 +21,7 @@ function atlasReadLocale(language) {
       if (text.length > 65536) return failed;
       const value = JSON.parse(text);
       if (!value || value._meta?.language !== language || !value.card || typeof value.card !== "object" || Array.isArray(value.card)) return failed;
+      if (ATLAS_PACKAGE_ID && value._meta.packageId !== ATLAS_PACKAGE_ID) return failed;
       return { readable: true, text: Object.fromEntries(Object.keys(ATLAS_EN).flatMap(key => {
         const text = value.card[key];
         return typeof text === "string" && text.trim() && text.length <= 2000 ? [[key, text]] : [];
@@ -57,9 +59,9 @@ export const homeAssistantCardLocaleMethods = `  cardLanguage() {
   integrityNotice() {
     if (!this._localeIssues?.length) return [];
     const messages = {
-      en: ["Card installation incomplete or unreadable: ", ". In HACS, redownload the complete Card package, then reload the browser. Restore your backup if needed."],
-      de: ["Card-Installation unvollständig oder nicht lesbar: ", ". In HACS das vollständige Card-Paket erneut herunterladen und den Browser neu laden. Bei Bedarf die Sicherung wiederherstellen."],
-      fr: ["Installation Card incomplète ou illisible : ", ". Dans HACS, retélécharger le paquet Card complet, puis recharger le navigateur. Restaurer la sauvegarde si nécessaire."],
+      en: ["Card installation incomplete, unreadable or mixed package versions: ", ". In HACS, redownload the complete Card package, then reload the browser. Restore your backup if needed."],
+      de: ["Card-Installation unvollständig, nicht lesbar oder mit gemischten Paketversionen: ", ". In HACS das vollständige Card-Paket erneut herunterladen und den Browser neu laden. Bei Bedarf die Sicherung wiederherstellen."],
+      fr: ["Installation Card incomplète, illisible ou avec des versions de paquet mélangées : ", ". Dans HACS, retélécharger le paquet Card complet, puis recharger le navigateur. Restaurer la sauvegarde si nécessaire."],
     };
     const words = messages[this.cardLanguage()] ?? messages.en;
     const notice = document.createElement("p");

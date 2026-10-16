@@ -129,6 +129,7 @@ export interface HomeAssistantCardEditorDependencyPlan {
 }
 
 export interface HomeAssistantCardEditorScriptExport {
+  readonly packageId?: string;
   readonly filename: string;
   readonly customElementName: string;
   readonly cardType: `custom:${string}`;
@@ -448,14 +449,23 @@ export function createHomeAssistantCardEditorScriptExport(
     replacement_hint: editorPlan.replacementHint,
   } satisfies HomeAssistantCardEditorScriptExport["defaultConfig"];
 
+  const source = createHomeAssistantCardEditorScriptSource(customElementName, defaultConfig,
+    editorPlan.editorMode === "expert" ? createHomeAssistantCardEditorConfiguration(editorPlan) : undefined, languages);
+  // Deterministic release marker, not a signature or a tamper-proof checksum.
+  let fingerprint = 0xcbf29ce484222325n;
+  for (let index = 0; index < source.length; index++) {
+    fingerprint = BigInt.asUintN(64, (fingerprint ^ BigInt(source.charCodeAt(index))) * 0x100000001b3n);
+  }
+  const packageId = `atlas-card-v1-${fingerprint.toString(16).padStart(16, "0")}`;
   return {
+    packageId,
     filename: editorPlan.scriptFilename,
     customElementName,
     cardType,
     resourcePath: `/hacsfiles/atlas/${editorPlan.scriptFilename}`,
     defaultConfig,
     source: createHomeAssistantCardEditorScriptSource(customElementName, defaultConfig,
-      editorPlan.editorMode === "expert" ? createHomeAssistantCardEditorConfiguration(editorPlan) : undefined, languages),
+      editorPlan.editorMode === "expert" ? createHomeAssistantCardEditorConfiguration(editorPlan) : undefined, languages, packageId),
   };
 }
 
@@ -965,10 +975,11 @@ function createHomeAssistantCardEditorScriptSource(
   defaultConfig: HomeAssistantCardEditorScriptExport["defaultConfig"],
   expertCard?: HomeAssistantCardConfiguration,
   languages: readonly string[] = ["en"],
+  packageId: string | null = null,
 ): string {
   const className = createHomeAssistantCardEditorClassName(customElementName);
   const sourceConfig = JSON.stringify(defaultConfig, null, 2);
-  const localeRuntime = createHomeAssistantCardLocaleRuntime(defaultConfig.title, defaultConfig.replacement_hint, languages);
+  const localeRuntime = createHomeAssistantCardLocaleRuntime(defaultConfig.title, defaultConfig.replacement_hint, languages, packageId);
   if (expertCard) {
     return `${localeRuntime}const DEFAULT_CONFIG = ${sourceConfig};
 const DEFAULT_CARD = ${JSON.stringify(expertCard, null, 2)};

@@ -347,10 +347,13 @@ export function createHomeAssistantCardEditorHacsBundle(
   const packagedCard = {
     ...cardPackage,
     script,
+    locales: !cardPackage.script && script.packageId ? cardPackage.locales.map(locale => ({
+      ...locale, content: { ...locale.content, _meta: { ...locale.content._meta, packageId: script.packageId } },
+    })) : cardPackage.locales,
   };
   const bundleName = script.filename.replace(/\.js$/i, "");
   const defaultConfig = JSON.stringify(script.defaultConfig, null, 2);
-  const localeFiles = cardPackage.locales.map(locale => ({
+  const localeFiles = packagedCard.locales.map(locale => ({
     path: `dist/${locale.path}`,
     mimeType: "application/json" as const,
     content: `${JSON.stringify(locale.content, null, 2)}\n`,
@@ -1376,6 +1379,7 @@ function createHomeAssistantCardEditorBundleReadme(
     "The script uses the Home Assistant language, or an explicit card `language` such as `de` or `fr`. Regional variants use their base language.",
     "Missing, invalid or incomplete translations fall back to `locales/en.json`, then embedded English defaults. Locale requests send no credentials.",
     "Newly generated scripts check their declared export languages, including inactive languages. Missing or unreadable files produce a built-in EN/DE/FR repair notice while the Card keeps rendering. Redownload the complete package and reload the browser after repair; restore your backup if needed. This checks locale availability/format, not cryptographic integrity or automatic rollback. Existing scripts need re-exporting to gain this check.",
+    "New exports also pair the script and language files with a deterministic packageId. Keep each locale's _meta.packageId when translating/reviewing it. A different or missing marker is reported as mixed/incomplete installation and its text is ignored. Replace the complete package and reload; do not copy markers between releases to suppress warnings. The marker detects accidental mixtures, not tampering or text changes retaining the same marker. Old scripts cannot retrospectively detect mixed versions.",
     "The localized project title, missing-entity hint and runtime failure text are applied without changing authored child-card names or entity IDs. A distinct explicit `title` or `replacement_hint` takes priority.",
     "A script-only installation works with embedded English defaults. This repository bundle places the script and locales in dist/ so HACS installs them together. Keep dist/ intact; do not copy the script to the repository root or attach a standalone JavaScript release asset, which HACS can prefer over dist/.",
     ...(fallbackLanguages.length > 0

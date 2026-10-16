@@ -14,6 +14,43 @@ function element() {
 }
 
 describe("generated Expert card runtime", () => {
+  it.each(["en", "de", "fr"])("rejects mixed or unmarked %s files in both script directions and recovers after reload", async mixedLanguage => {
+    const exports = ["Release A", "Release B"].map(cardName => createHomeAssistantCardEditorScriptExport({
+      cardName, editorMode: "expert", defaultEntityIds: ["sensor.demo"],
+      fields: [{ id: "Live", target: "entity", entityId: "sensor.demo", column: 0, row: 0, width: 4, height: 2 }],
+    }, ["en", "de", "fr"]));
+    expect(exports[0].packageId).not.toBe(exports[1].packageId);
+    for (const [current, other] of [[exports[0], exports[1]], [exports[1], exports[0]]]) {
+      for (const state of ["mixed", "unmarked", "repaired"]) {
+        let Card: any, nodes: any[] = [], child: any;
+        execute(current.source, {
+          HTMLElement: class { attachShadow() { return { replaceChildren: (...items: any[]) => { nodes = items; } }; } },
+          document: { createElement: element }, AbortController, setTimeout, clearTimeout,
+          fetch: async (url: URL) => {
+            const language = url.pathname.split("/").at(-1)!.slice(0, 2);
+            const broken = language === mixedLanguage && state !== "repaired";
+            return new Response(JSON.stringify({ _meta: { language,
+              ...(broken && state === "unmarked" ? {} : { packageId: broken ? other.packageId : current.packageId }),
+            }, card: { title: broken ? "WRONG RELEASE TEXT" : "Matching " + language } }));
+          },
+          customElements: { get: () => undefined, define: (_name: string, value: any) => { Card = value; } },
+          window: { customCards: [], loadCardHelpers: async () => ({ createCardElement: () => child = {} }) },
+        });
+        const card = new Card(); card.hass = { language: "de", states: {} }; card.setConfig({});
+        await new Promise(resolve => setImmediate(resolve));
+        const notices = nodes.filter(node => node.className === "atlas-card-integrity");
+        expect(notices).toHaveLength(state === "repaired" ? 0 : 1);
+        if (state !== "repaired") {
+          expect(notices[0].textContent).toContain("gemischten Paketversionen");
+          expect(notices[0].textContent).toContain(`locales/${mixedLanguage}.json`);
+        }
+        expect(card.localizedTitle()).not.toBe("WRONG RELEASE TEXT");
+        card.hass = { language: "de", states: { "sensor.demo": { state: "43" } } };
+        expect(child.hass.states["sensor.demo"].state).toBe("43");
+      }
+    }
+  });
+
   it("warns for an unselected missing export locale, keeps live cards and clears the warning after repair and reload", async () => {
     const exported = createHomeAssistantCardEditorScriptExport({
       cardName: "Integrity card", editorMode: "expert", defaultEntityIds: ["sensor.demo"],
@@ -29,7 +66,7 @@ describe("generated Expert card runtime", () => {
           const language = url.pathname.split("/").at(-1)!.replace(".json", "");
           requests.push(language);
           return language === "fr" && !repaired ? new Response("missing", { status: 404 })
-            : new Response(JSON.stringify({ _meta: { language }, card: { title: "Readable " + language } }));
+            : new Response(JSON.stringify({ _meta: { language, packageId: exported.packageId }, card: { title: "Readable " + language } }));
         },
         customElements: { get: () => undefined, define: (_name: string, value: any) => { Card = value; } },
         window: { customCards: [], loadCardHelpers: async () => ({ createCardElement: () => child = {} }) },
@@ -116,9 +153,9 @@ describe("generated Expert card runtime", () => {
     let Card: any, nodes: any[] = [], mounts = 0;
     const configurations: any[] = [], requests: any[] = [];
     const locales: Record<string, any> = {
-      en: { _meta: { language: "en" }, card: { title: "English title", unavailable: "EN unavailable", replaceDemoEntities: "EN hint" } },
-      de: { _meta: { language: "de" }, card: { title: "Deutscher Titel", unavailable: "Nicht verfügbar" } },
-      fr: { _meta: { language: "fr" }, card: { title: "Titre français", unavailable: "" } },
+      en: { _meta: { language: "en", packageId: exported.packageId }, card: { title: "English title", unavailable: "EN unavailable", replaceDemoEntities: "EN hint" } },
+      de: { _meta: { language: "de", packageId: exported.packageId }, card: { title: "Deutscher Titel", unavailable: "Nicht verfügbar" } },
+      fr: { _meta: { language: "fr", packageId: exported.packageId }, card: { title: "Titre français", unavailable: "" } },
     };
     const context = {
       HTMLElement: class { shadowRoot: any; attachShadow() { return this.shadowRoot = { replaceChildren: (...items: any[]) => { nodes = items; mounts++; } }; } },
@@ -188,7 +225,7 @@ describe("generated Expert card runtime", () => {
       document: { createElement: element }, AbortController, setTimeout, clearTimeout,
       fetch: async (url: URL) => {
         const language = url.pathname.endsWith("fr.json") ? "fr" : "en";
-        return new Response(JSON.stringify({ _meta: { language }, card: language === "fr"
+        return new Response(JSON.stringify({ _meta: { language, packageId: exported.packageId }, card: language === "fr"
           ? { title: "Titre", unavailable: "Indisponible", replaceDemoEntities: "Remplacer les entités" } : {} }));
       },
       customElements: { define: (_name: string, value: any) => { Card = value; } },
@@ -215,7 +252,7 @@ describe("generated Expert card runtime", () => {
         if (requestsFail) return new Promise((_resolve, reject) => options.signal.addEventListener("abort", () => reject(new Error("timeout"))));
         const language = url.pathname.split("/").at(-1)!.slice(0, 2);
         if (language === "fr") return new Promise<Response>(resolve => { resolveFrench = resolve; });
-        return new Response(JSON.stringify({ _meta: { language }, card: { title: language === "de" ? "Deutsch" : "English file" } }));
+        return new Response(JSON.stringify({ _meta: { language, packageId: exported.packageId }, card: { title: language === "de" ? "Deutsch" : "English file" } }));
       },
       customElements: { get: () => undefined, define: (_name: string, value: any) => { Card = value; } },
       window: { customCards: [], loadCardHelpers: async () => ({ createCardElement: () => ({}) }) },
@@ -224,7 +261,7 @@ describe("generated Expert card runtime", () => {
     card.hass = { language: "de", states: {} };
     await new Promise(resolve => setImmediate(resolve));
     expect(card.localizedTitle()).toBe("Deutsch");
-    resolveFrench!(new Response(JSON.stringify({ _meta: { language: "fr" }, card: { title: "Stale French" } })));
+    resolveFrench!(new Response(JSON.stringify({ _meta: { language: "fr", packageId: exported.packageId }, card: { title: "Stale French" } })));
     await new Promise(resolve => setImmediate(resolve));
     expect(card.localizedTitle()).toBe("Deutsch");
     requestsFail = true;

@@ -38,6 +38,34 @@ import {
 } from "../src";
 
 describe("Home Assistant frontend integration planning", () => {
+  it("keeps one deterministic script/locale package marker through exports and legacy imports", () => {
+    const editorPlan = createHomeAssistantCardEditorPackagePlan({ cardName: "Version A", editorMode: "expert" });
+    const script = createHomeAssistantCardEditorScriptExport(editorPlan, ["en", "de", "fr"]);
+    expect(createHomeAssistantCardEditorScriptExport(editorPlan, ["en", "de", "fr"])).toEqual(script);
+    expect(createHomeAssistantCardEditorScriptExport({ ...editorPlan, cardName: "Version B" }).packageId).not.toBe(script.packageId);
+    const cardPackage = createHomeAssistantCardExportPackage({
+      name: "Version A", card: createHomeAssistantCardEditorConfiguration(editorPlan), format: "json",
+      editorPlan, script, languages: ["en", "de", "fr"],
+    });
+    const inspect = (candidate: typeof cardPackage) => {
+      const bundle = createHomeAssistantCardEditorHacsBundle(candidate);
+      const embedded = JSON.parse(bundle.files.find(file => file.path.endsWith(".atlas-card.json"))!.content);
+      expect(embedded.script.packageId).toBe(script.packageId);
+      expect(bundle.files.filter(file => file.path.startsWith("dist/locales/")).map(file => JSON.parse(file.content)._meta.packageId))
+        .toEqual([script.packageId, script.packageId, script.packageId]);
+      const restored = readHomeAssistantCardEditorHacsBundleArchivePackage(createHomeAssistantCardEditorHacsBundleArchive(bundle).content);
+      expect(restored.importable).toBe(true);
+      expect(restored.summary?.script?.packageId).toBe(script.packageId);
+    };
+    inspect(cardPackage);
+    inspect({ ...cardPackage, script: undefined });
+    // Never relabel supplied old scripts or imported locale files as a new release.
+    const legacy = { ...cardPackage, script: { ...script, packageId: undefined, source: "/* retained legacy script */" } };
+    const bundle = createHomeAssistantCardEditorHacsBundle(legacy);
+    expect(bundle.files.find(file => file.path.endsWith(".js"))!.content).toBe(legacy.script.source);
+    expect(JSON.parse(bundle.files.find(file => file.path === "dist/locales/fr.json")!.content)).toEqual(legacy.locales[2].content);
+  });
+
   it("preserves template and resize metadata through JSON and HACS package round trips", () => {
     const editorPlan = createHomeAssistantCardEditorPackagePlan({
       cardName: "Temperature",

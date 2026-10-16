@@ -299,6 +299,7 @@ export interface HomeAssistantCardLocaleFile {
 export interface HomeAssistantCardLocaleContent {
   readonly _meta: {
     readonly language: string;
+    readonly packageId?: string;
     readonly status: HomeAssistantCardLocaleStatus;
     readonly sourceLanguage: "en";
     readonly provider?: string;
@@ -699,6 +700,7 @@ export function createHomeAssistantCardExportPackage(
     locales: createHomeAssistantCardLocaleFiles({
       title: payload.manifest.name,
       languages: payload.manifest.languages,
+      packageId: input.script?.packageId,
     }),
     ...(input.editorPlan ? { editorPlan: input.editorPlan } : {}),
     ...(input.script ? { script: input.script } : {}),
@@ -721,6 +723,7 @@ export function normalizeHomeAssistantCardExportLanguages(
 export function createHomeAssistantCardLocaleFiles(input: {
   readonly title: string;
   readonly languages: readonly string[];
+  readonly packageId?: string;
 }): readonly HomeAssistantCardLocaleFile[] {
   return normalizeHomeAssistantCardExportLanguages(input.languages).map(language => {
     const status: HomeAssistantCardLocaleStatus = language === "en" ? "manual" : "fallback";
@@ -731,6 +734,7 @@ export function createHomeAssistantCardLocaleFiles(input: {
       content: {
         _meta: {
           language,
+          ...(input.packageId ? { packageId: input.packageId } : {}),
           status,
           sourceLanguage: "en",
           ...(status === "fallback"

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.311
+
+- New Card exports pair script and language files with a deterministic package marker.
+- Mixed or unmarked locales show the EN/DE/FR repair notice and do not supply stale translations; live Cards and fallback text remain usable.
+- Preserve supplied legacy exports and all stored data. Re-export deliberately to gain the check. This is not a signature, content authentication or automatic recovery. Integration remains0.1.306.
+
 ## 0.1.310
 
 - New Card exports check declared language files, including inactive selected languages.
