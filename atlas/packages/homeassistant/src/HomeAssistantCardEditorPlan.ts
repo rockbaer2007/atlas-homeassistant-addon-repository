@@ -1038,7 +1038,11 @@ ${homeAssistantCardLocaleMethods}
       if (cardConfig.title === DEFAULT_CONFIG.title) cardConfig.title = title;
       const helpers = await window.loadCardHelpers();
       if (generation !== this._generation) return;
-      const card = helpers.createCardElement(cardConfig);
+      // UIX/card-mod patch HA's wrapper to style roots without their own ha-card
+      // (for example stacks). Use that same lifecycle instead of flattening CSS.
+      const useWrapper = (cardConfig.uix || cardConfig.card_mod) && customElements.get("hui-card");
+      const card = useWrapper ? document.createElement("hui-card") : helpers.createCardElement(cardConfig);
+      if (useWrapper) card.config = cardConfig;
       this._card = card;
       if (this._hass) card.hass = this._hass;
       const heading = document.createElement("div");

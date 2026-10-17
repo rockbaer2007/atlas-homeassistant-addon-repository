@@ -14,6 +14,35 @@ function element() {
 }
 
 describe("generated Expert card runtime", () => {
+  it.each(["uix", "card_mod"])("uses the native HA wrapper for root %s styles and keeps live state flowing", async engine => {
+    const rawCard = { type: "vertical-stack" as const, [engine]: { style: ":host { --parent-accent: green; }" }, cards: [
+      { type: "entity" as const, name: "Child", entity: "sensor.demo", [engine]: { style: "ha-card { border-color: var(--parent-accent); }" } },
+    ] };
+    const exported = createHomeAssistantCardEditorScriptExport({ cardName: "Root inheritance", editorMode: "expert", defaultEntityIds: ["sensor.demo"],
+      fields: [{ id: "Root inheritance", target: "entity", entityId: "sensor.demo", rawCard, layout: "vertical-stack", entries: [{ id: "Child", target: "entity", rawCard: rawCard.cards[0], entityId: "sensor.demo" }], column: 0, row: 0, width: 4, height: 6 }],
+    }, ["en"]);
+    let Card: any, nodes: any[] = [], directCalls = 0;
+    const wrapper = { ...element(), config: undefined as any, hass: undefined as any, getCardSize: () => 7 };
+    execute(exported.source, {
+      HTMLElement: class { attachShadow() { return { replaceChildren: (...items: any[]) => { nodes = items; } }; } },
+      document: { createElement: (name: string) => name === "hui-card" ? wrapper : element() },
+      AbortController, setTimeout, clearTimeout,
+      fetch: async () => new Response(JSON.stringify({ _meta: { language: "en", packageId: exported.packageId }, card: {} })),
+      customElements: { get: (name: string) => name === "hui-card" ? class {} : undefined, define: (_name: string, value: any) => { Card = value; } },
+      window: { customCards: [], loadCardHelpers: async () => ({ createCardElement: () => { directCalls++; return {}; } }) },
+    });
+    const card = new Card(); card.hass = { language: "en", states: {} }; card.setConfig({ entities: ["sensor.actual"] });
+    await new Promise(resolve => setImmediate(resolve));
+    expect(directCalls).toBe(0);
+    expect(nodes).toContain(wrapper);
+    expect(wrapper.config[engine]).toEqual(rawCard[engine]);
+    expect(wrapper.config.cards[0][engine]).toEqual(rawCard.cards[0][engine]);
+    expect(wrapper.config.cards[0].entity).toBe("sensor.actual");
+    card.hass = { language: "en", states: { "sensor.actual": { state: "42" } } };
+    expect(wrapper.hass.states["sensor.actual"].state).toBe("42");
+    expect(card.getCardSize()).toBe(7);
+  });
+
   it.each(["en", "de", "fr"])("rejects mixed or unmarked %s files in both script directions and recovers after reload", async mixedLanguage => {
     const exports = ["Release A", "Release B"].map(cardName => createHomeAssistantCardEditorScriptExport({
       cardName, editorMode: "expert", defaultEntityIds: ["sensor.demo"],

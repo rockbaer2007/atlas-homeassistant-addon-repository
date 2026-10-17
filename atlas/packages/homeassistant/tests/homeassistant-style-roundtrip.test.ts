@@ -24,6 +24,41 @@ const cards = [
 ];
 
 describe("structural card_mod and UIX style preservation", () => {
+  it.each(["yaml", "json"] as const)("preserves Bubble CSS text through single/nested %s and HACS roundtrips", format => {
+    const bubbleCss = ".bubble-button-card-container {\n  --accent: var(--primary-color);\n  border: 3px solid var(--accent);\n}\n.bubble-name { color: {{ 'red' if is_state('sensor.test', 'on') else 'blue' }}; }\n";
+    const bubble = { ...cards[8], styles: bubbleCss };
+    const source = { type: "vertical-stack", uix: { style: ":host { --accent: green; }" }, cards: [bubble] };
+    const single = parseHomeAssistantEntitiesCardConfiguration(JSON.stringify(bubble)).card;
+    expect(single.styles).toBe(bubbleCss);
+    expect(parseHomeAssistantEntitiesCardConfiguration(serializeHomeAssistantEntitiesCardConfiguration(single, format)).card.styles).toBe(bubbleCss);
+    const card = parseHomeAssistantEntitiesCardConfiguration(JSON.stringify(source)).card;
+    if (card.type !== "vertical-stack") throw Error("Expected stack");
+    const plan = createHomeAssistantCardEditorPackagePlan({ cardName: "Bubble CSS", scriptFilename: "bubble-css.js", editorMode: "expert",
+      fields: [{ id: "Bubble CSS", target: "bubble", entityId: "sensor.test", layout: "vertical-stack", rawCard: card,
+        entries: [{ id: "Bubble", target: "bubble", entityId: "sensor.test", rawCard: card.cards[0] }],
+        column: 0, row: 0, width: 4, height: 6 }] });
+    const generated = createHomeAssistantCardEditorConfiguration(plan);
+    const pkg = createHomeAssistantCardExportPackage({ card: generated, format, name: plan.cardName, editorPlan: plan, languages: ["en", "de"] });
+    const bundle = createHomeAssistantCardEditorHacsBundle(pkg);
+    const bytes = createHomeAssistantCardEditorHacsBundleArchive(bundle).content;
+    const imported = readHomeAssistantCardEditorHacsBundleArchivePackage(bytes);
+    expect(imported.summary?.card).toMatchObject(source);
+    expect(imported.summary?.editorPlan?.fields[0].entries?.[0].rawCard?.styles).toBe(bubbleCss);
+    expect(bundle.files.find(file => file.path === "dist/bubble-css.js")?.content).toContain(JSON.stringify(bubbleCss));
+    expect(createHomeAssistantCardEditorHacsBundleArchive(createHomeAssistantCardEditorHacsBundle(JSON.parse(imported.packageContent!))).content).toEqual(bytes);
+  });
+
+  it("keeps empty CSS and object styles but rejects invalid native style values", () => {
+    for (const styles of ["", { background: "red" }]) {
+      const card = parseHomeAssistantEntitiesCardConfiguration(JSON.stringify({ ...cards[8], styles })).card;
+      expect(card.styles).toEqual(styles);
+      expect(parseHomeAssistantEntitiesCardConfiguration(serializeHomeAssistantEntitiesCardConfiguration(card, "yaml")).card.styles).toEqual(styles);
+    }
+    for (const styles of [true, 17, ["ha-card {}"], null]) {
+      expect(parseHomeAssistantEntitiesCardConfiguration(JSON.stringify({ ...cards[8], styles })).card).not.toHaveProperty("styles");
+    }
+  });
+
   it.each(["card_mod", "uix", "uix_style"])("retains %s on supported cards in YAML and JSON", key => {
     for (const fixture of cards) for (const format of ["yaml", "json"] as const) {
       const parsed = parseHomeAssistantEntitiesCardConfiguration(JSON.stringify({ ...fixture, [key]: style }));

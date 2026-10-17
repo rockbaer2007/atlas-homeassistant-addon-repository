@@ -1530,6 +1530,7 @@ describe("Home Assistant entities card configuration", () => {
                 name: "Einlieger / Garten",
                 entity: "sensor.shellypro3em_512_leistung",
                 show_state: true,
+                styles: ".bubble-icon { color: green; }\n",
               },
               {
                 type: "custom:bubble-card",

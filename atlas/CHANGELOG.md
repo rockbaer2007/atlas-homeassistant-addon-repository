@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.316
+
+- Preserve Bubble CSS text in single/nested YAML/JSON imports, Card packages, HACS scripts and re-import, including whitespace and empty strings.
+- Render styled root Cards through the native Home Assistant card wrapper so UIX/Card-Mod can apply parent styles and CSS variables to stack descendants.
+- Existing settings, files, projects and plugins are unchanged. Re-export Cards to receive the runtime fix; previously discarded CSS requires the original import or backup. Integration remains0.1.306.
+
 ## 0.1.315
 
 - Preserve imported card_mod, uix and uix_style mappings on their cards through YAML/JSON export, HACS packages and scripts, and re-import.
