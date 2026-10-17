@@ -848,6 +848,9 @@ function createSurfaceFieldCardConfiguration(
   }
 
   if (!field.entityId && field.target !== "link" && field.target !== "webpage" && field.target !== "custom-card") return undefined;
+  if (field.target === "mushroom-template" && field.rawCard?.type === "custom:mushroom-template-card") {
+    return { ...field.rawCard, entity: field.entityId };
+  }
   if (field.target === "custom-card") {
     return createRawCustomCardConfiguration(field.customType, field.id, field.entityId);
   }
@@ -898,7 +901,12 @@ function createSurfaceFieldEntryCardConfiguration(
     };
   }
 
-  if (entry.rawCard) return entry.rawCard;
+  if (entry.rawCard) {
+    if (entry.target === "mushroom-template" && entry.rawCard.type === "custom:mushroom-template-card") {
+      return { ...entry.rawCard, entity: entry.entityId || entry.rawCard.entity };
+    }
+    return entry.rawCard;
+  }
   if (!entry.entityId && entry.target !== "link" && entry.target !== "webpage" && entry.target !== "custom-card") return undefined;
   if (entry.target === "custom-card") {
     return createRawCustomCardConfiguration(entry.customType, entry.id, entry.entityId ?? "");

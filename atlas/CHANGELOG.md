@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.313
+
+- Preserve Mushroom text, icon and current/legacy color templates during JSON/YAML import, single-card conversion and subsequent exports.
+- Parse YAML block scalars without losing indentation or blank lines; explicit title/entity edits preserve unrelated templates.
+- Existing projects, files, settings and plugins remain unchanged. Integration remains0.1.306.
+
 ## 0.1.312
 
 - Store File Studio trash and history inside persistent ATLAS plugin data by default; keep existing explicit Linux/custom paths.

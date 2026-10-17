@@ -3421,6 +3421,21 @@ function collectImportedSimpleEntityNames(card) {
 
 function createExpertFieldsFromImportedCard(card) {
   const entities = getSimplePreviewCardEntities(card);
+  if (card?.type === "custom:mushroom-template-card") {
+    return [{
+      ...createHomeAssistantCardEditorFieldFromTemplate({
+        template: "state-button",
+        target: "mushroom-template",
+        entityId: card.entity,
+        id: getSimplePreviewCardTitle(card),
+        column: 0,
+        row: 0,
+        width: 4,
+        height: 2,
+      }),
+      rawCard: cloneImportedCard(card),
+    }];
+  }
   if (card?.type === "custom:tabbed-card-v2") {
     return [createImportedTabbedCardExpertField(card)];
   }
@@ -4345,7 +4360,12 @@ function updateSelectedExpertFieldTitle(title) {
       statusMessage.textContent = t("text.enterTitle");
       return false;
     }
-    return updateSelectedContainerCard(card => ({ ...card, id: nextTitle }));
+    return updateSelectedContainerCard(card => ({
+      ...card,
+      id: nextTitle,
+      ...(card.target === "mushroom-template" && card.rawCard?.type === "custom:mushroom-template-card"
+        ? { rawCard: { ...card.rawCard, primary: nextTitle } } : {}),
+    }));
   }
 
   const field = expertEditorFields[selectedExpertFieldIndex];
@@ -4361,6 +4381,8 @@ function updateSelectedExpertFieldTitle(title) {
   expertEditorFields[selectedExpertFieldIndex] = {
     ...field,
     id: nextTitle,
+    ...(field.target === "mushroom-template" && field.rawCard?.type === "custom:mushroom-template-card"
+      ? { rawCard: { ...field.rawCard, primary: nextTitle } } : {}),
     entries: renameExpertFieldEntries(field, nextTitle),
   };
   persistConfiguration();
