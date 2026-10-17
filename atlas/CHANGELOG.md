@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.314
+
+- Treat YAML and JSON Card content equally in HACS package readiness and reimport, preserving the selected export format and template source.
+- The format check is now named package-format-supported. JSON package envelopes, script/locales layout and existing rejection checks remain unchanged.
+- Existing settings, files, projects and plugins are unchanged. Integration remains0.1.306.
+
 ## 0.1.313
 
 - Preserve Mushroom text, icon and current/legacy color templates during JSON/YAML import, single-card conversion and subsequent exports.

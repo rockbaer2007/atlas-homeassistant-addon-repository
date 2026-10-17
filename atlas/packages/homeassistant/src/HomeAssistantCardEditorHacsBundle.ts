@@ -142,7 +142,7 @@ export type HomeAssistantCardEditorHacsBundleReadinessCheckCode =
   | "hacs-card-type-custom"
   | "hacs-custom-element-name-safe"
   | "package-title-present"
-  | "package-format-json"
+  | "package-format-supported"
   | "package-target-known"
   | "package-layout-known"
   | "package-dependency-known"
@@ -864,6 +864,7 @@ export function createHomeAssistantCardEditorHacsBundleReadinessReport(
   const cardType = script?.cardType;
   const resourcePath = script?.resourcePath;
   const summaryKnown = summary !== undefined;
+  const supportedFormat = summary?.format === "json" || summary?.format === "yaml";
   const localeKnown = localeReadiness !== undefined;
   const scriptKnown = script !== undefined;
   const exampleKnown = exampleReadiness !== undefined;
@@ -926,7 +927,7 @@ export function createHomeAssistantCardEditorHacsBundleReadinessReport(
   add("hacs-card-type-custom", scriptKnown ? (cardType?.startsWith("custom:") ? "pass" : "fail") : "pending", "HACS card type is custom", cardType?.startsWith("custom:") ? "Card type uses the custom: prefix." : "Card type has not been read.");
   add("hacs-custom-element-name-safe", scriptKnown ? (customElementName && /^[a-z0-9-]+$/.test(customElementName) ? "pass" : "fail") : "pending", "HACS custom element name safe", customElementName && /^[a-z0-9-]+$/.test(customElementName) ? "Custom element name uses safe characters." : "Custom element name has not been verified.");
   add("package-title-present", summaryKnown ? (summary.title.trim().length > 0 ? "pass" : "fail") : "pending", "Package title present", summary?.title ? `Package title: ${summary.title}` : "Package title has not been read.");
-  add("package-format-json", summaryKnown ? (summary.format === "json" ? "pass" : "fail") : "pending", "Package format JSON", summary?.format === "json" ? "Package content imports as JSON." : `Package format: ${summary?.format ?? "unknown"}`);
+  add("package-format-supported", summaryKnown ? (supportedFormat ? "pass" : "fail") : "pending", "Package format supported (JSON/YAML)", summaryKnown ? `Package content imports as ${summary.format.toUpperCase()}.` : "Package format has not been read.");
   add("package-target-known", summaryKnown ? (summary.target ? "pass" : "fail") : "pending", "Package target known", summary?.target ? `Target: ${summary.target}` : "Package target has not been read.");
   add("package-layout-known", summaryKnown ? (summary.layout ? "pass" : "fail") : "pending", "Package layout known", summary?.layout ? `Layout: ${summary.layout}` : "Package layout has not been read.");
   add("package-dependency-known", summaryKnown ? (summary.dependency.id ? "pass" : "fail") : "pending", "Package dependency known", summary?.dependency.id ? `Dependency: ${summary.dependency.id}` : "Package dependency has not been read.");
@@ -973,7 +974,7 @@ export function createHomeAssistantCardEditorHacsBundleReadinessReport(
   add("import-summary-entities-present", summaryKnown ? (summary.entityIds.length > 0 ? "pass" : "fail") : "pending", "Import summary entities present", summary?.entityIds.length ? `Import entities: ${summary.entityIds.join(", ")}` : "Import summary entities have not been read.");
   add("import-summary-target-supported", summaryKnown ? (summary.target.length > 0 ? "pass" : "fail") : "pending", "Import summary target supported", summary?.target ? `Import target: ${summary.target}` : "Import summary target has not been read.");
   add("import-summary-layout-supported", summaryKnown ? (summary.layout.length > 0 ? "pass" : "fail") : "pending", "Import summary layout supported", summary?.layout ? `Import layout: ${summary.layout}` : "Import summary layout has not been read.");
-  add("import-summary-format-supported", summaryKnown ? (["json", "yaml"].includes(summary.format) ? "pass" : "fail") : "pending", "Import summary format supported", summary?.format ? `Import format: ${summary.format}` : "Import summary format has not been read.");
+  add("import-summary-format-supported", summaryKnown ? (supportedFormat ? "pass" : "fail") : "pending", "Import summary format supported", summary?.format ? `Import format: ${summary.format}` : "Import summary format has not been read.");
   add("import-summary-dependency-present", summaryKnown ? (summary.dependency.label.length > 0 ? "pass" : "fail") : "pending", "Import summary dependency present", summary?.dependency.label ? `Import dependency: ${summary.dependency.label}` : "Import dependency has not been read.");
   add("import-summary-safe-for-demo", summaryKnown ? (summary.entityIds.every(entityId => safeEntityPattern.test(entityId)) ? "pass" : "fail") : "pending", "Import summary safe for demo", summary?.entityIds.every(entityId => safeEntityPattern.test(entityId)) ? "Import entities use safe Home Assistant IDs." : "Import entities have not been verified.");
   add("import-review-lines-available", reviewLines.length > 0 ? "pass" : "fail", "Import review lines available", reviewLines.length > 0 ? `Review line count: ${reviewLines.length}` : "No import review lines were generated.");
