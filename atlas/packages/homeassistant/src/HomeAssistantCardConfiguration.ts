@@ -1,4 +1,4 @@
-import { parse as parseYaml } from "yaml";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import type {
   HomeAssistantCardEditorPackagePlan,
   HomeAssistantCardEditorScriptExport,
@@ -161,9 +161,15 @@ export interface HomeAssistantGridCardConfiguration extends HomeAssistantCardSty
 }
 
 export interface HomeAssistantConditionalCardCondition {
+  readonly [key: string]: unknown;
   readonly condition: string;
   readonly entity?: string;
-  readonly state?: string;
+  readonly entity_id?: string | readonly string[];
+  readonly state?: string | readonly string[];
+  readonly state_not?: string | readonly string[];
+  readonly above?: number | string;
+  readonly below?: number | string;
+  readonly conditions?: readonly HomeAssistantConditionalCardCondition[];
 }
 
 export interface HomeAssistantConditionalCardConfiguration extends HomeAssistantCardStyleConfiguration {
@@ -1051,13 +1057,7 @@ function normalizeHomeAssistantCardConfiguration(
     const normalizedCard = {
       type: "conditional",
       ...preserveHomeAssistantCardStyles(card),
-      conditions: card.conditions
-        .filter(isRecord)
-        .map(condition => ({
-          condition: typeof condition.condition === "string" ? condition.condition : "state",
-          entity: typeof condition.entity === "string" ? condition.entity.trim() : undefined,
-          state: typeof condition.state === "string" ? condition.state : undefined,
-        })),
+      conditions: card.conditions.map(normalizeHomeAssistantConditionalCondition),
       card: normalizedChild,
     } satisfies HomeAssistantConditionalCardConfiguration;
     return {
@@ -1493,22 +1493,37 @@ function serializeHomeAssistantGridCardYaml(card: HomeAssistantGridCardConfigura
 }
 
 function serializeHomeAssistantConditionalCardYaml(card: HomeAssistantConditionalCardConfiguration): string {
-  const lines = [
-    "type: conditional",
-  ];
-  appendHomeAssistantCardStylesYaml(lines, card);
-  lines.push("conditions:");
-  for (const condition of card.conditions) {
-    lines.push(`  - condition: ${serializeYamlScalar(condition.condition)}`);
-    if (condition.entity) lines.push(`    entity: ${serializeYamlScalar(condition.entity)}`);
-    if (condition.state) lines.push(`    state: ${serializeYamlScalar(condition.state)}`);
+  // Conditions include numeric bounds, state lists, screen/user settings and
+  // nested logical expressions. Serialize their complete structured data.
+  return stringifyYaml(card).trimEnd();
+}
+
+export class HomeAssistantConditionalConditionError extends Error {}
+
+function normalizeHomeAssistantConditionalCondition(value: unknown): HomeAssistantConditionalCardCondition {
+  if (!isRecord(value)) throw new HomeAssistantConditionalConditionError("Conditional card conditions must be objects.");
+  const condition = typeof value.condition === "string" ? value.condition : "state";
+  if (condition === "numeric_state") {
+    const validBound = (bound: unknown) =>
+      typeof bound === "number" ? Number.isFinite(bound)
+        : typeof bound === "string" && bound.trim().length > 0 &&
+          (Number.isFinite(Number(bound)) || /^[a-z_]+\.[a-z0-9_]+$/.test(bound));
+    if (value.above === undefined && value.below === undefined) {
+      throw new HomeAssistantConditionalConditionError("Conditional numeric_state requires at least one above or below threshold.");
+    }
+    for (const key of ["above", "below"] as const) {
+      if (value[key] !== undefined && !validBound(value[key])) {
+        throw new HomeAssistantConditionalConditionError(`Conditional numeric_state has an invalid ${key} threshold.`);
+      }
+    }
   }
-  lines.push("card:");
-  const childLines = serializeHomeAssistantEntitiesCardConfiguration(card.card, "yaml").split("\n");
-  childLines.forEach(line => {
-    lines.push(`  ${line}`);
-  });
-  return lines.join("\n");
+  return {
+    ...value,
+    condition,
+    ...(typeof value.entity === "string" ? { entity: value.entity.trim() } : {}),
+    ...(Array.isArray(value.conditions)
+      ? { conditions: value.conditions.map(normalizeHomeAssistantConditionalCondition) } : {}),
+  };
 }
 
 function slugifyHomeAssistantExportName(name: string): string {

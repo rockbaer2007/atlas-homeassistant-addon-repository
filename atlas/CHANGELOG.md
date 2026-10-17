@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.317
+
+- Preserve complete nested Conditional data through YAML/JSON and HACS import/export, including numeric bounds, state lists and logical conditions.
+- Reject malformed numeric conditions instead of reporting broken packages as ready. Re-import the original source to recover previously discarded thresholds; existing stored data is unchanged.
+
 ## 0.1.316
 
 - Preserve Bubble CSS text in single/nested YAML/JSON imports, Card packages, HACS scripts and re-import, including whitespace and empty strings.

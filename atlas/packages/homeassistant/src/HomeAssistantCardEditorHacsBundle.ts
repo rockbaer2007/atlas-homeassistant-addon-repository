@@ -1,4 +1,5 @@
 import {
+  HomeAssistantConditionalConditionError,
   summarizeHomeAssistantCardImport,
   type HomeAssistantCardExportPackage,
   type HomeAssistantCardImportSummary,
@@ -707,12 +708,13 @@ export function readHomeAssistantCardEditorHacsBundleArchivePackage(
       summary,
       reason: "The archive contains a readable ATLAS card package file.",
     };
-  } catch {
+  } catch (error) {
     return {
       kind: "atlas.homeassistant.hacs-card-bundle-package",
       importable: false,
       inspection,
-      reason: "The ATLAS card package file could not be read from the archive.",
+      reason: error instanceof HomeAssistantConditionalConditionError
+        ? error.message : "The ATLAS card package file could not be read from the archive.",
     };
   }
 }
