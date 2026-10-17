@@ -27,7 +27,14 @@ export type HomeAssistantCardTarget =
 export type HomeAssistantCardLayout = "single" | "horizontal-stack" | "vertical-stack";
 export type HomeAssistantBubbleButtonType = "name" | "slider" | "state" | "switch";
 
-export interface HomeAssistantEntitiesCardConfiguration {
+export interface HomeAssistantCardStyleConfiguration {
+  readonly styles?: HomeAssistantCardStyles;
+  readonly card_mod?: HomeAssistantCardStyles;
+  readonly uix?: HomeAssistantCardStyles;
+  readonly uix_style?: HomeAssistantCardStyles;
+}
+
+export interface HomeAssistantEntitiesCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: "entities";
   readonly styles?: HomeAssistantCardStyles;
   readonly title: string;
@@ -36,7 +43,7 @@ export interface HomeAssistantEntitiesCardConfiguration {
 
 export type HomeAssistantCardStyles = Record<string, unknown>;
 
-export interface HomeAssistantGlanceCardConfiguration {
+export interface HomeAssistantGlanceCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: "glance";
   readonly styles?: HomeAssistantCardStyles;
   readonly title?: string;
@@ -48,7 +55,7 @@ export interface HomeAssistantGlanceCardConfiguration {
   readonly entities: readonly HomeAssistantEntitiesCardEntity[];
 }
 
-export interface HomeAssistantEntityCardConfiguration {
+export interface HomeAssistantEntityCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: "entity";
   readonly styles?: HomeAssistantCardStyles;
   readonly name: string;
@@ -61,7 +68,7 @@ export interface HomeAssistantButtonCardTapAction {
   readonly url_path?: string;
 }
 
-export interface HomeAssistantButtonCardConfiguration {
+export interface HomeAssistantButtonCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: "button";
   readonly styles?: HomeAssistantCardStyles;
   readonly name: string;
@@ -70,21 +77,21 @@ export interface HomeAssistantButtonCardConfiguration {
   readonly tap_action?: HomeAssistantButtonCardTapAction;
 }
 
-export interface HomeAssistantSensorCardConfiguration {
+export interface HomeAssistantSensorCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: "sensor";
   readonly styles?: HomeAssistantCardStyles;
   readonly name: string;
   readonly entity: string;
 }
 
-export interface HomeAssistantThermostatCardConfiguration {
+export interface HomeAssistantThermostatCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: "thermostat";
   readonly styles?: HomeAssistantCardStyles;
   readonly name: string;
   readonly entity: string;
 }
 
-export interface HomeAssistantWebpageCardConfiguration {
+export interface HomeAssistantWebpageCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: "iframe";
   readonly styles?: HomeAssistantCardStyles;
   readonly title: string;
@@ -92,7 +99,7 @@ export interface HomeAssistantWebpageCardConfiguration {
   readonly aspect_ratio: string;
 }
 
-export interface HomeAssistantMushroomTemplateCardConfiguration {
+export interface HomeAssistantMushroomTemplateCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: "custom:mushroom-template-card";
   readonly styles?: HomeAssistantCardStyles;
   readonly primary: string;
@@ -103,7 +110,7 @@ export interface HomeAssistantMushroomTemplateCardConfiguration {
   readonly icon_color?: string;
 }
 
-export interface HomeAssistantBubbleCardConfiguration {
+export interface HomeAssistantBubbleCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: "custom:bubble-card";
   readonly styles?: HomeAssistantCardStyles;
   readonly card_type: "button" | "empty-column" | "separator";
@@ -113,7 +120,7 @@ export interface HomeAssistantBubbleCardConfiguration {
   readonly show_state?: true;
 }
 
-export interface HomeAssistantRawCustomCardConfiguration {
+export interface HomeAssistantRawCustomCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: `custom:${string}`;
   readonly [key: string]: unknown;
 }
@@ -128,7 +135,7 @@ export interface HomeAssistantTabbedCardV2Tab {
   readonly card: HomeAssistantCardConfiguration;
 }
 
-export interface HomeAssistantTabbedCardV2Configuration {
+export interface HomeAssistantTabbedCardV2Configuration extends HomeAssistantCardStyleConfiguration {
   readonly type: "custom:tabbed-card-v2";
   readonly styles?: HomeAssistantCardStyles;
   readonly options: {
@@ -145,7 +152,7 @@ export interface HomeAssistantCardGridOptions {
   readonly rows?: "auto" | number;
 }
 
-export interface HomeAssistantGridCardConfiguration {
+export interface HomeAssistantGridCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: "grid";
   readonly styles?: HomeAssistantCardStyles;
   readonly columns?: number;
@@ -159,14 +166,14 @@ export interface HomeAssistantConditionalCardCondition {
   readonly state?: string;
 }
 
-export interface HomeAssistantConditionalCardConfiguration {
+export interface HomeAssistantConditionalCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: "conditional";
   readonly styles?: HomeAssistantCardStyles;
   readonly conditions: readonly HomeAssistantConditionalCardCondition[];
   readonly card: HomeAssistantCardConfiguration;
 }
 
-export interface HomeAssistantStackCardConfiguration {
+export interface HomeAssistantStackCardConfiguration extends HomeAssistantCardStyleConfiguration {
   readonly type: "horizontal-stack" | "vertical-stack";
   readonly styles?: HomeAssistantCardStyles;
   readonly columns?: "full" | number;
@@ -808,6 +815,25 @@ export function convertHomeAssistantCardModStylesToUixStyle(text: string): strin
   );
 }
 
+/** Convert card properties only, never CSS selectors, strings or Jinja values. */
+export function convertHomeAssistantCardConfigurationToUixStyle(
+  card: HomeAssistantCardConfiguration,
+): HomeAssistantCardConfiguration {
+  let result: HomeAssistantCardConfiguration = { ...card };
+  if (isRecord(result.card_mod) && !("uix" in result)) {
+    const { card_mod, ...rest } = result;
+    result = { ...rest, uix: card_mod } as HomeAssistantCardConfiguration;
+  }
+  if ("cards" in card && Array.isArray(card.cards)) {
+    result = { ...result, cards: card.cards.map(convertHomeAssistantCardConfigurationToUixStyle) } as HomeAssistantCardConfiguration;
+  }
+  if (card.type === "conditional") result = { ...result, card: convertHomeAssistantCardConfigurationToUixStyle(card.card) } as HomeAssistantCardConfiguration;
+  if (card.type === "custom:tabbed-card-v2" && Array.isArray(card.tabs)) {
+    result = { ...result, tabs: card.tabs.map(tab => ({ ...tab, card: convertHomeAssistantCardConfigurationToUixStyle(tab.card) })) } as HomeAssistantCardConfiguration;
+  }
+  return result;
+}
+
 export function inspectHomeAssistantCardDependency(
   cardOrTarget: HomeAssistantCardConfiguration | HomeAssistantCardTarget,
 ): HomeAssistantCardDependency {
@@ -1248,8 +1274,13 @@ function normalizeHomeAssistantCardRows(card: Record<string, unknown>): "auto" |
     : undefined;
 }
 
-function preserveHomeAssistantCardStyles(card: Record<string, unknown>): { readonly styles?: HomeAssistantCardStyles } {
-  return isRecord(card.styles) ? { styles: { ...card.styles } } : {};
+function preserveHomeAssistantCardStyles(card: Record<string, unknown>): HomeAssistantCardStyleConfiguration {
+  return {
+    ...(isRecord(card.styles) ? { styles: { ...card.styles } } : {}),
+    ...(isRecord(card.card_mod) ? { card_mod: { ...card.card_mod } } : {}),
+    ...(isRecord(card.uix) ? { uix: { ...card.uix } } : {}),
+    ...(isRecord(card.uix_style) ? { uix_style: { ...card.uix_style } } : {}),
+  };
 }
 
 function serializeHomeAssistantEntitiesCardYaml(card: HomeAssistantEntitiesCardConfiguration): string {
@@ -1293,10 +1324,14 @@ function serializeHomeAssistantGlanceCardYaml(card: HomeAssistantGlanceCardConfi
 
 function appendHomeAssistantCardStylesYaml(
   lines: string[],
-  card: { readonly styles?: HomeAssistantCardStyles },
+  card: HomeAssistantCardStyleConfiguration,
 ): void {
-  if (!card.styles || Object.keys(card.styles).length === 0) return;
-  lines.push(...serializeHomeAssistantYamlObject({ styles: card.styles }));
+  if (card.styles && Object.keys(card.styles).length > 0) {
+    lines.push(...serializeHomeAssistantYamlObject({ styles: card.styles }));
+  }
+  if (card.card_mod) lines.push(...serializeHomeAssistantYamlObject({ card_mod: card.card_mod }));
+  if (card.uix) lines.push(...serializeHomeAssistantYamlObject({ uix: card.uix }));
+  if (card.uix_style) lines.push(...serializeHomeAssistantYamlObject({ uix_style: card.uix_style }));
 }
 
 function serializeHomeAssistantCustomCardYaml(

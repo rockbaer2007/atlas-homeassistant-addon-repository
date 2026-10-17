@@ -41,6 +41,7 @@ import {
   normalizeHomeAssistantCardEditorScriptFilename,
   createInMemoryHomeAssistantEntityStateTransport,
   convertHomeAssistantCardModStylesToUixStyle,
+  convertHomeAssistantCardConfigurationToUixStyle,
   inspectHomeAssistantCardDependency,
   inspectHomeAssistantCardDependencyAvailability,
   inspectHomeAssistantCardStyleBlocks,
@@ -3226,7 +3227,7 @@ function createExpertHaCardConfig() {
   return createHomeAssistantCardEditorConfiguration({
     cardName: currentExpertCardName(),
     editorMode: "expert",
-    fields: normalizedExpertEditorFields(),
+    fields: expertEditorExportFields(),
   });
 }
 
@@ -3241,12 +3242,24 @@ function createActiveCardEditorPlan({ useExportFallback = false } = {}) {
     editorMode: activeEditorMode,
     simpleTarget: haCardTarget.value,
     defaultEntityIds: useExportFallback ? cardExportEntityIds() : cardPreviewEntityIds(),
-    fields: activeEditorMode === "expert" ? normalizedExpertEditorFields() : [],
+    fields: activeEditorMode === "expert" ? expertEditorExportFields() : [],
   });
 }
 
 function normalizedExpertEditorFields() {
   return expertEditorFields.map(normalizeEditableContainerLayout);
+}
+
+function expertEditorExportFields() {
+  const fields = normalizedExpertEditorFields();
+  if (haCardStyleExport.value !== "uix-style") return fields;
+  const convert = item => ({
+    ...item,
+    ...(item.rawCard ? { rawCard: convertHomeAssistantCardConfigurationToUixStyle(item.rawCard) } : {}),
+    ...(item.entries ? { entries: item.entries.map(convert) } : {}),
+    ...(item.cards ? { cards: item.cards.map(convert) } : {}),
+  });
+  return fields.map(convert);
 }
 
 function currentExpertCardName() {
@@ -3445,6 +3458,16 @@ function createExpertFieldsFromImportedCard(card) {
   if (card?.type === "glance") {
     return [createImportedOverviewExpertField(card, entities)];
   }
+  if (card?.card_mod || card?.uix || card?.uix_style) {
+    return [{
+      ...createHomeAssistantCardEditorFieldFromTemplate({
+        template: "entity-card", target: getImportedCardTarget(card),
+        entityId: entities[0]?.entity || "", id: getSimplePreviewCardTitle(card),
+        column: 0, row: 0, width: 4, height: 2,
+      }),
+      rawCard: cloneImportedCard(card),
+    }];
+  }
   return entities.map((entity, index) => createHomeAssistantCardEditorFieldFromTemplate({
     template: "entity-card",
     target: "entity",
@@ -3585,6 +3608,7 @@ function createImportedOverviewExpertField(card, entities) {
     id: title,
     target: "glance",
     importedCardType: "glance",
+    rawCard: cloneImportedCard(card),
     entityId: "",
     layout: "card",
     entries: entities.map((entity, index) => ({
@@ -3633,7 +3657,9 @@ function collectSimplePreviewCardEntities(value, key = "") {
 
 function getImportedEntityStyleBlocks(entityId) {
   if (!importedSimpleStyleInspection?.cardStyles?.length) return [];
-  return importedSimpleStyleInspection.cardStyles.filter(block => block.label === entityId);
+  // These engines live on the parsed card, not on an entity shared by cards.
+  return importedSimpleStyleInspection.cardStyles.filter(block =>
+    block.label === entityId && !["card_mod", "uix", "uix_style"].includes(block.key));
 }
 
 function getEntryStyleBlocks(entry) {
@@ -7034,9 +7060,7 @@ function formatExpertHaCardCodePreview(card) {
 function formatExpertYamlForStyleExport(text) {
   if (haCardFormat.value !== "yaml") return text;
   const withImportedStyles = appendImportedStylesToExpertYaml(text);
-  return haCardStyleExport.value === "uix-style"
-    ? convertHomeAssistantCardModStylesToUixStyle(withImportedStyles)
-    : withImportedStyles;
+  return withImportedStyles;
 }
 
 function formatImportedYamlForStyleExport(text) {
@@ -7063,7 +7087,8 @@ function appendImportedStylesToExpertYaml(text) {
     }
   }
 
-  const globalBlocks = importedSimpleStyleInspection?.globalStyles ?? [];
+  const globalBlocks = (importedSimpleStyleInspection?.globalStyles ?? [])
+    .filter(block => !["card_mod", "uix", "uix_style"].includes(block.key));
   const hasGlobalStyle = lines.some(line => /^(card_mod|uix|uix_style):/.test(line.trim()));
   if (globalBlocks.length && !hasGlobalStyle) {
     output.push(...globalBlocks.map(block => normalizeImportedStyleBlock(block.code)));
@@ -7081,7 +7106,8 @@ function getExpertEditorEntityStyleBlocks(entityId) {
   const blocks = [];
   for (const field of expertEditorFields) {
     forEachExpertEntry(field.entries ?? [], entry => {
-      if (entry.entityId === entityId) blocks.push(...getEntryStyleBlocks(entry));
+      // rawCard styles are already serialized at their exact tree position.
+      if (entry.entityId === entityId) blocks.push(...(entry.styleBlocks ?? []));
     });
   }
   blocks.push(...getImportedEntityStyleBlocks(entityId));
@@ -7089,6 +7115,14 @@ function getExpertEditorEntityStyleBlocks(entityId) {
 }
 
 function yamlEntityBlockHasStyle(lines, entityLineIndex, entityIndentSize) {
+  // Structured styles can precede entity; do not append the inspected copy.
+  for (let index = entityLineIndex - 1; index >= 0; index -= 1) {
+    const line = lines[index] ?? "";
+    if (!line.trim()) continue;
+    const indentSize = line.match(/^ */)?.[0].length ?? 0;
+    if (indentSize < entityIndentSize) break;
+    if (indentSize === entityIndentSize && /^(card_mod|uix|uix_style):/.test(line.trim())) return true;
+  }
   for (let index = entityLineIndex + 1; index < lines.length; index += 1) {
     const line = lines[index] ?? "";
     if (!line.trim()) continue;

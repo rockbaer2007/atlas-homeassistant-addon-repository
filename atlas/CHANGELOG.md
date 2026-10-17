@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.315
+
+- Preserve imported card_mod, uix and uix_style mappings on their cards through YAML/JSON export, HACS packages and scripts, and re-import.
+- Apply the UIX export choice structurally to card properties in package content and generated scripts. Preserve existing UIX blocks without overwriting collisions.
+- Avoid entity-based duplicate style assignment. Existing stored files, projects and plugins are unchanged; previously discarded styles require the original import or backup. Integration remains0.1.306.
+
 ## 0.1.314
 
 - Treat YAML and JSON Card content equally in HACS package readiness and reimport, preserving the selected export format and template source.

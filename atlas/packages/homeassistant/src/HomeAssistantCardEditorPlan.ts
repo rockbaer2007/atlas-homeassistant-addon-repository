@@ -807,6 +807,7 @@ function createSurfaceFieldCardConfiguration(
 
   if (field.target === "glance" && entries.some(entry => entry.entityId)) {
     return {
+      ...(field.rawCard?.type === "glance" ? { ...field.rawCard } : {}),
       type: "glance",
       title: field.id,
       show_name: true,
@@ -850,6 +851,14 @@ function createSurfaceFieldCardConfiguration(
   if (!field.entityId && field.target !== "link" && field.target !== "webpage" && field.target !== "custom-card") return undefined;
   if (field.target === "mushroom-template" && field.rawCard?.type === "custom:mushroom-template-card") {
     return { ...field.rawCard, entity: field.entityId };
+  }
+  if (field.rawCard && (field.rawCard.card_mod || field.rawCard.uix || field.rawCard.uix_style)) {
+    return {
+      ...field.rawCard,
+      ...("entity" in field.rawCard && typeof field.rawCard.entity === "string" && field.entityId ? { entity: field.entityId } : {}),
+      ...("name" in field.rawCard && typeof field.rawCard.name === "string" ? { name: field.id } : {}),
+      ...("title" in field.rawCard && typeof field.rawCard.title === "string" ? { title: field.id } : {}),
+    };
   }
   if (field.target === "custom-card") {
     return createRawCustomCardConfiguration(field.customType, field.id, field.entityId);
