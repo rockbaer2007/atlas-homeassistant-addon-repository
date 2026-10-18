@@ -1,5 +1,7 @@
 import type { HomeAssistantCardEditorSurfaceField } from "./HomeAssistantCardEditorPlan";
 import { createHomeAssistantCardEditorFieldFromTemplate } from "./HomeAssistantCardEditorPlan";
+import { parse as parseYaml } from "yaml";
+import { summarizeHomeAssistantCardImport } from "./HomeAssistantCardConfiguration";
 
 export type HomeAssistantCardArtifactKind =
   | "atlas-card-package"
@@ -76,6 +78,23 @@ export interface HomeAssistantCardArtifactFieldPreview {
 }
 
 export function inspectHomeAssistantCardArtifact(text: string): HomeAssistantCardArtifactInspection {
+  const inspection = classifyHomeAssistantCardArtifact(text);
+  if (!inspection.importable) return inspection;
+  try {
+    // Use the actual import path, including package/payload and nested-card validation.
+    summarizeHomeAssistantCardImport(text);
+    return inspection;
+  } catch (error) {
+    return {
+      ...inspection,
+      importable: false,
+      requiresReview: true,
+      reason: error instanceof Error ? error.message : "Unsupported Home Assistant card.",
+    };
+  }
+}
+
+function classifyHomeAssistantCardArtifact(text: string): HomeAssistantCardArtifactInspection {
   const trimmed = text.trim();
   if (!trimmed) {
     return {
@@ -318,18 +337,17 @@ function parseJsonRecord(text: string): Record<string, unknown> | undefined {
 }
 
 function looksLikeHomeAssistantCardYaml(text: string): boolean {
-  return /^type:\s*["']?(entities|glance|entity|button|sensor|thermostat|iframe|grid|horizontal-stack|vertical-stack|custom:[A-Za-z0-9_-]+)["']?(?:\s|$)/m.test(text);
+  try {
+    const value: unknown = parseYaml(text);
+    return isRecord(value) && isHomeAssistantCardRecord(value);
+  } catch {
+    return false;
+  }
 }
 
 function isHomeAssistantCardRecord(value: Record<string, unknown>): boolean {
-  return value.type === "entities"
-    || value.type === "glance"
-    || value.type === "horizontal-stack"
-    || value.type === "vertical-stack"
-    || value.type === "custom:mushroom-template-card"
-    || value.type === "custom:bubble-card"
-    || value.type === "custom:tabbed-card-v2"
-    || (typeof value.type === "string" && /^custom:[A-Za-z0-9_-]+$/.test(value.type));
+  // Classification identifies a card candidate; the shared parser decides support.
+  return typeof value.type === "string" && value.type.trim().length > 0;
 }
 
 function looksLikeExternalCardBuilderArtifact(value: Record<string, unknown>): boolean {

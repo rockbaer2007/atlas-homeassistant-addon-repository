@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.318
+
+- Validate import previews with the actual Card import parser, including nested cards and ATLAS package/payload contents. Unsupported Markdown is rejected before editor state changes instead of being offered as importable.
+- Recognize raw JSON/YAML card candidates structurally, including supported standalone Entity and Conditional cards. Existing settings, files, projects and plugins are unchanged; this update does not add Markdown editing support.
+
 ## 0.1.317
 
 - Preserve complete nested Conditional data through YAML/JSON and HACS import/export, including numeric bounds, state lists and logical conditions.
