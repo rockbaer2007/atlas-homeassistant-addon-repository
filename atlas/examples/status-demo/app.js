@@ -3434,6 +3434,18 @@ function collectImportedSimpleEntityNames(card) {
 
 function createExpertFieldsFromImportedCard(card) {
   const entities = getSimplePreviewCardEntities(card);
+  if (card?.type === "conditional" || card?.type === "entity") {
+    return [{
+      ...createHomeAssistantCardEditorFieldFromTemplate({
+        template: "entity-card",
+        target: getImportedCardTarget(card),
+        entityId: card.type === "entity" ? card.entity : "",
+        id: getSimplePreviewCardTitle(card),
+        column: 0, row: 0, width: 4, height: 2,
+      }),
+      rawCard: cloneImportedCard(card),
+    }];
+  }
   if (card?.type === "custom:mushroom-template-card") {
     return [{
       ...createHomeAssistantCardEditorFieldFromTemplate({
@@ -3589,6 +3601,7 @@ function getImportedContainerLayout(card) {
 
 function getImportedCardTarget(card) {
   if (!card || typeof card !== "object") return "entity";
+  if (card.type === "conditional") return getImportedCardTarget(card.card);
   if (card.type === "entities") return "entities";
   if (card.type === "glance") return "glance";
   if (card.type === "custom:mushroom-template-card" || card.type === "custom:mushroom-entity-card") return "mushroom-template";

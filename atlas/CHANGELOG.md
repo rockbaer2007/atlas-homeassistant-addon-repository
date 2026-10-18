@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.319
+
+- Preserve standalone Conditional cards as complete Expert fields, including nested conditions and cards without an entity. Do not turn condition entities into replacement cards.
+- Preserve standalone Entity names through Editor import, draft reload and export while retaining explicit rename/entity selection. Local regressions also cover JSON/YAML and HACS roundtrips with styles.
+- Existing stored data is unchanged. Previously lost conditions/names require reimport from the original source or backup. Native update qualification on the approved test hosts remains separate.
+
 ## 0.1.318
 
 - Validate import previews with the actual Card import parser, including nested cards and ATLAS package/payload contents. Unsupported Markdown is rejected before editor state changes instead of being offered as importable.

@@ -696,6 +696,7 @@ function listSurfaceFieldEntryResourcePaths(entry: HomeAssistantCardEditorSurfac
 }
 
 function hasSurfaceFieldContent(field: HomeAssistantCardEditorSurfaceField): boolean {
+  if (field.rawCard?.type === "conditional") return true;
   if (field.entityId) return true;
   if (field.target === "link" || field.target === "webpage") return true;
   return (field.entries ?? []).some(hasSurfaceFieldEntryContent);
@@ -848,7 +849,17 @@ function createSurfaceFieldCardConfiguration(
     };
   }
 
+  // A Conditional is one preserved card, not a list of its condition entities.
+  if (field.rawCard?.type === "conditional") return { ...field.rawCard };
   if (!field.entityId && field.target !== "link" && field.target !== "webpage" && field.target !== "custom-card") return undefined;
+  if (field.target === "entity" && field.rawCard?.type === "entity") {
+    const importedLabel = field.rawCard.name?.trim() || "entity";
+    return {
+      ...field.rawCard,
+      entity: field.entityId,
+      ...(field.id !== importedLabel ? { name: field.id } : {}),
+    };
+  }
   if (field.target === "mushroom-template" && field.rawCard?.type === "custom:mushroom-template-card") {
     return { ...field.rawCard, entity: field.entityId };
   }
