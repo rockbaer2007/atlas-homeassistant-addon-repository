@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.322
+
+- Validate stored ZIP entry CRC32 values and local/central header consistency before HACS package import, including README, locales and extra files. Corrupted archives are rejected before Editor state changes.
+- Check directory bounds/counts, filenames, sizes and entry overlaps. Reject unsupported compressed import entries, encryption, data descriptors, multi-disk and ZIP64 archives instead of bypassing integrity checks.
+- Preserve valid generated JSON/YAML archives, literal Entity names and existing data. CRC32 detects accidental corruption; it is not a signature or authenticity check.
+
 ## 0.1.321
 
 - Use package identity for HACS package/import title-presence checks instead of the first Card's display name. Valid packages with empty or whitespace-only first Entity names no longer receive false title failures.

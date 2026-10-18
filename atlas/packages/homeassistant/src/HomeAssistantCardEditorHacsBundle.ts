@@ -471,7 +471,7 @@ export function inspectHomeAssistantCardEditorHacsBundleArchive(
         ? "The archive contains the required ATLAS HACS card bundle files."
         : `The archive is not a safe ATLAS HACS card bundle: ${issues.map(issue => issue.message).join("; ")}.`,
     };
-  } catch {
+  } catch (error) {
     return {
       kind: "atlas.homeassistant.hacs-card-bundle-archive",
       importable: false,
@@ -491,7 +491,9 @@ export function inspectHomeAssistantCardEditorHacsBundleArchive(
       atlasPackageFiles: [],
       localeFiles: [],
       missingLocaleFiles: ["locales/en.json"],
-      reason: "The archive is not a readable ZIP file.",
+      reason: error instanceof HacsZipIntegrityError
+        ? `The archive failed ZIP integrity checks: ${error.message}`
+        : "The archive is not a readable ZIP file.",
     };
   }
 }
@@ -511,6 +513,14 @@ export function readHomeAssistantCardEditorHacsBundleArchivePackage(
 
   try {
     const entries = readZipCentralDirectoryEntries(content).map(entry => ({ ...entry, path: hacsBundleLogicalPath(entry.path) }));
+    if (entries.some(entry => entry.compressionMethod !== "store")) {
+      return {
+        kind: "atlas.homeassistant.hacs-card-bundle-package",
+        importable: false,
+        inspection,
+        reason: "The archive uses unsupported ZIP compression; only stored files can be integrity-checked and imported.",
+      };
+    }
     const hacsEntry = entries.find(entry => entry.path === "hacs.json");
     const packageEntry = entries.find(entry => entry.path === inspection.atlasPackageFiles[0]);
     if (!hacsEntry) {
@@ -1402,7 +1412,11 @@ function createHomeAssistantCardEditorBundleReadme(
 interface ZipEndOfCentralDirectory {
   readonly fileCount: number;
   readonly centralDirectoryOffset: number;
+  readonly centralDirectorySize: number;
+  readonly offset: number;
 }
+
+class HacsZipIntegrityError extends Error {}
 
 interface ZipCentralDirectoryRecord {
   readonly fileName: Uint8Array;
@@ -1418,23 +1432,52 @@ interface ReadableZipArchiveEntry extends HomeAssistantCardEditorHacsBundleArchi
 function readZipCentralDirectoryEntries(content: Uint8Array): ReadableZipArchiveEntry[] {
   const endOfCentralDirectory = readZipEndOfCentralDirectory(content);
   const entries: ReadableZipArchiveEntry[] = [];
+  const spans: { start: number; end: number }[] = [];
   let offset = endOfCentralDirectory.centralDirectoryOffset;
-  const decoder = new TextDecoder();
+  const directoryEnd = offset + endOfCentralDirectory.centralDirectorySize;
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  if (directoryEnd !== endOfCentralDirectory.offset) {
+    throw new HacsZipIntegrityError("Central directory bounds do not match the ZIP end record.");
+  }
 
   for (let index = 0; index < endOfCentralDirectory.fileCount; index += 1) {
-    const view = new DataView(content.buffer, content.byteOffset + offset);
+    const view = zipHeaderView(content, offset, 46, directoryEnd);
     if (view.getUint32(0, true) !== 0x02014b50) {
       throw new Error("Invalid ZIP central directory.");
     }
 
+    const flags = view.getUint16(8, true);
     const compressionMethod = view.getUint16(10, true);
+    const crc32 = view.getUint32(16, true);
     const compressedSize = view.getUint32(20, true);
     const uncompressedSize = view.getUint32(24, true);
     const fileNameLength = view.getUint16(28, true);
     const extraFieldLength = view.getUint16(30, true);
     const commentLength = view.getUint16(32, true);
     const localHeaderOffset = view.getUint32(42, true);
+    const entryEnd = offset + 46 + fileNameLength + extraFieldLength + commentLength;
+    if (entryEnd > directoryEnd || view.getUint16(34, true) !== 0 || (flags & ~0x0800) !== 0) {
+      throw new HacsZipIntegrityError("Invalid, encrypted, multi-disk or descriptor-based ZIP entry.");
+    }
     const fileName = content.slice(offset + 46, offset + 46 + fileNameLength);
+    const local = zipHeaderView(content, localHeaderOffset, 30, endOfCentralDirectory.centralDirectoryOffset);
+    const localNameLength = local.getUint16(26, true);
+    const localExtraLength = local.getUint16(28, true);
+    const dataOffset = localHeaderOffset + 30 + localNameLength + localExtraLength;
+    const dataEnd = dataOffset + compressedSize;
+    if (local.getUint32(0, true) !== 0x04034b50
+      || local.getUint16(6, true) !== flags || local.getUint16(8, true) !== compressionMethod
+      || local.getUint32(14, true) !== crc32 || local.getUint32(18, true) !== compressedSize
+      || local.getUint32(22, true) !== uncompressedSize || localNameLength !== fileNameLength
+      || dataEnd > endOfCentralDirectory.centralDirectoryOffset
+      || !fileName.every((byte, i) => byte === content[localHeaderOffset + 30 + i])) {
+      throw new HacsZipIntegrityError("Local and central ZIP headers or file bounds disagree.");
+    }
+    if (compressionMethod === 0 && (compressedSize !== uncompressedSize
+      || calculateCrc32(content.subarray(dataOffset, dataEnd)) !== crc32)) {
+      throw new HacsZipIntegrityError(`CRC32 or stored size mismatch for ${decoder.decode(fileName)}.`);
+    }
+    spans.push({ start: localHeaderOffset, end: dataEnd });
     entries.push({
       path: decoder.decode(fileName),
       compressionMethod: normalizeZipCompressionMethod(compressionMethod),
@@ -1442,10 +1485,21 @@ function readZipCentralDirectoryEntries(content: Uint8Array): ReadableZipArchive
       uncompressedSize,
       localHeaderOffset,
     });
-    offset += 46 + fileNameLength + extraFieldLength + commentLength;
+    offset = entryEnd;
   }
-
+  if (offset !== directoryEnd) throw new HacsZipIntegrityError("ZIP file count and directory size disagree.");
+  spans.sort((a, b) => a.start - b.start);
+  if (spans.some((span, i) => i > 0 && span.start < spans[i - 1]!.end)) {
+    throw new HacsZipIntegrityError("Overlapping ZIP entries.");
+  }
   return entries;
+}
+
+function zipHeaderView(content: Uint8Array, offset: number, size: number, limit: number): DataView {
+  if (offset < 0 || offset + size > limit || limit > content.length) {
+    throw new HacsZipIntegrityError("ZIP header is out of bounds.");
+  }
+  return new DataView(content.buffer, content.byteOffset + offset, size);
 }
 
 function readStoredZipEntryText(content: Uint8Array, entry: ReadableZipArchiveEntry): string {
@@ -1471,9 +1525,18 @@ function readZipEndOfCentralDirectory(content: Uint8Array): ZipEndOfCentralDirec
   for (let offset = content.length - minimumSize; offset >= searchStart; offset -= 1) {
     const view = new DataView(content.buffer, content.byteOffset + offset, minimumSize);
     if (view.getUint32(0, true) === 0x06054b50) {
+      if (offset + minimumSize + view.getUint16(20, true) !== content.length) continue;
+      if (view.getUint16(4, true) !== 0 || view.getUint16(6, true) !== 0
+        || view.getUint16(8, true) !== view.getUint16(10, true)
+        || view.getUint16(10, true) === 0xffff
+        || view.getUint32(12, true) === 0xffffffff || view.getUint32(16, true) === 0xffffffff) {
+        throw new HacsZipIntegrityError("Multi-disk and ZIP64 archives are not supported.");
+      }
       return {
         fileCount: view.getUint16(10, true),
         centralDirectoryOffset: view.getUint32(16, true),
+        centralDirectorySize: view.getUint32(12, true),
+        offset,
       };
     }
   }
