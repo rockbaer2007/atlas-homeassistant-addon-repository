@@ -5,6 +5,8 @@ import {
   createHomeAssistantCardEditorHacsBundleReadinessReport, createHomeAssistantCardExportPackage,
   createHomeAssistantCardEditorPackagePlan, type HomeAssistantCardConfiguration,
   inspectHomeAssistantCardEditorHacsBundleArchive, readHomeAssistantCardEditorHacsBundleArchivePackage,
+  createHomeAssistantCardEditorHacsBundleReadinessOverview,
+  formatHomeAssistantCardEditorHacsBundlePackageReadinessReviewLines,
 } from "../src";
 
 function fixture(format: "json" | "yaml") {
@@ -53,11 +55,30 @@ function rejects(bytes: Uint8Array, reason?: RegExp) {
   expect(report.ready).toBe(false);
   expect(report.failed).toBeGreaterThan(0);
   if (reason) expect(read.reason).toMatch(reason);
+  if (read.inspection.zipStatus !== "verified") {
+    expect(read.inspection.missingFiles).toEqual([]);
+    expect(read.inspection.missingLocaleFiles).toEqual([]);
+    expect(read.inspection.issues).toHaveLength(1);
+    expect(read.inspection.issues[0]!.code).toMatch(/^(zip-integrity|unreadable-zip)$/);
+    expect(report.checks[0]).toMatchObject({ code: "zip-readable", status: "fail", detail: read.reason });
+    for (const check of report.checks) {
+      if (check.code === "zip-readable" || check.code === "bundle-importable"
+        || check.code.startsWith("import-report-")) continue;
+      expect(check.status, check.code).toBe("pending");
+      expect(check.detail).toContain("Not checked because ZIP verification failed");
+    }
+    expect(createHomeAssistantCardEditorHacsBundleReadinessOverview(read).firstFailedCheck?.code).toBe("zip-readable");
+    expect(formatHomeAssistantCardEditorHacsBundlePackageReadinessReviewLines(read).join("\n"))
+      .not.toMatch(/missing-required-file|missing-locale-file|Missing files:|Missing locales:/);
+  }
   expect(bytes).toEqual(original);
 }
 
 describe("HACS stored ZIP integrity before package adoption", () => {
   for (const format of ["json", "yaml"] as const) {
+    it(`${format}: reports an unreadable archive without inventing absent files`, () => {
+      rejects(new Uint8Array([1, 2, 3]), /not a readable ZIP/);
+    });
     it(`${format}: accepts valid ZIPs with independent CRC verification and literal names`, () => {
       const bytes = fixture(format), { view, entries } = fields(bytes);
       for (const e of entries) expect(crc32(bytes.subarray(e.data, e.data + e.size))).toBe(view.getUint32(e.central + 16, true));

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.323
+
+- Report ZIP integrity/readability failures as the primary HACS import blocker. File and content checks remain unverified when the archive inventory cannot be trusted, instead of claiming required files are missing.
+- Preserve actual missing-file errors for verified archives, reject corrupted ZIPs before Editor changes and keep existing settings, files, projects and plugins unchanged.
+
 ## 0.1.322
 
 - Validate stored ZIP entry CRC32 values and local/central header consistency before HACS package import, including README, locales and extra files. Corrupted archives are rejected before Editor state changes.

@@ -44,6 +44,8 @@ export interface HomeAssistantCardEditorHacsBundleArchiveEntry {
 }
 
 export type HomeAssistantCardEditorHacsBundleArchiveIssueCode =
+  | "zip-integrity"
+  | "unreadable-zip"
   | "missing-required-file"
   | "missing-locale-file"
   | "unsafe-path"
@@ -58,6 +60,7 @@ export interface HomeAssistantCardEditorHacsBundleArchiveIssue {
 
 export interface HomeAssistantCardEditorHacsBundleArchiveInspection {
   readonly kind: "atlas.homeassistant.hacs-card-bundle-archive";
+  readonly zipStatus: "verified" | "integrity-error" | "unreadable";
   readonly importable: boolean;
   readonly fileCount: number;
   readonly files: readonly HomeAssistantCardEditorHacsBundleArchiveEntry[];
@@ -450,6 +453,7 @@ export function inspectHomeAssistantCardEditorHacsBundleArchive(
 
     return {
       kind: "atlas.homeassistant.hacs-card-bundle-archive",
+      zipStatus: "verified",
       importable: issues.length === 0,
       fileCount: files.length,
       files: files.map(file => ({
@@ -472,28 +476,27 @@ export function inspectHomeAssistantCardEditorHacsBundleArchive(
         : `The archive is not a safe ATLAS HACS card bundle: ${issues.map(issue => issue.message).join("; ")}.`,
     };
   } catch (error) {
+    const integrityError = error instanceof HacsZipIntegrityError;
+    const reason = integrityError
+      ? `The archive failed ZIP integrity checks: ${error.message}`
+      : "The archive is not a readable ZIP file.";
     return {
       kind: "atlas.homeassistant.hacs-card-bundle-archive",
+      zipStatus: integrityError ? "integrity-error" : "unreadable",
       importable: false,
       fileCount: 0,
       files: [],
       requiredFiles,
-      missingFiles: requiredFiles,
+      missingFiles: [],
       unsafePaths: [],
       duplicatePaths: [],
-      issues: createHacsBundleArchiveIssues({
-        missingFiles: requiredFiles,
-        missingLocaleFiles: ["locales/en.json"],
-        unsafePaths: [],
-        duplicatePaths: [],
-      }),
+      issues: [{ code: integrityError ? "zip-integrity" : "unreadable-zip",
+        severity: "error", paths: [], message: reason }],
       scriptFiles: [],
       atlasPackageFiles: [],
       localeFiles: [],
-      missingLocaleFiles: ["locales/en.json"],
-      reason: error instanceof HacsZipIntegrityError
-        ? `The archive failed ZIP integrity checks: ${error.message}`
-        : "The archive is not a readable ZIP file.",
+      missingLocaleFiles: [],
+      reason,
     };
   }
 }
@@ -844,13 +847,21 @@ export function createHomeAssistantCardEditorHacsBundleReadinessReport(
   packageRead: HomeAssistantCardEditorHacsBundleArchivePackageRead,
 ): HomeAssistantCardEditorHacsBundleReadinessReport {
   const checks: HomeAssistantCardEditorHacsBundleReadinessCheck[] = [];
+  const zipVerified = packageRead.inspection.zipStatus === "verified";
   const add = (
     code: HomeAssistantCardEditorHacsBundleReadinessCheckCode,
     status: HomeAssistantCardEditorHacsBundleReadinessCheckStatus,
     label: string,
     detail: string,
   ) => {
-    checks.push({ code, status, label, detail });
+    // No file/content conclusions can be drawn from a discarded ZIP inventory.
+    // Keep the stable check list, with the ZIP failure as the primary blocker.
+    const unverified = !zipVerified && code !== "zip-readable"
+      && code !== "bundle-importable" && !code.startsWith("import-report-");
+    checks.push({ code, status: unverified ? "pending" : status, label,
+      detail: unverified
+        ? "Not checked because ZIP verification failed. Repair or re-export the complete archive."
+        : detail });
   };
   const inspection = packageRead.inspection;
   const localeReadiness = packageRead.localeReadiness;
@@ -870,7 +881,7 @@ export function createHomeAssistantCardEditorHacsBundleReadinessReport(
   const hasPackageTitle = typeof packageTitle === "string" && packageTitle.trim().length > 0;
   const defaultConfig = script?.defaultConfig;
   const archivePaths = inspection.files.map(file => file.path);
-  const zipReadable = inspection.reason !== "The archive is not a readable ZIP file.";
+  const zipReadable = zipVerified;
   const hasRequiredFile = (path: string) => !inspection.missingFiles.includes(path);
   const hasRootScript = !inspection.missingFiles.includes("*.js") && inspection.scriptFiles.length > 0;
   const hasAtlasPackage = !inspection.missingFiles.includes("atlas/*.atlas-card.json") && inspection.atlasPackageFiles.length > 0;
