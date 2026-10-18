@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.324
+
+- Reject ambiguous HACS project/script inventories before selecting package content. ZIP entry order cannot choose an embedded project.
+- Cross-check HACS, package and Editor plan filenames, resource filenames, custom element and Card types. A blocked/incomplete readiness result cannot reach Editor adoption.
+- Preserve valid JSON/YAML exports, root/dist layouts, single-word script names, existing settings, files, projects and plugins. Restore any previously overwritten draft from its original or backup.
+
 ## 0.1.323
 
 - Report ZIP integrity/readability failures as the primary HACS import blocker. File and content checks remain unverified when the archive inventory cannot be trusted, instead of claiming required files are missing.

@@ -48,6 +48,7 @@ import {
   inspectHomeAssistantCardEditorHacsBundleArchive,
   formatHomeAssistantCardEditorHacsBundlePackageReadinessReviewLines,
   readHomeAssistantCardEditorHacsBundleArchivePackage,
+  createHomeAssistantCardEditorHacsBundleReadinessReport,
   listHomeAssistantCardEditorTemplates,
   listHomeAssistantCardTargets,
   serializeHomeAssistantEntitiesCardConfiguration,
@@ -9222,15 +9223,16 @@ importHaCardConfig.addEventListener("change", async () => {
     let text;
     if (isHacsBundleArchiveFile(file)) {
       const packageRead = readHomeAssistantCardEditorHacsBundleArchivePackage(new Uint8Array(await file.arrayBuffer()));
-      haCardImportReview.dataset.action = packageRead.importable ? "import" : "reject";
+      const approved = packageRead.importable && createHomeAssistantCardEditorHacsBundleReadinessReport(packageRead).ready;
+      haCardImportReview.dataset.action = approved ? "import" : "reject";
       haCardImportReview.textContent = formatHacsBundlePackageReadReview(packageRead);
-      statusMessage.textContent = packageRead.importable
+      statusMessage.textContent = approved
         ? t("message.hacsBundleInspected", {
           count: String(packageRead.inspection.fileCount),
           scriptFilename: packageRead.inspection.scriptFiles[0] ?? "unknown",
         })
         : t("message.hacsBundleRejected", { reason: packageRead.reason });
-      if (!packageRead.importable || !packageRead.packageContent) {
+      if (!approved || !packageRead.packageContent) {
         return;
       }
       text = packageRead.packageContent;

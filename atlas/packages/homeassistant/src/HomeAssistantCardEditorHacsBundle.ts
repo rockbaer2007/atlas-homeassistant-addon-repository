@@ -4,7 +4,7 @@ import {
   type HomeAssistantCardExportPackage,
   type HomeAssistantCardImportSummary,
 } from "./HomeAssistantCardConfiguration";
-import { createHomeAssistantCardEditorScriptExport } from "./HomeAssistantCardEditorPlan";
+import { createHomeAssistantCardEditorScriptExport, normalizeHomeAssistantCustomElementName } from "./HomeAssistantCardEditorPlan";
 
 export interface HomeAssistantCardEditorHacsBundleFile {
   readonly path: string;
@@ -49,7 +49,9 @@ export type HomeAssistantCardEditorHacsBundleArchiveIssueCode =
   | "missing-required-file"
   | "missing-locale-file"
   | "unsafe-path"
-  | "duplicate-path";
+  | "duplicate-path"
+  | "ambiguous-package"
+  | "ambiguous-script";
 
 export interface HomeAssistantCardEditorHacsBundleArchiveIssue {
   readonly code: HomeAssistantCardEditorHacsBundleArchiveIssueCode;
@@ -444,12 +446,16 @@ export function inspectHomeAssistantCardEditorHacsBundleArchive(
       ...(scriptFiles.length > 0 ? [] : ["*.js"]),
       ...(atlasPackageFiles.length > 0 ? [] : ["atlas/*.atlas-card.json"]),
     ];
-    const issues = createHacsBundleArchiveIssues({
+    const issues: HomeAssistantCardEditorHacsBundleArchiveIssue[] = createHacsBundleArchiveIssues({
       missingFiles,
       missingLocaleFiles,
       unsafePaths,
       duplicatePaths,
     });
+    if (atlasPackageFiles.length > 1) issues.push({ code: "ambiguous-package", severity: "error",
+      paths: atlasPackageFiles, message: "multiple embedded ATLAS projects; exactly one is required" });
+    if (scriptFiles.length > 1) issues.push({ code: "ambiguous-script", severity: "error",
+      paths: scriptFiles, message: "multiple card scripts; exactly one is required" });
 
     return {
       kind: "atlas.homeassistant.hacs-card-bundle-archive",
@@ -622,7 +628,8 @@ export function readHomeAssistantCardEditorHacsBundleArchivePackage(
     const checkedHacsMetadata = {
       ...hacsMetadata,
       nameMatchesPackage: hacsMetadata.name === packageName,
-      scriptMatchesPackage: packageScriptFilename === hacsMetadata.filename,
+      scriptMatchesPackage: packageScriptFilename === hacsMetadata.filename
+        && (!summary.editorPlan || summary.editorPlan.scriptFilename === hacsMetadata.filename),
     };
     if (!checkedHacsMetadata.nameMatchesPackage) {
       return {
@@ -645,8 +652,22 @@ export function readHomeAssistantCardEditorHacsBundleArchivePackage(
         packageFile: packageEntry.path,
         packageContent,
         summary,
-        reason: `The HACS manifest filename ${hacsMetadata.filename} does not match the embedded ATLAS card package script filename ${packageScriptFilename ?? "unknown"}.`,
+        reason: `The HACS manifest filename ${hacsMetadata.filename} does not match every embedded package/Editor plan script filename (${packageScriptFilename ?? "unknown"}; ${summary.editorPlan?.scriptFilename ?? "no Editor plan"}).`,
       };
+    }
+    const expectedElement = normalizeHomeAssistantCustomElementName(hacsMetadata.filename!);
+    const expectedType = `custom:${expectedElement}`;
+    const script = summary.script;
+    // Legacy plans keep /hacsfiles/atlas/, while bundles use the repository name.
+    // Both paths must still refer literally to the same declared script file.
+    const pointsToScript = (path: unknown) => typeof path === "string"
+      && path.endsWith(`/${hacsMetadata.filename}`);
+    if (!script || script.customElementName !== expectedElement || script.cardType !== expectedType
+      || script.defaultConfig?.type !== expectedType || !pointsToScript(script.resourcePath)
+      || (summary.editorPlan && !pointsToScript(summary.editorPlan.resourcePath))) {
+      return { kind: "atlas.homeassistant.hacs-card-bundle-package", importable: false,
+        inspection, hacsMetadata: checkedHacsMetadata, packageFile: packageEntry.path,
+        reason: "The embedded script, custom element, Card type or Editor plan resource path has conflicting script identities." };
     }
     const scriptReadiness = readHacsBundleArchiveScriptReadiness(
       content,
@@ -707,7 +728,7 @@ export function readHomeAssistantCardEditorHacsBundleArchivePackage(
       };
     }
 
-    return {
+    const result: HomeAssistantCardEditorHacsBundleArchivePackageRead = {
       kind: "atlas.homeassistant.hacs-card-bundle-package",
       importable: true,
       inspection,
@@ -721,6 +742,11 @@ export function readHomeAssistantCardEditorHacsBundleArchivePackage(
       summary,
       reason: "The archive contains a readable ATLAS card package file.",
     };
+    const readiness = createHomeAssistantCardEditorHacsBundleReadinessReport(result);
+    if (!readiness.ready) return { ...result, importable: false,
+      reason: `The archive failed HACS package checks: ${readiness.checks
+        .filter(check => check.status !== "pass").map(check => check.code).join(", ")}.` };
+    return result;
   } catch (error) {
     return {
       kind: "atlas.homeassistant.hacs-card-bundle-package",
@@ -973,7 +999,7 @@ export function createHomeAssistantCardEditorHacsBundleReadinessReport(
   add("locale-files-under-locales", localeKnown ? (localeReadiness.archiveLocaleFiles.every(path => path.startsWith("locales/")) ? "pass" : "fail") : "pending", "Locale files under locales directory", localeKnown ? "Locale files are under locales/." : "Locale paths have not been read.");
   add("locale-invalid-count-zero", localeKnown ? (localeReadiness.invalidArchiveLocaleFiles.length === 0 ? "pass" : "fail") : "pending", "Locale invalid count zero", localeReadiness?.invalidArchiveLocaleFiles.length ? `Invalid locales: ${localeReadiness.invalidArchiveLocaleFiles.join(", ")}` : localeKnown ? "No invalid locale files detected." : "Locale validation has not been read.");
   add("script-path-matches-manifest", scriptKnown && hacsMetadata ? (script.filename === hacsFilename ? "pass" : "fail") : "pending", "Script path matches manifest", script?.filename === hacsFilename ? "Script filename matches manifest filename." : "Script filename has not been matched to manifest.");
-  add("script-name-matches-custom-element", scriptKnown ? (script.filename.replace(/\.js$/i, "") === customElementName ? "pass" : "fail") : "pending", "Script name matches custom element", script && script.filename.replace(/\.js$/i, "") === customElementName ? "Script basename matches custom element name." : "Script basename has not been matched to custom element.");
+  add("script-name-matches-custom-element", scriptKnown ? (normalizeHomeAssistantCustomElementName(script.filename) === customElementName ? "pass" : "fail") : "pending", "Script name matches custom element", script && normalizeHomeAssistantCustomElementName(script.filename) === customElementName ? "Script filename derives the declared custom element name." : "Script filename does not derive the declared custom element.");
   add("script-resource-path-matches-filename", scriptKnown ? (script.resourcePath.endsWith(`/${script.filename}`) ? "pass" : "fail") : "pending", "Script resource path matches filename", script?.resourcePath.endsWith(`/${script.filename}`) ? "Script resource path ends with script filename." : "Script resource path has not been matched to filename.");
   add("script-card-type-matches-element", scriptKnown ? (script.cardType === `custom:${script.customElementName}` ? "pass" : "fail") : "pending", "Script card type matches element", script && script.cardType === `custom:${script.customElementName}` ? "Script card type matches custom element name." : "Script card type has not been matched to element.");
   add("script-card-type-custom-prefix", scriptKnown ? (script.cardType.startsWith("custom:") ? "pass" : "fail") : "pending", "Script card type custom prefix", script?.cardType.startsWith("custom:") ? "Script card type starts with custom:." : "Script card type has not been verified.");
