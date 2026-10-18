@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.320
+
+- Keep explicit Entity names exactly as imported, including empty strings, whitespace-only names and outer spaces/tabs. Missing names retain the existing fallback.
+- Compare regressions against the original unparsed source across JSON/YAML, standalone/nested Conditional cards, draft reload, Card packages and HACS roundtrips. Deliberate renaming and entity selection remain available.
+- No stored data is migrated or rewritten. Recover previously normalized names from the original source or backup. Native update qualification on .177/.68 remains separate; other hosts are not authorized for tests.
+
 ## 0.1.319
 
 - Preserve standalone Conditional cards as complete Expert fields, including nested conditions and cards without an entity. Do not turn condition entities into replacement cards.

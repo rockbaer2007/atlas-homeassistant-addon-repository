@@ -1167,7 +1167,11 @@ function normalizeHomeAssistantCardConfiguration(
     const normalizedCard = {
       type: card.type,
       ...preserveHomeAssistantCardStyles(card),
-      name: typeof card.name === "string" && card.name.trim() ? card.name.trim() : `Imported ${card.type} card`,
+      // An explicit Entity name is display data: even empty/whitespace values
+      // must survive import. Only a missing name should receive the fallback.
+      name: card.type === "entity" && typeof card.name === "string"
+        ? card.name
+        : typeof card.name === "string" && card.name.trim() ? card.name.trim() : `Imported ${card.type} card`,
       entity,
     } satisfies HomeAssistantEntityCardConfiguration | HomeAssistantSensorCardConfiguration | HomeAssistantThermostatCardConfiguration;
     return {

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
+import { stringify } from "yaml";
 import { describe, expect, it } from "vitest";
 import {
   createHomeAssistantCardEditorConfiguration, createHomeAssistantCardEditorFieldFromTemplate,
@@ -41,6 +42,50 @@ const fixtures = [entity, { ...entity, name: "" }, { ...entity, name: "  Literal
 ];
 
 describe("standalone Card import through the actual Expert field conversion", () => {
+  for (const format of ["json", "yaml"] as const) {
+    for (const name of ["", " ", "  Literal name  ", "\tKüche\t"]) {
+      const leaf = { type: "entity", entity: "sensor.fixture_value", name };
+      for (const source of [leaf, conditional(leaf), conditional(conditional(leaf))]) {
+        it(`retains the original literal name before parsing through ${format}: ${JSON.stringify(source)}`, () => {
+          // Compare with the unparsed source: normalizing first hid the old loss.
+          const text = format === "json" ? JSON.stringify(source) : stringify(source);
+          const summary = summarizeHomeAssistantCardImport(text);
+          expect(summary.card).toEqual(source);
+          const fields = editorFields(summary.card);
+          const plan = createHomeAssistantCardEditorPackagePlan(JSON.parse(JSON.stringify({ editorMode: "expert", fields })));
+          const output = createHomeAssistantCardEditorConfiguration(plan);
+          expect(output).toEqual(source);
+          const exported = createHomeAssistantCardExportPackage({ card: output, format, editorPlan: plan });
+          expect(summarizeHomeAssistantCardImport(JSON.stringify(exported)).card).toEqual(source);
+        });
+      }
+      it(`retains the original literal name through ${format} HACS: ${JSON.stringify(name)}`, () => {
+        const source = conditional(leaf);
+        const summary = summarizeHomeAssistantCardImport(format === "json" ? JSON.stringify(source) : stringify(source));
+        const plan = createHomeAssistantCardEditorPackagePlan({ editorMode: "expert", fields: editorFields(summary.card) });
+        const bundle = createHomeAssistantCardEditorHacsBundle(createHomeAssistantCardExportPackage({
+          card: createHomeAssistantCardEditorConfiguration(plan), format, editorPlan: plan, name: plan.cardName,
+        }));
+        const imported = readHomeAssistantCardEditorHacsBundleArchivePackage(createHomeAssistantCardEditorHacsBundleArchive(bundle).content);
+        expect(imported.importable, imported.reason).toBe(true);
+        expect(imported.summary?.card).toEqual(source);
+        expect(createHomeAssistantCardEditorConfiguration(imported.summary!.editorPlan!)).toEqual(source);
+      });
+    }
+  }
+  it("retains the missing-name fallback for an Entity card", () => {
+    expect(summarizeHomeAssistantCardImport(JSON.stringify({ type: "entity", entity: "sensor.fixture_value" })).card)
+      .toEqual({ type: "entity", entity: "sensor.fixture_value", name: "Imported entity card" });
+  });
+  it.each(["", " ", "  Literal name  ", "\tKüche\t"])("allows deliberate renaming without mutating the literal source: %j", name => {
+    const source = { type: "entity", entity: "sensor.fixture_value", name };
+    const summary = summarizeHomeAssistantCardImport(JSON.stringify(source));
+    const fields = editorFields(summary.card);
+    expect(createHomeAssistantCardEditorConfiguration({ editorMode: "expert", fields: [
+      { ...fields[0], id: "New title", entityId: "sensor.new_value" },
+    ] })).toEqual({ ...source, name: "New title", entity: "sensor.new_value" });
+    expect(summary.card).toEqual(source);
+  });
   for (const format of ["json", "yaml"] as const) {
     it.each(fixtures)(`preserves standalone content through ${format}, draft reload and export: %j`, fixture => {
       const normalized = summarizeHomeAssistantCardImport(JSON.stringify(fixture)).card;
