@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.321
+
+- Use package identity for HACS package/import title-presence checks instead of the first Card's display name. Valid packages with empty or whitespace-only first Entity names no longer receive false title failures.
+- Preserve literal names, Card data and archives. Missing/mismatched manifest names and invalid packages remain rejected; existing stored data is not migrated or rewritten.
+- Local regressions cover JSON/YAML, standalone Entity, stack and Conditional cards plus unchanged original native test archives. Native update qualification on .177/.68 remains separate.
+
 ## 0.1.320
 
 - Keep explicit Entity names exactly as imported, including empty strings, whitespace-only names and outer spaces/tabs. Missing names retain the existing fallback.

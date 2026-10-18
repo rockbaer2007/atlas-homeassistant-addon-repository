@@ -855,6 +855,9 @@ export function createHomeAssistantCardEditorHacsBundleReadinessReport(
   // A stack's first child title is not the exported project's manifest name.
   const packageTitle = hacsMetadata?.nameMatchesPackage
     ? hacsMetadata.name : editorPlan?.cardName ?? summary?.title;
+  // Display names may deliberately be empty. Readiness checks package identity,
+  // using the same title as the manifest/script/example consistency checks.
+  const hasPackageTitle = typeof packageTitle === "string" && packageTitle.trim().length > 0;
   const defaultConfig = script?.defaultConfig;
   const archivePaths = inspection.files.map(file => file.path);
   const zipReadable = inspection.reason !== "The archive is not a readable ZIP file.";
@@ -928,7 +931,7 @@ export function createHomeAssistantCardEditorHacsBundleReadinessReport(
   add("hacs-filename-resource-aligned", hacsMetadata && scriptKnown ? (resourcePath?.endsWith(`/${hacsFilename}`) ? "pass" : "fail") : "pending", "HACS filename aligns with resource path", resourcePath?.endsWith(`/${hacsFilename}`) ? "Resource path ends with the HACS filename." : "Resource path has not been aligned to the HACS filename.");
   add("hacs-card-type-custom", scriptKnown ? (cardType?.startsWith("custom:") ? "pass" : "fail") : "pending", "HACS card type is custom", cardType?.startsWith("custom:") ? "Card type uses the custom: prefix." : "Card type has not been read.");
   add("hacs-custom-element-name-safe", scriptKnown ? (customElementName && /^[a-z0-9-]+$/.test(customElementName) ? "pass" : "fail") : "pending", "HACS custom element name safe", customElementName && /^[a-z0-9-]+$/.test(customElementName) ? "Custom element name uses safe characters." : "Custom element name has not been verified.");
-  add("package-title-present", summaryKnown ? (summary.title.trim().length > 0 ? "pass" : "fail") : "pending", "Package title present", summary?.title ? `Package title: ${summary.title}` : "Package title has not been read.");
+  add("package-title-present", summaryKnown ? (hasPackageTitle ? "pass" : "fail") : "pending", "Package title present", hasPackageTitle ? `Package title: ${packageTitle}` : summaryKnown ? "Package title is empty." : "Package title has not been read.");
   add("package-format-supported", summaryKnown ? (supportedFormat ? "pass" : "fail") : "pending", "Package format supported (JSON/YAML)", summaryKnown ? `Package content imports as ${summary.format.toUpperCase()}.` : "Package format has not been read.");
   add("package-target-known", summaryKnown ? (summary.target ? "pass" : "fail") : "pending", "Package target known", summary?.target ? `Target: ${summary.target}` : "Package target has not been read.");
   add("package-layout-known", summaryKnown ? (summary.layout ? "pass" : "fail") : "pending", "Package layout known", summary?.layout ? `Layout: ${summary.layout}` : "Package layout has not been read.");
@@ -972,7 +975,7 @@ export function createHomeAssistantCardEditorHacsBundleReadinessReport(
   add("readme-card-type-case-sensitive", readmeKnown ? (readmeReadiness.mentionsCardType ? "pass" : "fail") : "pending", "README card type case-sensitive", readmeReadiness?.mentionsCardType ? "README contains the exact card type." : "README exact card type has not been verified.");
   add("readme-has-resource-detail", readmeKnown ? (Boolean(readmeReadiness.expectedResourcePath) ? "pass" : "fail") : "pending", "README resource detail known", readmeReadiness?.expectedResourcePath ? `Expected resource: ${readmeReadiness.expectedResourcePath}` : "README expected resource has not been read.");
   add("readme-has-card-detail", readmeKnown ? (Boolean(readmeReadiness.expectedCardType) ? "pass" : "fail") : "pending", "README card detail known", readmeReadiness?.expectedCardType ? `Expected card type: ${readmeReadiness.expectedCardType}` : "README expected card type has not been read.");
-  add("import-summary-title-present", summaryKnown ? (summary.title.length > 0 ? "pass" : "fail") : "pending", "Import summary title present", summary?.title ? `Import title: ${summary.title}` : "Import summary title has not been read.");
+  add("import-summary-title-present", summaryKnown ? (hasPackageTitle ? "pass" : "fail") : "pending", "Import summary title present", hasPackageTitle ? `Import package title: ${packageTitle}` : summaryKnown ? "Import package title is empty." : "Import summary title has not been read.");
   add("import-summary-entities-present", summaryKnown ? (summary.entityIds.length > 0 ? "pass" : "fail") : "pending", "Import summary entities present", summary?.entityIds.length ? `Import entities: ${summary.entityIds.join(", ")}` : "Import summary entities have not been read.");
   add("import-summary-target-supported", summaryKnown ? (summary.target.length > 0 ? "pass" : "fail") : "pending", "Import summary target supported", summary?.target ? `Import target: ${summary.target}` : "Import summary target has not been read.");
   add("import-summary-layout-supported", summaryKnown ? (summary.layout.length > 0 ? "pass" : "fail") : "pending", "Import summary layout supported", summary?.layout ? `Import layout: ${summary.layout}` : "Import summary layout has not been read.");
