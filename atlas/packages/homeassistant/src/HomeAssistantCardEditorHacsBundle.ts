@@ -6,6 +6,15 @@ import {
 } from "./HomeAssistantCardConfiguration";
 import { createHomeAssistantCardEditorScriptExport, normalizeHomeAssistantCustomElementName } from "./HomeAssistantCardEditorPlan";
 
+/** Fixed import budgets, also enforced before reading a browser File. */
+export const HACS_IMPORT_LIMITS = Object.freeze({
+  archiveBytes: 32 * 1024 * 1024,
+  entries: 2048,
+  entryBytes: 8 * 1024 * 1024,
+  totalBytes: 24 * 1024 * 1024,
+  pathBytes: 1024,
+});
+
 export interface HomeAssistantCardEditorHacsBundleFile {
   readonly path: string;
   readonly mimeType: "application/json" | "text/javascript" | "text/markdown";
@@ -44,6 +53,7 @@ export interface HomeAssistantCardEditorHacsBundleArchiveEntry {
 }
 
 export type HomeAssistantCardEditorHacsBundleArchiveIssueCode =
+  | "archive-limit"
   | "zip-integrity"
   | "unreadable-zip"
   | "missing-required-file"
@@ -62,7 +72,7 @@ export interface HomeAssistantCardEditorHacsBundleArchiveIssue {
 
 export interface HomeAssistantCardEditorHacsBundleArchiveInspection {
   readonly kind: "atlas.homeassistant.hacs-card-bundle-archive";
-  readonly zipStatus: "verified" | "integrity-error" | "unreadable";
+  readonly zipStatus: "verified" | "integrity-error" | "unreadable" | "limit-exceeded";
   readonly importable: boolean;
   readonly fileCount: number;
   readonly files: readonly HomeAssistantCardEditorHacsBundleArchiveEntry[];
@@ -482,13 +492,14 @@ export function inspectHomeAssistantCardEditorHacsBundleArchive(
         : `The archive is not a safe ATLAS HACS card bundle: ${issues.map(issue => issue.message).join("; ")}.`,
     };
   } catch (error) {
+    const limitError = error instanceof HacsZipLimitError;
     const integrityError = error instanceof HacsZipIntegrityError;
-    const reason = integrityError
+    const reason = limitError ? `The archive exceeds HACS import limits: ${error.message}` : integrityError
       ? `The archive failed ZIP integrity checks: ${error.message}`
       : "The archive is not a readable ZIP file.";
     return {
       kind: "atlas.homeassistant.hacs-card-bundle-archive",
-      zipStatus: integrityError ? "integrity-error" : "unreadable",
+      zipStatus: limitError ? "limit-exceeded" : integrityError ? "integrity-error" : "unreadable",
       importable: false,
       fileCount: 0,
       files: [],
@@ -496,7 +507,7 @@ export function inspectHomeAssistantCardEditorHacsBundleArchive(
       missingFiles: [],
       unsafePaths: [],
       duplicatePaths: [],
-      issues: [{ code: integrityError ? "zip-integrity" : "unreadable-zip",
+      issues: [{ code: limitError ? "archive-limit" : integrityError ? "zip-integrity" : "unreadable-zip",
         severity: "error", paths: [], message: reason }],
       scriptFiles: [],
       atlasPackageFiles: [],
@@ -1454,6 +1465,7 @@ interface ZipEndOfCentralDirectory {
 }
 
 class HacsZipIntegrityError extends Error {}
+class HacsZipLimitError extends Error {}
 
 interface ZipCentralDirectoryRecord {
   readonly fileName: Uint8Array;
@@ -1467,9 +1479,13 @@ interface ReadableZipArchiveEntry extends HomeAssistantCardEditorHacsBundleArchi
 }
 
 function readZipCentralDirectoryEntries(content: Uint8Array): ReadableZipArchiveEntry[] {
+  if (content.byteLength > HACS_IMPORT_LIMITS.archiveBytes) throw new HacsZipLimitError("Archive exceeds 32 MiB.");
   const endOfCentralDirectory = readZipEndOfCentralDirectory(content);
+  if (endOfCentralDirectory.fileCount > HACS_IMPORT_LIMITS.entries) throw new HacsZipLimitError("Archive exceeds 2048 entries.");
   const entries: ReadableZipArchiveEntry[] = [];
   const spans: { start: number; end: number }[] = [];
+  const crcChecks: { start: number; end: number; crc32: number; path: string }[] = [];
+  let totalBytes = 0;
   let offset = endOfCentralDirectory.centralDirectoryOffset;
   const directoryEnd = offset + endOfCentralDirectory.centralDirectorySize;
   const decoder = new TextDecoder("utf-8", { fatal: true });
@@ -1491,6 +1507,12 @@ function readZipCentralDirectoryEntries(content: Uint8Array): ReadableZipArchive
     const fileNameLength = view.getUint16(28, true);
     const extraFieldLength = view.getUint16(30, true);
     const commentLength = view.getUint16(32, true);
+    if (fileNameLength > HACS_IMPORT_LIMITS.pathBytes) throw new HacsZipLimitError("A path exceeds 1024 UTF-8 bytes.");
+    if (uncompressedSize > HACS_IMPORT_LIMITS.entryBytes || compressedSize > HACS_IMPORT_LIMITS.entryBytes) {
+      throw new HacsZipLimitError("An entry exceeds 8 MiB.");
+    }
+    totalBytes += uncompressedSize;
+    if (totalBytes > HACS_IMPORT_LIMITS.totalBytes) throw new HacsZipLimitError("Declared total content exceeds 24 MiB.");
     const localHeaderOffset = view.getUint32(42, true);
     const entryEnd = offset + 46 + fileNameLength + extraFieldLength + commentLength;
     if (entryEnd > directoryEnd || view.getUint16(34, true) !== 0 || (flags & ~0x0800) !== 0) {
@@ -1510,9 +1532,9 @@ function readZipCentralDirectoryEntries(content: Uint8Array): ReadableZipArchive
       || !fileName.every((byte, i) => byte === content[localHeaderOffset + 30 + i])) {
       throw new HacsZipIntegrityError("Local and central ZIP headers or file bounds disagree.");
     }
-    if (compressionMethod === 0 && (compressedSize !== uncompressedSize
-      || calculateCrc32(content.subarray(dataOffset, dataEnd)) !== crc32)) {
-      throw new HacsZipIntegrityError(`CRC32 or stored size mismatch for ${decoder.decode(fileName)}.`);
+    if (compressionMethod === 0) {
+      if (compressedSize !== uncompressedSize) throw new HacsZipIntegrityError("Stored size mismatch.");
+      crcChecks.push({ start: dataOffset, end: dataEnd, crc32, path: decoder.decode(fileName) });
     }
     spans.push({ start: localHeaderOffset, end: dataEnd });
     entries.push({
@@ -1528,6 +1550,12 @@ function readZipCentralDirectoryEntries(content: Uint8Array): ReadableZipArchive
   spans.sort((a, b) => a.start - b.start);
   if (spans.some((span, i) => i > 0 && span.start < spans[i - 1]!.end)) {
     throw new HacsZipIntegrityError("Overlapping ZIP entries.");
+  }
+  // Validate every metadata budget before spending CPU on any file's CRC.
+  for (const check of crcChecks) {
+    if (calculateCrc32(content.subarray(check.start, check.end)) !== check.crc32) {
+      throw new HacsZipIntegrityError(`CRC32 mismatch for ${check.path}.`);
+    }
   }
   return entries;
 }

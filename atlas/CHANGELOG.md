@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.325
+
+- Bound HACS imports before file reads and CRC work: 32 MiB ZIP, 2048 entries,
+  8 MiB per entry, 24 MiB total and 1024-byte paths.
+- Run HACS validation in a disposable worker with Cancel and a 15-second timeout.
+  Checked packages require explicit adoption; cancellation and stale results
+  cannot replace the Editor. Existing settings, projects and plugins are retained.
+
 ## 0.1.324
 
 - Reject ambiguous HACS project/script inventories before selecting package content. ZIP entry order cannot choose an embedded project.

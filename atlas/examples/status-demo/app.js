@@ -1,5 +1,6 @@
 import { cardEditorFrenchTranslations } from "./card-editor-fr.js";
 import { createSharedProjects } from "./shared-projects.mjs";
+import { createHacsImportTask } from "./hacs-import-task.mjs";
 import {
   createThemeTokens,
 } from "@atlas/theme";
@@ -49,6 +50,7 @@ import {
   formatHomeAssistantCardEditorHacsBundlePackageReadinessReviewLines,
   readHomeAssistantCardEditorHacsBundleArchivePackage,
   createHomeAssistantCardEditorHacsBundleReadinessReport,
+  HACS_IMPORT_LIMITS,
   listHomeAssistantCardEditorTemplates,
   listHomeAssistantCardTargets,
   serializeHomeAssistantEntitiesCardConfiguration,
@@ -149,6 +151,17 @@ const toggleAutomaticCardTypeMapping = document.querySelector("#toggle-automatic
 const temporaryResourceDebug = document.querySelector("#temporary-resource-debug");
 const temporaryHaCardResourceList = document.querySelector("#temporary-ha-card-resource-list");
 const haCardImportReview = document.querySelector("#ha-card-import-review");
+const hacsImportControls = document.querySelector("#hacs-import-controls");
+const hacsImportProgress = document.querySelector("#hacs-import-progress");
+const cancelHacsImportButton = document.querySelector("#cancel-hacs-import");
+const applyHacsImportButton = document.querySelector("#apply-hacs-import");
+let hacsImportGeneration = 0;
+let pendingHacsImport;
+const hacsImportTask = createHacsImportTask({
+  workerUrl: new URL("hacs-import.worker.bundle.js", document.currentScript.src),
+  archiveBytes: HACS_IMPORT_LIMITS.archiveBytes,
+  onPhase: phase => { hacsImportProgress.textContent = t(`message.hacsImport.${phase}`); },
+});
 const haCardStyleReview = document.querySelector("#ha-card-style-review");
 const diagnosticsPanel = document.querySelector("#diagnostics-panel");
 const selectedEntity = document.querySelector("#selected-entity");
@@ -576,6 +589,17 @@ const translations = {
     "message.entityStylesAssigned": "{count} entity style blocks are assigned in the preview.",
     "message.hacsBundleInspected": "HACS bundle checked: {count} files, script {scriptFilename}.",
     "message.hacsBundleRejected": "HACS bundle rejected: {reason}",
+    "button.cancelHacsImport": "Cancel import",
+    "button.applyHacsImport": "Apply checked package",
+    "message.hacsImport.reading": "Reading HACS package. The Editor remains unchanged; you can cancel.",
+    "message.hacsImport.checking": "Checking HACS package in the background. You can cancel.",
+    "message.hacsImport.ready": "Package checked. Apply it explicitly or cancel; the Editor is still unchanged.",
+    "message.hacsImport.cancelled": "HACS import cancelled. The Editor remains unchanged.",
+    "message.hacsImport.archive-limit": "HACS package rejected before reading: ZIP limit is 32 MiB.",
+    "message.hacsImport.timeout": "HACS check stopped after 15 seconds. The Editor remains unchanged.",
+    "message.hacsImport.worker-failed": "Background check unavailable or failed. Nothing was imported; retry or check the installation.",
+    "message.hacsImport.rejected": "Package rejected. The Editor remains unchanged; see the report below.",
+    "message.hacsImport.applied": "Checked HACS package applied.",
     "message.invalidDragPayload": "Could not read dragged card.",
     "message.packageExported": "Card package exported with HACS script {scriptFilename}.",
     "message.scriptExported": "Card script exported as {scriptFilename}.",
@@ -1058,6 +1082,17 @@ const translations = {
     "message.entityStylesAssigned": "{count} Entity-Style-Blöcke sind in der Vorschau zugeordnet.",
     "message.hacsBundleInspected": "HACS-Bundle geprüft: {count} Dateien, Script {scriptFilename}.",
     "message.hacsBundleRejected": "HACS-Bundle abgelehnt: {reason}",
+    "button.cancelHacsImport": "Import abbrechen",
+    "button.applyHacsImport": "Geprüftes Paket übernehmen",
+    "message.hacsImport.reading": "HACS-Paket wird gelesen. Der Editor bleibt unverändert; Abbrechen ist möglich.",
+    "message.hacsImport.checking": "HACS-Paket wird im Hintergrund geprüft. Abbrechen ist möglich.",
+    "message.hacsImport.ready": "Paket geprüft. Ausdrücklich übernehmen oder abbrechen; der Editor ist noch unverändert.",
+    "message.hacsImport.cancelled": "HACS-Import abgebrochen. Der Editor bleibt unverändert.",
+    "message.hacsImport.archive-limit": "HACS-Paket vor dem Lesen abgewiesen: ZIP-Grenze ist 32 MiB.",
+    "message.hacsImport.timeout": "HACS-Prüfung nach 15 Sekunden beendet. Der Editor bleibt unverändert.",
+    "message.hacsImport.worker-failed": "Hintergrundprüfung nicht verfügbar oder fehlgeschlagen. Nichts importiert; erneut versuchen oder Installation prüfen.",
+    "message.hacsImport.rejected": "Paket abgewiesen. Der Editor bleibt unverändert; Bericht siehe unten.",
+    "message.hacsImport.applied": "Geprüftes HACS-Paket übernommen.",
     "message.invalidDragPayload": "Gezogene Card konnte nicht gelesen werden.",
     "message.packageExported": "Card-Paket mit HACS-Script {scriptFilename} exportiert.",
     "message.scriptExported": "Card-Script als {scriptFilename} exportiert.",
@@ -9216,39 +9251,76 @@ importHomeAssistantConfig.addEventListener("change", async () => {
     importHomeAssistantConfig.value = "";
   }
 });
+function cancelHacsImport() {
+  hacsImportGeneration += 1;
+  hacsImportTask.cancel();
+  pendingHacsImport = undefined;
+  applyHacsImportButton.hidden = true;
+  cancelHacsImportButton.hidden = true;
+  hacsImportProgress.textContent = t("message.hacsImport.cancelled");
+  haCardImportReview.textContent = "";
+  haCardImportReview.removeAttribute("data-action");
+}
+cancelHacsImportButton.addEventListener("click", cancelHacsImport);
+window.addEventListener("pagehide", () => hacsImportTask.cancel());
+applyHacsImportButton.addEventListener("click", () => {
+  if (!pendingHacsImport || pendingHacsImport.generation !== hacsImportGeneration) return;
+  const summary = pendingHacsImport.summary;
+  pendingHacsImport = undefined;
+  applyHacsImportButton.hidden = true;
+  cancelHacsImportButton.hidden = true;
+  haCardImportReview.dataset.action = "import";
+  applyHomeAssistantCardImportSummary(summary);
+  hacsImportProgress.textContent = t("message.hacsImport.applied");
+});
 importHaCardConfig.addEventListener("change", async () => {
   const file = importHaCardConfig.files?.[0];
   if (!file) return;
+  const generation = ++hacsImportGeneration;
+  hacsImportTask.cancel();
+  pendingHacsImport = undefined;
+  applyHacsImportButton.hidden = true;
+  haCardImportReview.textContent = "";
+  haCardImportReview.removeAttribute("data-action");
   try {
     let text;
     if (isHacsBundleArchiveFile(file)) {
-      const packageRead = readHomeAssistantCardEditorHacsBundleArchivePackage(new Uint8Array(await file.arrayBuffer()));
-      const approved = packageRead.importable && createHomeAssistantCardEditorHacsBundleReadinessReport(packageRead).ready;
-      haCardImportReview.dataset.action = approved ? "import" : "reject";
-      haCardImportReview.textContent = formatHacsBundlePackageReadReview(packageRead);
+      hacsImportControls.hidden = false;
+      cancelHacsImportButton.hidden = false;
+      const result = await hacsImportTask.start(file);
+      if (generation !== hacsImportGeneration) return;
+      const packageRead = result.packageRead;
+      const approved = packageRead.importable && result.ready && Boolean(packageRead.summary);
+      haCardImportReview.dataset.action = approved ? "review" : "reject";
+      haCardImportReview.textContent = result.review;
+      hacsImportProgress.textContent = t(approved ? "message.hacsImport.ready" : "message.hacsImport.rejected");
+      cancelHacsImportButton.hidden = !approved;
       statusMessage.textContent = approved
         ? t("message.hacsBundleInspected", {
           count: String(packageRead.inspection.fileCount),
           scriptFilename: packageRead.inspection.scriptFiles[0] ?? "unknown",
         })
         : t("message.hacsBundleRejected", { reason: packageRead.reason });
-      if (!approved || !packageRead.packageContent) {
-        return;
+      if (approved) {
+        pendingHacsImport = { generation, summary: packageRead.summary };
+        applyHacsImportButton.hidden = false;
       }
-      text = packageRead.packageContent;
-      if (packageRead.summary) {
-        applyHomeAssistantCardImportSummary(packageRead.summary);
-        return;
-      }
+      return;
     } else {
+      hacsImportControls.hidden = true;
       text = await file.text();
     }
-
+    if (generation !== hacsImportGeneration) return;
     importHaCardTextIntoEditor(text);
-  } catch {
+  } catch (error) {
+    if (generation !== hacsImportGeneration) return;
+    pendingHacsImport = undefined;
+    cancelHacsImportButton.hidden = true;
+    haCardImportReview.dataset.action = "reject";
+    hacsImportProgress.textContent = t(`message.hacsImport.${error?.code ?? "worker-failed"}`);
     statusMessage.textContent = t("message.importHaCardFailed");
   } finally {
-    importHaCardConfig.value = "";
+    if (generation === hacsImportGeneration) importHaCardConfig.value = "";
   }
 });
 openHaCardPasteImport.addEventListener("click", () => {

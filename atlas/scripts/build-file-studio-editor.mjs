@@ -58,3 +58,15 @@ await build({
   minify: true,
   legalComments: "none",
 });
+
+await build({
+  entryPoints: [resolve(root, "examples/status-demo/hacs-import-worker.js")],
+  bundle: true,
+  format: "iife",
+  outfile: resolve(root, "examples/status-demo/hacs-import.worker.bundle.js"),
+  plugins: [atlasPackageAliasPlugin],
+  target: ["es2022"],
+  sourcemap: false,
+  minify: true,
+  legalComments: "none",
+});

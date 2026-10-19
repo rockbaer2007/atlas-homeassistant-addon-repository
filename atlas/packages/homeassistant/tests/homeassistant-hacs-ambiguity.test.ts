@@ -30,20 +30,33 @@ const source = readFileSync(new URL("../../../examples/status-demo/app.js", impo
 const parsed = ts.createSourceFile("app.js", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
 const handlerSource = parsed.statements.find(n => ts.isExpressionStatement(n)
   && n.getText(parsed).startsWith('importHaCardConfig.addEventListener("change"'))!.getText(parsed);
+const applySource = parsed.statements.find(n => ts.isExpressionStatement(n)
+  && n.getText(parsed).startsWith('applyHacsImportButton.addEventListener("click"'))!.getText(parsed);
 async function importThroughEditor(bytes: Uint8Array, blockedReport = false) {
   const state = { draft: "original draft", adopted: 0 };
-  const importReview = { dataset: {} as Record<string, string>, textContent: "" };
+  const importReview = { dataset: {} as Record<string, string>, textContent: "",
+    removeAttribute() { delete this.dataset.action; } };
+  let apply = () => { throw new Error("No apply handler"); };
   let change: () => Promise<void> = async () => { throw new Error("No handler registered"); };
   const input = { files: [{ arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) }],
     value: "fixture", addEventListener: (_: string, callback: typeof change) => { change = callback; } };
-  runInNewContext(handlerSource, { importHaCardConfig: input, Uint8Array,
+  runInNewContext(handlerSource + "\n" + applySource, { importHaCardConfig: input, Uint8Array,
+    hacsImportGeneration: 0, pendingHacsImport: undefined,
+    hacsImportControls: { hidden: true }, hacsImportProgress: { textContent: "" },
+    cancelHacsImportButton: { hidden: true },
+    applyHacsImportButton: { hidden: true, addEventListener: (_: string, cb: typeof apply) => { apply = cb; } },
+    hacsImportTask: { cancel() {}, async start() { const packageRead = read(bytes); return {
+      packageRead, ready: !blockedReport && report(packageRead).ready, review: review(packageRead).join("\n") }; } },
     isHacsBundleArchiveFile: () => true, readHomeAssistantCardEditorHacsBundleArchivePackage: read,
     createHomeAssistantCardEditorHacsBundleReadinessReport: blockedReport ? () => ({ ready: false }) : report,
     formatHacsBundlePackageReadReview: (r: ReturnType<typeof read>) => review(r).join("\n"),
     haCardImportReview: importReview, statusMessage: { textContent: "" }, t: (key: string) => key,
     applyHomeAssistantCardImportSummary: () => { state.adopted++; state.draft = "changed"; },
   });
-  await change(); return { state, importReview };
+  await change();
+  expect(state.adopted).toBe(0); // Validation alone can never replace a draft.
+  apply(); apply(); // Explicit adoption is guarded against double clicks.
+  return { state, importReview };
 }
 
 describe("HACS ambiguity is rejected before Editor adoption", () => {
