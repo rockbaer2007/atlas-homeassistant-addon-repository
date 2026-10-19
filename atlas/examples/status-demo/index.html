@@ -1057,6 +1057,8 @@
         gap: 8px;
         margin: 8px 0;
       }
+      #apply-hacs-import { grid-column: 1; grid-row: 1; }
+      #cancel-hacs-import { grid-column: 2; grid-row: 1; }
       #hacs-import-controls [hidden] { display: none !important; }
       #hacs-import-progress { display: block; overflow-wrap: anywhere; }
       #ha-card-import-review {
@@ -3808,11 +3810,11 @@
                 <small data-i18n="text.automaticCardTypeMappingWarning">Safety notice: only use this option if you know what you are doing. ATLAS will try to map unknown registered resources automatically to a custom:* card type.</small>
               </div>
               <section id="hacs-import-controls" hidden aria-label="HACS import">
-                <output id="hacs-import-progress" role="status" aria-live="polite"></output>
                 <div class="hacs-import-actions">
                   <button id="apply-hacs-import" type="button" hidden data-i18n="button.applyHacsImport">Apply checked package</button>
                   <button id="cancel-hacs-import" type="button" hidden data-i18n="button.cancelHacsImport">Cancel import</button>
                 </div>
+                <output id="hacs-import-progress" role="status" aria-live="polite"></output>
               </section>
               <output id="ha-card-import-review" aria-live="polite"></output>
               <pre id="ha-card-style-review" class="ha-card-style-review" hidden></pre>

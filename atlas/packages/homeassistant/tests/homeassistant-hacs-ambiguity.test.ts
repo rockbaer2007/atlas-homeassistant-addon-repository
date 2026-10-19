@@ -32,7 +32,9 @@ const handlerSource = parsed.statements.find(n => ts.isExpressionStatement(n)
   && n.getText(parsed).startsWith('importHaCardConfig.addEventListener("change"'))!.getText(parsed);
 const applySource = parsed.statements.find(n => ts.isExpressionStatement(n)
   && n.getText(parsed).startsWith('applyHacsImportButton.addEventListener("click"'))!.getText(parsed);
-async function importThroughEditor(bytes: Uint8Array, blockedReport = false) {
+const cancelSource = parsed.statements.find(n => ts.isFunctionDeclaration(n)
+  && n.name?.text === "cancelHacsImport")!.getText(parsed);
+async function importThroughEditor(bytes: Uint8Array, blockedReport = false, cancelBeforeReady = false) {
   const state = { draft: "original draft", adopted: 0 };
   const importReview = { dataset: {} as Record<string, string>, textContent: "",
     removeAttribute() { delete this.dataset.action; } };
@@ -40,19 +42,22 @@ async function importThroughEditor(bytes: Uint8Array, blockedReport = false) {
   let change: () => Promise<void> = async () => { throw new Error("No handler registered"); };
   const input = { files: [{ arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) }],
     value: "fixture", addEventListener: (_: string, callback: typeof change) => { change = callback; } };
-  runInNewContext(handlerSource + "\n" + applySource, { importHaCardConfig: input, Uint8Array,
+  const context: any = { importHaCardConfig: input, Uint8Array,
     hacsImportGeneration: 0, pendingHacsImport: undefined,
     hacsImportControls: { hidden: true }, hacsImportProgress: { textContent: "" },
     cancelHacsImportButton: { hidden: true },
     applyHacsImportButton: { hidden: true, addEventListener: (_: string, cb: typeof apply) => { apply = cb; } },
-    hacsImportTask: { cancel() {}, async start() { expect(input.value).toBe(""); const packageRead = read(bytes); return {
+    hacsImportTask: { cancel() {}, async start() { expect(input.value).toBe("");
+      if (cancelBeforeReady) context.cancelHacsImport();
+      const packageRead = read(bytes); return {
       packageRead, ready: !blockedReport && report(packageRead).ready, review: review(packageRead).join("\n") }; } },
     isHacsBundleArchiveFile: () => true, readHomeAssistantCardEditorHacsBundleArchivePackage: read,
     createHomeAssistantCardEditorHacsBundleReadinessReport: blockedReport ? () => ({ ready: false }) : report,
     formatHacsBundlePackageReadReview: (r: ReturnType<typeof read>) => review(r).join("\n"),
     haCardImportReview: importReview, statusMessage: { textContent: "" }, t: (key: string) => key,
     applyHomeAssistantCardImportSummary: () => { state.adopted++; state.draft = "changed"; },
-  });
+  };
+  runInNewContext(handlerSource + "\n" + applySource + "\n" + cancelSource, context);
   await change();
   expect(state.adopted).toBe(0); // Validation alone can never replace a draft.
   apply(); apply(); // Explicit adoption is guarded against double clicks.
@@ -60,6 +65,11 @@ async function importThroughEditor(bytes: Uint8Array, blockedReport = false) {
 }
 
 describe("HACS ambiguity is rejected before Editor adoption", () => {
+  it("ignores a valid result arriving after the actual Cancel handler", async () => {
+    const r = await importThroughEditor(archive(fixture("json")).content, false, true);
+    expect(r.state).toEqual({ draft: "original draft", adopted: 0 });
+    expect(r.importReview.dataset.action).toBeUndefined();
+  });
   for (const format of ["json", "yaml"] as const) {
     it.each(["ambiguity-a.js", "temperature.js", "123-room.js"])(`${format}: retains valid script identities %s`, async filename => {
       const bytes = archive(fixture(format, filename)).content, r = read(bytes);

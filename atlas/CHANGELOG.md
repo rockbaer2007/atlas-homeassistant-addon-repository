@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.327
+
+- Keep Cancel in a fixed grid cell above progress text, including the transition
+  from active checking to a checked package awaiting explicit adoption.
+
 ## 0.1.326
 
 - Reset the captured file selection immediately, so Cancel permits retrying the
