@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.326
+
+- Reset the captured file selection immediately, so Cancel permits retrying the
+  identical HACS file without requiring a different selection or page reload.
+
 ## 0.1.325
 
 - Bound HACS imports before file reads and CRC work: 32 MiB ZIP, 2048 entries,

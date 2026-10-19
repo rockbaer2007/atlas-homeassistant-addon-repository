@@ -9276,6 +9276,8 @@ applyHacsImportButton.addEventListener("click", () => {
 importHaCardConfig.addEventListener("change", async () => {
   const file = importHaCardConfig.files?.[0];
   if (!file) return;
+  // Keep the captured File, but allow selecting the same file again after Cancel.
+  importHaCardConfig.value = "";
   const generation = ++hacsImportGeneration;
   hacsImportTask.cancel();
   pendingHacsImport = undefined;

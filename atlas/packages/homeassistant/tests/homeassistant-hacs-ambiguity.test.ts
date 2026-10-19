@@ -45,7 +45,7 @@ async function importThroughEditor(bytes: Uint8Array, blockedReport = false) {
     hacsImportControls: { hidden: true }, hacsImportProgress: { textContent: "" },
     cancelHacsImportButton: { hidden: true },
     applyHacsImportButton: { hidden: true, addEventListener: (_: string, cb: typeof apply) => { apply = cb; } },
-    hacsImportTask: { cancel() {}, async start() { const packageRead = read(bytes); return {
+    hacsImportTask: { cancel() {}, async start() { expect(input.value).toBe(""); const packageRead = read(bytes); return {
       packageRead, ready: !blockedReport && report(packageRead).ready, review: review(packageRead).join("\n") }; } },
     isHacsBundleArchiveFile: () => true, readHomeAssistantCardEditorHacsBundleArchivePackage: read,
     createHomeAssistantCardEditorHacsBundleReadinessReport: blockedReport ? () => ({ ready: false }) : report,
