@@ -2345,13 +2345,14 @@ function scheduleReconnect() {
   }, delay);
 }
 
-function persistConfiguration() {
+function persistConfiguration(options = {}) {
   try {
     normalizeExpertPaletteVisibilityState();
     if (sharedProjectActive) {
       if (!editorDraftStore) throw new Error("Draft storage unavailable");
-      const savedDraft = editorDraftStore.save({ name: currentExpertCardName(), fields: normalizedExpertEditorFields(),
-        surfaceSize: expertEditorSurfaceSize, gridCellSize: expertGridCellSize, scriptFilename: haCardScriptFilename.value });
+      const project = { name: currentExpertCardName(), fields: normalizedExpertEditorFields(),
+        surfaceSize: expertEditorSurfaceSize, gridCellSize: expertGridCellSize, scriptFilename: haCardScriptFilename.value };
+      const savedDraft = options.newDraft === true ? editorDraftStore.saveNew(project) : editorDraftStore.save(project);
       sharedProjects?.refreshDrafts(true);
       if (!savedDraft.sessionRecoveryAvailable) sharedProjects?.showDraftSessionWarning();
       return;
@@ -9255,7 +9256,12 @@ importHomeAssistantConfig.addEventListener("change", async () => {
     renderEditorMode(pendingImport.editorMode === "expert" ? "expert" : "simple");
     syncExpertInputsFromTemplateSizing(expertTemplate.value);
     renderExpertTemplatePalette();
-    persistConfiguration();
+    // Retain the existing whole-configuration/settings import for a fresh
+    // workspace, then enroll its Editor project in this tab's draft recovery.
+    // Importing again must fork rather than replace the previous draft source.
+    if (!sharedProjectActive) persistConfiguration();
+    sharedProjectActive = true;
+    persistConfiguration({ newDraft: true });
     homeAssistantEntity.dispatchEvent(new Event("input"));
     renderConnectionReadiness();
     statusMessage.textContent = t("message.configurationImported", {

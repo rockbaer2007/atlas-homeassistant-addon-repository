@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.331
+
+- Save confirmed Editor configuration file imports as independent per-tab local
+  drafts, including imports without a previously opened shared project.
+- Keep earlier draft sources when importing another file in the same tab. Reload
+  selects the matching recovery source for explicit preview and backed-up apply;
+  existing local/session storage failure notices and credential exclusion remain.
+
 ## 0.1.330
 
 - Warn in DE/EN/FR when a draft is saved locally but its tab recovery intent or

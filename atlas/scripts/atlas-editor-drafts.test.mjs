@@ -26,6 +26,63 @@ test("two tabs never overwrite each other's draft; reloaded tabs select their ow
   assert.equal(reloadA.read(id(3)).project.name,"A newest");assert.equal(b.read(id(2)).project.name,"B next");
 });
 
+test("confirmed file imports fork independent tab sources and preserve earlier imports in the same tab", () => {
+  const storage=memory(),sessionA=memory(),sessionB=memory();let next=1;
+  const a=createEditorDraftStore({storage,session:sessionA,createId:()=>id(next++),now:()=>1792598400000});
+  const b=make(storage,sessionB,9);
+  const first=a.saveNew(project("File A"));const original=storage.getItem(draftPrefix+first.id);
+  b.saveNew(project("File B"));
+  assert.deepEqual(make(storage,sessionA,7).read(first.id).project,project("File A"));
+  assert.equal(make(storage,sessionA,7).preferredId(),first.id);
+  assert.equal(make(storage,sessionB,8).preferredId(),id(9));
+  const second=a.saveNew(project("File A second import"));assert.notEqual(second.id,first.id);
+  a.save(project("File A edited"));
+  assert.equal(storage.getItem(draftPrefix+first.id),original);
+  assert.deepEqual(a.read(second.id).project,project("File A edited"));
+  assert.equal(make(storage,sessionA,7).preferredId(),second.id);
+  assert.deepEqual(b.read(id(9)).project,project("File B"));
+});
+
+test("invalid new imports do not detach the writable source or alter its recovery pointer", () => {
+  const storage=memory(),session=memory(),store=make(storage,session,1);store.save(project("Keep"));
+  const original=storage.getItem(draftPrefix+id(1));
+  assert.throws(()=>store.saveNew({name:"Bad",fields:[null]}));
+  assert.equal(store.preferredId(),id(1));assert.equal(storage.getItem(draftPrefix+id(1)),original);
+  store.save(project("Keep edited"));assert.equal(storage.length,1);
+});
+
+test("an interrupted later file import links its intent to the last confirmed source in that tab", () => {
+  const storage=memory(),session=memory();let next=1;
+  const store=createEditorDraftStore({storage,session,createId:()=>id(next++),now:()=>1792598400000});
+  store.saveNew(project("First import"));const original=storage.getItem(draftPrefix+id(1)),write=storage.setItem;
+  storage.setItem=(key,value)=>{write(key,value);if(key===draftPrefix+id(2))throw Error("interrupted after record write");};
+  assert.throws(()=>store.saveNew(project("Later import")),/interrupted/);storage.setItem=write;
+  const reload=make(storage,session,8);assert.equal(reload.preferredId(),id(2));
+  assert.equal(reload.recovery().name,"Later import");assert.equal(storage.getItem(draftPrefix+id(1)),original);
+});
+
+test("a failed imported-draft write cannot overwrite the old source when later edits retry", () => {
+  const storage=memory(),session=memory();let next=1;
+  const store=createEditorDraftStore({storage,session,createId:()=>id(next++),now:()=>1792598400000});
+  store.save(project("Keep"));const original=storage.getItem(draftPrefix+id(1)),write=storage.setItem;
+  storage.setItem=()=>{throw new DOMException("Full","QuotaExceededError");};
+  assert.throws(()=>store.saveNew(project("Imported")),/Full/);
+  assert.equal(storage.getItem(draftPrefix+id(1)),original);
+  assert.equal(make(storage,session,8).preferredId(),id(1));
+  storage.setItem=write;store.save(project("Imported retry"));
+  assert.equal(storage.getItem(draftPrefix+id(1)),original);
+  assert.deepEqual(store.read(id(2)).project,project("Imported retry"));
+  assert.equal(make(storage,session,8).preferredId(),id(2));
+});
+
+test("new imports with blocked session storage retain independent records and report partial recovery", () => {
+  const storage=memory(),session={getItem(){throw Error("blocked");},setItem(){throw Error("blocked");}};let next=1;
+  const store=createEditorDraftStore({storage,session,createId:()=>id(next++),now:()=>1792598400000});
+  assert.equal(store.saveNew(project("First")).sessionRecoveryAvailable,false);
+  assert.equal(store.saveNew(project("Second")).sessionRecoveryAvailable,false);
+  assert.equal(store.read(id(1)).project.name,"First");assert.equal(store.read(id(2)).project.name,"Second");
+});
+
 test("duplicated session pointers fork on write and do not claim another tab's writable record", () => {
   const storage=memory(),session=memory(),a=make(storage,session,1);a.save(project("Original"));
   const copied=memory(Array.from({length:session.length},(_,i)=>[session.key(i),session.getItem(session.key(i))]));

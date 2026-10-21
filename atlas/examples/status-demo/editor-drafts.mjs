@@ -113,6 +113,18 @@ export function createEditorDraftStore({ storage, session, now = Date.now,
     return { ...read(ownId), sessionRecoveryAvailable: intentSaved && pointerSaved };
   }
 
-  return { save, read, list, recovery,
+  function saveNew(project) {
+    // A confirmed file import is a new recovery source, even in the same tab.
+    // Validate before detaching; never overwrite the previous writable record.
+    const safe = copyProject(project);
+    try {
+      const pointer = session.getItem(tabPointerKey);
+      previousId = validId(pointer) ? pointer : undefined;
+    } catch { /* Partial session recovery is reported by save(). */ }
+    ownId = undefined;
+    return save(safe);
+  }
+
+  return { save, saveNew, read, list, recovery,
     preferredId: () => ownId || recovery()?.id || previousId || (list().some(x => x.legacy) ? "legacy" : undefined) };
 }
