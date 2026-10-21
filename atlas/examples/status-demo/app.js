@@ -254,7 +254,12 @@ const configurationStorageKey = "atlas.homeassistant.demo.configuration";
 let sharedProjects;
 let sharedProjectActive = false;
 let editorDraftStore;
-try { editorDraftStore = createEditorDraftStore({ storage: localStorage, session: sessionStorage }); } catch { /* Report when a shared draft needs saving. */ }
+try {
+  const storage = localStorage;
+  let session;
+  try { session = sessionStorage; } catch { /* Keep persistent manual recovery even if the session getter is blocked. */ }
+  editorDraftStore = createEditorDraftStore({ storage, session });
+} catch { /* Report when a shared draft needs saving. */ }
 const entityCatalogCacheStorageKey = "atlas.homeassistant.demo.entityCatalogCache";
 const exportFilenameHistoryStorageKey = "atlas.homeassistant.demo.exportFilenameHistory";
 const atlasThemeStorageKey = "atlas.themePreference";
@@ -2345,9 +2350,10 @@ function persistConfiguration() {
     normalizeExpertPaletteVisibilityState();
     if (sharedProjectActive) {
       if (!editorDraftStore) throw new Error("Draft storage unavailable");
-      editorDraftStore.save({ name: currentExpertCardName(), fields: normalizedExpertEditorFields(),
+      const savedDraft = editorDraftStore.save({ name: currentExpertCardName(), fields: normalizedExpertEditorFields(),
         surfaceSize: expertEditorSurfaceSize, gridCellSize: expertGridCellSize, scriptFilename: haCardScriptFilename.value });
       sharedProjects?.refreshDrafts(true);
+      if (!savedDraft.sessionRecoveryAvailable) sharedProjects?.showDraftSessionWarning();
       return;
     }
     localStorage.setItem(configurationStorageKey, JSON.stringify({

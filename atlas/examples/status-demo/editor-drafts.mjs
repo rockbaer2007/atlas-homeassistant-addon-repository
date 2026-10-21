@@ -93,17 +93,24 @@ export function createEditorDraftStore({ storage, session, now = Date.now,
     const raw = JSON.stringify(record), key = draftPrefix + ownId;
     // Write intent belongs only to this tab's session, before its new record.
     // A reload can offer the exact completed write if the pointer never advanced.
-    try { session.setItem(pendingDraftKey, JSON.stringify({ version: 1, id: ownId,
-      previousId: previousId ?? null, updatedAt: record.updatedAt })); }
+    let intentSaved = false, pointerSaved = false;
+    try {
+      const intent = JSON.stringify({ version: 1, id: ownId,
+        previousId: previousId ?? null, updatedAt: record.updatedAt });
+      session.setItem(pendingDraftKey, intent);
+      intentSaved = session.getItem(pendingDraftKey) === intent;
+    }
     catch { /* Without session storage, retain the persistent manual recovery path. */ }
     storage.setItem(key, raw);
     summaries.set(key, { raw, value: { id: ownId, updatedAt: record.updatedAt, project: { name: safe.name } } });
     try {
       session.setItem(tabPointerKey, ownId);
-      // Clear only after the confirmed pointer. An uncleared marker is harmless.
-      session.removeItem(pendingDraftKey);
+      pointerSaved = session.getItem(tabPointerKey) === ownId;
     } catch { /* Persistent list and a completed intent still permit recovery. */ }
-    return read(ownId);
+    // A cleanup failure is harmless once the pointer is confirmed. Keep it
+    // separate from an unavailable session so it cannot report false data loss.
+    if (pointerSaved) try { session.removeItem(pendingDraftKey); } catch { /* Stale intent is ignored on reload. */ }
+    return { ...read(ownId), sessionRecoveryAvailable: intentSaved && pointerSaved };
   }
 
   return { save, read, list, recovery,

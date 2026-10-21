@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.330
+
+- Warn in DE/EN/FR when a draft is saved locally but its tab recovery intent or
+  pointer cannot be confirmed because session storage is full or blocked.
+- Preserve manual local recovery even when the sessionStorage getter is denied.
+  Keep partial-save and local-write errors distinct; retain/retranslate the
+  warning until a subsequent save confirms both recovery values.
+
 ## 0.1.329
 
 - Detect a completed newer draft from the same tab after an interrupted local

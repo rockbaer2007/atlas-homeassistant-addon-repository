@@ -4,7 +4,7 @@ const words = {
   fr: { title: "Projets Editor partagés", fresh: "Nouveau projet serveur", refresh: "Charger les projets", save: "Vérifier et enregistrer", open: "Vérifier l’ouverture", confirm: "Sauvegarder et reprendre", cancel: "Annuler", ready: "Application et Runtime utilisent les mêmes projets serveur. Enregistrez explicitement les modifications.", error: "Projet non enregistré/ouvert. Vérifiez connexion et données. L’état précédent est conservé.", conflict: "Projet serveur modifié. Rechargez et vérifiez à nouveau ou créez un nouveau projet.", preview: "{name} : {fields} champs. État serveur précédent : {previous}. L’espace de travail sera sauvegardé.", none: "nouveau", saved: "Projet serveur enregistré ; état précédent sauvegardé.", opened: "Projet serveur ouvert. Projet local d’origine conservé." },
 };
 export function createSharedProjects({ root, url, capture, apply, onShared, language, readDraft, listDrafts, preferredDraftId, recoveryDraft }) {
-  let entries = [], pending, busy = false, statusKey = "ready";
+  let entries = [], pending, busy = false, statusKey = "ready", draftNoticeKey;
   // getRandomValues also works on plain HTTP LAN origins; randomUUID does not.
   const newId = () => [...crypto.getRandomValues(new Uint8Array(16))].map(byte => byte.toString(16).padStart(2, "0")).join("");
   const extra = { restore: {de:"Sicherung prüfen",en:"Inspect backup",fr:"Vérifier une sauvegarde"}, draft: {de:"Lokalen Entwurf prüfen",en:"Inspect local draft",fr:"Vérifier le brouillon local"}, workspaceConflict: {de:"Arbeitsfläche seit der Vorschau geändert. Bitte erneut prüfen.",en:"Workspace changed since preview. Preview again.",fr:"Espace de travail modifié depuis l’aperçu. Vérifiez à nouveau."} };
@@ -16,6 +16,7 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
     recovery: {de:"Nach einer unterbrochenen Sicherung ist ein neuerer Entwurf dieses Tabs vorhanden: {name}. Vor der Wiederherstellung prüfen; die aktuelle Arbeitsfläche bleibt bis zur Übernahme unverändert.",en:"A newer draft from this tab is available after an interrupted save: {name}. Inspect it before recovery; the current workspace stays unchanged until you apply it.",fr:"Un brouillon plus récent de cet onglet est disponible après une sauvegarde interrompue : {name}. Vérifiez-le avant la reprise ; l’espace actuel reste inchangé jusqu’à confirmation."},
     recoverDraft: {de:"Neueren Entwurf prüfen",en:"Inspect newer draft",fr:"Vérifier le brouillon plus récent"},
     draftError: {de:"Entwurf konnte nicht lokal gesichert werden. Bitte vor Neuladen oder Schließen exportieren.",en:"Draft could not be saved locally. Export before reloading or closing.",fr:"Le brouillon n’a pas pu être sauvegardé localement. Exportez avant de recharger ou fermer."},
+    draftSessionWarning: {de:"Entwurf lokal gespeichert. Seine Tab-Wiederherstellung konnte wegen einer vollen oder gesperrten Sitzungsablage nicht bestätigt werden. Bitte vor Neuladen oder Schließen exportieren; danach den passenden Stand unter Lokale Entwürfe auswählen.",en:"Draft saved locally. Its tab recovery could not be confirmed because session storage is full or blocked. Export before reloading or closing; afterwards select the matching version under Local drafts.",fr:"Brouillon enregistré localement. Sa reprise par onglet n’a pas pu être confirmée car le stockage de session est plein ou bloqué. Exportez avant de recharger ou fermer ; ensuite, sélectionnez la bonne version dans Brouillons locaux."},
   });
   const tr = key => extra[key] ? extra[key][language()] || extra[key].en : (words[language()] || words.en)[key];
   const summary = document.createElement("summary"), select = document.createElement("select"), status = document.createElement("output");
@@ -29,12 +30,15 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
   button("restore", tools, () => file.click());
   const draftSelect = document.createElement("select"), draftNotice = document.createElement("output");
   draftSelect.id = "shared-editor-drafts";
+  draftNotice.id = "shared-editor-draft-notice";
+  draftNotice.style.display = "block";
+  draftNotice.setAttribute("role", "status");
   draftNotice.setAttribute("aria-live", "polite");
   tools.append(draftSelect);
   button("draft", tools, () => inspectDraft());
   async function inspectDraft() {
     if (busy) return;
-    if (!draftSelect.value) { draftNotice.textContent = tr("chooseDraft"); return; }
+    if (!draftSelect.value) { if (!draftNoticeKey) { draftNoticeKey = "chooseDraft"; renderDraftNotice(); } return; }
     busy = true;
     try { const checked = await request({ action: "preview", id: newId(), revision: 0, project: readDraft(draftSelect.value) });
       pending = { action: "restore", project: checked.project }; describe(); preview.hidden = false; root.open = true;
@@ -76,10 +80,16 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
       const candidate = recoveryDraft?.(); recoveryPanel.hidden = !candidate;
       recoveryText.textContent = candidate ? tr("recovery").replace("{name}", candidate.name) : "";
       if (candidate) root.open = true;
-      if (preferCurrent) draftNotice.textContent = "";
+      if (preferCurrent) draftNoticeKey = undefined;
+      renderDraftNotice();
     } catch { showDraftError(); }
   }
-  function showDraftError() { draftNotice.textContent = tr("draftError"); }
+  function renderDraftNotice() {
+    draftNotice.textContent = draftNoticeKey ? tr(draftNoticeKey) : "";
+    draftNotice.dataset.state = draftNoticeKey === "draftSessionWarning" ? "session-unavailable" : draftNoticeKey === "draftError" ? "local-error" : "";
+  }
+  function showDraftError() { draftNoticeKey = "draftError"; renderDraftNotice(); root.open = true; }
+  function showDraftSessionWarning() { draftNoticeKey = "draftSessionWarning"; renderDraftNotice(); root.open = true; }
   function labels() { summary.textContent = tr("title"); select.setAttribute("aria-label", tr("title")); for (const [key, node] of Object.entries(buttons)) node.textContent = tr(key); if (select.options[0]) select.options[0].textContent = tr("fresh"); refreshDrafts(); show(statusKey); describe(); }
   async function request(body, id) {
     const target = new URL(url, location.href); if (id) target.searchParams.set("id", id);
@@ -117,5 +127,5 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
       const id = pending.id || "", action = pending.action; pending = undefined; preview.hidden = true; await refresh(); select.value = id; show(action === "save" ? "saved" : "opened");
     } catch (error) { show(error.conflict ? "conflict" : "error"); } finally { busy = false; buttons.confirm.disabled = false; }
   }
-  labels(); void refresh(); return { labels, refreshDrafts, showDraftError };
+  labels(); void refresh(); return { labels, refreshDrafts, showDraftError, showDraftSessionWarning };
 }

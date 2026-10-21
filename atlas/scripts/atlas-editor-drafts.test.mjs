@@ -60,7 +60,7 @@ test("quota and invalid input cannot destroy drafts or advance the tab recovery 
 
 test("without session storage, independent persistent drafts remain explicitly recoverable", () => {
   const storage=memory(),session={getItem(){throw Error("blocked");},setItem(){throw Error("blocked");}};
-  const store=make(storage,session,1);store.save(project("Manual recovery"));
+  const store=make(storage,session,1);assert.equal(store.save(project("Manual recovery")).sessionRecoveryAvailable,false);
   const reload=make(storage,session,2);assert.equal(reload.preferredId(),undefined);
   assert.equal(reload.read(reload.list()[0].id).project.name,"Manual recovery");
 });
@@ -117,7 +117,7 @@ test("pre-write failure keeps predecessor; a post-pointer crash creates no false
 test("first write and unavailable pointer updates retain an explicitly recoverable intent without relying on wall-clock order", () => {
   const storage=memory(),session=memory(),set=session.setItem;
   session.setItem=(key,value)=>{if(key===legacyDraftKey+".tab")throw Error("pointer blocked");set(key,value);};
-  make(storage,session,1).save(project("First interrupted"));
+  assert.equal(make(storage,session,1).save(project("First interrupted")).sessionRecoveryAvailable,false);
   const reload=make(storage,session,2);assert.equal(reload.preferredId(),id(1));
   assert.equal(reload.recovery().name,"First interrupted");
   assert.ok(!session.getItem(pendingDraftKey).includes("fields"));
@@ -126,4 +126,42 @@ test("first write and unavailable pointer updates retain an explicitly recoverab
   const write=storage.setItem;storage.setItem=(key,value)=>{write(key,value);throw Error("crash");};
   assert.throws(()=>store.save(project("Later generation with earlier clock")),/crash/);
   assert.equal(make(storage,session,4).preferredId(),id(3));
+});
+
+test("successful local save confirms intent and pointer without persisting transient warning state", () => {
+  const storage=memory(),session=memory(),store=make(storage,session,1);
+  const result=store.save(project("Confirmed"));assert.equal(result.sessionRecoveryAvailable,true);
+  assert.deepEqual(result.project,project("Confirmed"));assert.equal(session.getItem(pendingDraftKey),null);
+  assert.equal(Object.hasOwn(JSON.parse(storage.getItem(draftPrefix+id(1))),"sessionRecoveryAvailable"),false);
+});
+
+for(const failure of ["quota","blocked","read-blocked","silent-write","missing-session"])test(`session ${failure} reports partial recovery while preserving the complete local record`, () => {
+  const storage=memory();let session=memory();
+  if(failure==="missing-session")session=undefined;
+  else if(failure==="read-blocked")session.getItem=()=>{throw Error("read blocked");};
+  else if(failure==="silent-write")session.setItem=()=>{};
+  else session.setItem=()=>{throw Object.assign(Error(failure),{name:failure==="quota"?"QuotaExceededError":"SecurityError"});};
+  const store=make(storage,session,1),result=store.save(project("Preserved"));
+  assert.equal(result.sessionRecoveryAvailable,false);assert.deepEqual(result.project,project("Preserved"));
+  assert.deepEqual(make(storage,memory(),2).read(id(1)).project,project("Preserved"));
+});
+
+test("failed intent is reported even if an existing same-size pointer can still be updated", () => {
+  const storage=memory(),session=memory();make(storage,session,1).save(project("Old"));
+  const set=session.setItem;session.setItem=(key,value)=>{if(key===pendingDraftKey)throw Error("intent quota");set(key,value);};
+  const result=make(storage,session,2).save(project("New"));assert.equal(result.sessionRecoveryAvailable,false);
+  assert.equal(make(storage,session,3).preferredId(),id(2));
+  assert.equal(JSON.parse(storage.getItem(draftPrefix+id(1))).project.name,"Old");
+});
+
+test("cleanup-only failure is harmless; a restored session clears partial status on the next successful save", () => {
+  const storage=memory(),session=memory(),store=make(storage,session,1),set=session.setItem;
+  session.setItem=()=>{throw Error("blocked");};assert.equal(store.save(project("Partial")).sessionRecoveryAvailable,false);
+  session.setItem=set;session.removeItem=()=>{throw Error("cleanup blocked");};
+  assert.equal(store.save(project("Complete")).sessionRecoveryAvailable,true);
+  assert.equal(make(storage,session,2).recovery(),undefined);
+  assert.deepEqual(make(storage,session,2).read(id(1)).project,project("Complete"));
+  const original=storage.getItem(draftPrefix+id(1));storage.setItem=()=>{throw Error("local quota");};
+  assert.throws(()=>store.save(project("Not saved")),/local quota/);
+  assert.equal(storage.getItem(draftPrefix+id(1)),original);
 });
