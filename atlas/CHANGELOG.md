@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.328
+
+- Keep independent local drafts for shared Editor tabs, with explicit recovery
+  selection after reload and safe separation when a browser duplicates a tab.
+- Preserve the previous shared draft as a selectable read-only recovery source.
+  Show local storage failures and keep server conflict protection unchanged.
+- Provide draft selection and recovery messages in German, English and French.
+
 ## 0.1.327
 
 - Keep Cancel in a fixed grid cell above progress text, including the transition

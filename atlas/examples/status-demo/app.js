@@ -1,5 +1,6 @@
 import { cardEditorFrenchTranslations } from "./card-editor-fr.js";
 import { createSharedProjects } from "./shared-projects.mjs";
+import { createEditorDraftStore, draftPrefix, legacyDraftKey } from "./editor-drafts.mjs";
 import { createHacsImportTask } from "./hacs-import-task.mjs";
 import {
   createThemeTokens,
@@ -252,6 +253,8 @@ const groupIssues = document.querySelector("#group-issues");
 const configurationStorageKey = "atlas.homeassistant.demo.configuration";
 let sharedProjects;
 let sharedProjectActive = false;
+let editorDraftStore;
+try { editorDraftStore = createEditorDraftStore({ storage: localStorage, session: sessionStorage }); } catch { /* Report when a shared draft needs saving. */ }
 const entityCatalogCacheStorageKey = "atlas.homeassistant.demo.entityCatalogCache";
 const exportFilenameHistoryStorageKey = "atlas.homeassistant.demo.exportFilenameHistory";
 const atlasThemeStorageKey = "atlas.themePreference";
@@ -2340,7 +2343,14 @@ function scheduleReconnect() {
 function persistConfiguration() {
   try {
     normalizeExpertPaletteVisibilityState();
-    localStorage.setItem(sharedProjectActive ? "atlas.homeassistant.sharedProjectDraft" : configurationStorageKey, JSON.stringify({
+    if (sharedProjectActive) {
+      if (!editorDraftStore) throw new Error("Draft storage unavailable");
+      editorDraftStore.save({ name: currentExpertCardName(), fields: normalizedExpertEditorFields(),
+        surfaceSize: expertEditorSurfaceSize, gridCellSize: expertGridCellSize, scriptFilename: haCardScriptFilename.value });
+      sharedProjects?.refreshDrafts(true);
+      return;
+    }
+    localStorage.setItem(configurationStorageKey, JSON.stringify({
       themePreference: currentThemePreference,
       url: homeAssistantUrl.value,
       entities: homeAssistantEntity.value,
@@ -2373,6 +2383,7 @@ function persistConfiguration() {
       groups: panelGroups,
     }));
   } catch {
+    if (sharedProjectActive) sharedProjects?.showDraftError();
     // Connection configuration remains session-only when storage is unavailable.
   }
 }
@@ -9480,11 +9491,11 @@ sharedProjects = createSharedProjects({
   url: isHomeAssistantAppSurface() ? createAppRouteNavigationUrl("/api/editor-projects") : createPortNavigationUrl(4176, "/api/editor-projects"),
   capture: () => ({ name: currentExpertCardName(), fields: normalizedExpertEditorFields(),
     surfaceSize: expertEditorSurfaceSize, gridCellSize: expertGridCellSize, scriptFilename: haCardScriptFilename.value }),
-  readDraft: () => {
-    const draft = JSON.parse(localStorage.getItem("atlas.homeassistant.sharedProjectDraft") || "null");
-    if (!draft) throw new Error("No local draft");
-    return { name: draft.expertCardName || "ATLAS Expert card", fields: draft.expertEditorFields,
-      surfaceSize: draft.expertEditorSurfaceSize, gridCellSize: draft.expertGridCellSize, scriptFilename: draft.cardScriptFilename };
+  listDrafts: () => editorDraftStore?.list() || [],
+  preferredDraftId: () => editorDraftStore?.preferredId(),
+  readDraft: id => {
+    if (!editorDraftStore) throw new Error("Draft storage unavailable");
+    return editorDraftStore.read(id).project;
   },
   onShared: () => { sharedProjectActive = true; persistConfiguration(); },
   apply: project => {
@@ -9498,6 +9509,9 @@ sharedProjects = createSharedProjects({
     selectedExpertFieldIndex = fields.length ? 0 : -1; selectedContainerCardRef = undefined; expertFieldEditing = false;
     renderExpertEditorPreview();
   },
+});
+window.addEventListener("storage", event => {
+  if (event.key === null || event.key === legacyDraftKey || event.key?.startsWith(draftPrefix)) sharedProjects?.refreshDrafts();
 });
 
 let adminHandoffRequestAttempts = 0;
