@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.329
+
+- Detect a completed newer draft from the same tab after an interrupted local
+  save, using a tab-scoped write intent before the persistent record write.
+- Offer explicit preview and backed-up recovery in DE/EN/FR. Keep confirmed
+  predecessors, other tabs and older sources; never apply a draft automatically.
+
 ## 0.1.328
 
 - Keep independent local drafts for shared Editor tabs, with explicit recovery

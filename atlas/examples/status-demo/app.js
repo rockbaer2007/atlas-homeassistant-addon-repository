@@ -9493,6 +9493,7 @@ sharedProjects = createSharedProjects({
     surfaceSize: expertEditorSurfaceSize, gridCellSize: expertGridCellSize, scriptFilename: haCardScriptFilename.value }),
   listDrafts: () => editorDraftStore?.list() || [],
   preferredDraftId: () => editorDraftStore?.preferredId(),
+  recoveryDraft: () => editorDraftStore?.recovery(),
   readDraft: id => {
     if (!editorDraftStore) throw new Error("Draft storage unavailable");
     return editorDraftStore.read(id).project;

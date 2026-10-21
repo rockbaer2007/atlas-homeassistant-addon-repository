@@ -1,6 +1,7 @@
 export const legacyDraftKey = "atlas.homeassistant.sharedProjectDraft";
 export const draftPrefix = `${legacyDraftKey}.v2.`;
 const tabPointerKey = `${legacyDraftKey}.tab`;
+export const pendingDraftKey = `${legacyDraftKey}.pending`;
 
 function copyProject(value) {
   if (!value || typeof value.name !== "string" || !value.name.trim()
@@ -20,10 +21,26 @@ export function createEditorDraftStore({ storage, session, now = Date.now,
   createId = () => [...crypto.getRandomValues(new Uint8Array(16))].map(x => x.toString(16).padStart(2, "0")).join("") }) {
   let ownId;
   let previousId;
+  let interrupted;
   const summaries = new Map();
   try { previousId = session.getItem(tabPointerKey); } catch { /* Manual selection still works. */ }
   const validId = id => typeof id === "string" && /^[a-f0-9]{32}$/.test(id);
   if (!validId(previousId)) previousId = undefined;
+  try {
+    const raw = session.getItem(pendingDraftKey);
+    if (raw && raw.length < 512) interrupted = JSON.parse(raw);
+  } catch { /* Old confirmed source and manual recovery remain available. */ }
+
+  function recovery() {
+    if (ownId || interrupted?.version !== 1 || !validId(interrupted.id)
+      || interrupted.id === previousId || interrupted.previousId !== (previousId ?? null)
+      || !Number.isFinite(Date.parse(interrupted.updatedAt))) return undefined;
+    try {
+      const record = read(interrupted.id);
+      if (record.updatedAt !== interrupted.updatedAt) return undefined;
+      return { id: record.id, updatedAt: record.updatedAt, name: record.project.name };
+    } catch { return undefined; }
+  }
 
   function read(id) {
     if (id === "legacy") {
@@ -42,6 +59,7 @@ export function createEditorDraftStore({ storage, session, now = Date.now,
   }
 
   function list() {
+    const currentId = ownId || recovery()?.id || previousId;
     const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index));
     const records = [];
     for (const key of keys) {
@@ -54,7 +72,7 @@ export function createEditorDraftStore({ storage, session, now = Date.now,
           cached = { raw, value: { id, legacy: record.legacy, updatedAt: record.updatedAt, project: { name: record.project.name } } };
           summaries.set(key, cached);
         }
-        records.push({ ...cached.value, current: id === ownId || (!ownId && id === previousId) });
+        records.push({ ...cached.value, current: id === currentId });
       }
       catch { /* Keep unreadable/legacy bytes intact; other drafts remain available. */ }
     }
@@ -73,11 +91,21 @@ export function createEditorDraftStore({ storage, session, now = Date.now,
     const record = { kind: "atlas.editor.local-draft", version: 1, id: ownId,
       updatedAt: new Date(now()).toISOString(), project: safe };
     const raw = JSON.stringify(record), key = draftPrefix + ownId;
+    // Write intent belongs only to this tab's session, before its new record.
+    // A reload can offer the exact completed write if the pointer never advanced.
+    try { session.setItem(pendingDraftKey, JSON.stringify({ version: 1, id: ownId,
+      previousId: previousId ?? null, updatedAt: record.updatedAt })); }
+    catch { /* Without session storage, retain the persistent manual recovery path. */ }
     storage.setItem(key, raw);
     summaries.set(key, { raw, value: { id: ownId, updatedAt: record.updatedAt, project: { name: safe.name } } });
-    try { session.setItem(tabPointerKey, ownId); } catch { /* Persistent list still permits recovery. */ }
+    try {
+      session.setItem(tabPointerKey, ownId);
+      // Clear only after the confirmed pointer. An uncleared marker is harmless.
+      session.removeItem(pendingDraftKey);
+    } catch { /* Persistent list and a completed intent still permit recovery. */ }
     return read(ownId);
   }
 
-  return { save, read, list, preferredId: () => ownId || previousId || (list().some(x => x.legacy) ? "legacy" : undefined) };
+  return { save, read, list, recovery,
+    preferredId: () => ownId || recovery()?.id || previousId || (list().some(x => x.legacy) ? "legacy" : undefined) };
 }

@@ -3,7 +3,7 @@ const words = {
   en: { title: "Shared editor projects", fresh: "New server project", refresh: "Load project list", save: "Preview and save", open: "Preview opening", confirm: "Back up and apply", cancel: "Cancel", ready: "App and Runtime use the same server projects. Save edits explicitly.", error: "Project not saved/opened. Check connection and project data. Previous state is retained.", conflict: "Server project changed. Reload the list and preview again or save a new project.", preview: "{name}: {fields} fields. Previous server state: {previous}. Current workspace will be backed up.", none: "new", saved: "Server project saved; previous state backed up.", opened: "Server project opened. Original local project retained." },
   fr: { title: "Projets Editor partagés", fresh: "Nouveau projet serveur", refresh: "Charger les projets", save: "Vérifier et enregistrer", open: "Vérifier l’ouverture", confirm: "Sauvegarder et reprendre", cancel: "Annuler", ready: "Application et Runtime utilisent les mêmes projets serveur. Enregistrez explicitement les modifications.", error: "Projet non enregistré/ouvert. Vérifiez connexion et données. L’état précédent est conservé.", conflict: "Projet serveur modifié. Rechargez et vérifiez à nouveau ou créez un nouveau projet.", preview: "{name} : {fields} champs. État serveur précédent : {previous}. L’espace de travail sera sauvegardé.", none: "nouveau", saved: "Projet serveur enregistré ; état précédent sauvegardé.", opened: "Projet serveur ouvert. Projet local d’origine conservé." },
 };
-export function createSharedProjects({ root, url, capture, apply, onShared, language, readDraft, listDrafts, preferredDraftId }) {
+export function createSharedProjects({ root, url, capture, apply, onShared, language, readDraft, listDrafts, preferredDraftId, recoveryDraft }) {
   let entries = [], pending, busy = false, statusKey = "ready";
   // getRandomValues also works on plain HTTP LAN origins; randomUUID does not.
   const newId = () => [...crypto.getRandomValues(new Uint8Array(16))].map(byte => byte.toString(16).padStart(2, "0")).join("");
@@ -13,6 +13,8 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
     chooseDraft: {de:"Entwurf auswählen",en:"Select a draft",fr:"Choisir un brouillon"},
     thisTab: {de:"dieser Tab",en:"this tab",fr:"cet onglet"},
     legacy: {de:"bisheriger Entwurf",en:"previous legacy draft",fr:"ancien brouillon"},
+    recovery: {de:"Nach einer unterbrochenen Sicherung ist ein neuerer Entwurf dieses Tabs vorhanden: {name}. Vor der Wiederherstellung prüfen; die aktuelle Arbeitsfläche bleibt bis zur Übernahme unverändert.",en:"A newer draft from this tab is available after an interrupted save: {name}. Inspect it before recovery; the current workspace stays unchanged until you apply it.",fr:"Un brouillon plus récent de cet onglet est disponible après une sauvegarde interrompue : {name}. Vérifiez-le avant la reprise ; l’espace actuel reste inchangé jusqu’à confirmation."},
+    recoverDraft: {de:"Neueren Entwurf prüfen",en:"Inspect newer draft",fr:"Vérifier le brouillon plus récent"},
     draftError: {de:"Entwurf konnte nicht lokal gesichert werden. Bitte vor Neuladen oder Schließen exportieren.",en:"Draft could not be saved locally. Export before reloading or closing.",fr:"Le brouillon n’a pas pu être sauvegardé localement. Exportez avant de recharger ou fermer."},
   });
   const tr = key => extra[key] ? extra[key][language()] || extra[key].en : (words[language()] || words.en)[key];
@@ -29,13 +31,21 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
   draftSelect.id = "shared-editor-drafts";
   draftNotice.setAttribute("aria-live", "polite");
   tools.append(draftSelect);
-  button("draft", tools, async () => {
+  button("draft", tools, () => inspectDraft());
+  async function inspectDraft() {
     if (busy) return;
     if (!draftSelect.value) { draftNotice.textContent = tr("chooseDraft"); return; }
     busy = true;
     try { const checked = await request({ action: "preview", id: newId(), revision: 0, project: readDraft(draftSelect.value) });
       pending = { action: "restore", project: checked.project }; describe(); preview.hidden = false; root.open = true;
     } catch { show("error"); } finally { busy = false; }
+  }
+  const recoveryPanel = document.createElement("section"), recoveryText = document.createElement("p");
+  recoveryPanel.id = "shared-editor-recovery"; recoveryPanel.hidden = true;
+  recoveryText.setAttribute("aria-live", "polite"); recoveryPanel.append(recoveryText);
+  button("recoverDraft", recoveryPanel, async () => {
+    const candidate = recoveryDraft?.(); if (!candidate) { refreshDrafts(); return; }
+    draftSelect.value = candidate.id; await inspectDraft();
   });
   file.addEventListener("change", async () => {
     try {
@@ -46,7 +56,7 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
     } catch { show("error"); } finally { file.value = ""; }
   });
   button("confirm", actions, commit); button("cancel", actions, () => { pending = undefined; preview.hidden = true; });
-  preview.append(description, actions); root.append(summary, tools, status, draftNotice, preview);
+  preview.append(description, actions); root.append(summary, tools, status, draftNotice, recoveryPanel, preview);
   function show(key) { statusKey = key; status.textContent = tr(key); }
   function describe() { if (pending) description.textContent = tr("preview").replace("{name}", pending.project.name).replace("{fields}", pending.project.fields.length).replace("{previous}", pending.previous ? `${pending.previous.name} (${pending.previous.fields})` : tr("none")); }
   function refreshDrafts(preferCurrent = false) {
@@ -63,6 +73,9 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
       const exists = id => records.some(record => record.id === id);
       draftSelect.value = preferCurrent && exists(preferred) ? preferred : exists(selected) ? selected : exists(preferred) ? preferred : "";
       draftSelect.setAttribute("aria-label", tr("drafts"));
+      const candidate = recoveryDraft?.(); recoveryPanel.hidden = !candidate;
+      recoveryText.textContent = candidate ? tr("recovery").replace("{name}", candidate.name) : "";
+      if (candidate) root.open = true;
       if (preferCurrent) draftNotice.textContent = "";
     } catch { showDraftError(); }
   }

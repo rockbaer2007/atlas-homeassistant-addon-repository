@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createEditorDraftStore, draftPrefix, legacyDraftKey } from "../examples/status-demo/editor-drafts.mjs";
+import { createEditorDraftStore, draftPrefix, legacyDraftKey, pendingDraftKey } from "../examples/status-demo/editor-drafts.mjs";
 
 function memory(entries = []) {
   const values = new Map(entries);
   return { get length() { return values.size; }, key: index => [...values.keys()][index] ?? null,
-    getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
+    getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
 }
 const project = name => ({ name, fields: [{ id:"field", target:"entity", entityId:"sun.sun",
   rawCard: { type:"conditional", conditions:[{condition:"state",entity:"sun.sun",state_not:["unknown"]}], card:{type:"entity",entity:"sun.sun",name:"  Sun  "} } }],
@@ -63,4 +63,67 @@ test("without session storage, independent persistent drafts remain explicitly r
   const store=make(storage,session,1);store.save(project("Manual recovery"));
   const reload=make(storage,session,2);assert.equal(reload.preferredId(),undefined);
   assert.equal(reload.read(reload.list()[0].id).project.name,"Manual recovery");
+});
+
+test("interrupted record write offers only the matching tab intent, retaining the confirmed predecessor", () => {
+  const storage=memory(),sessionA=memory(),sessionB=memory();
+  make(storage,sessionA,1).save(project("A confirmed"));
+  make(storage,sessionB,2).save(project("B confirmed"));
+  const original=storage.setItem;
+  storage.setItem=(key,value)=>{original(key,value);if(key===draftPrefix+id(3))throw Error("process terminated after record write");};
+  assert.throws(()=>make(storage,sessionA,3).save(project("A next")),/terminated/);
+  storage.setItem=original;
+  const restoredA=make(storage,sessionA,4),restoredB=make(storage,sessionB,5);
+  assert.equal(restoredA.preferredId(),id(3));assert.equal(restoredA.recovery().name,"A next");
+  assert.deepEqual(restoredA.read(id(3)).project,project("A next"));
+  assert.deepEqual(restoredA.read(id(1)).project,project("A confirmed"));
+  assert.equal(restoredB.preferredId(),id(2));assert.equal(restoredB.recovery(),undefined);
+  assert.equal(make(storage,memory(),6).preferredId(),undefined);
+  assert.equal(restoredA.list().find(x=>x.current).id,id(3));
+  restoredA.save(restoredA.read(id(3)).project);
+  assert.equal(restoredA.preferredId(),id(4));assert.equal(restoredA.recovery(),undefined);
+  assert.equal(sessionA.getItem(pendingDraftKey),null);
+  assert.deepEqual(restoredA.read(id(3)).project,project("A next"));
+});
+
+test("absent, broken, mismatched and foreign pending records never replace the confirmed selection", () => {
+  const storage=memory(),session=memory();make(storage,session,1).save(project("Keep"));
+  make(storage,memory(),2).save(project("Foreign"));
+  const stamp=JSON.parse(storage.getItem(draftPrefix+id(2))).updatedAt;
+  for(const marker of ["broken",JSON.stringify({version:2,id:id(2),previousId:id(1),updatedAt:stamp}),
+    JSON.stringify({version:1,id:id(2),previousId:id(9),updatedAt:stamp}),
+    JSON.stringify({version:1,id:id(9),previousId:id(1),updatedAt:stamp}),
+    JSON.stringify({version:1,id:id(2),previousId:id(1),updatedAt:"2000-01-01T00:00:00.000Z"})]) {
+    session.setItem(pendingDraftKey,marker);const reload=make(storage,session,3);
+    assert.equal(reload.preferredId(),id(1));assert.equal(reload.recovery(),undefined);
+    assert.equal(session.getItem(pendingDraftKey),marker);
+  }
+  storage.setItem(draftPrefix+id(9),"broken");
+  session.setItem(pendingDraftKey,JSON.stringify({version:1,id:id(9),previousId:id(1),updatedAt:stamp}));
+  assert.equal(make(storage,session,3).preferredId(),id(1));
+});
+
+test("pre-write failure keeps predecessor; a post-pointer crash creates no false recovery offer", () => {
+  const storage=memory(),session=memory();make(storage,session,1).save(project("Keep"));
+  const write=storage.setItem;storage.setItem=()=>{throw Error("quota");};
+  assert.throws(()=>make(storage,session,2).save(project("Not written")),/quota/);
+  assert.equal(make(storage,session,3).preferredId(),id(1));storage.setItem=write;
+  session.removeItem=()=>{throw Error("process ended after pointer");};
+  make(storage,session,4).save(project("Confirmed next"));
+  const reload=make(storage,session,5);assert.equal(reload.preferredId(),id(4));
+  assert.equal(reload.recovery(),undefined);
+});
+
+test("first write and unavailable pointer updates retain an explicitly recoverable intent without relying on wall-clock order", () => {
+  const storage=memory(),session=memory(),set=session.setItem;
+  session.setItem=(key,value)=>{if(key===legacyDraftKey+".tab")throw Error("pointer blocked");set(key,value);};
+  make(storage,session,1).save(project("First interrupted"));
+  const reload=make(storage,session,2);assert.equal(reload.preferredId(),id(1));
+  assert.equal(reload.recovery().name,"First interrupted");
+  assert.ok(!session.getItem(pendingDraftKey).includes("fields"));
+  session.setItem=set;reload.save(project("Confirmed"));
+  const store=createEditorDraftStore({storage,session,createId:()=>id(3),now:()=>1});
+  const write=storage.setItem;storage.setItem=(key,value)=>{write(key,value);throw Error("crash");};
+  assert.throws(()=>store.save(project("Later generation with earlier clock")),/crash/);
+  assert.equal(make(storage,session,4).preferredId(),id(3));
 });
