@@ -698,7 +698,12 @@
       .shared-project-tools button, .shared-project-tools select { flex: 1; min-width: 150px; }
       .shared-draft-overview { margin: 12px 0; padding: 12px; border: 1px solid var(--atlas-border); border-radius: 8px; min-width: 0; }
       .shared-draft-overview h3 { margin: 0 0 8px; font-size: 1rem; }
-      .shared-draft-overview label { flex: 3; min-width: 0; }
+      .shared-draft-overview label { display: block; margin: 6px 0; }
+      .shared-draft-search { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; margin: 8px 0; min-width: 0; }
+      .shared-draft-search input { flex: 1 1 240px; min-height: 44px; padding: 8px 10px; font: inherit; font-size: 16px; border: 1px solid var(--atlas-border); border-radius: 6px; background: var(--atlas-panel); color: var(--atlas-text); }
+      .shared-draft-search-actions { display: flex; flex: 0 1 300px; flex-wrap: wrap; gap: 8px; max-width: 100%; }
+      .shared-draft-search-actions button { flex: 1 1 120px; min-width: 0; min-height: 44px; padding: 8px 12px; border: 1px solid var(--atlas-border); border-radius: 6px; font: inherit; background: var(--atlas-panel-soft); color: var(--atlas-text); }
+      .shared-draft-search-actions button:disabled { opacity: .55; }
       .shared-draft-overview input, #shared-editor-drafts { width: 100%; min-width: 0; box-sizing: border-box; }
       #shared-editor-drafts { display: block; margin: 8px 0; overflow: auto; }
       #shared-editor-draft-count { display: block; color: var(--atlas-muted); }

@@ -18,10 +18,12 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
     unknownTime: {de:"Zeit unbekannt",en:"time unknown",fr:"date inconnue"},
     noScript: {de:"keine Scriptdatei",en:"no script filename",fr:"aucun fichier de script"},
     draftSearch: {de:"Entwürfe suchen",en:"Search drafts",fr:"Rechercher des brouillons"},
+    searchDrafts: {de:"Suchen",en:"Search",fr:"Rechercher"},
     draftSearchHint: {de:"Projekt, Script, Quelle oder Datum",en:"Project, script, source or date",fr:"Projet, script, source ou date"},
     clearDraftSearch: {de:"Suche leeren",en:"Clear search",fr:"Effacer la recherche"},
     draftCount: {de:"{shown} von {total} Quellen · Suche ändert keine Entwürfe.",en:"{shown} of {total} sources · Search does not change drafts.",fr:"{shown} sources sur {total} · La recherche ne modifie aucun brouillon."},
     noDraftMatches: {de:"Keine passenden Entwürfe. Suche leeren, um alle Quellen zu sehen.",en:"No matching drafts. Clear search to show all sources.",fr:"Aucun brouillon correspondant. Effacez la recherche pour voir toutes les sources."},
+    noDraftSources: {de:"0 lokale Quellen. Zuerst ein Serverprojekt öffnen oder eine Editor-Konfiguration importieren. Die Suche durchsucht nur lokale Entwürfe.",en:"0 local sources. First open a server project or import an Editor configuration. Search only covers local drafts.",fr:"0 source locale. Ouvrez d’abord un projet serveur ou importez une configuration Editor. La recherche concerne uniquement les brouillons locaux."},
     draftProject: {de:"Projekt",en:"Project",fr:"Projet"},
     draftScript: {de:"Scriptdatei",en:"Script filename",fr:"Fichier de script"},
     draftTime: {de:"Gespeichert",en:"Saved",fr:"Enregistré"},
@@ -51,19 +53,24 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
   draftNotice.setAttribute("aria-live", "polite");
   const draftPanel = document.createElement("section"), draftLabel = document.createElement("h3");
   draftPanel.className = "shared-draft-overview";
-  const searchRow = document.createElement("div"), searchLabel = document.createElement("label"), search = document.createElement("input");
-  searchRow.className = "shared-project-tools";
-  search.id = "shared-editor-draft-search"; search.type = "search"; search.autocomplete = "off";
-  searchLabel.htmlFor = search.id; searchLabel.append(search);
-  searchRow.append(searchLabel); button("clearDraftSearch", searchRow, () => { search.value = ""; refreshDrafts(); search.focus(); });
+  const searchRow = document.createElement("div"), searchLabel = document.createElement("label"), search = document.createElement("input"), searchActions = document.createElement("div");
+  searchRow.className = "shared-draft-search"; searchActions.className = "shared-draft-search-actions";
+  search.id = "shared-editor-draft-search"; search.type = "search"; search.autocomplete = "off"; search.enterKeyHint = "search";
+  searchLabel.htmlFor = search.id;
+  searchRow.append(search, searchActions);
+  button("searchDrafts", searchActions, () => refreshDrafts());
+  button("clearDraftSearch", searchActions, () => { search.value = ""; refreshDrafts(); search.focus(); });
   const count = document.createElement("output"), details = document.createElement("dl");
   count.id = "shared-editor-draft-count"; count.setAttribute("role", "status");
   details.id = "shared-editor-draft-details";
   draftSelect.size = 6;
-  draftPanel.append(draftLabel, searchRow, count, draftSelect, details);
+  draftPanel.append(draftLabel, searchLabel, searchRow, count, draftSelect, details);
   button("draft", draftPanel, () => inspectDraft());
   let selectedDraftId = "", overview = [];
   search.addEventListener("input", () => refreshDrafts());
+  search.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.isComposing) { event.preventDefault(); refreshDrafts(); }
+  });
   draftSelect.addEventListener("change", () => { selectedDraftId = draftSelect.value; renderDraftDetails(); });
   async function inspectDraft() {
     if (busy) return;
@@ -100,7 +107,7 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
       overview = draftOverview(records, search.value, language(), Object.fromEntries(["thisTab", "otherTab", "legacy", "unknownTime", "noScript"].map(key => [key, tr(key)])));
       const matches = overview.filter(record => record.matches);
       draftSelect.replaceChildren();
-      const empty = document.createElement("option"); empty.value = ""; empty.textContent = tr(matches.length ? "chooseDraft" : "noDraftMatches"); draftSelect.append(empty);
+      const empty = document.createElement("option"); empty.value = ""; empty.textContent = tr(records.length && !matches.length ? "noDraftMatches" : "chooseDraft"); draftSelect.append(empty);
       for (const record of matches) {
         const option = document.createElement("option"); option.value = record.id;
         option.textContent = record.text;
@@ -108,8 +115,8 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
       }
       draftSelect.value = matches.some(record => record.id === selectedDraftId) ? selectedDraftId : "";
       draftSelect.setAttribute("aria-label", tr("drafts"));
-      draftLabel.textContent = tr("drafts"); search.setAttribute("aria-label", tr("draftSearch")); search.placeholder = tr("draftSearchHint");
-      count.textContent = tr("draftCount").replace("{shown}", matches.length).replace("{total}", records.length);
+      draftLabel.textContent = tr("drafts"); searchLabel.textContent = tr("draftSearch"); search.setAttribute("aria-label", tr("draftSearch")); search.placeholder = tr("draftSearchHint");
+      count.textContent = records.length ? tr("draftCount").replace("{shown}", matches.length).replace("{total}", records.length) : tr("noDraftSources");
       buttons.clearDraftSearch.disabled = !search.value;
       renderDraftDetails();
       const candidate = recoveryDraft?.(); recoveryPanel.hidden = !candidate;

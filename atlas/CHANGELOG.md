@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.333
+
+- Add a visible Search button and explicit Enter/search-key handling to the local
+  draft overview, alongside live filtering and Clear search, in DE/EN/FR.
+- Explain an empty device-local source list separately from zero search matches:
+  first open a server project or import a configuration to create a local draft.
+- Keep search input and touch-sized actions visible in wrapping rows without
+  changing stored drafts, projects or recovery behavior.
+
 ## 0.1.332
 
 - Add a searchable local draft overview with project/script names, localized save
