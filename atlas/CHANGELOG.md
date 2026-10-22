@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.332
+
+- Add a searchable local draft overview with project/script names, localized save
+  times, explicit tab association and unique source identifiers in DE/EN/FR.
+- Preserve every existing source and recovery workflow. Searching, clearing the
+  filter and inspecting source details do not write or delete draft records.
+- Identify only the confirmed current-tab source; older sources are labelled as
+  other or previous tabs instead of inventing ownership metadata.
+
 ## 0.1.331
 
 - Save confirmed Editor configuration file imports as independent per-tab local

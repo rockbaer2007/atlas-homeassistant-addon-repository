@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createEditorDraftStore, draftPrefix, legacyDraftKey, pendingDraftKey } from "../examples/status-demo/editor-drafts.mjs";
+import { draftOverview } from "../examples/status-demo/draft-overview.mjs";
 
 function memory(entries = []) {
   const values = new Map(entries);
@@ -12,6 +13,33 @@ const project = name => ({ name, fields: [{ id:"field", target:"entity", entityI
   surfaceSize:{columns:2,rows:3},gridCellSize:52,scriptFilename:"literal.js" });
 const id = number => number.toString(16).padStart(32,"0");
 const make = (storage, session, number) => createEditorDraftStore({ storage, session, createId:()=>id(number), now:()=>1792598400000 });
+
+test("draft overview distinguishes duplicate project names and searches without changing stored sources", () => {
+  const storage=memory(),a=make(storage,memory(),1),b=make(storage,memory(),2);
+  a.save({...project("Same project"),scriptFilename:"kitchen.js"});
+  b.save({...project("Same project"),scriptFilename:"bedroom.js"});
+  const bytes=Array.from({length:storage.length},(_,i)=>[storage.key(i),storage.getItem(storage.key(i))]);
+  const labels={thisTab:"this tab",otherTab:"other or previous tab",legacy:"legacy",unknownTime:"unknown",noScript:"none"};
+  const all=draftOverview(a.list(),"","en",labels);
+  assert.equal(all.find(x=>x.id===id(1)).association,"this tab");
+  assert.equal(all.find(x=>x.id===id(2)).association,"other or previous tab");
+  assert.notEqual(all[0].id,all[1].id);
+  assert.deepEqual(draftOverview(a.list(),"SAME kitchen", "en",labels).filter(x=>x.matches).map(x=>x.id),[id(1)]);
+  assert.deepEqual(draftOverview(a.list(),id(2),"en",labels).filter(x=>x.matches).map(x=>x.id),[id(2)]);
+  assert.equal(draftOverview(a.list(),"not-present","en",labels).filter(x=>x.matches).length,0);
+  assert.equal(draftOverview(a.list(),"2026-10", "en",labels).filter(x=>x.matches).length,2);
+  assert.equal(draftOverview(a.list(),"   ","fr",labels).filter(x=>x.matches).length,2);
+  assert.deepEqual(Array.from({length:storage.length},(_,i)=>[storage.key(i),storage.getItem(storage.key(i))]),bytes);
+});
+
+test("old draft summaries remain readable without script metadata and legacy dates stay explicit", () => {
+  const labels={thisTab:"current",otherTab:"unknown owner",legacy:"legacy",unknownTime:"unknown time",noScript:"no script"};
+  const records=[{id:"legacy",legacy:true,project:{name:"Old"}},{id:id(1),updatedAt:"2026-10-22T11:00:00Z",project:{name:"Old"}}];
+  const saved=JSON.stringify(records),list=draftOverview(records,"", "de",labels);
+  assert.equal(list[0].date,"unknown time");assert.equal(list[0].association,"legacy");
+  assert.equal(list[1].script,"no script");assert.equal(list[1].association,"unknown owner");
+  assert.equal(JSON.stringify(records),saved);
+});
 
 test("two tabs never overwrite each other's draft; reloaded tabs select their own recovery source", () => {
   const storage=memory(),sessionA=memory(),sessionB=memory(),a=make(storage,sessionA,1),b=make(storage,sessionB,2);

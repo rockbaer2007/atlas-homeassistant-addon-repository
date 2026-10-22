@@ -1,3 +1,5 @@
+import { draftOverview } from "./draft-overview.mjs";
+
 const words = {
   de: { title: "Gemeinsame Editor-Projekte", fresh: "Neues Serverprojekt", refresh: "Projektliste laden", save: "Prüfen und speichern", open: "Öffnen prüfen", confirm: "Gesichert übernehmen", cancel: "Abbrechen", ready: "App und Runtime nutzen dieselben Serverprojekte. Änderungen ausdrücklich speichern.", error: "Projekt nicht gespeichert/geöffnet. Prüfe Verbindung und Projektdaten. Der bisherige Stand bleibt erhalten.", conflict: "Serverprojekt geändert. Liste neu laden und erneut prüfen oder als neues Projekt speichern.", preview: "{name}: {fields} Felder. Vorheriger Serverstand: {previous}. Die aktuelle Arbeitsfläche wird gesichert.", none: "neu", saved: "Serverprojekt gespeichert; vorheriger Stand gesichert.", opened: "Serverprojekt geöffnet. Ursprüngliches lokales Projekt bleibt erhalten." },
   en: { title: "Shared editor projects", fresh: "New server project", refresh: "Load project list", save: "Preview and save", open: "Preview opening", confirm: "Back up and apply", cancel: "Cancel", ready: "App and Runtime use the same server projects. Save edits explicitly.", error: "Project not saved/opened. Check connection and project data. Previous state is retained.", conflict: "Server project changed. Reload the list and preview again or save a new project.", preview: "{name}: {fields} fields. Previous server state: {previous}. Current workspace will be backed up.", none: "new", saved: "Server project saved; previous state backed up.", opened: "Server project opened. Original local project retained." },
@@ -12,6 +14,19 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
     drafts: {de:"Lokale Entwürfe",en:"Local drafts",fr:"Brouillons locaux"},
     chooseDraft: {de:"Entwurf auswählen",en:"Select a draft",fr:"Choisir un brouillon"},
     thisTab: {de:"dieser Tab",en:"this tab",fr:"cet onglet"},
+    otherTab: {de:"anderer oder früherer Tab",en:"other or previous tab",fr:"autre onglet ou onglet précédent"},
+    unknownTime: {de:"Zeit unbekannt",en:"time unknown",fr:"date inconnue"},
+    noScript: {de:"keine Scriptdatei",en:"no script filename",fr:"aucun fichier de script"},
+    draftSearch: {de:"Entwürfe suchen",en:"Search drafts",fr:"Rechercher des brouillons"},
+    draftSearchHint: {de:"Projekt, Script, Quelle oder Datum",en:"Project, script, source or date",fr:"Projet, script, source ou date"},
+    clearDraftSearch: {de:"Suche leeren",en:"Clear search",fr:"Effacer la recherche"},
+    draftCount: {de:"{shown} von {total} Quellen · Suche ändert keine Entwürfe.",en:"{shown} of {total} sources · Search does not change drafts.",fr:"{shown} sources sur {total} · La recherche ne modifie aucun brouillon."},
+    noDraftMatches: {de:"Keine passenden Entwürfe. Suche leeren, um alle Quellen zu sehen.",en:"No matching drafts. Clear search to show all sources.",fr:"Aucun brouillon correspondant. Effacez la recherche pour voir toutes les sources."},
+    draftProject: {de:"Projekt",en:"Project",fr:"Projet"},
+    draftScript: {de:"Scriptdatei",en:"Script filename",fr:"Fichier de script"},
+    draftTime: {de:"Gespeichert",en:"Saved",fr:"Enregistré"},
+    draftTab: {de:"Tab-Zuordnung",en:"Tab association",fr:"Association à l’onglet"},
+    draftSource: {de:"Quelle",en:"Source",fr:"Source"},
     legacy: {de:"bisheriger Entwurf",en:"previous legacy draft",fr:"ancien brouillon"},
     recovery: {de:"Nach einer unterbrochenen Sicherung ist ein neuerer Entwurf dieses Tabs vorhanden: {name}. Vor der Wiederherstellung prüfen; die aktuelle Arbeitsfläche bleibt bis zur Übernahme unverändert.",en:"A newer draft from this tab is available after an interrupted save: {name}. Inspect it before recovery; the current workspace stays unchanged until you apply it.",fr:"Un brouillon plus récent de cet onglet est disponible après une sauvegarde interrompue : {name}. Vérifiez-le avant la reprise ; l’espace actuel reste inchangé jusqu’à confirmation."},
     recoverDraft: {de:"Neueren Entwurf prüfen",en:"Inspect newer draft",fr:"Vérifier le brouillon plus récent"},
@@ -34,8 +49,22 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
   draftNotice.style.display = "block";
   draftNotice.setAttribute("role", "status");
   draftNotice.setAttribute("aria-live", "polite");
-  tools.append(draftSelect);
-  button("draft", tools, () => inspectDraft());
+  const draftPanel = document.createElement("section"), draftLabel = document.createElement("h3");
+  draftPanel.className = "shared-draft-overview";
+  const searchRow = document.createElement("div"), searchLabel = document.createElement("label"), search = document.createElement("input");
+  searchRow.className = "shared-project-tools";
+  search.id = "shared-editor-draft-search"; search.type = "search"; search.autocomplete = "off";
+  searchLabel.htmlFor = search.id; searchLabel.append(search);
+  searchRow.append(searchLabel); button("clearDraftSearch", searchRow, () => { search.value = ""; refreshDrafts(); search.focus(); });
+  const count = document.createElement("output"), details = document.createElement("dl");
+  count.id = "shared-editor-draft-count"; count.setAttribute("role", "status");
+  details.id = "shared-editor-draft-details";
+  draftSelect.size = 6;
+  draftPanel.append(draftLabel, searchRow, count, draftSelect, details);
+  button("draft", draftPanel, () => inspectDraft());
+  let selectedDraftId = "", overview = [];
+  search.addEventListener("input", () => refreshDrafts());
+  draftSelect.addEventListener("change", () => { selectedDraftId = draftSelect.value; renderDraftDetails(); });
   async function inspectDraft() {
     if (busy) return;
     if (!draftSelect.value) { if (!draftNoticeKey) { draftNoticeKey = "chooseDraft"; renderDraftNotice(); } return; }
@@ -49,7 +78,7 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
   recoveryText.setAttribute("aria-live", "polite"); recoveryPanel.append(recoveryText);
   button("recoverDraft", recoveryPanel, async () => {
     const candidate = recoveryDraft?.(); if (!candidate) { refreshDrafts(); return; }
-    draftSelect.value = candidate.id; await inspectDraft();
+    search.value = ""; selectedDraftId = candidate.id; refreshDrafts(); draftSelect.value = candidate.id; renderDraftDetails(); await inspectDraft();
   });
   file.addEventListener("change", async () => {
     try {
@@ -60,29 +89,45 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
     } catch { show("error"); } finally { file.value = ""; }
   });
   button("confirm", actions, commit); button("cancel", actions, () => { pending = undefined; preview.hidden = true; });
-  preview.append(description, actions); root.append(summary, tools, status, draftNotice, recoveryPanel, preview);
+  preview.append(description, actions); root.append(summary, tools, status, draftPanel, draftNotice, recoveryPanel, preview);
   function show(key) { statusKey = key; status.textContent = tr(key); }
   function describe() { if (pending) description.textContent = tr("preview").replace("{name}", pending.project.name).replace("{fields}", pending.project.fields.length).replace("{previous}", pending.previous ? `${pending.previous.name} (${pending.previous.fields})` : tr("none")); }
   function refreshDrafts(preferCurrent = false) {
     try {
-      const selected = draftSelect.value, records = listDrafts?.() || [], preferred = preferredDraftId?.();
+      const records = listDrafts?.() || [], preferred = preferredDraftId?.();
+      const exists = id => records.some(record => record.id === id);
+      selectedDraftId = preferCurrent && exists(preferred) ? preferred : exists(selectedDraftId) ? selectedDraftId : exists(preferred) ? preferred : "";
+      overview = draftOverview(records, search.value, language(), Object.fromEntries(["thisTab", "otherTab", "legacy", "unknownTime", "noScript"].map(key => [key, tr(key)])));
+      const matches = overview.filter(record => record.matches);
       draftSelect.replaceChildren();
-      const empty = document.createElement("option"); empty.value = ""; empty.textContent = tr("chooseDraft"); draftSelect.append(empty);
-      for (const [index, record] of records.entries()) {
+      const empty = document.createElement("option"); empty.value = ""; empty.textContent = tr(matches.length ? "chooseDraft" : "noDraftMatches"); draftSelect.append(empty);
+      for (const record of matches) {
         const option = document.createElement("option"); option.value = record.id;
-        const date = record.updatedAt ? new Date(record.updatedAt).toLocaleString(language(), { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit" }) : tr("legacy");
-        option.textContent = `${index + 1}. ${record.project.name} — ${date}${record.current ? ` (${tr("thisTab")})` : ""}`;
+        option.textContent = record.text;
         draftSelect.append(option);
       }
-      const exists = id => records.some(record => record.id === id);
-      draftSelect.value = preferCurrent && exists(preferred) ? preferred : exists(selected) ? selected : exists(preferred) ? preferred : "";
+      draftSelect.value = matches.some(record => record.id === selectedDraftId) ? selectedDraftId : "";
       draftSelect.setAttribute("aria-label", tr("drafts"));
+      draftLabel.textContent = tr("drafts"); search.setAttribute("aria-label", tr("draftSearch")); search.placeholder = tr("draftSearchHint");
+      count.textContent = tr("draftCount").replace("{shown}", matches.length).replace("{total}", records.length);
+      buttons.clearDraftSearch.disabled = !search.value;
+      renderDraftDetails();
       const candidate = recoveryDraft?.(); recoveryPanel.hidden = !candidate;
       recoveryText.textContent = candidate ? tr("recovery").replace("{name}", candidate.name) : "";
       if (candidate) root.open = true;
       if (preferCurrent) draftNoticeKey = undefined;
       renderDraftNotice();
     } catch { showDraftError(); }
+  }
+  function renderDraftDetails() {
+    details.replaceChildren();
+    const record = overview.find(item => item.id === draftSelect.value && item.matches);
+    buttons.draft.disabled = !record;
+    if (!record) return;
+    for (const [label, value] of [["draftProject", record.project.name], ["draftScript", record.script], ["draftTime", record.date], ["draftTab", record.association], ["draftSource", record.id]]) {
+      const term = document.createElement("dt"), content = document.createElement("dd");
+      term.textContent = tr(label); content.textContent = value; details.append(term, content);
+    }
   }
   function renderDraftNotice() {
     draftNotice.textContent = draftNoticeKey ? tr(draftNoticeKey) : "";

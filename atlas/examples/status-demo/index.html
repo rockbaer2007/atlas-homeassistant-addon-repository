@@ -696,6 +696,15 @@
 
       .shared-project-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
       .shared-project-tools button, .shared-project-tools select { flex: 1; min-width: 150px; }
+      .shared-draft-overview { margin: 12px 0; padding: 12px; border: 1px solid var(--atlas-border); border-radius: 8px; min-width: 0; }
+      .shared-draft-overview h3 { margin: 0 0 8px; font-size: 1rem; }
+      .shared-draft-overview label { flex: 3; min-width: 0; }
+      .shared-draft-overview input, #shared-editor-drafts { width: 100%; min-width: 0; box-sizing: border-box; }
+      #shared-editor-drafts { display: block; margin: 8px 0; overflow: auto; }
+      #shared-editor-draft-count { display: block; color: var(--atlas-muted); }
+      #shared-editor-draft-details { display: grid; grid-template-columns: minmax(90px, auto) minmax(0, 1fr); gap: 4px 12px; font-size: .9rem; }
+      #shared-editor-draft-details dt { color: var(--atlas-muted); }
+      #shared-editor-draft-details dd { margin: 0; overflow-wrap: anywhere; }
       #shared-editor-projects section[hidden] { display: none; }
       .expert-editor-actions {
         gap: 6px;

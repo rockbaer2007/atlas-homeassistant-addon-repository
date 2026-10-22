@@ -69,7 +69,7 @@ export function createEditorDraftStore({ storage, session, now = Date.now,
         let cached = summaries.get(key);
         if (!cached || cached.raw !== raw) {
           const record = read(id);
-          cached = { raw, value: { id, legacy: record.legacy, updatedAt: record.updatedAt, project: { name: record.project.name } } };
+          cached = { raw, value: { id, legacy: record.legacy, updatedAt: record.updatedAt, project: { name: record.project.name, scriptFilename: record.project.scriptFilename } } };
           summaries.set(key, cached);
         }
         records.push({ ...cached.value, current: id === currentId });
@@ -102,7 +102,7 @@ export function createEditorDraftStore({ storage, session, now = Date.now,
     }
     catch { /* Without session storage, retain the persistent manual recovery path. */ }
     storage.setItem(key, raw);
-    summaries.set(key, { raw, value: { id: ownId, updatedAt: record.updatedAt, project: { name: safe.name } } });
+    summaries.set(key, { raw, value: { id: ownId, updatedAt: record.updatedAt, project: { name: safe.name, scriptFilename: safe.scriptFilename } } });
     try {
       session.setItem(tabPointerKey, ownId);
       pointerSaved = session.getItem(tabPointerKey) === ownId;
