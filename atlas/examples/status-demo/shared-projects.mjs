@@ -11,6 +11,11 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
   const newId = () => [...crypto.getRandomValues(new Uint8Array(16))].map(byte => byte.toString(16).padStart(2, "0")).join("");
   const extra = { restore: {de:"Sicherung prüfen",en:"Inspect backup",fr:"Vérifier une sauvegarde"}, draft: {de:"Lokalen Entwurf prüfen",en:"Inspect local draft",fr:"Vérifier le brouillon local"}, workspaceConflict: {de:"Arbeitsfläche seit der Vorschau geändert. Bitte erneut prüfen.",en:"Workspace changed since preview. Preview again.",fr:"Espace de travail modifié depuis l’aperçu. Vérifiez à nouveau."} };
   Object.assign(extra, {
+    inspecting: {de:"Projektvorschau wird geladen …",en:"Loading project preview …",fr:"Chargement de l’aperçu du projet …"},
+    chooseProject: {de:"Zuerst ein Serverprojekt in der Liste auswählen.",en:"Select a server project from the list first.",fr:"Choisissez d’abord un projet serveur dans la liste."},
+    previewReady: {de:"Vorschau bereit. Zum Laden oder Speichern ausdrücklich „Gesichert übernehmen“ wählen.",en:"Preview ready. Choose Back up and apply explicitly to load or save.",fr:"Aperçu prêt. Choisissez explicitement Sauvegarder et reprendre pour charger ou enregistrer."},
+    previewHeading: {de:"Vorschau – Bestätigung erforderlich",en:"Preview – confirmation required",fr:"Aperçu – confirmation requise"},
+    projectReadError: {de:"Projektliste oder Projekt konnte nicht innerhalb von 15 Sekunden geladen werden. Verbindung prüfen und erneut versuchen. Der bisherige Stand bleibt erhalten.",en:"Project list or project could not be loaded within 15 seconds. Check the connection and retry. Previous state is retained.",fr:"Impossible de charger la liste ou le projet sous 15 secondes. Vérifiez la connexion et réessayez. L’état précédent reste conservé."},
     drafts: {de:"Lokale Entwürfe",en:"Local drafts",fr:"Brouillons locaux"},
     chooseDraft: {de:"Entwurf auswählen",en:"Select a draft",fr:"Choisir un brouillon"},
     thisTab: {de:"dieser Tab",en:"this tab",fr:"cet onglet"},
@@ -39,7 +44,10 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
   const summary = document.createElement("summary"), select = document.createElement("select"), status = document.createElement("output");
   status.setAttribute("aria-live", "polite");
   const tools = document.createElement("div"), actions = document.createElement("div"); tools.className = actions.className = "shared-project-tools";
-  const preview = document.createElement("section"), description = document.createElement("p"); preview.hidden = true;
+  const preview = document.createElement("section"), previewHeading = document.createElement("h3"), description = document.createElement("p"); preview.hidden = true;
+  preview.id = "shared-editor-project-preview"; preview.className = "shared-project-preview"; preview.tabIndex = -1;
+  preview.setAttribute("role", "region"); previewHeading.id = "shared-editor-project-preview-heading";
+  preview.setAttribute("aria-labelledby", previewHeading.id);
   const buttons = {};
   function button(key, parent, action) { const node = document.createElement("button"); node.type = "button"; node.addEventListener("click", () => void action()); buttons[key] = node; parent.append(node); }
   tools.append(select); button("refresh", tools, refresh); button("save", tools, () => inspect("save")); button("open", tools, () => inspect("open"));
@@ -77,7 +85,7 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
     if (!draftSelect.value) { if (!draftNoticeKey) { draftNoticeKey = "chooseDraft"; renderDraftNotice(); } return; }
     busy = true;
     try { const checked = await request({ action: "preview", id: newId(), revision: 0, project: readDraft(draftSelect.value) });
-      pending = { action: "restore", project: checked.project }; describe(); preview.hidden = false; root.open = true;
+      pending = { action: "restore", project: checked.project }; presentPreview();
     } catch { show("error"); } finally { busy = false; }
   }
   const recoveryPanel = document.createElement("section"), recoveryText = document.createElement("p");
@@ -92,11 +100,15 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
       const selected = file.files?.[0]; if (!selected || selected.size > 5 * 1024 * 1024) throw new Error("Invalid backup size");
       const data = JSON.parse(await selected.text()); if (data.kind !== "atlas.editor.project.backup" || data.version !== 1) throw new Error("Invalid backup");
       const checked = await request({ action: "preview", id: newId(), revision: 0, project: data.project });
-      pending = { action: "restore", project: checked.project }; describe(); preview.hidden = false; root.open = true;
+      pending = { action: "restore", project: checked.project }; presentPreview();
     } catch { show("error"); } finally { file.value = ""; }
   });
   button("confirm", actions, commit); button("cancel", actions, () => { pending = undefined; preview.hidden = true; });
-  preview.append(description, actions); root.append(summary, tools, status, draftPanel, draftNotice, recoveryPanel, preview);
+  preview.append(previewHeading, description, actions); root.append(summary, tools, status, preview, draftPanel, draftNotice, recoveryPanel);
+  function presentPreview() {
+    describe(); preview.hidden = false; root.open = true; show("previewReady");
+    preview.focus({ preventScroll: true }); preview.scrollIntoView({ block: "nearest" });
+  }
   function show(key) { statusKey = key; status.textContent = tr(key); }
   function describe() { if (pending) description.textContent = tr("preview").replace("{name}", pending.project.name).replace("{fields}", pending.project.fields.length).replace("{previous}", pending.previous ? `${pending.previous.name} (${pending.previous.fields})` : tr("none")); }
   function refreshDrafts(preferCurrent = false) {
@@ -142,26 +154,35 @@ export function createSharedProjects({ root, url, capture, apply, onShared, lang
   }
   function showDraftError() { draftNoticeKey = "draftError"; renderDraftNotice(); root.open = true; }
   function showDraftSessionWarning() { draftNoticeKey = "draftSessionWarning"; renderDraftNotice(); root.open = true; }
-  function labels() { summary.textContent = tr("title"); select.setAttribute("aria-label", tr("title")); for (const [key, node] of Object.entries(buttons)) node.textContent = tr(key); if (select.options[0]) select.options[0].textContent = tr("fresh"); refreshDrafts(); show(statusKey); describe(); }
+  function labels() { summary.textContent = tr("title"); previewHeading.textContent = tr("previewHeading"); select.setAttribute("aria-label", tr("title")); for (const [key, node] of Object.entries(buttons)) node.textContent = tr(key); if (select.options[0]) select.options[0].textContent = tr("fresh"); refreshDrafts(); show(statusKey); describe(); }
   async function request(body, id) {
     const target = new URL(url, location.href); if (id) target.searchParams.set("id", id);
-    const response = await fetch(target, { cache: "no-store", ...(body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {}) });
-    const result = await response.json(); if (!response.ok) { const error = new Error(result.error || "Project unavailable"); error.conflict = response.status === 409; throw error; } return result;
+    const controller = body ? undefined : new AbortController();
+    const timeout = controller ? setTimeout(() => controller.abort(), 15000) : undefined;
+    try {
+      const response = await fetch(target, { cache: "no-store", ...(controller ? { signal: controller.signal } : {}), ...(body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {}) });
+      const result = await response.json(); if (!response.ok) { const error = new Error(result.error || "Project unavailable"); error.conflict = response.status === 409; throw error; } return result;
+    } finally { if (timeout !== undefined) clearTimeout(timeout); }
   }
   async function refresh() {
     try { const selected = select.value, data = await request(); entries = data.projects; select.replaceChildren(); const fresh = document.createElement("option"); fresh.value = ""; fresh.textContent = tr("fresh"); select.append(fresh);
       for (const entry of entries) { const option = document.createElement("option"); option.value = entry.id; option.textContent = entry.name; select.append(option); }
       select.value = entries.some(entry => entry.id === selected) ? selected : ""; show("ready");
-    } catch { show("error"); }
+    } catch (error) { show(error.name === "AbortError" ? "projectReadError" : "error"); }
   }
   async function inspect(action) {
-    if (busy) return; busy = true;
-    try { const entry = entries.find(item => item.id === select.value);
+    if (busy) return;
+    const entry = entries.find(item => item.id === select.value);
+    if (action === "open" && !entry) { show("chooseProject"); return; }
+    busy = true; pending = undefined; preview.hidden = true;
+    buttons.open.disabled = buttons.save.disabled = true; root.setAttribute("aria-busy", "true"); show("inspecting");
+    try {
       if (action === "open") { if (!entry) throw new Error("Select project"); const loaded = (await request(undefined, entry.id)).entry; pending = { action, ...loaded, previous: entry }; }
       else { const id = entry?.id ?? newId(), revision = entry?.revision ?? 0;
         const project = capture(), checked = await request({ action: "preview", id, revision, project }); pending = { action, id, revision, project: checked.project, previous: checked.previous, signature: JSON.stringify(project) }; }
-      describe(); preview.hidden = false; root.open = true;
-    } catch (error) { show(error.conflict ? "conflict" : "error"); } finally { busy = false; }
+      presentPreview();
+    } catch (error) { show(error.conflict ? "conflict" : error.name === "AbortError" ? "projectReadError" : "error"); }
+    finally { busy = false; buttons.open.disabled = buttons.save.disabled = false; root.setAttribute("aria-busy", "false"); }
   }
   function backup() {
     const target = URL.createObjectURL(new Blob([JSON.stringify({ kind: "atlas.editor.project.backup", version: 1, project: capture() }, null, 2)], { type: "application/json" }));

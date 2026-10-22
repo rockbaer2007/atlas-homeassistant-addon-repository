@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.334
+
+- Put the explicit project confirmation directly below project actions, focus/scroll the preview into view and announce it in DE/EN/FR.
+- Show project inspection progress and a specific hint when no server project is selected. Bound read-only project/list requests to 15 seconds so an unresponsive read can be retried.
+- Preserve drafts and explicit confirmation; save requests and revision-conflict checks remain unchanged.
+
 ## 0.1.333
 
 - Add a visible Search button and explicit Enter/search-key handling to the local
